@@ -56,6 +56,7 @@ type CensusQueryJoin interface {
 
 type CensusQuery interface {
 	censusParameter
+	GetCollection() string
 	AddJoin(join CensusQueryJoin) CensusQuery
 	AddTree(tree CensusQueryTree) CensusQuery
 	Where(condition CensusQueryCondition) CensusQuery
@@ -77,4 +78,8 @@ type CensusQuery interface {
 	SetLanguageString(lang string) CensusQuery
 	SetDistinct(distinct string) CensusQuery
 	String() string
+}
+
+type CensusClient interface {
+	Execute(query CensusQuery) (any, error)
 }

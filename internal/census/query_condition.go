@@ -20,16 +20,16 @@ const (
 	contains
 )
 
-var censusSearchModifiers = []string{"", "!", "<", "[", ">", "]", "^", "*"}
+var censusConditionOperators = []string{"", "!", "<", "[", ">", "]", "^", "*"}
 
 type fieldCondition struct {
 	field        string
-	modifierType censusConditionType
+	operatorType censusConditionType
 	value        any
 }
 
 func (o *fieldCondition) String() string {
-	return fmt.Sprintf("%s=%s%v", o.field, censusSearchModifiers[o.modifierType], o.valueAsString())
+	return fmt.Sprintf("%s=%s%v", o.field, censusConditionOperators[o.operatorType], o.valueAsString())
 }
 
 type queryCondition struct {
@@ -46,7 +46,7 @@ func NewCond(field string) CensusQueryCondition {
 func (o *queryCondition) Equals(value any) CensusQueryCondition {
 	o.Conditions = append(o.Conditions, &fieldCondition{
 		field:        o.field,
-		modifierType: equals,
+		operatorType: equals,
 		value:        value,
 	})
 	return o
@@ -55,7 +55,7 @@ func (o *queryCondition) Equals(value any) CensusQueryCondition {
 func (o *queryCondition) NotEquals(value any) CensusQueryCondition {
 	o.Conditions = append(o.Conditions, &fieldCondition{
 		field:        o.field,
-		modifierType: notEquals,
+		operatorType: notEquals,
 		value:        value,
 	})
 	return o
@@ -64,7 +64,7 @@ func (o *queryCondition) NotEquals(value any) CensusQueryCondition {
 func (o *queryCondition) IsLessThan(value any) CensusQueryCondition {
 	o.Conditions = append(o.Conditions, &fieldCondition{
 		field:        o.field,
-		modifierType: isLessThan,
+		operatorType: isLessThan,
 		value:        value,
 	})
 	return o
@@ -73,7 +73,7 @@ func (o *queryCondition) IsLessThan(value any) CensusQueryCondition {
 func (o *queryCondition) IsLessThanOrEquals(value any) CensusQueryCondition {
 	o.Conditions = append(o.Conditions, &fieldCondition{
 		field:        o.field,
-		modifierType: isLessThanOrEquals,
+		operatorType: isLessThanOrEquals,
 		value:        value,
 	})
 	return o
@@ -82,7 +82,7 @@ func (o *queryCondition) IsLessThanOrEquals(value any) CensusQueryCondition {
 func (o *queryCondition) IsGreaterThan(value any) CensusQueryCondition {
 	o.Conditions = append(o.Conditions, &fieldCondition{
 		field:        o.field,
-		modifierType: isGreaterThan,
+		operatorType: isGreaterThan,
 		value:        value,
 	})
 	return o
@@ -91,7 +91,7 @@ func (o *queryCondition) IsGreaterThan(value any) CensusQueryCondition {
 func (o *queryCondition) IsGreaterThanOrEquals(value any) CensusQueryCondition {
 	o.Conditions = append(o.Conditions, &fieldCondition{
 		field:        o.field,
-		modifierType: isGreaterThanOrEquals,
+		operatorType: isGreaterThanOrEquals,
 		value:        value,
 	})
 	return o
@@ -100,7 +100,7 @@ func (o *queryCondition) IsGreaterThanOrEquals(value any) CensusQueryCondition {
 func (o *queryCondition) StartsWith(value any) CensusQueryCondition {
 	o.Conditions = append(o.Conditions, &fieldCondition{
 		field:        o.field,
-		modifierType: startsWith,
+		operatorType: startsWith,
 		value:        value,
 	})
 	return o
@@ -109,7 +109,7 @@ func (o *queryCondition) StartsWith(value any) CensusQueryCondition {
 func (o *queryCondition) Contains(value any) CensusQueryCondition {
 	o.Conditions = append(o.Conditions, &fieldCondition{
 		field:        o.field,
-		modifierType: contains,
+		operatorType: contains,
 		value:        value,
 	})
 	return o

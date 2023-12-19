@@ -5,32 +5,56 @@ import (
 	"strings"
 )
 
+type CensusQueryType = int
+
+const (
+	GetQuery CensusQueryType = iota
+	CountQuery
+)
+
+var queryTypes = [...]string{"get", "count"}
+
+const (
+	Ns_eq2 = "eq2" //	EverQuest II	Stable version.
+	// deprecated
+	Ns_ps2V1      = "ps2:v1"      //	PlanetSide 2 (PC)	Deprecated. Please use ps2:v2.
+	Ns_ps2V2      = "ps2:v2"      //	PlanetSide 2 (PC)	Stable version, alias is ps2.
+	Ns_ps2ps4usV2 = "ps2ps4us:v2" //	US PlanetSide 2 (Playstation 4)	Stable version, alias is ps2ps4us.
+	Ns_ps2ps4euV2 = "ps2ps4eu:v2" //	EU PlanetSide 2 (Playstation 4)	Stable version, alias is ps2ps4eu.
+	Ns_dcuoV1     = "dcuo:v1"     //	DC Univese Online (PC and Playstation 3)	Stable version, alias dcuo.
+	Ns_mtgoV1     = "mtgo:v1"     //	Magic the Gathering: Online	Stable version, alias mtgo
+)
+
 type Query struct {
-	Collection      string
-	terms           []CensusQueryCondition
-	ExactMatchFirst bool              `queryProp:"exactMatchFirst,default=false"`
-	Timing          bool              `queryProp:"timing,default=false"`
-	IncludeNull     bool              `queryProp:"includeNull,default=false"`
-	CaseSensitive   bool              `queryProp:"case,default=true"`
-	Retry           bool              `queryProp:"retry,default=true"`
-	Limit           int               `queryProp:"limit,default=-1"`
-	LimitPerDB      int               `queryProp:"limitPerDB,default=-1"`
-	Start           int               `queryProp:"start,default=-1"`
-	Show            []string          `queryProp:"show"`
-	Hide            []string          `queryProp:"hide"`
-	Sort            []string          `queryProp:"sort"`
-	Has             []string          `queryProp:"has"`
-	Resolve         []string          `queryProp:"resolve"`
-	Join            []CensusQueryJoin `queryProp:"join"`
-	Tree            []CensusQueryTree `queryProp:"tree"`
-	Distinct        string            `queryProp:"distinct"`
-	Language        string            `queryProp:"lang"`
+	queryType       CensusQueryType
+	namespace       string
+	collection      string
+	Terms           []CensusQueryCondition `queryProp:"conditions"`
+	ExactMatchFirst bool                   `queryProp:"exactMatchFirst,default=false"`
+	Timing          bool                   `queryProp:"timing,default=false"`
+	IncludeNull     bool                   `queryProp:"includeNull,default=false"`
+	CaseSensitive   bool                   `queryProp:"case,default=true"`
+	Retry           bool                   `queryProp:"retry,default=true"`
+	Limit           int                    `queryProp:"limit,default=-1"`
+	LimitPerDB      int                    `queryProp:"limitPerDB,default=-1"`
+	Start           int                    `queryProp:"start,default=-1"`
+	Show            []string               `queryProp:"show"`
+	Hide            []string               `queryProp:"hide"`
+	Sort            []string               `queryProp:"sort"`
+	Has             []string               `queryProp:"has"`
+	Resolve         []string               `queryProp:"resolve"`
+	Join            []CensusQueryJoin      `queryProp:"join"`
+	Tree            []CensusQueryTree      `queryProp:"tree"`
+	Distinct        string                 `queryProp:"distinct"`
+	Language        string                 `queryProp:"lang"`
 }
 
-func NewQuery(collection string) CensusQuery {
+func NewQuery(qt CensusQueryType, ns string, collection string) CensusQuery {
 	return &Query{
-		Collection:      collection,
-		terms:           make([]CensusQueryCondition, 0),
+		queryType:       qt,
+		namespace:       ns,
+		collection:      collection,
+		Terms:           make([]CensusQueryCondition, 0),
 		ExactMatchFirst: false,
 		Timing:          false,
 		IncludeNull:     false,
@@ -51,6 +75,10 @@ func NewQuery(collection string) CensusQuery {
 	}
 }
 
+func (q *Query) GetCollection() string {
+	return q.collection
+}
+
 func (q *Query) AddJoin(join CensusQueryJoin) CensusQuery {
 	q.Join = append(q.Join, join)
 	return q
@@ -62,7 +90,7 @@ func (q *Query) AddTree(tree CensusQueryTree) CensusQuery {
 }
 
 func (q *Query) Where(cond CensusQueryCondition) CensusQuery {
-	q.terms = append(q.terms, cond)
+	q.Terms = append(q.Terms, cond)
 	return q
 }
 
@@ -152,27 +180,25 @@ func (q *Query) SetDistinct(distinct string) CensusQuery {
 }
 
 func (q *Query) write(builder *strings.Builder) {
-	builder.WriteString(q.Collection)
-	n := writeCensusParameter(builder, q)
-	if len(q.terms) == 0 {
-		return
-	}
-	for i, t := range q.terms {
-		if i == 0 && n == 0 {
-			builder.WriteString("?")
-		} else {
-			builder.WriteString("&")
-		}
-		t.write(builder)
-	}
+	builder.WriteString(queryTypes[q.queryType])
+	builder.WriteString("/")
+	builder.WriteString(q.namespace)
+	builder.WriteString("/")
+	builder.WriteString(q.collection)
+	writeCensusParameter(builder, q)
 }
 
 func (q *Query) writeProperty(builder *strings.Builder, key string, value reflect.Value, i int) {
 	if i == 0 {
-		builder.WriteString("?c:")
+		builder.WriteString("?")
 	} else {
-		builder.WriteString("&c:")
+		builder.WriteString("&")
 	}
+	if key == "conditions" {
+		writeCensusParameterValue(builder, value, "&", censusBasicValueMapper)
+		return
+	}
+	builder.WriteString("c:")
 	builder.WriteString(key)
 	builder.WriteString("=")
 	writeCensusParameterValue(builder, value, ",", censusBasicValueMapper)
