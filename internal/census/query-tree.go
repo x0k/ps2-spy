@@ -56,12 +56,12 @@ func (t *queryTree) getField() string {
 	return t.treeField
 }
 
-func (t *queryTree) getSubParameters() []censusNestedComposableParameter {
-	params := make([]censusNestedComposableParameter, len(t.tree))
-	for i, subTree := range t.tree {
-		params[i] = subTree
-	}
-	return params
+func (t *queryTree) getNestedParametersCount() int {
+	return len(t.tree)
+}
+
+func (t *queryTree) getNestedParameter(i int) censusNestedComposableParameter {
+	return t.tree[i]
 }
 
 func (t *queryTree) writeProperty(builder *strings.Builder, key string, value reflect.Value, i int) {

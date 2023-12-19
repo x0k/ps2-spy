@@ -13,17 +13,6 @@ type censusQueryParameter interface {
 	String(builder *strings.Builder)
 }
 
-type censusComposableParameter interface {
-	censusQueryParameter
-	writeProperty(builder *strings.Builder, key string, value reflect.Value, i int)
-}
-
-type censusNestedComposableParameter interface {
-	censusComposableParameter
-	getField() string
-	getSubParameters() []censusNestedComposableParameter
-}
-
 type censusQueryCondition interface {
 	censusQueryParameter
 	Equals(value any)
@@ -34,6 +23,18 @@ type censusQueryCondition interface {
 	IsGreaterThanOrEquals(value any)
 	StartsWith(value any)
 	Contains(value any)
+}
+
+type censusComposableParameter interface {
+	censusQueryParameter
+	writeProperty(builder *strings.Builder, key string, value reflect.Value, i int)
+}
+
+type censusNestedComposableParameter interface {
+	censusComposableParameter
+	getField() string
+	getNestedParametersCount() int
+	getNestedParameter(i int) censusNestedComposableParameter
 }
 
 type censusQueryTree interface {

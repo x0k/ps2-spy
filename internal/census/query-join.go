@@ -87,12 +87,12 @@ func (j *queryJoin) getField() string {
 	return j.collection
 }
 
-func (j *queryJoin) getSubParameters() []censusNestedComposableParameter {
-	params := make([]censusNestedComposableParameter, len(j.join))
-	for i, subJoin := range j.join {
-		params[i] = subJoin
-	}
-	return params
+func (j *queryJoin) getNestedParametersCount() int {
+	return len(j.join)
+}
+
+func (j *queryJoin) getNestedParameter(i int) censusNestedComposableParameter {
+	return j.join[i]
 }
 
 func (j *queryJoin) writeProperty(builder *strings.Builder, key string, value reflect.Value, i int) {

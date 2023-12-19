@@ -9,9 +9,9 @@ import (
 func writeCensusNestedComposableParameter(builder *strings.Builder, op censusNestedComposableParameter) {
 	builder.WriteString(op.getField())
 	writeCensusComposableParameter(builder, op)
-	for _, subParameter := range op.getSubParameters() {
+	for i := 0; i < op.getNestedParametersCount(); i++ {
 		builder.WriteString("(")
-		subParameter.String(builder)
+		op.getNestedParameter(i).String(builder)
 		builder.WriteString(")")
 	}
 }
