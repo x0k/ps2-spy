@@ -48,7 +48,7 @@ func (t *queryTree) TreeField(field string) censusQueryTree {
 	return newTree
 }
 
-func (t *queryTree) String(builder *strings.Builder) {
+func (t *queryTree) write(builder *strings.Builder) {
 	writeCensusNestedComposableParameter(builder, t)
 }
 

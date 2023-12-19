@@ -10,24 +10,24 @@ const VERSION = "0.0.1"
 const queryTagName = "queryProp"
 
 type censusQueryParameter interface {
-	String(builder *strings.Builder)
-}
-
-type censusQueryCondition interface {
-	censusQueryParameter
-	Equals(value any)
-	NotEquals(value any)
-	IsLessThan(value any)
-	IsLessThanOrEquals(value any)
-	IsGreaterThan(value any)
-	IsGreaterThanOrEquals(value any)
-	StartsWith(value any)
-	Contains(value any)
+	write(builder *strings.Builder)
 }
 
 type censusComposableParameter interface {
 	censusQueryParameter
 	writeProperty(builder *strings.Builder, key string, value reflect.Value, i int)
+}
+
+type censusQuerySearchModifier interface {
+	censusComposableParameter
+	Equals(value any) censusQuerySearchModifier
+	NotEquals(value any) censusQuerySearchModifier
+	IsLessThan(value any) censusQuerySearchModifier
+	IsLessThanOrEquals(value any) censusQuerySearchModifier
+	IsGreaterThan(value any) censusQuerySearchModifier
+	IsGreaterThanOrEquals(value any) censusQuerySearchModifier
+	StartsWith(value any) censusQuerySearchModifier
+	Contains(value any) censusQuerySearchModifier
 }
 
 type censusNestedComposableParameter interface {
@@ -54,7 +54,7 @@ type censusQueryJoin interface {
 	OnField(field string) censusQueryJoin
 	ToField(field string) censusQueryJoin
 	WithInjectAt(field string) censusQueryJoin
-	Where(arg censusQueryCondition) censusQueryJoin
+	Where(arg censusQuerySearchModifier) censusQueryJoin
 	JoinCollection(collection string) censusQueryJoin
 }
 
@@ -62,7 +62,8 @@ type censusQuery interface {
 	censusComposableParameter
 	JoinCollection(join censusQueryJoin) censusQuery
 	TreeField(tree censusQueryTree) censusQuery
-	Where(condition censusQueryCondition) censusQuery
+	Where(condition censusQuerySearchModifier) censusQuery
+	SetExactMatchFirst(exactMatchFirst bool) censusQuery
 	ShowFields(fields ...string) censusQuery
 	HideFields(fields ...string) censusQuery
 	SetLimit(limit int) censusQuery
@@ -70,4 +71,5 @@ type censusQuery interface {
 	AddResolve(resolves ...string) censusQuery
 	SetLanguage(lang censusLanguage) censusQuery
 	SetLanguageString(lang string) censusQuery
+	String() string
 }

@@ -7,7 +7,7 @@ import (
 
 type Query struct {
 	Collection      string
-	terms           []censusQueryCondition
+	terms           []censusQuerySearchModifier
 	ExactMatchFirst bool              `queryProp:"exactMatchFirst"`
 	Timing          bool              `queryProp:"timing"`
 	IncludeNull     bool              `queryProp:"includeNull"`
@@ -30,7 +30,7 @@ type Query struct {
 func newCensusQuery(collection string) censusQuery {
 	return &Query{
 		Collection:      collection,
-		terms:           make([]censusQueryCondition, 0),
+		terms:           make([]censusQuerySearchModifier, 0),
 		ExactMatchFirst: false,
 		Timing:          false,
 		IncludeNull:     false,
@@ -61,8 +61,13 @@ func (q *Query) TreeField(tree censusQueryTree) censusQuery {
 	return q
 }
 
-func (q *Query) Where(cond censusQueryCondition) censusQuery {
+func (q *Query) Where(cond censusQuerySearchModifier) censusQuery {
 	q.terms = append(q.terms, cond)
+	return q
+}
+
+func (q *Query) SetExactMatchFirst(exactMatchFirst bool) censusQuery {
+	q.ExactMatchFirst = exactMatchFirst
 	return q
 }
 
@@ -101,9 +106,8 @@ func (q *Query) SetLanguageString(language string) censusQuery {
 	return q
 }
 
-func (q *Query) String(builder *strings.Builder) {
+func (q *Query) write(builder *strings.Builder) {
 	builder.WriteString(q.Collection)
-	builder.WriteString("/")
 	n := writeCensusComposableParameter(builder, q)
 	if len(q.terms) == 0 {
 		return
@@ -114,7 +118,7 @@ func (q *Query) String(builder *strings.Builder) {
 		} else {
 			builder.WriteString("&")
 		}
-		t.String(builder)
+		t.write(builder)
 	}
 }
 
@@ -127,4 +131,10 @@ func (q *Query) writeProperty(builder *strings.Builder, key string, value reflec
 	builder.WriteString(key)
 	builder.WriteString("=")
 	writeCensusComposableParameterValue(builder, value, ",")
+}
+
+func (q *Query) String() string {
+	builder := strings.Builder{}
+	q.write(&builder)
+	return builder.String()
 }

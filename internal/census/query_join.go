@@ -8,14 +8,14 @@ import (
 type queryJoin struct {
 	join       []censusQueryJoin
 	collection string
-	List       bool                   `queryProp:"list"`
-	Outer      bool                   `queryProp:"outer,default=true"`
-	Show       []string               `queryProp:"show"`
-	Hide       []string               `queryProp:"hide"`
-	Terms      []censusQueryCondition `queryProp:"terms"`
-	On         string                 `queryProp:"on"`
-	To         string                 `queryProp:"to"`
-	InjectAt   string                 `queryProp:"inject_at"`
+	List       bool                        `queryProp:"list"`
+	Outer      bool                        `queryProp:"outer,default=true"`
+	Show       []string                    `queryProp:"show"`
+	Hide       []string                    `queryProp:"hide"`
+	Terms      []censusQuerySearchModifier `queryProp:"terms"`
+	On         string                      `queryProp:"on"`
+	To         string                      `queryProp:"to"`
+	InjectAt   string                      `queryProp:"inject_at"`
 }
 
 func newCensusQueryJoin(collection string) censusQueryJoin {
@@ -26,7 +26,7 @@ func newCensusQueryJoin(collection string) censusQueryJoin {
 		Outer:      true,
 		Show:       make([]string, 0),
 		Hide:       make([]string, 0),
-		Terms:      make([]censusQueryCondition, 0),
+		Terms:      make([]censusQuerySearchModifier, 0),
 		On:         "",
 		To:         "",
 		InjectAt:   "",
@@ -68,7 +68,7 @@ func (j *queryJoin) WithInjectAt(field string) censusQueryJoin {
 	return j
 }
 
-func (j *queryJoin) Where(arg censusQueryCondition) censusQueryJoin {
+func (j *queryJoin) Where(arg censusQuerySearchModifier) censusQueryJoin {
 	j.Terms = append(j.Terms, arg)
 	return j
 }
@@ -79,7 +79,7 @@ func (j *queryJoin) JoinCollection(collection string) censusQueryJoin {
 	return newJoin
 }
 
-func (j *queryJoin) String(builder *strings.Builder) {
+func (j *queryJoin) write(builder *strings.Builder) {
 	writeCensusNestedComposableParameter(builder, j)
 }
 

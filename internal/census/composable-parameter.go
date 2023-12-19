@@ -11,7 +11,7 @@ func writeCensusNestedComposableParameter(builder *strings.Builder, op censusNes
 	writeCensusComposableParameter(builder, op)
 	for i := 0; i < op.getNestedParametersCount(); i++ {
 		builder.WriteString("(")
-		op.getNestedParameter(i).String(builder)
+		op.getNestedParameter(i).write(builder)
 		builder.WriteString(")")
 	}
 }
@@ -28,7 +28,12 @@ func writeCensusComposableParameter(builder *strings.Builder, op censusComposabl
 			if isValueNilOrDefault(fieldValue, fieldType) || isValueTagDefault(fieldValue, tag) {
 				continue
 			}
-			op.writeProperty(builder, tag[:strings.Index(tag, ",")], fieldValue, count)
+			key := tag
+			index := strings.Index(tag, ",")
+			if index > 0 {
+				key = tag[:index]
+			}
+			op.writeProperty(builder, key, fieldValue, count)
 			count++
 		}
 	}
@@ -40,11 +45,12 @@ func writeCensusComposableParameterValue(builder *strings.Builder, value reflect
 	rt := reflect.ValueOf(vi).Kind()
 	if rt == reflect.Slice {
 		for i := 0; i < value.Len(); i++ {
-			builder.WriteString(fmt.Sprintf("%s%v", spacer, value.Index(i)))
-			if i < value.Len()-1 {
+			if i > 0 {
 				builder.WriteString(spacer)
 			}
+			builder.WriteString(fmt.Sprintf("%v", value.Index(i)))
 		}
+		return
 	}
 	builder.WriteString(fmt.Sprintf("%v", value))
 }
