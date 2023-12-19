@@ -37,7 +37,7 @@ type queryCondition struct {
 	Conditions []*searchCondition `queryProp:"conditions"`
 }
 
-func newCensusQueryCondition(field string) censusQuerySearchModifier {
+func NewCond(field string) censusQuerySearchModifier {
 	return &queryCondition{
 		field: field,
 	}
@@ -116,11 +116,11 @@ func (o *queryCondition) Contains(value any) censusQuerySearchModifier {
 }
 
 func (o *queryCondition) write(builder *strings.Builder) {
-	writeCensusComposableParameter(builder, o)
+	writeCensusParameter(builder, o)
 }
 
 func (o *queryCondition) writeProperty(builder *strings.Builder, key string, value reflect.Value, i int) {
-	writeCensusComposableParameterValue(builder, value, "&")
+	writeCensusParameterValue(builder, value, "&")
 }
 
 func (o *searchCondition) valueAsString() string {

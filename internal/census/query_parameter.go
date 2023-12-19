@@ -6,9 +6,9 @@ import (
 	"strings"
 )
 
-func writeCensusNestedComposableParameter(builder *strings.Builder, op censusNestedComposableParameter) {
+func writeCensusNestedParameter(builder *strings.Builder, op censusNestedParameter) {
 	builder.WriteString(op.getField())
-	writeCensusComposableParameter(builder, op)
+	writeCensusParameter(builder, op)
 	for i := 0; i < op.getNestedParametersCount(); i++ {
 		builder.WriteString("(")
 		op.getNestedParameter(i).write(builder)
@@ -16,7 +16,7 @@ func writeCensusNestedComposableParameter(builder *strings.Builder, op censusNes
 	}
 }
 
-func writeCensusComposableParameter(builder *strings.Builder, op censusComposableParameter) int {
+func writeCensusParameter(builder *strings.Builder, op censusParameter) int {
 	v := reflect.ValueOf(op)
 	ind := reflect.Indirect(v)
 	t := ind.Type()
@@ -40,7 +40,7 @@ func writeCensusComposableParameter(builder *strings.Builder, op censusComposabl
 	return count
 }
 
-func writeCensusComposableParameterValue(builder *strings.Builder, value reflect.Value, spacer string) {
+func writeCensusParameterValue(builder *strings.Builder, value reflect.Value, spacer string) {
 	vi := value.Interface()
 	rt := reflect.ValueOf(vi).Kind()
 	if rt == reflect.Slice {
@@ -52,7 +52,19 @@ func writeCensusComposableParameterValue(builder *strings.Builder, value reflect
 		}
 		return
 	}
-	builder.WriteString(fmt.Sprintf("%v", value))
+	builder.WriteString(censusReflectValueToString(value, rt))
+}
+
+func censusReflectValueToString(v reflect.Value, rt reflect.Kind) string {
+	switch rt {
+	case reflect.Bool:
+		if v.Bool() {
+			return "1"
+		}
+		return "0"
+	default:
+		return fmt.Sprintf("%v", v)
+	}
 }
 
 func isValueNilOrDefault(value reflect.Value, valType reflect.Type) bool {
@@ -62,8 +74,8 @@ func isValueNilOrDefault(value reflect.Value, valType reflect.Type) bool {
 		return value.String() == ""
 	case reflect.Slice:
 		return value.Len() == 0
-	case reflect.Bool:
-		return value.Bool() == false
+		// case reflect.Bool:
+		// 	return value.Bool() == false
 	}
 	return false
 }

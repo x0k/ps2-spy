@@ -9,17 +9,13 @@ const VERSION = "0.0.1"
 
 const queryTagName = "queryProp"
 
-type censusQueryParameter interface {
+type censusParameter interface {
 	write(builder *strings.Builder)
-}
-
-type censusComposableParameter interface {
-	censusQueryParameter
 	writeProperty(builder *strings.Builder, key string, value reflect.Value, i int)
 }
 
 type censusQuerySearchModifier interface {
-	censusComposableParameter
+	censusParameter
 	Equals(value any) censusQuerySearchModifier
 	NotEquals(value any) censusQuerySearchModifier
 	IsLessThan(value any) censusQuerySearchModifier
@@ -30,15 +26,15 @@ type censusQuerySearchModifier interface {
 	Contains(value any) censusQuerySearchModifier
 }
 
-type censusNestedComposableParameter interface {
-	censusComposableParameter
+type censusNestedParameter interface {
+	censusParameter
 	getField() string
 	getNestedParametersCount() int
-	getNestedParameter(i int) censusNestedComposableParameter
+	getNestedParameter(i int) censusNestedParameter
 }
 
 type censusQueryTree interface {
-	censusNestedComposableParameter
+	censusNestedParameter
 	IsList(isList bool) censusQueryTree
 	GroupPrefix(prefix string) censusQueryTree
 	StartField(field string) censusQueryTree
@@ -46,7 +42,7 @@ type censusQueryTree interface {
 }
 
 type censusQueryJoin interface {
-	censusNestedComposableParameter
+	censusNestedParameter
 	IsList(isList bool) censusQueryJoin
 	IsOuterJoin(isOuter bool) censusQueryJoin
 	ShowFields(fields ...string) censusQueryJoin
@@ -59,17 +55,23 @@ type censusQueryJoin interface {
 }
 
 type censusQuery interface {
-	censusComposableParameter
+	censusParameter
 	JoinCollection(join censusQueryJoin) censusQuery
 	TreeField(tree censusQueryTree) censusQuery
 	Where(condition censusQuerySearchModifier) censusQuery
 	SetExactMatchFirst(exactMatchFirst bool) censusQuery
+	SetTiming(timing bool) censusQuery
+	SetIncludeNull(includeNull bool) censusQuery
+	SetCase(caseSensitive bool) censusQuery
+	SetRetry(retry bool) censusQuery
 	ShowFields(fields ...string) censusQuery
 	HideFields(fields ...string) censusQuery
 	SetLimit(limit int) censusQuery
+	SetLimitPerDB(limit int) censusQuery
 	SetStart(start int) censusQuery
 	AddResolve(resolves ...string) censusQuery
-	SetLanguage(lang censusLanguage) censusQuery
+	SetLanguage(lang CensusLanguage) censusQuery
 	SetLanguageString(lang string) censusQuery
+	SetDistinct(distinct string) censusQuery
 	String() string
 }

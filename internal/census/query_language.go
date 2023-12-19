@@ -1,9 +1,9 @@
 package census
 
-type censusLanguage int
+type CensusLanguage int
 
 const (
-	LangEnglish censusLanguage = iota
+	LangEnglish CensusLanguage = iota
 	LangGerman
 	LangSpanish
 	LangFrench

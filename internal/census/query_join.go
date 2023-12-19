@@ -18,7 +18,7 @@ type queryJoin struct {
 	InjectAt   string                      `queryProp:"inject_at"`
 }
 
-func newCensusQueryJoin(collection string) censusQueryJoin {
+func NewJoin(collection string) censusQueryJoin {
 	return &queryJoin{
 		join:       make([]censusQueryJoin, 0),
 		collection: collection,
@@ -74,13 +74,13 @@ func (j *queryJoin) Where(arg censusQuerySearchModifier) censusQueryJoin {
 }
 
 func (j *queryJoin) JoinCollection(collection string) censusQueryJoin {
-	newJoin := newCensusQueryJoin(collection)
+	newJoin := NewJoin(collection)
 	j.join = append(j.join, newJoin)
 	return newJoin
 }
 
 func (j *queryJoin) write(builder *strings.Builder) {
-	writeCensusNestedComposableParameter(builder, j)
+	writeCensusNestedParameter(builder, j)
 }
 
 func (j *queryJoin) getField() string {
@@ -91,7 +91,7 @@ func (j *queryJoin) getNestedParametersCount() int {
 	return len(j.join)
 }
 
-func (j *queryJoin) getNestedParameter(i int) censusNestedComposableParameter {
+func (j *queryJoin) getNestedParameter(i int) censusNestedParameter {
 	return j.join[i]
 }
 
@@ -99,5 +99,5 @@ func (j *queryJoin) writeProperty(builder *strings.Builder, key string, value re
 	builder.WriteString("^")
 	builder.WriteString(key)
 	builder.WriteString(":")
-	writeCensusComposableParameterValue(builder, value, "'")
+	writeCensusParameterValue(builder, value, "'")
 }

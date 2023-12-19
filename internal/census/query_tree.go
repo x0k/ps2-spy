@@ -13,7 +13,7 @@ type queryTree struct {
 	Start     string `queryProp:"start"`
 }
 
-func newCensusQueryTree(field string) censusQueryTree {
+func NewTree(field string) censusQueryTree {
 	return newQueryTree(field)
 }
 
@@ -49,7 +49,7 @@ func (t *queryTree) TreeField(field string) censusQueryTree {
 }
 
 func (t *queryTree) write(builder *strings.Builder) {
-	writeCensusNestedComposableParameter(builder, t)
+	writeCensusNestedParameter(builder, t)
 }
 
 func (t *queryTree) getField() string {
@@ -60,7 +60,7 @@ func (t *queryTree) getNestedParametersCount() int {
 	return len(t.tree)
 }
 
-func (t *queryTree) getNestedParameter(i int) censusNestedComposableParameter {
+func (t *queryTree) getNestedParameter(i int) censusNestedParameter {
 	return t.tree[i]
 }
 
@@ -68,5 +68,5 @@ func (t *queryTree) writeProperty(builder *strings.Builder, key string, value re
 	builder.WriteString("^")
 	builder.WriteString(key)
 	builder.WriteString(":")
-	writeCensusComposableParameterValue(builder, value, "'")
+	writeCensusParameterValue(builder, value, "'")
 }

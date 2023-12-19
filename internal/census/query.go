@@ -27,7 +27,7 @@ type Query struct {
 	Language        string            `queryProp:"lang"`
 }
 
-func newCensusQuery(collection string) censusQuery {
+func NewQuery(collection string) censusQuery {
 	return &Query{
 		Collection:      collection,
 		terms:           make([]censusQuerySearchModifier, 0),
@@ -71,6 +71,26 @@ func (q *Query) SetExactMatchFirst(exactMatchFirst bool) censusQuery {
 	return q
 }
 
+func (q *Query) SetTiming(timing bool) censusQuery {
+	q.Timing = timing
+	return q
+}
+
+func (q *Query) SetIncludeNull(includeNull bool) censusQuery {
+	q.IncludeNull = includeNull
+	return q
+}
+
+func (q *Query) SetCase(caseSensitive bool) censusQuery {
+	q.CaseSensitive = caseSensitive
+	return q
+}
+
+func (q *Query) SetRetry(retry bool) censusQuery {
+	q.Retry = retry
+	return q
+}
+
 func (q *Query) ShowFields(fields ...string) censusQuery {
 	q.Show = append(q.Show, fields...)
 	return q
@@ -86,6 +106,11 @@ func (q *Query) SetLimit(limit int) censusQuery {
 	return q
 }
 
+func (q *Query) SetLimitPerDB(limit int) censusQuery {
+	q.LimitPerDB = limit
+	return q
+}
+
 func (q *Query) SetStart(start int) censusQuery {
 	q.Start = start
 	return q
@@ -96,7 +121,7 @@ func (q *Query) AddResolve(resolves ...string) censusQuery {
 	return q
 }
 
-func (q *Query) SetLanguage(language censusLanguage) censusQuery {
+func (q *Query) SetLanguage(language CensusLanguage) censusQuery {
 	q.SetLanguageString(censusLanguages[language])
 	return q
 }
@@ -106,9 +131,14 @@ func (q *Query) SetLanguageString(language string) censusQuery {
 	return q
 }
 
+func (q *Query) SetDistinct(distinct string) censusQuery {
+	q.Distinct = distinct
+	return q
+}
+
 func (q *Query) write(builder *strings.Builder) {
 	builder.WriteString(q.Collection)
-	n := writeCensusComposableParameter(builder, q)
+	n := writeCensusParameter(builder, q)
 	if len(q.terms) == 0 {
 		return
 	}
@@ -130,7 +160,7 @@ func (q *Query) writeProperty(builder *strings.Builder, key string, value reflec
 	}
 	builder.WriteString(key)
 	builder.WriteString("=")
-	writeCensusComposableParameterValue(builder, value, ",")
+	writeCensusParameterValue(builder, value, ",")
 }
 
 func (q *Query) String() string {
