@@ -12,7 +12,7 @@ type queryJoin struct {
 	Outer      bool                   `queryProp:"outer,default=true"`
 	Show       []string               `queryProp:"show"`
 	Hide       []string               `queryProp:"hide"`
-	Terms      []censusQueryParameter `queryProp:"terms"`
+	Terms      []censusQueryCondition `queryProp:"terms"`
 	On         string                 `queryProp:"on"`
 	To         string                 `queryProp:"to"`
 	InjectAt   string                 `queryProp:"inject_at"`
@@ -26,7 +26,7 @@ func newCensusQueryJoin(collection string) censusQueryJoin {
 		Outer:      true,
 		Show:       make([]string, 0),
 		Hide:       make([]string, 0),
-		Terms:      make([]censusQueryParameter, 0),
+		Terms:      make([]censusQueryCondition, 0),
 		On:         "",
 		To:         "",
 		InjectAt:   "",
@@ -68,7 +68,7 @@ func (j *queryJoin) WithInjectAt(field string) censusQueryJoin {
 	return j
 }
 
-func (j *queryJoin) Where(arg censusQueryParameter) censusQueryJoin {
+func (j *queryJoin) Where(arg censusQueryCondition) censusQueryJoin {
 	j.Terms = append(j.Terms, arg)
 	return j
 }

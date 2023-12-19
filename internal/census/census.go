@@ -53,7 +53,7 @@ type censusQueryJoin interface {
 	OnField(field string) censusQueryJoin
 	ToField(field string) censusQueryJoin
 	WithInjectAt(field string) censusQueryJoin
-	Where(arg censusQueryParameter) censusQueryJoin
+	Where(arg censusQueryCondition) censusQueryJoin
 	JoinCollection(collection string) censusQueryJoin
 }
 

@@ -19,7 +19,7 @@ const (
 	contains
 )
 
-var operators = []string{"", "!", "<", "[", ">", "]", "^", "*"}
+var censusOperators = []string{"", "!", "<", "[", ">", "]", "^", "*"}
 
 type queryCondition struct {
 	field    string
@@ -76,11 +76,11 @@ func (o *queryCondition) Contains(value any) {
 func (o *queryCondition) String(builder *strings.Builder) {
 	builder.WriteString(o.field)
 	builder.WriteString("=")
-	builder.WriteString(operators[o.operator])
-	builder.WriteString(o.getComparatorString())
+	builder.WriteString(censusOperators[o.operator])
+	builder.WriteString(o.valueAsString())
 }
 
-func (o *queryCondition) getComparatorString() string {
+func (o *queryCondition) valueAsString() string {
 	if t, ok := o.value.(time.Time); ok {
 		return t.Format("2006-01-02 15:04:05")
 	}

@@ -5,7 +5,6 @@ import (
 	"strings"
 )
 
-// Query is the expression root for a census query
 type Query struct {
 	Collection      string
 	terms           []censusQueryCondition
