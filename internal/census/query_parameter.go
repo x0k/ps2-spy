@@ -40,7 +40,9 @@ func writeCensusParameter(builder *strings.Builder, op censusParameter) int {
 	return count
 }
 
-func writeCensusParameterValue(builder *strings.Builder, value reflect.Value, spacer string) {
+var censusBooleans = map[bool]string{true: "1", false: "0"}
+
+func writeCensusParameterValue(builder *strings.Builder, value reflect.Value, spacer string, valueWriter func(v reflect.Value, builder *strings.Builder)) {
 	vi := value.Interface()
 	rt := reflect.ValueOf(vi).Kind()
 	if rt == reflect.Slice {
@@ -48,22 +50,26 @@ func writeCensusParameterValue(builder *strings.Builder, value reflect.Value, sp
 			if i > 0 {
 				builder.WriteString(spacer)
 			}
-			builder.WriteString(fmt.Sprintf("%v", value.Index(i)))
+			valueWriter(value.Index(i), builder)
 		}
 		return
 	}
-	builder.WriteString(censusReflectValueToString(value, rt))
+	valueWriter(value, builder)
 }
 
-func censusReflectValueToString(v reflect.Value, rt reflect.Kind) string {
-	switch rt {
-	case reflect.Bool:
-		if v.Bool() {
-			return "1"
-		}
-		return "0"
-	default:
-		return fmt.Sprintf("%v", v)
+func censusBasicValueMapper(value reflect.Value, builder *strings.Builder) {
+	if value.Type().Implements(reflect.TypeOf((*censusParameter)(nil)).Elem()) {
+		value.Interface().(censusParameter).write(builder)
+	} else {
+		builder.WriteString(fmt.Sprintf("%v", value))
+	}
+}
+
+func censusValueMapperWithBitBooleans(value reflect.Value, builder *strings.Builder) {
+	if value.Kind() == reflect.Bool {
+		builder.WriteString(censusBooleans[value.Bool()])
+	} else {
+		censusBasicValueMapper(value, builder)
 	}
 }
 

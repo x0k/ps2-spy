@@ -66,6 +66,9 @@ type censusQuery interface {
 	SetRetry(retry bool) censusQuery
 	ShowFields(fields ...string) censusQuery
 	HideFields(fields ...string) censusQuery
+	SortAscBy(sortBy string) censusQuery
+	SortDescBy(sortBy string) censusQuery
+	HasFields(fields ...string) censusQuery
 	SetLimit(limit int) censusQuery
 	SetLimitPerDB(limit int) censusQuery
 	SetStart(start int) censusQuery

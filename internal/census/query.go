@@ -8,9 +8,9 @@ import (
 type Query struct {
 	Collection      string
 	terms           []censusQuerySearchModifier
-	ExactMatchFirst bool              `queryProp:"exactMatchFirst"`
-	Timing          bool              `queryProp:"timing"`
-	IncludeNull     bool              `queryProp:"includeNull"`
+	ExactMatchFirst bool              `queryProp:"exactMatchFirst,default=false"`
+	Timing          bool              `queryProp:"timing,default=false"`
+	IncludeNull     bool              `queryProp:"includeNull,default=false"`
 	CaseSensitive   bool              `queryProp:"case,default=true"`
 	Retry           bool              `queryProp:"retry,default=true"`
 	Limit           int               `queryProp:"limit,default=-1"`
@@ -101,6 +101,21 @@ func (q *Query) HideFields(fields ...string) censusQuery {
 	return q
 }
 
+func (q *Query) SortAscBy(field string) censusQuery {
+	q.Sort = append(q.Sort, field)
+	return q
+}
+
+func (q *Query) SortDescBy(field string) censusQuery {
+	q.Sort = append(q.Sort, field+":-1")
+	return q
+}
+
+func (q *Query) HasFields(fields ...string) censusQuery {
+	q.Has = append(q.Has, fields...)
+	return q
+}
+
 func (q *Query) SetLimit(limit int) censusQuery {
 	q.Limit = limit
 	return q
@@ -160,7 +175,7 @@ func (q *Query) writeProperty(builder *strings.Builder, key string, value reflec
 	}
 	builder.WriteString(key)
 	builder.WriteString("=")
-	writeCensusParameterValue(builder, value, ",")
+	writeCensusParameterValue(builder, value, ",", censusBasicValueMapper)
 }
 
 func (q *Query) String() string {

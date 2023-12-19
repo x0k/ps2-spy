@@ -68,5 +68,5 @@ func (t *queryTree) writeProperty(builder *strings.Builder, key string, value re
 	builder.WriteString("^")
 	builder.WriteString(key)
 	builder.WriteString(":")
-	writeCensusParameterValue(builder, value, "'")
+	writeCensusParameterValue(builder, value, "'", censusValueMapperWithBitBooleans)
 }

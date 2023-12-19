@@ -120,7 +120,7 @@ func (o *queryCondition) write(builder *strings.Builder) {
 }
 
 func (o *queryCondition) writeProperty(builder *strings.Builder, key string, value reflect.Value, i int) {
-	writeCensusParameterValue(builder, value, "&")
+	writeCensusParameterValue(builder, value, "&", censusBasicValueMapper)
 }
 
 func (o *searchCondition) valueAsString() string {
