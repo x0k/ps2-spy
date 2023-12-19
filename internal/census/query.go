@@ -7,7 +7,7 @@ import (
 
 type Query struct {
 	Collection      string
-	terms           []censusQuerySearchModifier
+	terms           []CensusQueryCondition
 	ExactMatchFirst bool              `queryProp:"exactMatchFirst,default=false"`
 	Timing          bool              `queryProp:"timing,default=false"`
 	IncludeNull     bool              `queryProp:"includeNull,default=false"`
@@ -21,16 +21,16 @@ type Query struct {
 	Sort            []string          `queryProp:"sort"`
 	Has             []string          `queryProp:"has"`
 	Resolve         []string          `queryProp:"resolve"`
-	Join            []censusQueryJoin `queryProp:"join"`
-	Tree            []censusQueryTree `queryProp:"tree"`
+	Join            []CensusQueryJoin `queryProp:"join"`
+	Tree            []CensusQueryTree `queryProp:"tree"`
 	Distinct        string            `queryProp:"distinct"`
 	Language        string            `queryProp:"lang"`
 }
 
-func NewQuery(collection string) censusQuery {
+func NewQuery(collection string) CensusQuery {
 	return &Query{
 		Collection:      collection,
-		terms:           make([]censusQuerySearchModifier, 0),
+		terms:           make([]CensusQueryCondition, 0),
 		ExactMatchFirst: false,
 		Timing:          false,
 		IncludeNull:     false,
@@ -44,109 +44,109 @@ func NewQuery(collection string) censusQuery {
 		Sort:            make([]string, 0),
 		Has:             make([]string, 0),
 		Resolve:         make([]string, 0),
-		Join:            make([]censusQueryJoin, 0),
-		Tree:            make([]censusQueryTree, 0),
+		Join:            make([]CensusQueryJoin, 0),
+		Tree:            make([]CensusQueryTree, 0),
 		Distinct:        "",
 		Language:        "",
 	}
 }
 
-func (q *Query) JoinCollection(join censusQueryJoin) censusQuery {
+func (q *Query) AddJoin(join CensusQueryJoin) CensusQuery {
 	q.Join = append(q.Join, join)
 	return q
 }
 
-func (q *Query) TreeField(tree censusQueryTree) censusQuery {
+func (q *Query) AddTree(tree CensusQueryTree) CensusQuery {
 	q.Tree = append(q.Tree, tree)
 	return q
 }
 
-func (q *Query) Where(cond censusQuerySearchModifier) censusQuery {
+func (q *Query) Where(cond CensusQueryCondition) CensusQuery {
 	q.terms = append(q.terms, cond)
 	return q
 }
 
-func (q *Query) SetExactMatchFirst(exactMatchFirst bool) censusQuery {
+func (q *Query) SetExactMatchFirst(exactMatchFirst bool) CensusQuery {
 	q.ExactMatchFirst = exactMatchFirst
 	return q
 }
 
-func (q *Query) SetTiming(timing bool) censusQuery {
+func (q *Query) SetTiming(timing bool) CensusQuery {
 	q.Timing = timing
 	return q
 }
 
-func (q *Query) SetIncludeNull(includeNull bool) censusQuery {
+func (q *Query) SetIncludeNull(includeNull bool) CensusQuery {
 	q.IncludeNull = includeNull
 	return q
 }
 
-func (q *Query) SetCase(caseSensitive bool) censusQuery {
+func (q *Query) SetCase(caseSensitive bool) CensusQuery {
 	q.CaseSensitive = caseSensitive
 	return q
 }
 
-func (q *Query) SetRetry(retry bool) censusQuery {
+func (q *Query) SetRetry(retry bool) CensusQuery {
 	q.Retry = retry
 	return q
 }
 
-func (q *Query) ShowFields(fields ...string) censusQuery {
+func (q *Query) ShowFields(fields ...string) CensusQuery {
 	q.Show = append(q.Show, fields...)
 	return q
 }
 
-func (q *Query) HideFields(fields ...string) censusQuery {
+func (q *Query) HideFields(fields ...string) CensusQuery {
 	q.Hide = append(q.Hide, fields...)
 	return q
 }
 
-func (q *Query) SortAscBy(field string) censusQuery {
+func (q *Query) SortAscBy(field string) CensusQuery {
 	q.Sort = append(q.Sort, field)
 	return q
 }
 
-func (q *Query) SortDescBy(field string) censusQuery {
+func (q *Query) SortDescBy(field string) CensusQuery {
 	q.Sort = append(q.Sort, field+":-1")
 	return q
 }
 
-func (q *Query) HasFields(fields ...string) censusQuery {
+func (q *Query) HasFields(fields ...string) CensusQuery {
 	q.Has = append(q.Has, fields...)
 	return q
 }
 
-func (q *Query) SetLimit(limit int) censusQuery {
+func (q *Query) SetLimit(limit int) CensusQuery {
 	q.Limit = limit
 	return q
 }
 
-func (q *Query) SetLimitPerDB(limit int) censusQuery {
+func (q *Query) SetLimitPerDB(limit int) CensusQuery {
 	q.LimitPerDB = limit
 	return q
 }
 
-func (q *Query) SetStart(start int) censusQuery {
+func (q *Query) SetStart(start int) CensusQuery {
 	q.Start = start
 	return q
 }
 
-func (q *Query) AddResolve(resolves ...string) censusQuery {
+func (q *Query) AddResolve(resolves ...string) CensusQuery {
 	q.Resolve = append(q.Resolve, resolves...)
 	return q
 }
 
-func (q *Query) SetLanguage(language CensusLanguage) censusQuery {
+func (q *Query) SetLanguage(language CensusLanguage) CensusQuery {
 	q.SetLanguageString(censusLanguages[language])
 	return q
 }
 
-func (q *Query) SetLanguageString(language string) censusQuery {
+func (q *Query) SetLanguageString(language string) CensusQuery {
 	q.Language = language
 	return q
 }
 
-func (q *Query) SetDistinct(distinct string) censusQuery {
+func (q *Query) SetDistinct(distinct string) CensusQuery {
 	q.Distinct = distinct
 	return q
 }

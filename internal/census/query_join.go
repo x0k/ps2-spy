@@ -6,77 +6,76 @@ import (
 )
 
 type queryJoin struct {
-	join       []censusQueryJoin
+	join       []CensusQueryJoin
 	collection string
-	List       bool                        `queryProp:"list"`
-	Outer      bool                        `queryProp:"outer,default=true"`
-	Show       []string                    `queryProp:"show"`
-	Hide       []string                    `queryProp:"hide"`
-	Terms      []censusQuerySearchModifier `queryProp:"terms"`
-	On         string                      `queryProp:"on"`
-	To         string                      `queryProp:"to"`
-	InjectAt   string                      `queryProp:"inject_at"`
+	List       bool                   `queryProp:"list"`
+	Outer      bool                   `queryProp:"outer,default=true"`
+	Show       []string               `queryProp:"show"`
+	Hide       []string               `queryProp:"hide"`
+	Terms      []CensusQueryCondition `queryProp:"terms"`
+	On         string                 `queryProp:"on"`
+	To         string                 `queryProp:"to"`
+	InjectAt   string                 `queryProp:"inject_at"`
 }
 
-func NewJoin(collection string) censusQueryJoin {
+func NewJoin(collection string) CensusQueryJoin {
 	return &queryJoin{
-		join:       make([]censusQueryJoin, 0),
+		join:       make([]CensusQueryJoin, 0),
 		collection: collection,
 		List:       false,
 		Outer:      true,
 		Show:       make([]string, 0),
 		Hide:       make([]string, 0),
-		Terms:      make([]censusQuerySearchModifier, 0),
+		Terms:      make([]CensusQueryCondition, 0),
 		On:         "",
 		To:         "",
 		InjectAt:   "",
 	}
 }
 
-func (j *queryJoin) IsList(isList bool) censusQueryJoin {
+func (j *queryJoin) IsList(isList bool) CensusQueryJoin {
 	j.List = isList
 	return j
 }
 
-func (j *queryJoin) IsOuterJoin(isOuter bool) censusQueryJoin {
+func (j *queryJoin) IsOuterJoin(isOuter bool) CensusQueryJoin {
 	j.Outer = isOuter
 	return j
 }
 
-func (j *queryJoin) ShowFields(fields ...string) censusQueryJoin {
+func (j *queryJoin) ShowFields(fields ...string) CensusQueryJoin {
 	j.Show = fields
 	return j
 }
 
-func (j *queryJoin) HideFields(fields ...string) censusQueryJoin {
+func (j *queryJoin) HideFields(fields ...string) CensusQueryJoin {
 	j.Hide = fields
 	return j
 }
 
-func (j *queryJoin) OnField(field string) censusQueryJoin {
+func (j *queryJoin) OnField(field string) CensusQueryJoin {
 	j.On = field
 	return j
 }
 
-func (j *queryJoin) ToField(field string) censusQueryJoin {
+func (j *queryJoin) ToField(field string) CensusQueryJoin {
 	j.To = field
 	return j
 }
 
-func (j *queryJoin) WithInjectAt(field string) censusQueryJoin {
+func (j *queryJoin) WithInjectAt(field string) CensusQueryJoin {
 	j.InjectAt = field
 	return j
 }
 
-func (j *queryJoin) Where(arg censusQuerySearchModifier) censusQueryJoin {
+func (j *queryJoin) Where(arg CensusQueryCondition) CensusQueryJoin {
 	j.Terms = append(j.Terms, arg)
 	return j
 }
 
-func (j *queryJoin) JoinCollection(collection string) censusQueryJoin {
-	newJoin := NewJoin(collection)
-	j.join = append(j.join, newJoin)
-	return newJoin
+func (j *queryJoin) AddJoin(join CensusQueryJoin) CensusQueryJoin {
+	j.join = append(j.join, join)
+	return j
 }
 
 func (j *queryJoin) write(builder *strings.Builder) {
@@ -99,5 +98,5 @@ func (j *queryJoin) writeProperty(builder *strings.Builder, key string, value re
 	builder.WriteString("^")
 	builder.WriteString(key)
 	builder.WriteString(":")
-	writeCensusParameterValue(builder, value, "'", censusBasicValueMapper)
+	writeCensusParameterValue(builder, value, "'", censusValueMapperWithBitBooleans)
 }

@@ -52,19 +52,34 @@ func TestQueryTree(t *testing.T) {
 	// Organize a list of vehicles by type:
 	q := NewQuery("vehicle").
 		SetLimit(500).
-		TreeField(NewTree("type_id").GroupPrefix("type_").IsList(true)).
+		AddTree(NewTree("type_id").GroupPrefix("type_").IsList(true)).
 		SetLanguage(LangEnglish)
 	s := q.String()
 	e := "vehicle?c:limit=500&c:tree=type_id^list:1^prefix:type_&c:lang=en"
 	if s != e {
 		t.Errorf("expected %s, got %s", e, s)
 	}
+}
 
+func TestQueryJoin(t *testing.T) {
 	// Organize zones, map_regions, map_hexes by facility_type:
-	// q2 := NewQuery("zone").
-	// 	Where(NewCond("zone_id").Equals(2)).
-	// 	TreeField(NewTree("facility_type").IsList(true)).
-	// 	SetLanguage(LangEnglish)
-	// s2 := q2.String()
-	// e2 := "zone?zone_id=2&c:join=map_region^list:1^inject_at:regions^hide:zone_id(map_hex^list:1^inject_at:hex^hide:zone_id'map_region_id)&c:tree=start:regions^field:facility_type^list:1&c:lang=en"
+	q := NewQuery("zone").
+		Where(NewCond("zone_id").Equals(2)).
+		AddJoin(NewJoin("map_region").
+			IsList(true).
+			WithInjectAt("regions").
+			HideFields("zone_id").
+			AddJoin(NewJoin("map_hex").
+				IsList(true).
+				WithInjectAt("hex").
+				HideFields("zone_id", "map_region_id"))).
+		AddTree(NewTree("facility_type").
+			StartField("regions").
+			IsList(true)).
+		SetLanguage(LangEnglish)
+	s := q.String()
+	e := "zone?c:join=map_region^list:1^hide:zone_id^inject_at:regions(map_hex^list:1^hide:zone_id'map_region_id^inject_at:hex)&c:tree=facility_type^list:1^start:regions&c:lang=en&zone_id=2"
+	if s != e {
+		t.Errorf("expected %s, got %s", e, s)
+	}
 }

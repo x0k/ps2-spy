@@ -14,16 +14,16 @@ type censusParameter interface {
 	writeProperty(builder *strings.Builder, key string, value reflect.Value, i int)
 }
 
-type censusQuerySearchModifier interface {
+type CensusQueryCondition interface {
 	censusParameter
-	Equals(value any) censusQuerySearchModifier
-	NotEquals(value any) censusQuerySearchModifier
-	IsLessThan(value any) censusQuerySearchModifier
-	IsLessThanOrEquals(value any) censusQuerySearchModifier
-	IsGreaterThan(value any) censusQuerySearchModifier
-	IsGreaterThanOrEquals(value any) censusQuerySearchModifier
-	StartsWith(value any) censusQuerySearchModifier
-	Contains(value any) censusQuerySearchModifier
+	Equals(value any) CensusQueryCondition
+	NotEquals(value any) CensusQueryCondition
+	IsLessThan(value any) CensusQueryCondition
+	IsLessThanOrEquals(value any) CensusQueryCondition
+	IsGreaterThan(value any) CensusQueryCondition
+	IsGreaterThanOrEquals(value any) CensusQueryCondition
+	StartsWith(value any) CensusQueryCondition
+	Contains(value any) CensusQueryCondition
 }
 
 type censusNestedParameter interface {
@@ -33,48 +33,48 @@ type censusNestedParameter interface {
 	getNestedParameter(i int) censusNestedParameter
 }
 
-type censusQueryTree interface {
+type CensusQueryTree interface {
 	censusNestedParameter
-	IsList(isList bool) censusQueryTree
-	GroupPrefix(prefix string) censusQueryTree
-	StartField(field string) censusQueryTree
-	TreeField(field string) censusQueryTree
+	IsList(isList bool) CensusQueryTree
+	GroupPrefix(prefix string) CensusQueryTree
+	StartField(field string) CensusQueryTree
+	AddTree(tree CensusQueryTree) CensusQueryTree
 }
 
-type censusQueryJoin interface {
+type CensusQueryJoin interface {
 	censusNestedParameter
-	IsList(isList bool) censusQueryJoin
-	IsOuterJoin(isOuter bool) censusQueryJoin
-	ShowFields(fields ...string) censusQueryJoin
-	HideFields(fields ...string) censusQueryJoin
-	OnField(field string) censusQueryJoin
-	ToField(field string) censusQueryJoin
-	WithInjectAt(field string) censusQueryJoin
-	Where(arg censusQuerySearchModifier) censusQueryJoin
-	JoinCollection(collection string) censusQueryJoin
+	IsList(isList bool) CensusQueryJoin
+	IsOuterJoin(isOuter bool) CensusQueryJoin
+	ShowFields(fields ...string) CensusQueryJoin
+	HideFields(fields ...string) CensusQueryJoin
+	OnField(field string) CensusQueryJoin
+	ToField(field string) CensusQueryJoin
+	WithInjectAt(field string) CensusQueryJoin
+	Where(arg CensusQueryCondition) CensusQueryJoin
+	AddJoin(join CensusQueryJoin) CensusQueryJoin
 }
 
-type censusQuery interface {
+type CensusQuery interface {
 	censusParameter
-	JoinCollection(join censusQueryJoin) censusQuery
-	TreeField(tree censusQueryTree) censusQuery
-	Where(condition censusQuerySearchModifier) censusQuery
-	SetExactMatchFirst(exactMatchFirst bool) censusQuery
-	SetTiming(timing bool) censusQuery
-	SetIncludeNull(includeNull bool) censusQuery
-	SetCase(caseSensitive bool) censusQuery
-	SetRetry(retry bool) censusQuery
-	ShowFields(fields ...string) censusQuery
-	HideFields(fields ...string) censusQuery
-	SortAscBy(sortBy string) censusQuery
-	SortDescBy(sortBy string) censusQuery
-	HasFields(fields ...string) censusQuery
-	SetLimit(limit int) censusQuery
-	SetLimitPerDB(limit int) censusQuery
-	SetStart(start int) censusQuery
-	AddResolve(resolves ...string) censusQuery
-	SetLanguage(lang CensusLanguage) censusQuery
-	SetLanguageString(lang string) censusQuery
-	SetDistinct(distinct string) censusQuery
+	AddJoin(join CensusQueryJoin) CensusQuery
+	AddTree(tree CensusQueryTree) CensusQuery
+	Where(condition CensusQueryCondition) CensusQuery
+	SetExactMatchFirst(exactMatchFirst bool) CensusQuery
+	SetTiming(timing bool) CensusQuery
+	SetIncludeNull(includeNull bool) CensusQuery
+	SetCase(caseSensitive bool) CensusQuery
+	SetRetry(retry bool) CensusQuery
+	ShowFields(fields ...string) CensusQuery
+	HideFields(fields ...string) CensusQuery
+	SortAscBy(sortBy string) CensusQuery
+	SortDescBy(sortBy string) CensusQuery
+	HasFields(fields ...string) CensusQuery
+	SetLimit(limit int) CensusQuery
+	SetLimitPerDB(limit int) CensusQuery
+	SetStart(start int) CensusQuery
+	AddResolve(resolves ...string) CensusQuery
+	SetLanguage(lang CensusLanguage) CensusQuery
+	SetLanguageString(lang string) CensusQuery
+	SetDistinct(distinct string) CensusQuery
 	String() string
 }

@@ -6,46 +6,41 @@ import (
 )
 
 type queryTree struct {
-	tree      []*queryTree
+	tree      []CensusQueryTree
 	treeField string
 	List      bool   `queryProp:"list"`
 	Prefix    string `queryProp:"prefix"`
 	Start     string `queryProp:"start"`
 }
 
-func NewTree(field string) censusQueryTree {
-	return newQueryTree(field)
-}
-
-func newQueryTree(field string) *queryTree {
+func NewTree(field string) CensusQueryTree {
 	return &queryTree{
 		List:      false,
 		Prefix:    "",
 		Start:     "",
-		tree:      make([]*queryTree, 0),
+		tree:      make([]CensusQueryTree, 0),
 		treeField: field,
 	}
 }
 
-func (t *queryTree) IsList(isList bool) censusQueryTree {
+func (t *queryTree) IsList(isList bool) CensusQueryTree {
 	t.List = isList
 	return t
 }
 
-func (t *queryTree) GroupPrefix(prefix string) censusQueryTree {
+func (t *queryTree) GroupPrefix(prefix string) CensusQueryTree {
 	t.Prefix = prefix
 	return t
 }
 
-func (t *queryTree) StartField(field string) censusQueryTree {
+func (t *queryTree) StartField(field string) CensusQueryTree {
 	t.Start = field
 	return t
 }
 
-func (t *queryTree) TreeField(field string) censusQueryTree {
-	newTree := newQueryTree(field)
-	t.tree = append(t.tree, newTree)
-	return newTree
+func (t *queryTree) AddTree(tree CensusQueryTree) CensusQueryTree {
+	t.tree = append(t.tree, tree)
+	return t
 }
 
 func (t *queryTree) write(builder *strings.Builder) {

@@ -7,10 +7,10 @@ import (
 	"time"
 )
 
-type censusSearchModifierType int
+type censusConditionType int
 
 const (
-	equals censusSearchModifierType = iota
+	equals censusConditionType = iota
 	notEquals
 	isLessThan
 	isLessThanOrEquals
@@ -22,29 +22,29 @@ const (
 
 var censusSearchModifiers = []string{"", "!", "<", "[", ">", "]", "^", "*"}
 
-type searchCondition struct {
+type fieldCondition struct {
 	field        string
-	modifierType censusSearchModifierType
+	modifierType censusConditionType
 	value        any
 }
 
-func (o *searchCondition) String() string {
+func (o *fieldCondition) String() string {
 	return fmt.Sprintf("%s=%s%v", o.field, censusSearchModifiers[o.modifierType], o.valueAsString())
 }
 
 type queryCondition struct {
 	field      string
-	Conditions []*searchCondition `queryProp:"conditions"`
+	Conditions []*fieldCondition `queryProp:"conditions"`
 }
 
-func NewCond(field string) censusQuerySearchModifier {
+func NewCond(field string) CensusQueryCondition {
 	return &queryCondition{
 		field: field,
 	}
 }
 
-func (o *queryCondition) Equals(value any) censusQuerySearchModifier {
-	o.Conditions = append(o.Conditions, &searchCondition{
+func (o *queryCondition) Equals(value any) CensusQueryCondition {
+	o.Conditions = append(o.Conditions, &fieldCondition{
 		field:        o.field,
 		modifierType: equals,
 		value:        value,
@@ -52,8 +52,8 @@ func (o *queryCondition) Equals(value any) censusQuerySearchModifier {
 	return o
 }
 
-func (o *queryCondition) NotEquals(value any) censusQuerySearchModifier {
-	o.Conditions = append(o.Conditions, &searchCondition{
+func (o *queryCondition) NotEquals(value any) CensusQueryCondition {
+	o.Conditions = append(o.Conditions, &fieldCondition{
 		field:        o.field,
 		modifierType: notEquals,
 		value:        value,
@@ -61,8 +61,8 @@ func (o *queryCondition) NotEquals(value any) censusQuerySearchModifier {
 	return o
 }
 
-func (o *queryCondition) IsLessThan(value any) censusQuerySearchModifier {
-	o.Conditions = append(o.Conditions, &searchCondition{
+func (o *queryCondition) IsLessThan(value any) CensusQueryCondition {
+	o.Conditions = append(o.Conditions, &fieldCondition{
 		field:        o.field,
 		modifierType: isLessThan,
 		value:        value,
@@ -70,8 +70,8 @@ func (o *queryCondition) IsLessThan(value any) censusQuerySearchModifier {
 	return o
 }
 
-func (o *queryCondition) IsLessThanOrEquals(value any) censusQuerySearchModifier {
-	o.Conditions = append(o.Conditions, &searchCondition{
+func (o *queryCondition) IsLessThanOrEquals(value any) CensusQueryCondition {
+	o.Conditions = append(o.Conditions, &fieldCondition{
 		field:        o.field,
 		modifierType: isLessThanOrEquals,
 		value:        value,
@@ -79,8 +79,8 @@ func (o *queryCondition) IsLessThanOrEquals(value any) censusQuerySearchModifier
 	return o
 }
 
-func (o *queryCondition) IsGreaterThan(value any) censusQuerySearchModifier {
-	o.Conditions = append(o.Conditions, &searchCondition{
+func (o *queryCondition) IsGreaterThan(value any) CensusQueryCondition {
+	o.Conditions = append(o.Conditions, &fieldCondition{
 		field:        o.field,
 		modifierType: isGreaterThan,
 		value:        value,
@@ -88,8 +88,8 @@ func (o *queryCondition) IsGreaterThan(value any) censusQuerySearchModifier {
 	return o
 }
 
-func (o *queryCondition) IsGreaterThanOrEquals(value any) censusQuerySearchModifier {
-	o.Conditions = append(o.Conditions, &searchCondition{
+func (o *queryCondition) IsGreaterThanOrEquals(value any) CensusQueryCondition {
+	o.Conditions = append(o.Conditions, &fieldCondition{
 		field:        o.field,
 		modifierType: isGreaterThanOrEquals,
 		value:        value,
@@ -97,8 +97,8 @@ func (o *queryCondition) IsGreaterThanOrEquals(value any) censusQuerySearchModif
 	return o
 }
 
-func (o *queryCondition) StartsWith(value any) censusQuerySearchModifier {
-	o.Conditions = append(o.Conditions, &searchCondition{
+func (o *queryCondition) StartsWith(value any) CensusQueryCondition {
+	o.Conditions = append(o.Conditions, &fieldCondition{
 		field:        o.field,
 		modifierType: startsWith,
 		value:        value,
@@ -106,8 +106,8 @@ func (o *queryCondition) StartsWith(value any) censusQuerySearchModifier {
 	return o
 }
 
-func (o *queryCondition) Contains(value any) censusQuerySearchModifier {
-	o.Conditions = append(o.Conditions, &searchCondition{
+func (o *queryCondition) Contains(value any) CensusQueryCondition {
+	o.Conditions = append(o.Conditions, &fieldCondition{
 		field:        o.field,
 		modifierType: contains,
 		value:        value,
@@ -123,7 +123,7 @@ func (o *queryCondition) writeProperty(builder *strings.Builder, key string, val
 	writeCensusParameterValue(builder, value, "&", censusBasicValueMapper)
 }
 
-func (o *searchCondition) valueAsString() string {
+func (o *fieldCondition) valueAsString() string {
 	if t, ok := o.value.(time.Time); ok {
 		return t.Format("2006-01-02 15:04:05")
 	}
