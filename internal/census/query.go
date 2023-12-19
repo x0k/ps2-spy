@@ -1,37 +1,37 @@
 package census
 
 import (
+	"reflect"
 	"strings"
 )
 
 // Query is the expression root for a census query
 type Query struct {
 	Collection      string
-	terms           []*queryArgument
-	ExactMatchFirst bool         `queryProp:"exactMatchFirst"`
-	Timing          bool         `queryProp:"timing"`
-	IncludeNull     bool         `queryProp:"includeNull"`
-	CaseSensitive   bool         `queryProp:"case,default=true"`
-	Retry           bool         `queryProp:"retry,default=true"`
-	Limit           int          `queryProp:"limit,default=-1"`
-	LimitPerDB      int          `queryProp:"limitPerDB,default=-1"`
-	Start           int          `queryProp:"start,default=-1"`
-	Show            []string     `queryProp:"show"`
-	Hide            []string     `queryProp:"hide"`
-	Sort            []string     `queryProp:"sort"`
-	Has             []string     `queryProp:"has"`
-	Resolve         []string     `queryProp:"resolve"`
-	Join            []*queryJoin `queryProp:"join"`
-	Tree            []*queryTree `queryProp:"tree"`
-	Distinct        string       `queryProp:"distinct"`
-	Language        string       `queryProp:"lang"`
+	terms           []censusQueryCondition
+	ExactMatchFirst bool              `queryProp:"exactMatchFirst"`
+	Timing          bool              `queryProp:"timing"`
+	IncludeNull     bool              `queryProp:"includeNull"`
+	CaseSensitive   bool              `queryProp:"case,default=true"`
+	Retry           bool              `queryProp:"retry,default=true"`
+	Limit           int               `queryProp:"limit,default=-1"`
+	LimitPerDB      int               `queryProp:"limitPerDB,default=-1"`
+	Start           int               `queryProp:"start,default=-1"`
+	Show            []string          `queryProp:"show"`
+	Hide            []string          `queryProp:"hide"`
+	Sort            []string          `queryProp:"sort"`
+	Has             []string          `queryProp:"has"`
+	Resolve         []string          `queryProp:"resolve"`
+	Join            []censusQueryJoin `queryProp:"join"`
+	Tree            []censusQueryTree `queryProp:"tree"`
+	Distinct        string            `queryProp:"distinct"`
+	Language        string            `queryProp:"lang"`
 }
 
-// NewQuery creates a new Query object
-func NewQuery(collection string) *Query {
+func newCensusQuery(collection string) censusQuery {
 	return &Query{
 		Collection:      collection,
-		terms:           make([]*queryArgument, 0),
+		terms:           make([]censusQueryCondition, 0),
 		ExactMatchFirst: false,
 		Timing:          false,
 		IncludeNull:     false,
@@ -45,121 +45,87 @@ func NewQuery(collection string) *Query {
 		Sort:            make([]string, 0),
 		Has:             make([]string, 0),
 		Resolve:         make([]string, 0),
-		Join:            make([]*queryJoin, 0),
-		Tree:            make([]*queryTree, 0),
+		Join:            make([]censusQueryJoin, 0),
+		Tree:            make([]censusQueryTree, 0),
 		Distinct:        "",
 		Language:        "",
 	}
 }
 
-// JoinCollection joins the query with another collection
-func (q *Query) JoinCollection(collection string) *queryJoin {
-	newJoin := newQueryJoin(collection)
-	q.Join = append(q.Join, newJoin)
-	return newJoin
+func (q *Query) JoinCollection(join censusQueryJoin) censusQuery {
+	q.Join = append(q.Join, join)
+	return q
 }
 
-// TreeField creates a tree with a specific field
-func (q *Query) TreeField(field string) *queryTree {
-	newTree := newQueryTree(field)
-	q.Tree = append(q.Tree, newTree)
-	return newTree
+func (q *Query) TreeField(tree censusQueryTree) censusQuery {
+	q.Tree = append(q.Tree, tree)
+	return q
 }
 
-// Where begins an argument expression with a field designation
-func (q *Query) Where(field string) *queryOperand {
-	newArg := newQueryArgument(field)
-	q.terms = append(q.terms, newArg)
-	return newArg.operand
+func (q *Query) Where(cond censusQueryCondition) censusQuery {
+	q.terms = append(q.terms, cond)
+	return q
 }
 
-// ShowFields lists the specific fields to include from each record
-func (q *Query) ShowFields(fields ...string) *Query {
+func (q *Query) ShowFields(fields ...string) censusQuery {
 	q.Show = append(q.Show, fields...)
 	return q
 }
 
-// HideFields lists the specific fields to exclude from each record
-func (q *Query) HideFields(fields ...string) *Query {
+func (q *Query) HideFields(fields ...string) censusQuery {
 	q.Hide = append(q.Hide, fields...)
 	return q
 }
 
-// SetLimit sets the maximum number of records to return
-func (q *Query) SetLimit(limit int) *Query {
+func (q *Query) SetLimit(limit int) censusQuery {
 	q.Limit = limit
 	return q
 }
 
-// SetStart sets the record to begin the query from if the collection isn't stored in a cluster
-func (q *Query) SetStart(start int) *Query {
+func (q *Query) SetStart(start int) censusQuery {
 	q.Start = start
 	return q
 }
 
-// AddResolve adds resolution effects to the query
-func (q *Query) AddResolve(resolves ...string) *Query {
+func (q *Query) AddResolve(resolves ...string) censusQuery {
 	q.Resolve = append(q.Resolve, resolves...)
 	return q
 }
 
-// SetLanguage sets the localization string set to only return a specific language
-func (q *Query) SetLanguage(language CensusLanguage) *Query {
-	switch language {
-	case LangEnglish:
-		return q.SetLanguageString("en")
-	case LangGerman:
-		return q.SetLanguageString("de")
-	case LangSpanish:
-		return q.SetLanguageString("es")
-	case LangFrench:
-		return q.SetLanguageString("fr")
-	case LangItalian:
-		return q.SetLanguageString("it")
-	case LangTurkish:
-		return q.SetLanguageString("tr")
-	}
-
+func (q *Query) SetLanguage(language censusLanguage) censusQuery {
+	q.SetLanguageString(censusLanguages[language])
 	return q
 }
 
-// SetLanguageString sets the localization string set to only return a specific language
-func (q *Query) SetLanguageString(language string) *Query {
+func (q *Query) SetLanguageString(language string) censusQuery {
 	q.Language = language
 	return q
 }
 
-func (q *Query) String() string {
-	baseString := operatorToString(q)
-
-	var terms []string
-	for _, t := range q.terms {
-		terms = append(terms, t.String())
+func (q *Query) String(builder *strings.Builder) {
+	builder.WriteString(q.Collection)
+	builder.WriteString("/")
+	n := writeCensusComposableParameter(builder, q)
+	if len(q.terms) == 0 {
+		return
 	}
-
-	sTerms := strings.Join(terms, q.getPropertySpacer())
-
-	if len(baseString) > 0 {
-		baseString = "?" + baseString
-
-		if len(sTerms) > 0 {
-			sTerms = "&" + sTerms
+	for i, t := range q.terms {
+		if i == 0 && n == 0 {
+			builder.WriteString("?")
+		} else {
+			builder.WriteString("&")
 		}
-	} else if len(sTerms) > 0 {
-		sTerms = "?" + sTerms
+		t.String(builder)
 	}
-
-	return q.Collection + "/" + baseString + sTerms
 }
 
-func (q *Query) getKeyValueStringFormat() string {
-	return "c:%s=%s"
-}
-
-func (q *Query) getPropertySpacer() string {
-	return "&"
-}
-
-func (q *Query) getTermSpacer() string {
-	return ","
+func (q *Query) writeProperty(builder *strings.Builder, key string, value reflect.Value, i int) {
+	if i == 0 {
+		builder.WriteString("?c:")
+	} else {
+		builder.WriteString("&c:")
+	}
+	builder.WriteString(key)
+	builder.WriteString("=")
+	writeCensusComposableParameterValue(builder, value, ",")
 }
