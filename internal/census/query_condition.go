@@ -10,29 +10,26 @@ import (
 type censusConditionType int
 
 const (
-	equals censusConditionType = iota
-	notEquals
-	isLessThan
-	isLessThanOrEquals
-	isGreaterThan
-	isGreaterThanOrEquals
-	startsWith
-	contains
+	equals                = "="
+	notEquals             = "=!"
+	isLessThan            = "=<"
+	isLessThanOrEquals    = "=["
+	isGreaterThan         = "=>"
+	isGreaterThanOrEquals = "=]"
+	startsWith            = "=^"
+	contains              = "=*"
 )
-
-var censusConditionOperators = []string{"", "!", "<", "[", ">", "]", "^", "*"}
 
 type fieldCondition struct {
 	censusParameter
-	field        string
-	operatorType censusConditionType
-	value        any
+	field    string
+	operator string
+	value    any
 }
 
 func (o *fieldCondition) write(builder *strings.Builder) {
 	builder.WriteString(o.field)
-	builder.WriteString("=")
-	builder.WriteString(censusConditionOperators[o.operatorType])
+	builder.WriteString(o.operator)
 	builder.WriteString(o.valueAsString())
 }
 
@@ -49,72 +46,72 @@ func NewCond(field string) CensusQueryCondition {
 
 func (o *queryCondition) Equals(value any) CensusQueryCondition {
 	o.Conditions = append(o.Conditions, &fieldCondition{
-		field:        o.field,
-		operatorType: equals,
-		value:        value,
+		field:    o.field,
+		operator: equals,
+		value:    value,
 	})
 	return o
 }
 
 func (o *queryCondition) NotEquals(value any) CensusQueryCondition {
 	o.Conditions = append(o.Conditions, &fieldCondition{
-		field:        o.field,
-		operatorType: notEquals,
-		value:        value,
+		field:    o.field,
+		operator: notEquals,
+		value:    value,
 	})
 	return o
 }
 
 func (o *queryCondition) IsLessThan(value any) CensusQueryCondition {
 	o.Conditions = append(o.Conditions, &fieldCondition{
-		field:        o.field,
-		operatorType: isLessThan,
-		value:        value,
+		field:    o.field,
+		operator: isLessThan,
+		value:    value,
 	})
 	return o
 }
 
 func (o *queryCondition) IsLessThanOrEquals(value any) CensusQueryCondition {
 	o.Conditions = append(o.Conditions, &fieldCondition{
-		field:        o.field,
-		operatorType: isLessThanOrEquals,
-		value:        value,
+		field:    o.field,
+		operator: isLessThanOrEquals,
+		value:    value,
 	})
 	return o
 }
 
 func (o *queryCondition) IsGreaterThan(value any) CensusQueryCondition {
 	o.Conditions = append(o.Conditions, &fieldCondition{
-		field:        o.field,
-		operatorType: isGreaterThan,
-		value:        value,
+		field:    o.field,
+		operator: isGreaterThan,
+		value:    value,
 	})
 	return o
 }
 
 func (o *queryCondition) IsGreaterThanOrEquals(value any) CensusQueryCondition {
 	o.Conditions = append(o.Conditions, &fieldCondition{
-		field:        o.field,
-		operatorType: isGreaterThanOrEquals,
-		value:        value,
+		field:    o.field,
+		operator: isGreaterThanOrEquals,
+		value:    value,
 	})
 	return o
 }
 
 func (o *queryCondition) StartsWith(value any) CensusQueryCondition {
 	o.Conditions = append(o.Conditions, &fieldCondition{
-		field:        o.field,
-		operatorType: startsWith,
-		value:        value,
+		field:    o.field,
+		operator: startsWith,
+		value:    value,
 	})
 	return o
 }
 
 func (o *queryCondition) Contains(value any) CensusQueryCondition {
 	o.Conditions = append(o.Conditions, &fieldCondition{
-		field:        o.field,
-		operatorType: contains,
-		value:        value,
+		field:    o.field,
+		operator: contains,
+		value:    value,
 	})
 	return o
 }
@@ -124,7 +121,9 @@ func (o *queryCondition) write(builder *strings.Builder) {
 }
 
 func (o *queryCondition) writeProperty(builder *strings.Builder, key string, value reflect.Value, i int) {
-	writeCensusParameterValue(builder, value, "&", censusBasicValueMapper)
+	if key == "conditions" {
+		writeCensusParameterValue(builder, value, "&", censusBasicValueMapper)
+	}
 }
 
 func (o *fieldCondition) valueAsString() string {
