@@ -51,27 +51,14 @@ type Query struct {
 
 func NewQuery(qt CensusQueryType, ns string, collection string) CensusQuery {
 	return &Query{
-		queryType:       qt,
-		namespace:       ns,
-		collection:      collection,
-		Terms:           make([]CensusQueryCondition, 0),
-		ExactMatchFirst: false,
-		Timing:          false,
-		IncludeNull:     false,
-		CaseSensitive:   true,
-		Retry:           true,
-		Limit:           -1,
-		LimitPerDB:      -1,
-		Start:           -1,
-		Show:            make([]string, 0),
-		Hide:            make([]string, 0),
-		Sort:            make([]string, 0),
-		Has:             make([]string, 0),
-		Resolve:         make([]string, 0),
-		Join:            make([]CensusQueryJoin, 0),
-		Tree:            make([]CensusQueryTree, 0),
-		Distinct:        "",
-		Language:        "",
+		queryType:     qt,
+		namespace:     ns,
+		collection:    collection,
+		CaseSensitive: true,
+		Retry:         true,
+		Limit:         -1,
+		LimitPerDB:    -1,
+		Start:         -1,
 	}
 }
 
@@ -164,12 +151,7 @@ func (q *Query) AddResolve(resolves ...string) CensusQuery {
 	return q
 }
 
-func (q *Query) SetLanguage(language CensusLanguage) CensusQuery {
-	q.SetLanguageString(censusLanguages[language])
-	return q
-}
-
-func (q *Query) SetLanguageString(language string) CensusQuery {
+func (q *Query) SetLanguage(language string) CensusQuery {
 	q.Language = language
 	return q
 }

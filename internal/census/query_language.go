@@ -3,12 +3,10 @@ package census
 type CensusLanguage int
 
 const (
-	LangEnglish CensusLanguage = iota
-	LangGerman
-	LangSpanish
-	LangFrench
-	LangItalian
-	LangTurkish
+	LangEnglish = "en"
+	LangGerman  = "de"
+	LangSpanish = "es"
+	LangFrench  = "fr"
+	LangItalian = "it"
+	LangTurkish = "tr"
 )
-
-var censusLanguages = []string{"en", "de", "es", "fr", "it", "tr"}

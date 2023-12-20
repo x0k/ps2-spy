@@ -15,10 +15,6 @@ type queryTree struct {
 
 func NewTree(field string) CensusQueryTree {
 	return &queryTree{
-		List:      false,
-		Prefix:    "",
-		Start:     "",
-		tree:      make([]CensusQueryTree, 0),
 		treeField: field,
 	}
 }

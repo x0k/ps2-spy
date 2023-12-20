@@ -11,11 +11,15 @@ const queryTagName = "queryProp"
 
 type censusParameter interface {
 	write(builder *strings.Builder)
+}
+
+type censusComposableParameter interface {
+	censusParameter
 	writeProperty(builder *strings.Builder, key string, value reflect.Value, i int)
 }
 
 type CensusQueryCondition interface {
-	censusParameter
+	censusComposableParameter
 	Equals(value any) CensusQueryCondition
 	NotEquals(value any) CensusQueryCondition
 	IsLessThan(value any) CensusQueryCondition
@@ -27,7 +31,7 @@ type CensusQueryCondition interface {
 }
 
 type censusNestedParameter interface {
-	censusParameter
+	censusComposableParameter
 	getField() string
 	getNestedParametersCount() int
 	getNestedParameter(i int) censusNestedParameter
@@ -55,7 +59,7 @@ type CensusQueryJoin interface {
 }
 
 type CensusQuery interface {
-	censusParameter
+	censusComposableParameter
 	GetCollection() string
 	AddJoin(join CensusQueryJoin) CensusQuery
 	AddTree(tree CensusQueryTree) CensusQuery
@@ -74,8 +78,7 @@ type CensusQuery interface {
 	SetLimitPerDB(limit int) CensusQuery
 	SetStart(start int) CensusQuery
 	AddResolve(resolves ...string) CensusQuery
-	SetLanguage(lang CensusLanguage) CensusQuery
-	SetLanguageString(lang string) CensusQuery
+	SetLanguage(lang string) CensusQuery
 	SetDistinct(distinct string) CensusQuery
 	String() string
 }

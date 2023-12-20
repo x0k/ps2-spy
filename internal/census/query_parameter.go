@@ -16,7 +16,7 @@ func writeCensusNestedParameter(builder *strings.Builder, op censusNestedParamet
 	}
 }
 
-func writeCensusParameter(builder *strings.Builder, op censusParameter) int {
+func writeCensusParameter(builder *strings.Builder, op censusComposableParameter) int {
 	v := reflect.ValueOf(op)
 	ind := reflect.Indirect(v)
 	t := ind.Type()

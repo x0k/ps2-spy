@@ -23,13 +23,17 @@ const (
 var censusConditionOperators = []string{"", "!", "<", "[", ">", "]", "^", "*"}
 
 type fieldCondition struct {
+	censusParameter
 	field        string
 	operatorType censusConditionType
 	value        any
 }
 
-func (o *fieldCondition) String() string {
-	return fmt.Sprintf("%s=%s%v", o.field, censusConditionOperators[o.operatorType], o.valueAsString())
+func (o *fieldCondition) write(builder *strings.Builder) {
+	builder.WriteString(o.field)
+	builder.WriteString("=")
+	builder.WriteString(censusConditionOperators[o.operatorType])
+	builder.WriteString(o.valueAsString())
 }
 
 type queryCondition struct {

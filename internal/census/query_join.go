@@ -20,16 +20,8 @@ type queryJoin struct {
 
 func NewJoin(collection string) CensusQueryJoin {
 	return &queryJoin{
-		join:       make([]CensusQueryJoin, 0),
 		collection: collection,
-		List:       false,
 		Outer:      true,
-		Show:       make([]string, 0),
-		Hide:       make([]string, 0),
-		Terms:      make([]CensusQueryCondition, 0),
-		On:         "",
-		To:         "",
-		InjectAt:   "",
 	}
 }
 
