@@ -38,7 +38,7 @@ type queryCondition struct {
 	Conditions []*fieldCondition `queryProp:"conditions"`
 }
 
-func NewCond(field string) CensusQueryCondition {
+func Cond(field string) CensusQueryCondition {
 	return &queryCondition{
 		field: field,
 	}

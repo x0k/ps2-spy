@@ -6,14 +6,14 @@ import (
 )
 
 type queryTree struct {
-	tree      []CensusQueryTree
+	trees     []CensusQueryTree
 	treeField string
 	List      bool   `queryProp:"list"`
 	Prefix    string `queryProp:"prefix"`
 	Start     string `queryProp:"start"`
 }
 
-func NewTree(field string) CensusQueryTree {
+func Tree(field string) CensusQueryTree {
 	return &queryTree{
 		treeField: field,
 	}
@@ -34,8 +34,8 @@ func (t *queryTree) StartField(field string) CensusQueryTree {
 	return t
 }
 
-func (t *queryTree) AddTree(tree CensusQueryTree) CensusQueryTree {
-	t.tree = append(t.tree, tree)
+func (t *queryTree) WithTree(tree CensusQueryTree) CensusQueryTree {
+	t.trees = append(t.trees, tree)
 	return t
 }
 
@@ -48,11 +48,11 @@ func (t *queryTree) getField() string {
 }
 
 func (t *queryTree) getNestedParametersCount() int {
-	return len(t.tree)
+	return len(t.trees)
 }
 
 func (t *queryTree) getNestedParameter(i int) censusNestedParameter {
-	return t.tree[i]
+	return t.trees[i]
 }
 
 func (t *queryTree) writeProperty(builder *strings.Builder, key string, value reflect.Value, i int) {

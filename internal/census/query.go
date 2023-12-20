@@ -5,14 +5,10 @@ import (
 	"strings"
 )
 
-type CensusQueryType = int
-
 const (
-	GetQuery CensusQueryType = iota
-	CountQuery
+	GetQuery   = "get"
+	CountQuery = "count"
 )
-
-var queryTypes = [...]string{"get", "count"}
 
 const (
 	Ns_eq2 = "eq2" //	EverQuest II	Stable version.
@@ -25,8 +21,8 @@ const (
 	Ns_mtgoV1     = "mtgo:v1"     //	Magic the Gathering: Online	Stable version, alias mtgo
 )
 
-type Query struct {
-	queryType       CensusQueryType
+type censusQuery struct {
+	queryType       string
 	namespace       string
 	collection      string
 	Terms           []CensusQueryCondition `queryProp:"conditions"`
@@ -49,8 +45,8 @@ type Query struct {
 	Language        string                 `queryProp:"lang"`
 }
 
-func NewQuery(qt CensusQueryType, ns string, collection string) CensusQuery {
-	return &Query{
+func Query(qt string, ns string, collection string) CensusQuery {
+	return &censusQuery{
 		queryType:     qt,
 		namespace:     ns,
 		collection:    collection,
@@ -62,107 +58,107 @@ func NewQuery(qt CensusQueryType, ns string, collection string) CensusQuery {
 	}
 }
 
-func (q *Query) GetCollection() string {
+func (q *censusQuery) GetCollection() string {
 	return q.collection
 }
 
-func (q *Query) AddJoin(join CensusQueryJoin) CensusQuery {
+func (q *censusQuery) WithJoin(join CensusQueryJoin) CensusQuery {
 	q.Join = append(q.Join, join)
 	return q
 }
 
-func (q *Query) AddTree(tree CensusQueryTree) CensusQuery {
+func (q *censusQuery) WithTree(tree CensusQueryTree) CensusQuery {
 	q.Tree = append(q.Tree, tree)
 	return q
 }
 
-func (q *Query) Where(cond CensusQueryCondition) CensusQuery {
+func (q *censusQuery) Where(cond CensusQueryCondition) CensusQuery {
 	q.Terms = append(q.Terms, cond)
 	return q
 }
 
-func (q *Query) SetExactMatchFirst(exactMatchFirst bool) CensusQuery {
+func (q *censusQuery) SetExactMatchFirst(exactMatchFirst bool) CensusQuery {
 	q.ExactMatchFirst = exactMatchFirst
 	return q
 }
 
-func (q *Query) SetTiming(timing bool) CensusQuery {
+func (q *censusQuery) SetTiming(timing bool) CensusQuery {
 	q.Timing = timing
 	return q
 }
 
-func (q *Query) SetIncludeNull(includeNull bool) CensusQuery {
+func (q *censusQuery) SetIncludeNull(includeNull bool) CensusQuery {
 	q.IncludeNull = includeNull
 	return q
 }
 
-func (q *Query) SetCase(caseSensitive bool) CensusQuery {
+func (q *censusQuery) SetCase(caseSensitive bool) CensusQuery {
 	q.CaseSensitive = caseSensitive
 	return q
 }
 
-func (q *Query) SetRetry(retry bool) CensusQuery {
+func (q *censusQuery) SetRetry(retry bool) CensusQuery {
 	q.Retry = retry
 	return q
 }
 
-func (q *Query) ShowFields(fields ...string) CensusQuery {
+func (q *censusQuery) ShowFields(fields ...string) CensusQuery {
 	q.Show = append(q.Show, fields...)
 	return q
 }
 
-func (q *Query) HideFields(fields ...string) CensusQuery {
+func (q *censusQuery) HideFields(fields ...string) CensusQuery {
 	q.Hide = append(q.Hide, fields...)
 	return q
 }
 
-func (q *Query) SortAscBy(field string) CensusQuery {
+func (q *censusQuery) SortAscBy(field string) CensusQuery {
 	q.Sort = append(q.Sort, field)
 	return q
 }
 
-func (q *Query) SortDescBy(field string) CensusQuery {
+func (q *censusQuery) SortDescBy(field string) CensusQuery {
 	q.Sort = append(q.Sort, field+":-1")
 	return q
 }
 
-func (q *Query) HasFields(fields ...string) CensusQuery {
+func (q *censusQuery) HasFields(fields ...string) CensusQuery {
 	q.Has = append(q.Has, fields...)
 	return q
 }
 
-func (q *Query) SetLimit(limit int) CensusQuery {
+func (q *censusQuery) SetLimit(limit int) CensusQuery {
 	q.Limit = limit
 	return q
 }
 
-func (q *Query) SetLimitPerDB(limit int) CensusQuery {
+func (q *censusQuery) SetLimitPerDB(limit int) CensusQuery {
 	q.LimitPerDB = limit
 	return q
 }
 
-func (q *Query) SetStart(start int) CensusQuery {
+func (q *censusQuery) SetStart(start int) CensusQuery {
 	q.Start = start
 	return q
 }
 
-func (q *Query) AddResolve(resolves ...string) CensusQuery {
+func (q *censusQuery) AddResolve(resolves ...string) CensusQuery {
 	q.Resolve = append(q.Resolve, resolves...)
 	return q
 }
 
-func (q *Query) SetLanguage(language string) CensusQuery {
+func (q *censusQuery) SetLanguage(language string) CensusQuery {
 	q.Language = language
 	return q
 }
 
-func (q *Query) SetDistinct(distinct string) CensusQuery {
+func (q *censusQuery) SetDistinct(distinct string) CensusQuery {
 	q.Distinct = distinct
 	return q
 }
 
-func (q *Query) write(builder *strings.Builder) {
-	builder.WriteString(queryTypes[q.queryType])
+func (q *censusQuery) write(builder *strings.Builder) {
+	builder.WriteString(q.queryType)
 	builder.WriteString("/")
 	builder.WriteString(q.namespace)
 	builder.WriteString("/")
@@ -170,7 +166,7 @@ func (q *Query) write(builder *strings.Builder) {
 	writeCensusParameter(builder, q)
 }
 
-func (q *Query) writeProperty(builder *strings.Builder, key string, value reflect.Value, i int) {
+func (q *censusQuery) writeProperty(builder *strings.Builder, key string, value reflect.Value, i int) {
 	if i == 0 {
 		builder.WriteString("?")
 	} else {
@@ -186,7 +182,7 @@ func (q *Query) writeProperty(builder *strings.Builder, key string, value reflec
 	writeCensusParameterValue(builder, value, ",", censusBasicValueMapper)
 }
 
-func (q *Query) String() string {
+func (q *censusQuery) String() string {
 	builder := strings.Builder{}
 	q.write(&builder)
 	return builder.String()

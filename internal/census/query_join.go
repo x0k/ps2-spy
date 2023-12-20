@@ -6,7 +6,7 @@ import (
 )
 
 type queryJoin struct {
-	join       []CensusQueryJoin
+	joins      []CensusQueryJoin
 	collection string
 	List       bool                   `queryProp:"list"`
 	Outer      bool                   `queryProp:"outer,default=true"`
@@ -18,7 +18,7 @@ type queryJoin struct {
 	InjectAt   string                 `queryProp:"inject_at"`
 }
 
-func NewJoin(collection string) CensusQueryJoin {
+func Join(collection string) CensusQueryJoin {
 	return &queryJoin{
 		collection: collection,
 		Outer:      true,
@@ -65,8 +65,8 @@ func (j *queryJoin) Where(arg CensusQueryCondition) CensusQueryJoin {
 	return j
 }
 
-func (j *queryJoin) AddJoin(join CensusQueryJoin) CensusQueryJoin {
-	j.join = append(j.join, join)
+func (j *queryJoin) WithJoin(join CensusQueryJoin) CensusQueryJoin {
+	j.joins = append(j.joins, join)
 	return j
 }
 
@@ -79,11 +79,11 @@ func (j *queryJoin) getField() string {
 }
 
 func (j *queryJoin) getNestedParametersCount() int {
-	return len(j.join)
+	return len(j.joins)
 }
 
 func (j *queryJoin) getNestedParameter(i int) censusNestedParameter {
-	return j.join[i]
+	return j.joins[i]
 }
 
 func (j *queryJoin) writeProperty(builder *strings.Builder, key string, value reflect.Value, i int) {

@@ -42,7 +42,7 @@ type CensusQueryTree interface {
 	IsList(isList bool) CensusQueryTree
 	GroupPrefix(prefix string) CensusQueryTree
 	StartField(field string) CensusQueryTree
-	AddTree(tree CensusQueryTree) CensusQueryTree
+	WithTree(tree CensusQueryTree) CensusQueryTree
 }
 
 type CensusQueryJoin interface {
@@ -55,14 +55,14 @@ type CensusQueryJoin interface {
 	ToField(field string) CensusQueryJoin
 	WithInjectAt(field string) CensusQueryJoin
 	Where(arg CensusQueryCondition) CensusQueryJoin
-	AddJoin(join CensusQueryJoin) CensusQueryJoin
+	WithJoin(join CensusQueryJoin) CensusQueryJoin
 }
 
 type CensusQuery interface {
 	censusComposableParameter
 	GetCollection() string
-	AddJoin(join CensusQueryJoin) CensusQuery
-	AddTree(tree CensusQueryTree) CensusQuery
+	WithJoin(join CensusQueryJoin) CensusQuery
+	WithTree(tree CensusQueryTree) CensusQuery
 	Where(condition CensusQueryCondition) CensusQuery
 	SetExactMatchFirst(exactMatchFirst bool) CensusQuery
 	SetTiming(timing bool) CensusQuery

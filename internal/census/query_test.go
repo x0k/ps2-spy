@@ -3,7 +3,7 @@ package census
 import "testing"
 
 func TestQueryBasicParams(t *testing.T) {
-	q := NewQuery(GetQuery, Ns_ps2V2, "test").
+	q := Query(GetQuery, Ns_ps2V2, "test").
 		SetExactMatchFirst(true).
 		SetTiming(true).
 		SetIncludeNull(true).
@@ -22,7 +22,7 @@ func TestQueryBasicParams(t *testing.T) {
 }
 
 func TestQueryListParams(t *testing.T) {
-	q := NewQuery(GetQuery, Ns_ps2V2, "test").
+	q := Query(GetQuery, Ns_ps2V2, "test").
 		ShowFields("foo", "bar").
 		HideFields("baz", "qux").
 		SortAscBy("foo").
@@ -37,10 +37,10 @@ func TestQueryListParams(t *testing.T) {
 }
 
 func TestQueryConditions(t *testing.T) {
-	q := NewQuery(GetQuery, Ns_ps2V2, "test").
-		Where(NewCond("faction_id").IsLessThanOrEquals(4)).
-		Where(NewCond("item_category_id").IsGreaterThanOrEquals(2).IsLessThan(5)).
-		Where(NewCond("faction_id").IsGreaterThan(1))
+	q := Query(GetQuery, Ns_ps2V2, "test").
+		Where(Cond("faction_id").IsLessThanOrEquals(4)).
+		Where(Cond("item_category_id").IsGreaterThanOrEquals(2).IsLessThan(5)).
+		Where(Cond("faction_id").IsGreaterThan(1))
 	s := q.String()
 	e := "get/ps2:v2/test?faction_id=[4&item_category_id=]2&item_category_id=<5&faction_id=>1"
 	if s != e {
@@ -50,9 +50,9 @@ func TestQueryConditions(t *testing.T) {
 
 func TestQueryTree(t *testing.T) {
 	// Organize a list of vehicles by type:
-	q := NewQuery(GetQuery, Ns_ps2V2, "vehicle").
+	q := Query(GetQuery, Ns_ps2V2, "vehicle").
 		SetLimit(500).
-		AddTree(NewTree("type_id").GroupPrefix("type_").IsList(true)).
+		WithTree(Tree("type_id").GroupPrefix("type_").IsList(true)).
 		SetLanguage(LangEnglish)
 	s := q.String()
 	e := "get/ps2:v2/vehicle?c:limit=500&c:tree=type_id^list:1^prefix:type_&c:lang=en"
@@ -63,17 +63,17 @@ func TestQueryTree(t *testing.T) {
 
 func TestQueryJoin(t *testing.T) {
 	// Organize zones, map_regions, map_hexes by facility_type:
-	q := NewQuery(GetQuery, Ns_ps2V2, "zone").
-		Where(NewCond("zone_id").Equals(2)).
-		AddJoin(NewJoin("map_region").
+	q := Query(GetQuery, Ns_ps2V2, "zone").
+		Where(Cond("zone_id").Equals(2)).
+		WithJoin(Join("map_region").
 			IsList(true).
 			WithInjectAt("regions").
 			HideFields("zone_id").
-			AddJoin(NewJoin("map_hex").
+			WithJoin(Join("map_hex").
 				IsList(true).
 				WithInjectAt("hex").
 				HideFields("zone_id", "map_region_id"))).
-		AddTree(NewTree("facility_type").
+		WithTree(Tree("facility_type").
 			StartField("regions").
 			IsList(true)).
 		SetLanguage(LangEnglish)

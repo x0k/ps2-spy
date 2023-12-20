@@ -14,7 +14,7 @@ type httpCensusClient struct {
 	serviceId      string
 }
 
-func NewClient(censusEndpoint string, serviceId string, client *http.Client) CensusClient {
+func Client(censusEndpoint string, serviceId string, client *http.Client) CensusClient {
 	return &httpCensusClient{
 		client:         client,
 		censusEndpoint: censusEndpoint,
@@ -40,11 +40,11 @@ func (c *httpCensusClient) Execute(query CensusQuery) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	var contentBody map[string]interface{}
+	var contentBody map[string]any
 	err = json.Unmarshal(body, &contentBody)
 	if err != nil {
 		return nil, err
 	}
 	propertyIndex := fmt.Sprintf("%s_list", query.GetCollection())
-	return contentBody[propertyIndex].([]interface{}), nil
+	return contentBody[propertyIndex].([]any), nil
 }
