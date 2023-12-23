@@ -7,8 +7,6 @@ import (
 	"time"
 )
 
-type censusConditionType int
-
 const (
 	equals                = "="
 	notEquals             = "=!"
@@ -21,13 +19,12 @@ const (
 )
 
 type fieldCondition struct {
-	censusParameter
 	field    string
 	operator string
 	value    any
 }
 
-func (o *fieldCondition) write(builder *strings.Builder) {
+func (o fieldCondition) write(builder *strings.Builder) {
 	builder.WriteString(o.field)
 	builder.WriteString(o.operator)
 	builder.WriteString(o.valueAsString())
@@ -35,92 +32,108 @@ func (o *fieldCondition) write(builder *strings.Builder) {
 
 type queryCondition struct {
 	field      string
-	Conditions []*fieldCondition `queryProp:"conditions"`
+	Conditions []fieldCondition `queryProp:"conditions"`
 }
 
-func Cond(field string) CensusQueryCondition {
-	return &queryCondition{
+func Cond(field string) queryCondition {
+	return queryCondition{
 		field: field,
 	}
 }
 
-func (o *queryCondition) Equals(value any) CensusQueryCondition {
-	o.Conditions = append(o.Conditions, &fieldCondition{
-		field:    o.field,
-		operator: equals,
-		value:    value,
-	})
-	return o
+func (o queryCondition) Equals(value any) queryCondition {
+	return queryCondition{
+		field: o.field,
+		Conditions: append(o.Conditions, fieldCondition{
+			field:    o.field,
+			operator: equals,
+			value:    value,
+		}),
+	}
 }
 
-func (o *queryCondition) NotEquals(value any) CensusQueryCondition {
-	o.Conditions = append(o.Conditions, &fieldCondition{
-		field:    o.field,
-		operator: notEquals,
-		value:    value,
-	})
-	return o
+func (o queryCondition) NotEquals(value any) queryCondition {
+	return queryCondition{
+		field: o.field,
+		Conditions: append(o.Conditions, fieldCondition{
+			field:    o.field,
+			operator: notEquals,
+			value:    value,
+		}),
+	}
 }
 
-func (o *queryCondition) IsLessThan(value any) CensusQueryCondition {
-	o.Conditions = append(o.Conditions, &fieldCondition{
-		field:    o.field,
-		operator: isLessThan,
-		value:    value,
-	})
-	return o
+func (o queryCondition) IsLessThan(value any) queryCondition {
+	return queryCondition{
+		field: o.field,
+		Conditions: append(o.Conditions, fieldCondition{
+			field:    o.field,
+			operator: isLessThan,
+			value:    value,
+		}),
+	}
 }
 
-func (o *queryCondition) IsLessThanOrEquals(value any) CensusQueryCondition {
-	o.Conditions = append(o.Conditions, &fieldCondition{
-		field:    o.field,
-		operator: isLessThanOrEquals,
-		value:    value,
-	})
-	return o
+func (o queryCondition) IsLessThanOrEquals(value any) queryCondition {
+	return queryCondition{
+		field: o.field,
+		Conditions: append(o.Conditions, fieldCondition{
+			field:    o.field,
+			operator: isLessThanOrEquals,
+			value:    value,
+		}),
+	}
 }
 
-func (o *queryCondition) IsGreaterThan(value any) CensusQueryCondition {
-	o.Conditions = append(o.Conditions, &fieldCondition{
-		field:    o.field,
-		operator: isGreaterThan,
-		value:    value,
-	})
-	return o
+func (o queryCondition) IsGreaterThan(value any) queryCondition {
+	return queryCondition{
+		field: o.field,
+		Conditions: append(o.Conditions, fieldCondition{
+			field:    o.field,
+			operator: isGreaterThan,
+			value:    value,
+		}),
+	}
 }
 
-func (o *queryCondition) IsGreaterThanOrEquals(value any) CensusQueryCondition {
-	o.Conditions = append(o.Conditions, &fieldCondition{
-		field:    o.field,
-		operator: isGreaterThanOrEquals,
-		value:    value,
-	})
-	return o
+func (o queryCondition) IsGreaterThanOrEquals(value any) queryCondition {
+	return queryCondition{
+		field: o.field,
+		Conditions: append(o.Conditions, fieldCondition{
+			field:    o.field,
+			operator: isGreaterThanOrEquals,
+			value:    value,
+		}),
+	}
 }
 
-func (o *queryCondition) StartsWith(value any) CensusQueryCondition {
-	o.Conditions = append(o.Conditions, &fieldCondition{
-		field:    o.field,
-		operator: startsWith,
-		value:    value,
-	})
-	return o
+func (o queryCondition) StartsWith(value any) queryCondition {
+	return queryCondition{
+		field: o.field,
+		Conditions: append(o.Conditions, fieldCondition{
+			field:    o.field,
+			operator: startsWith,
+			value:    value,
+		}),
+	}
 }
 
-func (o *queryCondition) Contains(value any) CensusQueryCondition {
-	o.Conditions = append(o.Conditions, &fieldCondition{
-		field:    o.field,
-		operator: contains,
-		value:    value,
-	})
-	return o
+func (o queryCondition) Contains(value any) queryCondition {
+	return queryCondition{
+		field: o.field,
+		Conditions: append(o.Conditions, fieldCondition{
+			field:    o.field,
+			operator: contains,
+			value:    value,
+		}),
+	}
 }
 
-func (o *queryCondition) write(builder *strings.Builder) {
+func (o queryCondition) write(builder *strings.Builder) {
 	writeCensusParameter(builder, o)
 }
 
-func (o *queryCondition) writeProperty(builder *strings.Builder, key string, value reflect.Value, i int) {
+func (o queryCondition) writeProperty(builder *strings.Builder, key string, value reflect.Value, i int) {
 	if key == "conditions" {
 		writeCensusParameterValue(builder, value, "&", censusBasicValueMapper)
 	}

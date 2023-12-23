@@ -14,15 +14,15 @@ type httpCensusClient struct {
 	serviceId      string
 }
 
-func Client(censusEndpoint string, serviceId string, client *http.Client) CensusClient {
-	return &httpCensusClient{
-		client:         client,
+func NewClient(censusEndpoint string, serviceId string, client *http.Client) httpCensusClient {
+	return httpCensusClient{
 		censusEndpoint: censusEndpoint,
 		serviceId:      serviceId,
+		client:         client,
 	}
 }
 
-func (c *httpCensusClient) Execute(query CensusQuery) (any, error) {
+func (c *httpCensusClient) Execute(query censusQuery) (any, error) {
 	builder := strings.Builder{}
 	builder.WriteString(c.censusEndpoint)
 	builder.WriteString("s:")
