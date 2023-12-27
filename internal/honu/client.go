@@ -6,19 +6,19 @@ import (
 	"net/http"
 )
 
-type client struct {
+type Client struct {
 	httpClient   *http.Client
 	honuEndpoint string
 }
 
-func NewClient(honuEndpoint string, httpClient *http.Client) *client {
-	return &client{
+func NewClient(honuEndpoint string, httpClient *http.Client) *Client {
+	return &Client{
 		httpClient:   httpClient,
 		honuEndpoint: honuEndpoint,
 	}
 }
 
-func (c *client) WorldOverview() ([]World, error) {
+func (c *Client) WorldOverview() ([]World, error) {
 	url := c.honuEndpoint + "/api/world/overview"
 	resp, err := c.httpClient.Get(url)
 	if err != nil {

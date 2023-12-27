@@ -8,21 +8,21 @@ import (
 	"strings"
 )
 
-type client struct {
+type Client struct {
 	httpClient     *http.Client
 	censusEndpoint string
 	serviceId      string
 }
 
-func NewClient(censusEndpoint string, serviceId string, httpClient *http.Client) *client {
-	return &client{
+func NewClient(censusEndpoint string, serviceId string, httpClient *http.Client) *Client {
+	return &Client{
 		httpClient:     httpClient,
 		censusEndpoint: censusEndpoint,
 		serviceId:      serviceId,
 	}
 }
 
-func (c *client) Execute(query CensusQuery) (any, error) {
+func (c *Client) Execute(query CensusQuery) ([]any, error) {
 	builder := strings.Builder{}
 	builder.WriteString(c.censusEndpoint)
 	builder.WriteString("s:")

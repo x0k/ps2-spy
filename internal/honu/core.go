@@ -1,6 +1,6 @@
 package honu
 
-type Alert struct {
+type ZoneAlert struct {
 	Id                int    `json:"id"`
 	Timestamp         string `json:"timestamp"`
 	Duration          int    `json:"duration"`
@@ -20,7 +20,7 @@ type Alert struct {
 	Participants      int    `json:"participants"`
 }
 
-type AlertInfo struct {
+type ZoneAlertInfo struct {
 	Id              int    `json:"id"`
 	Name            string `json:"name"`
 	Description     string `json:"description"`
@@ -43,13 +43,13 @@ type ZoneTerritoryControl struct {
 	Total int `json:"total"`
 }
 
-type Zone struct {
+type WorldZone struct {
 	ZoneId           int                  `json:"zoneID"`
 	WorldId          int                  `json:"worldID"`
 	IsOpened         bool                 `json:"isOpened"`
 	UnstableState    int                  `json:"unstableState"`
-	Alert            Alert                `json:"alert"`
-	AlertInfo        AlertInfo            `json:"alertInfo"`
+	Alert            ZoneAlert            `json:"alert"`
+	AlertInfo        ZoneAlertInfo        `json:"alertInfo"`
 	AlertStart       string               `json:"alertStart"`
 	AlertEnd         string               `json:"alertEnd"`
 	LastLocked       string               `json:"lastLocked"`
@@ -59,8 +59,8 @@ type Zone struct {
 }
 
 type World struct {
-	WorldId       int    `json:"worldID"`
-	WorldName     string `json:"worldName"`
-	PlayersOnline int    `json:"playersOnline"`
-	Zones         []Zone `json:"zones"`
+	WorldId       int         `json:"worldID"`
+	WorldName     string      `json:"worldName"`
+	PlayersOnline int         `json:"playersOnline"`
+	Zones         []WorldZone `json:"zones"`
 }
