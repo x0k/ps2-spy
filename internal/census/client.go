@@ -8,21 +8,21 @@ import (
 	"strings"
 )
 
-type httpCensusClient struct {
-	client         *http.Client
+type client struct {
+	httpClient     *http.Client
 	censusEndpoint string
 	serviceId      string
 }
 
-func Client(censusEndpoint string, serviceId string, client *http.Client) CensusClient {
-	return &httpCensusClient{
-		client:         client,
+func NewClient(censusEndpoint string, serviceId string, httpClient *http.Client) *client {
+	return &client{
+		httpClient:     httpClient,
 		censusEndpoint: censusEndpoint,
 		serviceId:      serviceId,
 	}
 }
 
-func (c *httpCensusClient) Execute(query CensusQuery) (any, error) {
+func (c *client) Execute(query CensusQuery) (any, error) {
 	builder := strings.Builder{}
 	builder.WriteString(c.censusEndpoint)
 	builder.WriteString("s:")
@@ -31,7 +31,7 @@ func (c *httpCensusClient) Execute(query CensusQuery) (any, error) {
 	query.write(&builder)
 	url := builder.String()
 
-	resp, err := c.client.Get(url)
+	resp, err := c.httpClient.Get(url)
 	if err != nil {
 		return nil, err
 	}
@@ -45,6 +45,6 @@ func (c *httpCensusClient) Execute(query CensusQuery) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	propertyIndex := fmt.Sprintf("%s_list", query.GetCollection())
+	propertyIndex := fmt.Sprintf("%s_list", query.Collection())
 	return contentBody[propertyIndex].([]any), nil
 }

@@ -58,7 +58,7 @@ func Query(qt string, ns string, collection string) CensusQuery {
 	}
 }
 
-func (q *censusQuery) GetCollection() string {
+func (q *censusQuery) Collection() string {
 	return q.collection
 }
 
