@@ -7,11 +7,11 @@ import (
 )
 
 func writeCensusNestedParameter(builder *strings.Builder, op nestedParameter) {
-	builder.WriteString(op.getField())
+	builder.WriteString(op.field())
 	writeCensusParameter(builder, op)
-	for i := 0; i < op.getNestedParametersCount(); i++ {
+	for i := 0; i < op.nestedParametersCount(); i++ {
 		builder.WriteString("(")
-		op.getNestedParameter(i).write(builder)
+		op.nestedParameter(i).write(builder)
 		builder.WriteString(")")
 	}
 }

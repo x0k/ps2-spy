@@ -20,7 +20,7 @@ type composableParameter interface {
 
 type nestedParameter interface {
 	composableParameter
-	getField() string
-	getNestedParametersCount() int
-	getNestedParameter(i int) nestedParameter
+	field() string
+	nestedParametersCount() int
+	nestedParameter(i int) nestedParameter
 }

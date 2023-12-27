@@ -164,15 +164,15 @@ func (j queryJoin) write(builder *strings.Builder) {
 	writeCensusNestedParameter(builder, j)
 }
 
-func (j queryJoin) getField() string {
+func (j queryJoin) field() string {
 	return j.collection
 }
 
-func (j queryJoin) getNestedParametersCount() int {
+func (j queryJoin) nestedParametersCount() int {
 	return len(j.joins)
 }
 
-func (j queryJoin) getNestedParameter(i int) nestedParameter {
+func (j queryJoin) nestedParameter(i int) nestedParameter {
 	return j.joins[i]
 }
 

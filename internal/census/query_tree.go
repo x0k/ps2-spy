@@ -63,15 +63,15 @@ func (t queryTree) write(builder *strings.Builder) {
 	writeCensusNestedParameter(builder, t)
 }
 
-func (t queryTree) getField() string {
+func (t queryTree) field() string {
 	return t.treeField
 }
 
-func (t queryTree) getNestedParametersCount() int {
+func (t queryTree) nestedParametersCount() int {
 	return len(t.trees)
 }
 
-func (t queryTree) getNestedParameter(i int) nestedParameter {
+func (t queryTree) nestedParameter(i int) nestedParameter {
 	return t.trees[i]
 }
 
