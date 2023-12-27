@@ -1,6 +1,8 @@
 package ps2
 
 import (
+	"fmt"
+
 	"github.com/x0k/ps2-feed/internal/honu"
 )
 
@@ -14,29 +16,45 @@ func NewHonuPopulationProvider(client *honu.Client) *HonuPopulationProvider {
 	}
 }
 
+func (p *HonuPopulationProvider) Name() string {
+	return p.client.Endpoint()
+}
+
 func (p *HonuPopulationProvider) Population() (Population, error) {
-	worlds, err := p.client.WorldOverview()
+	overview, err := p.client.WorldOverview()
 	if err != nil {
-		return nil, err
+		return Population{}, err
 	}
-	population := make(Population, len(worlds))
-	for _, w := range worlds {
+	worlds := make(Worlds, len(overview))
+	population := Population{
+		Worlds: worlds,
+	}
+	for _, w := range overview {
 		worldId := WorldId(w.WorldId)
-		zones := make(Zones, len(w.Zones))
-		world := WorldPopulation{
-			WorldId: worldId,
-			Zones:   zones,
+		world := worlds[worldId]
+		world.Id = worldId
+		world.Name = worldNames[worldId]
+		if world.Name == "" {
+			world.Name = fmt.Sprintf("World %d", worldId)
 		}
+		zones := make(Zones, len(w.Zones))
+		world.Zones = zones
 		for _, z := range w.Zones {
 			zoneId := ZoneId(z.ZoneId)
-			zones[zoneId] = ZonePopulation{
-				ZoneId: zoneId,
+			zone := ZonePopulation{
+				Id:     zoneId,
+				Name:   zoneNames[zoneId],
 				IsOpen: z.IsOpened,
-				All:    z.Players.All,
-				VS:     z.Players.VS,
-				NC:     z.Players.NC,
-				TR:     z.Players.TR,
-				Other:  z.Players.Unknown,
+				CommonPopulation: CommonPopulation{
+					All:   z.Players.All,
+					VS:    z.Players.VS,
+					NC:    z.Players.NC,
+					TR:    z.Players.TR,
+					Other: z.Players.Unknown,
+				},
+			}
+			if zone.Name == "" {
+				zone.Name = fmt.Sprintf("Zone %d", zoneId)
 			}
 			world.Total.All += z.Players.All
 			world.Total.VS += z.Players.VS
@@ -44,6 +62,12 @@ func (p *HonuPopulationProvider) Population() (Population, error) {
 			world.Total.TR += z.Players.TR
 			world.Total.Other += z.Players.Unknown
 		}
+		worlds[worldId] = world
+		population.Total.All += world.Total.All
+		population.Total.VS += world.Total.VS
+		population.Total.NC += world.Total.NC
+		population.Total.TR += world.Total.TR
+		population.Total.Other += world.Total.Other
 	}
 	return population, nil
 }

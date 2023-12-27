@@ -18,6 +18,8 @@ func NewClient(honuEndpoint string, httpClient *http.Client) *Client {
 	}
 }
 
+func (c *Client) Endpoint() string { return c.honuEndpoint }
+
 func (c *Client) WorldOverview() ([]World, error) {
 	url := c.honuEndpoint + "/api/world/overview"
 	resp, err := c.httpClient.Get(url)
