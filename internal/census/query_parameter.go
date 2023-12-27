@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-func writeCensusNestedParameter(builder *strings.Builder, op censusNestedParameter) {
+func writeCensusNestedParameter(builder *strings.Builder, op nestedParameter) {
 	builder.WriteString(op.getField())
 	writeCensusParameter(builder, op)
 	for i := 0; i < op.getNestedParametersCount(); i++ {
@@ -16,7 +16,7 @@ func writeCensusNestedParameter(builder *strings.Builder, op censusNestedParamet
 	}
 }
 
-func writeCensusParameter(builder *strings.Builder, op censusComposableParameter) int {
+func writeCensusParameter(builder *strings.Builder, op composableParameter) int {
 	v := reflect.ValueOf(op)
 	ind := reflect.Indirect(v)
 	t := ind.Type()
@@ -58,8 +58,8 @@ func writeCensusParameterValue(builder *strings.Builder, value reflect.Value, sp
 }
 
 func censusBasicValueMapper(value reflect.Value, builder *strings.Builder) {
-	if value.Type().Implements(reflect.TypeOf((*censusParameter)(nil)).Elem()) {
-		value.Interface().(censusParameter).write(builder)
+	if value.Type().Implements(reflect.TypeOf((*parameter)(nil)).Elem()) {
+		value.Interface().(parameter).write(builder)
 	} else {
 		builder.WriteString(fmt.Sprintf("%v", value))
 	}

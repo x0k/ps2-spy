@@ -22,13 +22,13 @@ func NewClient(censusEndpoint string, serviceId string, httpClient *http.Client)
 	}
 }
 
-func (c *Client) Execute(query CensusQuery) ([]any, error) {
+func (c *Client) Execute(q query) ([]any, error) {
 	builder := strings.Builder{}
 	builder.WriteString(c.censusEndpoint)
 	builder.WriteString("s:")
 	builder.WriteString(c.serviceId)
 	builder.WriteString("/json/")
-	query.write(&builder)
+	q.write(&builder)
 	url := builder.String()
 
 	resp, err := c.httpClient.Get(url)
@@ -45,6 +45,6 @@ func (c *Client) Execute(query CensusQuery) ([]any, error) {
 	if err != nil {
 		return nil, err
 	}
-	propertyIndex := fmt.Sprintf("%s_list", query.Collection())
+	propertyIndex := fmt.Sprintf("%s_list", q.Collection())
 	return contentBody[propertyIndex].([]any), nil
 }

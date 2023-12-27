@@ -3,7 +3,7 @@ package census
 import "testing"
 
 func TestQueryBasicParams(t *testing.T) {
-	q := Query(GetQuery, Ns_ps2V2, "test").
+	q := NewQuery(GetQuery, Ns_ps2V2, "test").
 		SetExactMatchFirst(true).
 		SetTiming(true).
 		SetIncludeNull(true).
@@ -22,7 +22,7 @@ func TestQueryBasicParams(t *testing.T) {
 }
 
 func TestQueryListParams(t *testing.T) {
-	q := Query(GetQuery, Ns_ps2V2, "test").
+	q := NewQuery(GetQuery, Ns_ps2V2, "test").
 		ShowFields("foo", "bar").
 		HideFields("baz", "qux").
 		SortAscBy("foo").
@@ -37,7 +37,7 @@ func TestQueryListParams(t *testing.T) {
 }
 
 func TestQueryConditions(t *testing.T) {
-	q := Query(GetQuery, Ns_ps2V2, "test").
+	q := NewQuery(GetQuery, Ns_ps2V2, "test").
 		Where(Cond("faction_id").IsLessThanOrEquals(4)).
 		Where(Cond("item_category_id").IsGreaterThanOrEquals(2).IsLessThan(5)).
 		Where(Cond("faction_id").IsGreaterThan(1))
@@ -50,7 +50,7 @@ func TestQueryConditions(t *testing.T) {
 
 func TestQueryTree(t *testing.T) {
 	// Organize a list of vehicles by type:
-	q := Query(GetQuery, Ns_ps2V2, "vehicle").
+	q := NewQuery(GetQuery, Ns_ps2V2, "vehicle").
 		SetLimit(500).
 		WithTree(Tree("type_id").GroupPrefix("type_").IsList(true)).
 		SetLanguage(LangEnglish)
@@ -63,7 +63,7 @@ func TestQueryTree(t *testing.T) {
 
 func TestQueryJoin(t *testing.T) {
 	// Organize zones, map_regions, map_hexes by facility_type:
-	q := Query(GetQuery, Ns_ps2V2, "zone").
+	q := NewQuery(GetQuery, Ns_ps2V2, "zone").
 		Where(Cond("zone_id").Equals(2)).
 		WithJoin(Join("map_region").
 			IsList(true).
