@@ -10,7 +10,7 @@ import (
 	"github.com/x0k/ps2-feed/internal/ps2"
 )
 
-func renderCommonPopulation(p ps2.CommonPopulation) string {
+func renderStatsByFactions(p ps2.StatsByFactions) string {
 	builder := strings.Builder{}
 	builder.Grow(60) // 17 characters per line
 	if p.All == 0 {
@@ -30,7 +30,7 @@ func renderWorldDetailedPopulation(worldPopulation ps2.WorldPopulation, populati
 		if zonePopulation.IsOpen {
 			zones = append(zones, &discordgo.MessageEmbedField{
 				Name:   fmt.Sprintf("%s - %d", zonePopulation.Name, zonePopulation.All),
-				Value:  renderCommonPopulation(zonePopulation.CommonPopulation),
+				Value:  renderStatsByFactions(zonePopulation.StatsByFactions),
 				Inline: true,
 			})
 		}
@@ -48,7 +48,7 @@ func renderWorldDetailedPopulation(worldPopulation ps2.WorldPopulation, populati
 func renderWorldTotalPopulation(worldPopulation ps2.WorldPopulation) *discordgo.MessageEmbedField {
 	return &discordgo.MessageEmbedField{
 		Name:   fmt.Sprintf("%s - %d", worldPopulation.Name, worldPopulation.Total.All),
-		Value:  renderCommonPopulation(worldPopulation.Total),
+		Value:  renderStatsByFactions(worldPopulation.Total),
 		Inline: true,
 	}
 }

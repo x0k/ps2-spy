@@ -22,15 +22,17 @@ func init() {
 }
 
 func main() {
-	httpClient := http.DefaultClient
-	ps2Service := ps2.NewService(ps2.NewHonuPopulationProvider(honu.NewClient("https://wt.honu.pw", httpClient)))
+	httpClient := &http.Client{}
+	honuClient := honu.NewClient("https://wt.honu.pw", httpClient)
+	defer honuClient.Stop()
+	ps2Service := ps2.NewService(
+		ps2.NewHonuPopulationProvider(honuClient),
+		ps2.NewHonuAlertsProvider(honuClient),
+	)
+	defer ps2Service.Stop()
 	b, err := bot.NewBot(discord_token, ps2Service)
 	if err != nil {
 		log.Fatalln(err)
-	}
-	err = b.Start()
-	if err != nil {
-		log.Fatalln("error opening connection: ", err)
 	}
 	defer b.Stop()
 

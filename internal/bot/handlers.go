@@ -55,6 +55,7 @@ func makeHandlers(service *ps2.Service) map[string]interactionHandler {
 		"ping": instantResponse(func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.InteractionResponseData, error) {
 			lat := s.HeartbeatLatency()
 			return &discordgo.InteractionResponseData{
+				Flags:   discordgo.MessageFlagsEphemeral,
 				Content: fmt.Sprintf("Latency: %dms", lat.Milliseconds()),
 			}, nil
 		}),
@@ -67,7 +68,7 @@ func makeHandlers(service *ps2.Service) map[string]interactionHandler {
 				}
 				return &discordgo.InteractionResponseData{
 					Embeds: []*discordgo.MessageEmbed{
-						renderPopulation(population, service.PopulationSource(), service.UpdatedAt()),
+						renderPopulation(population, service.PopulationSource(), service.PopulationUpdatedAt()),
 					},
 				}, nil
 			}
@@ -78,9 +79,30 @@ func makeHandlers(service *ps2.Service) map[string]interactionHandler {
 			}
 			return &discordgo.InteractionResponseData{
 				Embeds: []*discordgo.MessageEmbed{
-					renderWorldDetailedPopulation(population, service.PopulationSource(), service.UpdatedAt()),
+					renderWorldDetailedPopulation(population, service.PopulationSource(), service.PopulationUpdatedAt()),
 				},
 			}, nil
+		}),
+		"alerts": instantResponse(func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.InteractionResponseData, error) {
+			opts := i.ApplicationCommandData().Options
+			if len(opts) == 0 {
+				alerts, err := service.Alerts(ctx)
+				if err != nil {
+					return nil, fmt.Errorf("error getting alerts: %q", err)
+				}
+				return &discordgo.InteractionResponseData{
+					Embeds: renderAlerts(alerts, service.AlertsSource(), service.AlertsUpdatedAt()),
+				}, nil
+			}
+			server := opts[0].IntValue()
+			alerts, err := service.AlertsByWorldId(ctx, ps2.WorldId(server))
+			if err != nil {
+				return nil, fmt.Errorf("error getting alerts: %q", err)
+			}
+			return &discordgo.InteractionResponseData{
+				Embeds: []*discordgo.MessageEmbed{
+					renderWorldDetailedAlerts(alerts, service.AlertsSource(), service.AlertsUpdatedAt()),
+				}}, nil
 		}),
 	}
 }

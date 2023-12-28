@@ -46,7 +46,7 @@ func (p *HonuPopulationProvider) Population(ctx context.Context) (Population, er
 				Id:     zoneId,
 				Name:   ZoneNames[zoneId],
 				IsOpen: z.IsOpened,
-				CommonPopulation: CommonPopulation{
+				StatsByFactions: StatsByFactions{
 					All:   z.Players.All,
 					VS:    z.Players.VS,
 					NC:    z.Players.NC,

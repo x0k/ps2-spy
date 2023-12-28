@@ -19,7 +19,7 @@ func serverNames() []*discordgo.ApplicationCommandOptionChoice {
 	return choices
 }
 
-var commands = [2]*discordgo.ApplicationCommand{
+var commands = [3]*discordgo.ApplicationCommand{
 	{
 		Name:        "ping",
 		Description: "Returns latency to the Discord API.",
@@ -27,6 +27,19 @@ var commands = [2]*discordgo.ApplicationCommand{
 	{
 		Name:        "population",
 		Description: "Returns the population.",
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionInteger,
+				Name:        "server",
+				Description: "Server name",
+				Required:    false,
+				Choices:     serverNames(),
+			},
+		},
+	},
+	{
+		Name:        "alerts",
+		Description: "Returns the alerts.",
 		Options: []*discordgo.ApplicationCommandOption{
 			{
 				Type:        discordgo.ApplicationCommandOptionInteger,
@@ -61,26 +74,24 @@ func NewBot(discordToken string, service *ps2.Service) (*Bot, error) {
 			log.Printf("Unknown command %q", i.ApplicationCommandData().Name)
 		}
 	})
-	return &Bot{
-		session: session,
-	}, nil
-}
-
-func (b *Bot) Start() error {
-	err := b.session.Open()
+	err = session.Open()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	log.Println("Adding commands...")
-	b.registeredCommands = make([]*discordgo.ApplicationCommand, len(commands))
-	for i, v := range commands {
-		cmd, err := b.session.ApplicationCommandCreate(b.session.State.User.ID, "", v)
+	registeredCommands := make([]*discordgo.ApplicationCommand, 0, len(commands))
+	for _, v := range commands {
+		cmd, err := session.ApplicationCommandCreate(session.State.User.ID, "", v)
 		if err != nil {
-			return fmt.Errorf("cannot create %q command: %q", v.Name, err)
+			log.Printf("cannot create %q command: %q", v.Name, err)
+		} else {
+			registeredCommands = append(registeredCommands, cmd)
 		}
-		b.registeredCommands[i] = cmd
 	}
-	return nil
+	return &Bot{
+		session:            session,
+		registeredCommands: registeredCommands,
+	}, nil
 }
 
 func (b *Bot) Stop() error {
