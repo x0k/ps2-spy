@@ -78,7 +78,7 @@ func makeHandlers(service *ps2.Service) map[string]interactionHandler {
 			}
 			return &discordgo.InteractionResponseData{
 				Embeds: []*discordgo.MessageEmbed{
-					renderWorldDetailedPopulation(population),
+					renderWorldDetailedPopulation(population, service.PopulationSource(), service.UpdatedAt()),
 				},
 			}, nil
 		}),
