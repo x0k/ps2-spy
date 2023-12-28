@@ -8,14 +8,34 @@ import (
 	"github.com/x0k/ps2-feed/internal/ps2"
 )
 
+func serverNames() []*discordgo.ApplicationCommandOptionChoice {
+	choices := make([]*discordgo.ApplicationCommandOptionChoice, 0, len(ps2.WorldNames))
+	for k, v := range ps2.WorldNames {
+		choices = append(choices, &discordgo.ApplicationCommandOptionChoice{
+			Name:  v,
+			Value: k,
+		})
+	}
+	return choices
+}
+
 var commands = [2]*discordgo.ApplicationCommand{
 	{
 		Name:        "ping",
-		Description: "Returns Pong!",
+		Description: "Returns latency to the Discord API.",
 	},
 	{
 		Name:        "population",
 		Description: "Returns the population.",
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionInteger,
+				Name:        "server",
+				Description: "Server name",
+				Required:    false,
+				Choices:     serverNames(),
+			},
+		},
 	},
 }
 

@@ -24,7 +24,24 @@ func renderCommonPopulation(p ps2.CommonPopulation) string {
 	return builder.String()
 }
 
-func renderWorldPopulation(worldPopulation ps2.WorldPopulation) *discordgo.MessageEmbedField {
+func renderWorldDetailedPopulation(worldPopulation ps2.WorldPopulation) *discordgo.MessageEmbed {
+	zones := make([]*discordgo.MessageEmbedField, 0, len(worldPopulation.Zones))
+	for _, zonePopulation := range worldPopulation.Zones {
+		if zonePopulation.IsOpen {
+			zones = append(zones, &discordgo.MessageEmbedField{
+				Name:   fmt.Sprintf("%s - %d", zonePopulation.Name, zonePopulation.All),
+				Value:  renderCommonPopulation(zonePopulation.CommonPopulation),
+				Inline: true,
+			})
+		}
+	}
+	return &discordgo.MessageEmbed{
+		Title:  fmt.Sprintf("%s - %d", worldPopulation.Name, worldPopulation.Total.All),
+		Fields: zones,
+	}
+}
+
+func renderWorldTotalPopulation(worldPopulation ps2.WorldPopulation) *discordgo.MessageEmbedField {
 	return &discordgo.MessageEmbedField{
 		Name:   fmt.Sprintf("%s - %d", worldPopulation.Name, worldPopulation.Total.All),
 		Value:  renderCommonPopulation(worldPopulation.Total),
@@ -42,7 +59,7 @@ func renderPopulation(population ps2.Population, populationSource string, update
 	})
 	fields := make([]*discordgo.MessageEmbedField, len(worlds))
 	for i, world := range worlds {
-		fields[i] = renderWorldPopulation(world)
+		fields[i] = renderWorldTotalPopulation(world)
 	}
 	return &discordgo.MessageEmbed{
 		Title:  fmt.Sprintf("Total population - %d", population.Total.All),

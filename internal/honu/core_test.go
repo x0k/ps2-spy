@@ -18,4 +18,7 @@ func TestUnmarshalWorldOverview(t *testing.T) {
 	if content[0].WorldId != 1 {
 		t.Error("expected world 1")
 	}
+	if len(content[0].Zones) != 5 {
+		t.Error("expected 0 zones")
+	}
 }

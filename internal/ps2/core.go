@@ -38,8 +38,7 @@ type Population struct {
 }
 
 var ErrWorldNotFound = fmt.Errorf("world not found")
-
-var zoneNames = map[ZoneId]string{
+var ZoneNames = map[ZoneId]string{
 	2:   "Indar",
 	4:   "Hossin",
 	6:   "Amerish",
@@ -47,8 +46,7 @@ var zoneNames = map[ZoneId]string{
 	344: "Oshur",
 	14:  "Koltyr",
 }
-
-var worldNames = map[WorldId]string{
+var WorldNames = map[WorldId]string{
 	1:    "Connery",
 	10:   "Miller",
 	13:   "Cobalt",

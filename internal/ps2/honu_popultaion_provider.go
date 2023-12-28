@@ -34,7 +34,7 @@ func (p *HonuPopulationProvider) Population(ctx context.Context) (Population, er
 		worldId := WorldId(w.WorldId)
 		world := worlds[worldId]
 		world.Id = worldId
-		world.Name = worldNames[worldId]
+		world.Name = WorldNames[worldId]
 		if world.Name == "" {
 			world.Name = fmt.Sprintf("World %d", worldId)
 		}
@@ -44,7 +44,7 @@ func (p *HonuPopulationProvider) Population(ctx context.Context) (Population, er
 			zoneId := ZoneId(z.ZoneId)
 			zone := ZonePopulation{
 				Id:     zoneId,
-				Name:   zoneNames[zoneId],
+				Name:   ZoneNames[zoneId],
 				IsOpen: z.IsOpened,
 				CommonPopulation: CommonPopulation{
 					All:   z.Players.All,
@@ -57,6 +57,7 @@ func (p *HonuPopulationProvider) Population(ctx context.Context) (Population, er
 			if zone.Name == "" {
 				zone.Name = fmt.Sprintf("Zone %d", zoneId)
 			}
+			zones[zoneId] = zone
 			world.Total.All += z.Players.All
 			world.Total.VS += z.Players.VS
 			world.Total.NC += z.Players.NC
