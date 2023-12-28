@@ -50,6 +50,7 @@ func renderWorldDetailedAlerts(worldName string, alerts ps2.Alerts, alertsSource
 		}
 	}
 	return &discordgo.MessageEmbed{
+		Type:   discordgo.EmbedTypeRich,
 		Title:  fmt.Sprintf("%s alerts", worldName),
 		Fields: renderWorldAlerts(alerts),
 		Footer: &discordgo.MessageEmbedFooter{

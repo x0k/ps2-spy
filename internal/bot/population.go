@@ -36,6 +36,7 @@ func renderWorldDetailedPopulation(worldPopulation ps2.WorldPopulation, populati
 		}
 	}
 	return &discordgo.MessageEmbed{
+		Type:   discordgo.EmbedTypeRich,
 		Title:  fmt.Sprintf("%s - %d", worldPopulation.Name, worldPopulation.Total.All),
 		Fields: zones,
 		Footer: &discordgo.MessageEmbedFooter{
@@ -66,6 +67,7 @@ func renderPopulation(population ps2.Population, populationSource string, update
 		fields[i] = renderWorldTotalPopulation(world)
 	}
 	return &discordgo.MessageEmbed{
+		Type:   discordgo.EmbedTypeRich,
 		Title:  fmt.Sprintf("Total population - %d", population.Total.All),
 		Fields: fields,
 		Footer: &discordgo.MessageEmbedFooter{

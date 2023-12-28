@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"syscall"
 
 	"github.com/x0k/ps2-feed/internal/bot"
 	"github.com/x0k/ps2-feed/internal/honu"
@@ -38,7 +39,7 @@ func main() {
 
 	log.Println("Bot is now running. Press CTRL-C to exit.")
 	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, os.Interrupt)
+	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 	<-stop
 
 	log.Println("Gracefully shutting down.")

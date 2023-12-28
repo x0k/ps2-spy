@@ -13,17 +13,13 @@ func serverNames() []*discordgo.ApplicationCommandOptionChoice {
 	for k, v := range ps2.WorldNames {
 		choices = append(choices, &discordgo.ApplicationCommandOptionChoice{
 			Name:  v,
-			Value: k,
+			Value: int(k),
 		})
 	}
 	return choices
 }
 
-var commands = [3]*discordgo.ApplicationCommand{
-	{
-		Name:        "ping",
-		Description: "Returns latency to the Discord API.",
-	},
+var commands = [2]*discordgo.ApplicationCommand{
 	{
 		Name:        "population",
 		Description: "Returns the population.",
