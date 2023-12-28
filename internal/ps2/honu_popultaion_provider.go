@@ -1,6 +1,7 @@
 package ps2
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/x0k/ps2-feed/internal/honu"
@@ -20,8 +21,8 @@ func (p *HonuPopulationProvider) Name() string {
 	return p.client.Endpoint()
 }
 
-func (p *HonuPopulationProvider) Population() (Population, error) {
-	overview, err := p.client.WorldOverview()
+func (p *HonuPopulationProvider) Population(ctx context.Context) (Population, error) {
+	overview, err := p.client.WorldOverview(ctx)
 	if err != nil {
 		return Population{}, err
 	}

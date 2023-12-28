@@ -1,6 +1,7 @@
 package honu
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -20,9 +21,14 @@ func NewClient(honuEndpoint string, httpClient *http.Client) *Client {
 
 func (c *Client) Endpoint() string { return c.honuEndpoint }
 
-func (c *Client) WorldOverview() ([]World, error) {
+func (c *Client) WorldOverview(ctx context.Context) ([]World, error) {
 	url := c.honuEndpoint + "/api/world/overview"
-	resp, err := c.httpClient.Get(url)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}

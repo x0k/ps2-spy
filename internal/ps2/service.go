@@ -10,7 +10,7 @@ import (
 
 type populationProvider interface {
 	Name() string
-	Population() (Population, error)
+	Population(ctx context.Context) (Population, error)
 }
 
 type Service struct {
@@ -46,7 +46,7 @@ func (s *Service) Population(ctx context.Context) (Population, error) {
 		return s.population, nil
 	}
 	var err error
-	s.population, err = contextx.Go(ctx, s.populationProvider.Population)
+	s.population, err = contextx.AwaitValueWithContext(ctx, s.populationProvider.Population)
 	if err != nil {
 		return s.population, err
 	}
