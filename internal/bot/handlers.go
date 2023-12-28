@@ -99,9 +99,13 @@ func makeHandlers(service *ps2.Service) map[string]interactionHandler {
 			if err != nil {
 				return nil, fmt.Errorf("error getting alerts: %q", err)
 			}
+			worldName := ps2.WorldNames[ps2.WorldId(server)]
+			if worldName == "" {
+				worldName = fmt.Sprintf("World %d", server)
+			}
 			return &discordgo.InteractionResponseData{
 				Embeds: []*discordgo.MessageEmbed{
-					renderWorldDetailedAlerts(alerts, service.AlertsSource(), service.AlertsUpdatedAt()),
+					renderWorldDetailedAlerts(worldName, alerts, service.AlertsSource(), service.AlertsUpdatedAt()),
 				}}, nil
 		}),
 	}

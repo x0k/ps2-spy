@@ -43,9 +43,14 @@ func renderWorldAlerts(alerts ps2.Alerts) []*discordgo.MessageEmbedField {
 	return fields
 }
 
-func renderWorldDetailedAlerts(alerts ps2.Alerts, alertsSource string, updatedAt time.Time) *discordgo.MessageEmbed {
+func renderWorldDetailedAlerts(worldName string, alerts ps2.Alerts, alertsSource string, updatedAt time.Time) *discordgo.MessageEmbed {
+	if len(alerts) == 0 {
+		return &discordgo.MessageEmbed{
+			Title: fmt.Sprintf("%s - No alerts", worldName),
+		}
+	}
 	return &discordgo.MessageEmbed{
-		Title:  fmt.Sprintf("%s alerts", alerts[0].WorldName),
+		Title:  fmt.Sprintf("%s alerts", worldName),
 		Fields: renderWorldAlerts(alerts),
 		Footer: &discordgo.MessageEmbedFooter{
 			Text: fmt.Sprintf("Source: %s", alertsSource),
@@ -69,7 +74,11 @@ func renderAlerts(alerts ps2.Alerts, alertsSource string, updatedAt time.Time) [
 	})
 	embeds := make([]*discordgo.MessageEmbed, 0, len(sortedGroups))
 	for _, v := range sortedGroups {
-		embeds = append(embeds, renderWorldDetailedAlerts(groups[v], alertsSource, updatedAt))
+		alerts := groups[v]
+		worldName := alerts[0].WorldName
+		embeds = append(embeds, renderWorldDetailedAlerts(
+			worldName, alerts, alertsSource, updatedAt,
+		))
 	}
 	return embeds
 }
