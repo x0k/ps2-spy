@@ -2,12 +2,13 @@ package cache
 
 import (
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
 type ExpiableValue[T any] struct {
 	mu     sync.RWMutex
-	actual bool
+	actual atomic.Bool
 	val    T
 	ttl    time.Duration
 	ticker *time.Ticker
@@ -18,10 +19,8 @@ func (e *ExpiableValue[T]) expiration() {
 	for {
 		select {
 		case <-e.ticker.C:
-			e.mu.Lock()
-			e.actual = false
+			e.actual.Store(false)
 			e.ticker.Stop()
-			e.mu.Unlock()
 		case <-e.done:
 			return
 		}
@@ -45,7 +44,7 @@ func (e *ExpiableValue[T]) Stop() {
 func (e *ExpiableValue[T]) read() (T, bool) {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
-	return e.val, e.actual
+	return e.val, e.actual.Load()
 }
 
 func (e *ExpiableValue[T]) Load(loader func() (T, error)) (T, error) {
@@ -59,8 +58,8 @@ func (e *ExpiableValue[T]) Load(loader func() (T, error)) (T, error) {
 	if err != nil {
 		return cached, err
 	}
-	e.actual = true
 	e.val = loaded
+	e.actual.Store(true)
 	e.ticker.Reset(e.ttl)
 	return loaded, nil
 }
