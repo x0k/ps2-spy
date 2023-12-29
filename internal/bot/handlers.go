@@ -26,14 +26,14 @@ func run(handler interactionHandler, s *discordgo.Session, i *discordgo.Interact
 		return err
 	})
 	if err != nil {
-		log.Printf("Error handling slash command %q: %q", i.ApplicationCommandData().Name, err)
+		log.Printf("error handling slash command %q: %q", i.ApplicationCommandData().Name, err)
 	}
 }
 
 func deferredResponse(handle func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.WebhookEdit, error)) interactionHandler {
 	return func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) error {
 		err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseDeferredMessageUpdate,
+			Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
 		})
 		if err != nil {
 			return err

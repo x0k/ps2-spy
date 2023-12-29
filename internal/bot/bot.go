@@ -13,7 +13,7 @@ func serverNames() []*discordgo.ApplicationCommandOptionChoice {
 	for k, v := range ps2.WorldNames {
 		choices = append(choices, &discordgo.ApplicationCommandOptionChoice{
 			Name:  v,
-			Value: int(k),
+			Value: k,
 		})
 	}
 	return choices
@@ -28,7 +28,6 @@ var commands = [2]*discordgo.ApplicationCommand{
 				Type:        discordgo.ApplicationCommandOptionInteger,
 				Name:        "server",
 				Description: "Server name",
-				Required:    false,
 				Choices:     serverNames(),
 			},
 		},
@@ -41,7 +40,6 @@ var commands = [2]*discordgo.ApplicationCommand{
 				Type:        discordgo.ApplicationCommandOptionInteger,
 				Name:        "server",
 				Description: "Server name",
-				Required:    false,
 				Choices:     serverNames(),
 			},
 		},
