@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/x0k/ps2-feed/internal/honu"
+	"github.com/x0k/ps2-spy/internal/honu"
 )
 
 type HonuAlertsProvider struct {

@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/x0k/ps2-feed/internal/contextx"
-	"github.com/x0k/ps2-feed/internal/ps2"
+	"github.com/x0k/ps2-spy/internal/contextx"
+	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
 type interactionHandler func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) error

@@ -1,4 +1,4 @@
-module github.com/x0k/ps2-feed
+module github.com/x0k/ps2-spy
 
 go 1.21.5
 

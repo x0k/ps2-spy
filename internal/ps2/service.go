@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/x0k/ps2-feed/internal/containers"
+	"github.com/x0k/ps2-spy/internal/containers"
 )
 
 type provider[T any] interface {

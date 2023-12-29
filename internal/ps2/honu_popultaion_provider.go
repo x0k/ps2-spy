@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/x0k/ps2-feed/internal/honu"
+	"github.com/x0k/ps2-spy/internal/honu"
 )
 
 type HonuPopulationProvider struct {

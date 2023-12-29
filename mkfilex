@@ -1,4 +1,4 @@
 #!/bin/bash -e
 
 run:
-    go run cmd/ps2-feed-ds/main.go -t $BOT_TOKEN
+    go run cmd/ps2-spy/main.go -t $(cat ~/Sync/ps2-spy/test-token)

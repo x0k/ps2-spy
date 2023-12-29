@@ -14,7 +14,7 @@ RUN go mod download
 COPY . .
 
 # Build the Go application
-RUN go build -o app ./cmd/ps2-feed-ds
+RUN go build -o app ./cmd/ps2-spy/
 
 # Create a minimal runtime image
 FROM alpine:3.19.0
