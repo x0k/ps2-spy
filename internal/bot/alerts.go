@@ -61,6 +61,13 @@ func renderWorldDetailedAlerts(worldName string, alerts ps2.Alerts, alertsSource
 }
 
 func renderAlerts(alerts ps2.Alerts, alertsSource string, updatedAt time.Time) []*discordgo.MessageEmbed {
+	if len(alerts) == 0 {
+		return []*discordgo.MessageEmbed{
+			{
+				Title: "No alerts",
+			},
+		}
+	}
 	groups := make(map[ps2.WorldId][]ps2.Alert)
 	sortedGroups := make([]ps2.WorldId, 0, len(groups))
 	for _, alert := range alerts {
