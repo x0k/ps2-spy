@@ -4,67 +4,54 @@ import (
 	"context"
 	"time"
 
-	"github.com/x0k/ps2-feed/internal/cache"
+	"github.com/x0k/ps2-feed/internal/containers"
 )
 
-type populationProvider interface {
+type provider[T any] interface {
 	Name() string
-	Population(ctx context.Context) (Population, error)
-}
-
-type alertsProvider interface {
-	Name() string
-	Alerts(ctx context.Context) (Alerts, error)
+	Load(ctx context.Context) (T, error)
 }
 
 type Service struct {
-	populationProvider  populationProvider
-	population          *cache.ExpiableValue[Population]
-	populationUpdatedAt time.Time
-	alertsProvider      alertsProvider
-	alerts              *cache.ExpiableValue[Alerts]
-	alertsUpdatedAt     time.Time
+	populationProvider provider[Population]
+	population         *containers.LoadableValue[Population]
+	alertsProvider     provider[Alerts]
+	alerts             *containers.LoadableValue[Alerts]
 }
 
-func NewService(populationProvider populationProvider, alertsProvider alertsProvider) *Service {
+func NewService(populationProvider provider[Population], alertsProvider provider[Alerts]) *Service {
 	return &Service{
 		populationProvider: populationProvider,
-		population:         cache.NewExpiableValue[Population](time.Minute),
+		population:         containers.NewLoadableValue[Population](populationProvider, time.Minute),
 		alertsProvider:     alertsProvider,
-		alerts:             cache.NewExpiableValue[Alerts](time.Minute),
+		alerts:             containers.NewLoadableValue[Alerts](alertsProvider, time.Minute),
 	}
 }
 
+func (s *Service) Start() {
+	go s.population.StartExpiration()
+	go s.alerts.StartExpiration()
+}
+
 func (s *Service) Stop() {
-	s.population.Stop()
-	s.alerts.Stop()
+	s.population.StopExpiration()
+	s.alerts.StopExpiration()
 }
 
 func (s *Service) PopulationUpdatedAt() time.Time {
-	return s.populationUpdatedAt
+	return s.population.UpdatedAt()
 }
 
 func (s *Service) PopulationSource() string {
 	return s.populationProvider.Name()
 }
 
-func (s *Service) loadPopulation(ctx context.Context) (Population, error) {
-	return s.population.Load(func() (Population, error) {
-		population, err := s.populationProvider.Population(ctx)
-		if err != nil {
-			return Population{}, err
-		}
-		s.populationUpdatedAt = time.Now()
-		return population, nil
-	})
-}
-
 func (s *Service) Population(ctx context.Context) (Population, error) {
-	return s.loadPopulation(ctx)
+	return s.population.Load(ctx)
 }
 
 func (s *Service) PopulationByWorldId(ctx context.Context, worldId WorldId) (WorldPopulation, error) {
-	population, err := s.loadPopulation(ctx)
+	population, err := s.population.Load(ctx)
 	if err != nil {
 		return WorldPopulation{}, err
 	}
@@ -79,26 +66,15 @@ func (s *Service) AlertsSource() string {
 }
 
 func (s *Service) AlertsUpdatedAt() time.Time {
-	return s.alertsUpdatedAt
-}
-
-func (s *Service) loadAlerts(ctx context.Context) (Alerts, error) {
-	return s.alerts.Load(func() (Alerts, error) {
-		alerts, err := s.alertsProvider.Alerts(ctx)
-		if err != nil {
-			return Alerts{}, err
-		}
-		s.alertsUpdatedAt = time.Now()
-		return alerts, nil
-	})
+	return s.alerts.UpdatedAt()
 }
 
 func (s *Service) Alerts(ctx context.Context) (Alerts, error) {
-	return s.loadAlerts(ctx)
+	return s.alerts.Load(ctx)
 }
 
 func (s *Service) AlertsByWorldId(ctx context.Context, worldId WorldId) (Alerts, error) {
-	alerts, err := s.loadAlerts(ctx)
+	alerts, err := s.alerts.Load(ctx)
 	if err != nil {
 		return Alerts{}, err
 	}

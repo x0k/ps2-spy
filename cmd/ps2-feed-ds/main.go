@@ -25,11 +25,13 @@ func init() {
 func main() {
 	httpClient := &http.Client{}
 	honuClient := honu.NewClient("https://wt.honu.pw", httpClient)
+	honuClient.Start()
 	defer honuClient.Stop()
 	ps2Service := ps2.NewService(
 		ps2.NewHonuPopulationProvider(honuClient),
 		ps2.NewHonuAlertsProvider(honuClient),
 	)
+	ps2Service.Start()
 	defer ps2Service.Stop()
 	b, err := bot.NewBot(discord_token, ps2Service)
 	if err != nil {

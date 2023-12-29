@@ -1,4 +1,4 @@
-package cache
+package containers
 
 import (
 	"sync"
@@ -15,7 +15,15 @@ type ExpiableValue[T any] struct {
 	done   chan struct{}
 }
 
-func (e *ExpiableValue[T]) expiration() {
+func NewExpiableValue[T any](ttl time.Duration) *ExpiableValue[T] {
+	return &ExpiableValue[T]{
+		ttl:    ttl,
+		ticker: time.NewTicker(ttl),
+		done:   make(chan struct{}),
+	}
+}
+
+func (e *ExpiableValue[T]) StartExpiration() {
 	for {
 		select {
 		case <-e.ticker.C:
@@ -27,17 +35,7 @@ func (e *ExpiableValue[T]) expiration() {
 	}
 }
 
-func NewExpiableValue[T any](ttl time.Duration) *ExpiableValue[T] {
-	val := &ExpiableValue[T]{
-		ttl:    ttl,
-		ticker: time.NewTicker(ttl),
-		done:   make(chan struct{}),
-	}
-	go val.expiration()
-	return val
-}
-
-func (e *ExpiableValue[T]) Stop() {
+func (e *ExpiableValue[T]) StopExpiration() {
 	close(e.done)
 }
 

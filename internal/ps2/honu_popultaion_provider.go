@@ -21,7 +21,7 @@ func (p *HonuPopulationProvider) Name() string {
 	return p.client.Endpoint()
 }
 
-func (p *HonuPopulationProvider) Population(ctx context.Context) (Population, error) {
+func (p *HonuPopulationProvider) Load(ctx context.Context) (Population, error) {
 	overview, err := p.client.WorldOverview(ctx)
 	if err != nil {
 		return Population{}, err

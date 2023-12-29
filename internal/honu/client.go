@@ -7,13 +7,13 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/x0k/ps2-feed/internal/cache"
+	"github.com/x0k/ps2-feed/internal/containers"
 )
 
 type Client struct {
 	httpClient   *http.Client
 	honuEndpoint string
-	worlds       *cache.ExpiableValue[[]World]
+	worlds       *containers.ExpiableValue[[]World]
 }
 
 const worldOverviewUrl = "/api/world/overview"
@@ -22,11 +22,17 @@ func NewClient(honuEndpoint string, httpClient *http.Client) *Client {
 	return &Client{
 		httpClient:   httpClient,
 		honuEndpoint: honuEndpoint,
-		worlds:       cache.NewExpiableValue[[]World](time.Minute),
+		worlds:       containers.NewExpiableValue[[]World](time.Minute),
 	}
 }
 
-func (c *Client) Stop() { c.worlds.Stop() }
+func (c *Client) Start() {
+	go c.worlds.StartExpiration()
+}
+
+func (c *Client) Stop() {
+	c.worlds.StopExpiration()
+}
 
 func (c *Client) Endpoint() string { return c.honuEndpoint }
 

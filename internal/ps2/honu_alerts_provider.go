@@ -23,7 +23,7 @@ func (p *HonuAlertsProvider) Name() string {
 	return p.client.Endpoint()
 }
 
-func (p *HonuAlertsProvider) Alerts(ctx context.Context) (Alerts, error) {
+func (p *HonuAlertsProvider) Load(ctx context.Context) (Alerts, error) {
 	overview, err := p.client.WorldOverview(ctx)
 	if err != nil {
 		return Alerts{}, err
