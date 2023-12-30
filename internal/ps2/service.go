@@ -7,58 +7,64 @@ import (
 	"github.com/x0k/ps2-spy/internal/containers"
 )
 
-type provider[T any] interface {
+type loader[T any] interface {
 	Name() string
 	Load(ctx context.Context) (T, error)
 }
 
-type Service struct {
-	populationProvider provider[Population]
-	population         *containers.LoadableValue[Population]
-	alertsProvider     provider[Alerts]
-	alerts             *containers.LoadableValue[Alerts]
+type keyedLoader[K comparable, T any] interface {
+	Name() string
+	Load(ctx context.Context, key K) (T, error)
 }
 
-func NewService(populationProvider provider[Population], alertsProvider provider[Alerts]) *Service {
+type Service struct {
+	worldsPopulationProvider loader[WorldsPopulation]
+	worldsPopulation         *containers.LoadableValue[WorldsPopulation]
+	worldPopulationProvider  keyedLoader[WorldId, WorldPopulation]
+	worldPopulation          *containers.KeyedLoadableValues[WorldId, WorldPopulation]
+	alertsProvider           loader[Alerts]
+	alerts                   *containers.LoadableValue[Alerts]
+}
+
+func NewService(
+	worldsPopulationProvider loader[WorldsPopulation],
+	worldPopulationProvider keyedLoader[WorldId, WorldPopulation],
+	alertsProvider loader[Alerts],
+) *Service {
 	return &Service{
-		populationProvider: populationProvider,
-		population:         containers.NewLoadableValue[Population](populationProvider, time.Minute),
-		alertsProvider:     alertsProvider,
-		alerts:             containers.NewLoadableValue[Alerts](alertsProvider, time.Minute),
+		worldsPopulationProvider: worldsPopulationProvider,
+		worldsPopulation:         containers.NewLoadableValue(worldsPopulationProvider, time.Minute),
+		worldPopulationProvider:  worldPopulationProvider,
+		worldPopulation:          containers.NewKeyedLoadableValue(worldPopulationProvider, 10, time.Minute),
+		alertsProvider:           alertsProvider,
+		alerts:                   containers.NewLoadableValue(alertsProvider, time.Minute),
 	}
 }
 
 func (s *Service) Start() {
-	go s.population.StartExpiration()
+	go s.worldsPopulation.StartExpiration()
 	go s.alerts.StartExpiration()
 }
 
 func (s *Service) Stop() {
-	s.population.StopExpiration()
+	s.worldsPopulation.StopExpiration()
 	s.alerts.StopExpiration()
 }
 
 func (s *Service) PopulationUpdatedAt() time.Time {
-	return s.population.UpdatedAt()
+	return s.worldsPopulation.UpdatedAt()
 }
 
 func (s *Service) PopulationSource() string {
-	return s.populationProvider.Name()
+	return s.worldsPopulationProvider.Name()
 }
 
-func (s *Service) Population(ctx context.Context) (Population, error) {
-	return s.population.Load(ctx)
+func (s *Service) Population(ctx context.Context) (WorldsPopulation, error) {
+	return s.worldsPopulation.Load(ctx)
 }
 
 func (s *Service) PopulationByWorldId(ctx context.Context, worldId WorldId) (WorldPopulation, error) {
-	population, err := s.population.Load(ctx)
-	if err != nil {
-		return WorldPopulation{}, err
-	}
-	if p, ok := population.Worlds[worldId]; ok {
-		return p, nil
-	}
-	return WorldPopulation{}, ErrWorldNotFound
+	return s.worldPopulation.Load(ctx, worldId)
 }
 
 func (s *Service) AlertsSource() string {

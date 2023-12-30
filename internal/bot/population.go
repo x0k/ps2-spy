@@ -54,7 +54,7 @@ func renderWorldTotalPopulation(worldPopulation ps2.WorldPopulation) *discordgo.
 	}
 }
 
-func renderPopulation(population ps2.Population, populationSource string, updatedAt time.Time) *discordgo.MessageEmbed {
+func renderPopulation(population ps2.WorldsPopulation, populationSource string, updatedAt time.Time) *discordgo.MessageEmbed {
 	worlds := make([]ps2.WorldPopulation, 0, len(population.Worlds))
 	for _, worldPopulation := range population.Worlds {
 		worlds = append(worlds, worldPopulation)

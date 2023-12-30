@@ -35,7 +35,7 @@ type WorldPopulation struct {
 
 type Worlds map[WorldId]WorldPopulation
 
-type Population struct {
+type WorldsPopulation struct {
 	Total  StatsByFactions
 	Worlds Worlds
 }

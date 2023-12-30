@@ -5,20 +5,20 @@ import (
 	"time"
 )
 
-type loader[T any] interface {
+type valueLoader[T any] interface {
 	Load(ctx context.Context) (T, error)
 }
 
 type LoadableValue[T any] struct {
 	value     *ExpiableValue[T]
-	provider  loader[T]
+	loader    valueLoader[T]
 	updatedAt time.Time
 }
 
-func NewLoadableValue[T any](provider loader[T], ttl time.Duration) *LoadableValue[T] {
+func NewLoadableValue[T any](loader valueLoader[T], ttl time.Duration) *LoadableValue[T] {
 	return &LoadableValue[T]{
 		value:     NewExpiableValue[T](ttl),
-		provider:  provider,
+		loader:    loader,
 		updatedAt: time.Now(),
 	}
 }
@@ -33,7 +33,7 @@ func (v *LoadableValue[T]) StopExpiration() {
 
 func (v *LoadableValue[T]) Load(ctx context.Context) (T, error) {
 	return v.value.Load(func() (T, error) {
-		value, err := v.provider.Load(ctx)
+		value, err := v.loader.Load(ctx)
 		if err != nil {
 			return value, err
 		}
