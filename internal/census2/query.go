@@ -30,30 +30,28 @@ const (
 	LangTurkish = "tr"
 )
 
-type queryField int
-
 const (
-	termsField queryField = iota
-	exactMatchFirstField
-	timingField
-	includeNullField
-	caseSensitiveField
-	retryField
-	startField
-	limitField
-	limitPerDBField
-	showField
-	hideField
-	sortField
-	hasField
-	resolveField
-	treeField
-	distinctField
-	languageField
-	fieldsCount
+	termsField = iota
+	exactMatchFirstQueryField
+	timingQueryField
+	includeNullQueryField
+	caseSensitiveQueryField
+	retryQueryField
+	startQueryField
+	limitQueryField
+	limitPerDBQueryField
+	showQueryField
+	hideQueryField
+	sortQueryField
+	hasQueryField
+	resolveQueryField
+	joinQueryField
+	treeQueryField
+	distinctQueryField
+	languageQueryField
 )
 
-var fieldNames = [fieldsCount]string{
+var queryFieldNames = []string{
 	"__terms",
 	"c:exactMatchFirst",
 	"c:timing",
@@ -68,21 +66,17 @@ var fieldNames = [fieldsCount]string{
 	"c:sort",
 	"c:has",
 	"c:resolve",
+	"c:join",
 	"c:tree",
 	"c:distinct",
 	"c:lang",
 }
 
-const queryFieldsSeparator = "&"
-const queryKeyValueSeparator = "="
-const querySubElementsSeparator = ","
-
 type Query struct {
-	queryType   string
-	namespace   string
-	collection  string
-	fields      [fieldsCount]extendablePrinter
-	fieldsCount int
+	queryType  string
+	namespace  string
+	collection string
+	fields     fields
 }
 
 func NewQuery(queryType, namespace, collection string) *Query {
@@ -90,6 +84,7 @@ func NewQuery(queryType, namespace, collection string) *Query {
 		queryType:  queryType,
 		namespace:  namespace,
 		collection: collection,
+		fields:     newFields(queryFieldNames, "?", "&", "=", ","),
 	}
 }
 
@@ -97,168 +92,112 @@ func (q *Query) Collection() string {
 	return q.collection
 }
 
-func setQueryField(q *Query, qf queryField, value extendablePrinter) {
-	if q.fields[qf] == nil {
-		q.fieldsCount++
-	}
-	q.fields[qf] = field{
-		name:      fieldNames[qf],
-		separator: queryKeyValueSeparator,
-		value:     value,
-	}
-}
-
-func setAppendableQueryField(q *Query, qf queryField, pr printer) {
-	if q.fields[qf] == nil {
-		q.fieldsCount++
-		q.fields[qf] = field{
-			name:      fieldNames[qf],
-			separator: queryKeyValueSeparator,
-			value: List{
-				values:    []printer{pr},
-				separator: querySubElementsSeparator,
-			},
-		}
-	} else {
-		q.fields[qf] = q.fields[qf].append(pr)
-	}
-}
-
-func setExtendableQueryField(q *Query, qf queryField, printers []printer) {
-	if q.fields[qf] == nil {
-		q.fieldsCount++
-		q.fields[qf] = field{
-			name:      fieldNames[qf],
-			separator: queryKeyValueSeparator,
-			value: List{
-				values:    printers,
-				separator: querySubElementsSeparator,
-			},
-		}
-	} else {
-		q.fields[qf] = q.fields[qf].extend(printers)
-	}
-}
-
 func (q *Query) Where(term queryCondition) *Query {
-	if q.fields[termsField] == nil {
-		q.fieldsCount++
-		q.fields[termsField] = term
-	} else {
-		q.fields[termsField] = q.fields[termsField].append(term)
-	}
+	q.fields = q.fields.setRawField(termsField, term.setSeparator("&"))
+	return q
+}
+
+func (q *Query) WithJoin(join queryJoin) *Query {
+	q.fields = q.fields.concatField(joinQueryField, join)
 	return q
 }
 
 func (q *Query) WithTree(tree queryTree) *Query {
-	setAppendableQueryField(q, treeField, tree)
+	q.fields = q.fields.concatField(treeQueryField, tree)
 	return q
 }
 
 func (q *Query) SetExactMatchFirst(exactMatchFirst bool) *Query {
-	setQueryField(q, exactMatchFirstField, Bool(exactMatchFirst))
+	q.fields = q.fields.setField(exactMatchFirstQueryField, Bool(exactMatchFirst))
 	return q
 }
 
 func (q *Query) SetTiming(timing bool) *Query {
-	setQueryField(q, timingField, Bool(timing))
+	q.fields = q.fields.setField(timingQueryField, Bool(timing))
 	return q
 }
 
 func (q *Query) SetIncludeNull(includeNull bool) *Query {
-	setQueryField(q, includeNullField, Bool(includeNull))
+	q.fields = q.fields.setField(includeNullQueryField, Bool(includeNull))
 	return q
 }
 
 func (q *Query) IsCaseSensitive(caseSensitive bool) *Query {
-	setQueryField(q, caseSensitiveField, Bool(caseSensitive))
+	q.fields = q.fields.setField(caseSensitiveQueryField, Bool(caseSensitive))
 	return q
 }
 
 func (q *Query) SetRetry(retry bool) *Query {
-	setQueryField(q, retryField, Bool(retry))
+	q.fields = q.fields.setField(retryQueryField, Bool(retry))
 	return q
 }
 
 func (q *Query) SetStart(start int) *Query {
-	setQueryField(q, startField, Int(start))
+	q.fields = q.fields.setField(startQueryField, Int(start))
 	return q
 }
 
 func (q *Query) SetLimit(limit int) *Query {
-	setQueryField(q, limitField, Int(limit))
+	q.fields = q.fields.setField(limitQueryField, Int(limit))
 	return q
 }
 
 func (q *Query) SetLimitPerDB(limit int) *Query {
-	setQueryField(q, limitPerDBField, Int(limit))
+	q.fields = q.fields.setField(limitPerDBQueryField, Int(limit))
 	return q
 }
 
-func (q *Query) ShowFields(fields ...string) *Query {
-	setExtendableQueryField(q, showField, stringsToList(fields))
+func (q *Query) Show(fields ...string) *Query {
+	q.fields = q.fields.extendField(showQueryField, stringsToList(fields))
 	return q
 }
 
-func (q *Query) HideFields(fields ...string) *Query {
-	setExtendableQueryField(q, hideField, stringsToList(fields))
+func (q *Query) Hide(fields ...string) *Query {
+	q.fields = q.fields.extendField(hideQueryField, stringsToList(fields))
 	return q
 }
 
 func (q *Query) SortAscBy(field string) *Query {
-	setAppendableQueryField(q, sortField, Str(field))
+	q.fields = q.fields.concatField(sortQueryField, Str(field))
 	return q
 }
 
 func (q *Query) SortDescBy(field string) *Query {
-	setAppendableQueryField(q, sortField, Str(field+":-1"))
+	q.fields = q.fields.concatField(sortQueryField, Str(field+":-1"))
 	return q
 }
 
 func (q *Query) HasFields(fields ...string) *Query {
-	setExtendableQueryField(q, hasField, stringsToList(fields))
+	q.fields = q.fields.extendField(hasQueryField, stringsToList(fields))
 	return q
 }
 
 func (q *Query) Resolve(resolves ...string) *Query {
-	setExtendableQueryField(q, resolveField, stringsToList(resolves))
+	q.fields = q.fields.extendField(resolveQueryField, stringsToList(resolves))
 	return q
 }
 
 func (q *Query) SetDistinct(distinct string) *Query {
-	setQueryField(q, distinctField, Str(distinct))
+	q.fields = q.fields.setField(distinctQueryField, Str(distinct))
 	return q
 }
 
 func (q *Query) SetLanguage(language string) *Query {
-	setQueryField(q, languageField, Str(language))
+	q.fields = q.fields.setField(languageQueryField, Str(language))
 	return q
 }
 
-func (q *Query) write(writer io.StringWriter) {
+func (q *Query) print(writer io.StringWriter) {
 	writer.WriteString(q.queryType)
 	writer.WriteString("/")
 	writer.WriteString(q.namespace)
 	writer.WriteString("/")
 	writer.WriteString(q.collection)
-	if q.fieldsCount == 0 {
-		return
-	}
-	writer.WriteString("?")
-	i := 0
-	for ; i < int(fieldsCount) && q.fields[i] == nil; i++ {
-	}
-	q.fields[i].print(writer)
-	for i++; i < int(fieldsCount); i++ {
-		if q.fields[i] != nil {
-			writer.WriteString(queryFieldsSeparator)
-			q.fields[i].print(writer)
-		}
-	}
+	q.fields.print(writer)
 }
 
 func (q *Query) String() string {
 	builder := strings.Builder{}
-	q.write(&builder)
+	q.print(&builder)
 	return builder.String()
 }

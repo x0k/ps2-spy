@@ -20,29 +20,29 @@ type queryCondition struct {
 
 func Cond(field string) queryCondition {
 	return queryCondition{
-		field: field,
-		conditions: List{
-			separator: queryFieldsSeparator,
-		},
+		field:      field,
+		conditions: List{},
 	}
 }
 
 func (c queryCondition) print(writer io.StringWriter) {
 	c.conditions.print(writer)
 }
-
-func (c queryCondition) append(value printer) extendablePrinter {
-	c.conditions = c.conditions.append(value)
+func (c queryCondition) concat(value extendablePrinter) extendablePrinter {
+	c.conditions = c.conditions.concat(value)
 	return c
 }
-
-func (c queryCondition) extend(value []printer) extendablePrinter {
+func (c queryCondition) extend(value []extendablePrinter) extendablePrinter {
 	c.conditions = c.conditions.extend(value)
+	return c
+}
+func (c queryCondition) setSeparator(separator string) extendablePrinter {
+	c.conditions = c.conditions.setSeparator(separator)
 	return c
 }
 
 func (c queryCondition) appendCondition(operator string, value extendablePrinter) queryCondition {
-	c.conditions = c.conditions.append(field{
+	c.conditions = c.conditions.concat(field{
 		name:      c.field,
 		separator: operator,
 		value:     value,
