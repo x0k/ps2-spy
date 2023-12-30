@@ -54,17 +54,17 @@ func (t queryTree) setSeparator(separator string) extendablePrinter {
 }
 
 func (t queryTree) IsList(isList bool) queryTree {
-	t.fields = t.fields.setField(listTreeField, Bit(isList))
+	t.fields = t.fields.concatField(listTreeField, Bit(isList))
 	return t
 }
 
 func (t queryTree) GroupPrefix(prefix string) queryTree {
-	t.fields = t.fields.setField(prefixTreeField, Str(prefix))
+	t.fields = t.fields.concatField(prefixTreeField, Str(prefix))
 	return t
 }
 
 func (t queryTree) StartField(field string) queryTree {
-	t.fields = t.fields.setField(startTreeField, Str(field))
+	t.fields = t.fields.concatField(startTreeField, Str(field))
 	return t
 }
 

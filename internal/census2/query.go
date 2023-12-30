@@ -93,97 +93,97 @@ func (q *Query) Collection() string {
 }
 
 func (q *Query) Where(term queryCondition) *Query {
-	q.fields = q.fields.setRawField(termsField, term.setSeparator("&"))
+	q.fields = q.fields.concatRawField(termsField, term.setSeparator("&"))
 	return q
 }
 
 func (q *Query) WithJoin(join queryJoin) *Query {
-	q.fields = q.fields.concatField(joinQueryField, join)
+	q.fields = q.fields.concatListField(joinQueryField, join)
 	return q
 }
 
 func (q *Query) WithTree(tree queryTree) *Query {
-	q.fields = q.fields.concatField(treeQueryField, tree)
+	q.fields = q.fields.concatListField(treeQueryField, tree)
 	return q
 }
 
 func (q *Query) SetExactMatchFirst(exactMatchFirst bool) *Query {
-	q.fields = q.fields.setField(exactMatchFirstQueryField, Bool(exactMatchFirst))
+	q.fields = q.fields.concatField(exactMatchFirstQueryField, Bool(exactMatchFirst))
 	return q
 }
 
 func (q *Query) SetTiming(timing bool) *Query {
-	q.fields = q.fields.setField(timingQueryField, Bool(timing))
+	q.fields = q.fields.concatField(timingQueryField, Bool(timing))
 	return q
 }
 
 func (q *Query) SetIncludeNull(includeNull bool) *Query {
-	q.fields = q.fields.setField(includeNullQueryField, Bool(includeNull))
+	q.fields = q.fields.concatField(includeNullQueryField, Bool(includeNull))
 	return q
 }
 
 func (q *Query) IsCaseSensitive(caseSensitive bool) *Query {
-	q.fields = q.fields.setField(caseSensitiveQueryField, Bool(caseSensitive))
+	q.fields = q.fields.concatField(caseSensitiveQueryField, Bool(caseSensitive))
 	return q
 }
 
 func (q *Query) SetRetry(retry bool) *Query {
-	q.fields = q.fields.setField(retryQueryField, Bool(retry))
+	q.fields = q.fields.concatField(retryQueryField, Bool(retry))
 	return q
 }
 
 func (q *Query) SetStart(start int) *Query {
-	q.fields = q.fields.setField(startQueryField, Int(start))
+	q.fields = q.fields.concatField(startQueryField, Int(start))
 	return q
 }
 
 func (q *Query) SetLimit(limit int) *Query {
-	q.fields = q.fields.setField(limitQueryField, Int(limit))
+	q.fields = q.fields.concatField(limitQueryField, Int(limit))
 	return q
 }
 
 func (q *Query) SetLimitPerDB(limit int) *Query {
-	q.fields = q.fields.setField(limitPerDBQueryField, Int(limit))
+	q.fields = q.fields.concatField(limitPerDBQueryField, Int(limit))
 	return q
 }
 
 func (q *Query) Show(fields ...string) *Query {
-	q.fields = q.fields.extendField(showQueryField, stringsToList(fields))
+	q.fields = q.fields.extendListField(showQueryField, stringsToList(fields))
 	return q
 }
 
 func (q *Query) Hide(fields ...string) *Query {
-	q.fields = q.fields.extendField(hideQueryField, stringsToList(fields))
+	q.fields = q.fields.extendListField(hideQueryField, stringsToList(fields))
 	return q
 }
 
 func (q *Query) SortAscBy(field string) *Query {
-	q.fields = q.fields.concatField(sortQueryField, Str(field))
+	q.fields = q.fields.concatListField(sortQueryField, Str(field))
 	return q
 }
 
 func (q *Query) SortDescBy(field string) *Query {
-	q.fields = q.fields.concatField(sortQueryField, Str(field+":-1"))
+	q.fields = q.fields.concatListField(sortQueryField, Str(field+":-1"))
 	return q
 }
 
 func (q *Query) HasFields(fields ...string) *Query {
-	q.fields = q.fields.extendField(hasQueryField, stringsToList(fields))
+	q.fields = q.fields.extendListField(hasQueryField, stringsToList(fields))
 	return q
 }
 
 func (q *Query) Resolve(resolves ...string) *Query {
-	q.fields = q.fields.extendField(resolveQueryField, stringsToList(resolves))
+	q.fields = q.fields.extendListField(resolveQueryField, stringsToList(resolves))
 	return q
 }
 
 func (q *Query) SetDistinct(distinct string) *Query {
-	q.fields = q.fields.setField(distinctQueryField, Str(distinct))
+	q.fields = q.fields.concatField(distinctQueryField, Str(distinct))
 	return q
 }
 
 func (q *Query) SetLanguage(language string) *Query {
-	q.fields = q.fields.setField(languageQueryField, Str(language))
+	q.fields = q.fields.concatField(languageQueryField, Str(language))
 	return q
 }
 

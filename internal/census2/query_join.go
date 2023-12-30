@@ -64,42 +64,42 @@ func (j queryJoin) setSeparator(separator string) extendablePrinter {
 }
 
 func (j queryJoin) IsList(isList bool) queryJoin {
-	j.fields = j.fields.setField(listJoinField, Bit(isList))
+	j.fields = j.fields.concatField(listJoinField, Bit(isList))
 	return j
 }
 
 func (j queryJoin) IsOuter(isOuter bool) queryJoin {
-	j.fields = j.fields.setField(outerJoinField, Bit(isOuter))
+	j.fields = j.fields.concatField(outerJoinField, Bit(isOuter))
 	return j
 }
 
 func (j queryJoin) Show(fields ...string) queryJoin {
-	j.fields = j.fields.extendField(showJoinField, stringsToList(fields))
+	j.fields = j.fields.extendListField(showJoinField, stringsToList(fields))
 	return j
 }
 
 func (j queryJoin) Hide(fields ...string) queryJoin {
-	j.fields = j.fields.extendField(hideJoinField, stringsToList(fields))
+	j.fields = j.fields.extendListField(hideJoinField, stringsToList(fields))
 	return j
 }
 
 func (j queryJoin) Where(term queryCondition) queryJoin {
-	j.fields = j.fields.concatField(termsJoinField, term.setSeparator("'"))
+	j.fields = j.fields.concatListField(termsJoinField, term.setSeparator("'"))
 	return j
 }
 
 func (j queryJoin) On(field string) queryJoin {
-	j.fields = j.fields.setField(onJoinField, Str(field))
+	j.fields = j.fields.concatField(onJoinField, Str(field))
 	return j
 }
 
 func (j queryJoin) To(field string) queryJoin {
-	j.fields = j.fields.setField(toJoinField, Str(field))
+	j.fields = j.fields.concatField(toJoinField, Str(field))
 	return j
 }
 
 func (j queryJoin) InjectAt(field string) queryJoin {
-	j.fields = j.fields.setField(injectAtJoinField, Str(field))
+	j.fields = j.fields.concatField(injectAtJoinField, Str(field))
 	return j
 }
 

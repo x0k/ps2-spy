@@ -159,7 +159,7 @@ func newFields(
 	}
 }
 
-func (f fields) setRawField(id int, value extendablePrinter) fields {
+func (f fields) concatRawField(id int, value extendablePrinter) fields {
 	if f.fields[id] == nil {
 		f.count++
 		f.fields[id] = value
@@ -169,15 +169,15 @@ func (f fields) setRawField(id int, value extendablePrinter) fields {
 	return f
 }
 
-func (f fields) setField(id int, value extendablePrinter) fields {
-	return f.setRawField(id, field{
+func (f fields) concatField(id int, value extendablePrinter) fields {
+	return f.concatRawField(id, field{
 		name:      f.names[id],
 		separator: f.keyValueSeparator,
 		value:     value,
 	})
 }
 
-func (f fields) concatField(id int, value extendablePrinter) fields {
+func (f fields) concatListField(id int, value extendablePrinter) fields {
 	if f.fields[id] == nil {
 		f.count++
 		f.fields[id] = field{
@@ -194,7 +194,7 @@ func (f fields) concatField(id int, value extendablePrinter) fields {
 	return f
 }
 
-func (f fields) extendField(id int, values []extendablePrinter) fields {
+func (f fields) extendListField(id int, values []extendablePrinter) fields {
 	if f.fields[id] == nil {
 		f.count++
 		f.fields[id] = field{

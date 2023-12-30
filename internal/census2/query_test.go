@@ -43,7 +43,6 @@ func TestQueryConditions(t *testing.T) {
 		Where(Cond("faction_id").IsGreaterThan(Int(1)))
 	s := q.String()
 	e := "get/ps2:v2/test?faction_id=[4&item_category_id=]2&item_category_id=<5&faction_id=>1"
-	//    get/ps2:v2/test?__terms=faction_id=[4&item_category_id=]2&item_category_id=<5&faction_id=>1
 	if s != e {
 		t.Errorf("expected %s, got %s", e, s)
 	}
