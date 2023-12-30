@@ -2,12 +2,11 @@ package voidwell
 
 import (
 	"context"
-	"encoding/json"
-	"io"
 	"net/http"
 	"time"
 
 	"github.com/x0k/ps2-spy/internal/containers"
+	"github.com/x0k/ps2-spy/internal/httpx"
 )
 
 type Client struct {
@@ -39,22 +38,8 @@ func (c *Client) Endpoint() string { return c.voidwellEndpoint }
 func (c *Client) WorldsState(ctx context.Context) ([]World, error) {
 	return c.worlds.Load(func() ([]World, error) {
 		url := c.voidwellEndpoint + worldsStateUrl
-		req, err := http.NewRequest("GET", url, nil)
-		if err != nil {
-			return nil, err
-		}
-		req = req.WithContext(ctx)
-		resp, err := c.httpClient.Do(req)
-		if err != nil {
-			return nil, err
-		}
-		defer resp.Body.Close()
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return nil, err
-		}
 		var contentBody []World
-		err = json.Unmarshal(body, &contentBody)
+		err := httpx.GetJson(ctx, c.httpClient, url, &contentBody)
 		if err != nil {
 			return nil, err
 		}
