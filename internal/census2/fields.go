@@ -49,6 +49,18 @@ func (b Bool) print(writer io.StringWriter) {
 func (b Bool) append(printer printer) extendablePrinter    { return b }
 func (b Bool) extend(printers []printer) extendablePrinter { return b }
 
+type Bit bool
+
+func (b Bit) print(writer io.StringWriter) {
+	if b {
+		writer.WriteString("1")
+	} else {
+		writer.WriteString("0")
+	}
+}
+func (b Bit) append(printer printer) extendablePrinter    { return b }
+func (b Bit) extend(printers []printer) extendablePrinter { return b }
+
 type Int int
 
 func (i Int) print(writer io.StringWriter) {

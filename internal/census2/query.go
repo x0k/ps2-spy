@@ -47,6 +47,7 @@ const (
 	sortField
 	hasField
 	resolveField
+	treeField
 	distinctField
 	languageField
 	fieldsCount
@@ -67,9 +68,14 @@ var fieldNames = [fieldsCount]string{
 	"c:sort",
 	"c:has",
 	"c:resolve",
+	"c:tree",
 	"c:distinct",
 	"c:lang",
 }
+
+const queryFieldsSeparator = "&"
+const queryKeyValueSeparator = "="
+const querySubElementsSeparator = ","
 
 type Query struct {
 	queryType   string
@@ -97,7 +103,7 @@ func setQueryField(q *Query, qf queryField, value extendablePrinter) {
 	}
 	q.fields[qf] = field{
 		name:      fieldNames[qf],
-		separator: "=",
+		separator: queryKeyValueSeparator,
 		value:     value,
 	}
 }
@@ -107,10 +113,10 @@ func setAppendableQueryField(q *Query, qf queryField, pr printer) {
 		q.fieldsCount++
 		q.fields[qf] = field{
 			name:      fieldNames[qf],
-			separator: "=",
+			separator: queryKeyValueSeparator,
 			value: List{
 				values:    []printer{pr},
-				separator: ",",
+				separator: querySubElementsSeparator,
 			},
 		}
 	} else {
@@ -123,10 +129,10 @@ func setExtendableQueryField(q *Query, qf queryField, printers []printer) {
 		q.fieldsCount++
 		q.fields[qf] = field{
 			name:      fieldNames[qf],
-			separator: "=",
+			separator: queryKeyValueSeparator,
 			value: List{
 				values:    printers,
-				separator: ",",
+				separator: querySubElementsSeparator,
 			},
 		}
 	} else {
@@ -141,6 +147,11 @@ func (q *Query) Where(term queryCondition) *Query {
 	} else {
 		q.fields[termsField] = q.fields[termsField].append(term)
 	}
+	return q
+}
+
+func (q *Query) WithTree(tree queryTree) *Query {
+	setAppendableQueryField(q, treeField, tree)
 	return q
 }
 
@@ -240,7 +251,7 @@ func (q *Query) write(writer io.StringWriter) {
 	q.fields[i].print(writer)
 	for i++; i < int(fieldsCount); i++ {
 		if q.fields[i] != nil {
-			writer.WriteString("&")
+			writer.WriteString(queryFieldsSeparator)
 			q.fields[i].print(writer)
 		}
 	}

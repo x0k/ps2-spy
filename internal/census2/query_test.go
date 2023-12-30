@@ -47,3 +47,16 @@ func TestQueryConditions(t *testing.T) {
 		t.Errorf("expected %s, got %s", e, s)
 	}
 }
+
+func TestQueryTree(t *testing.T) {
+	// Organize a list of vehicles by type:
+	q := NewQuery(GetQuery, Ns_ps2V2, "vehicle").
+		SetLimit(500).
+		WithTree(Tree("type_id").GroupPrefix("type_").IsList(true)).
+		SetLanguage(LangEnglish)
+	s := q.String()
+	e := "get/ps2:v2/vehicle?c:limit=500&c:tree=type_id^list:1^prefix:type_&c:lang=en"
+	if s != e {
+		t.Errorf("expected %s, got %s", e, s)
+	}
+}

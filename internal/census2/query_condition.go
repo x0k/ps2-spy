@@ -22,7 +22,7 @@ func Cond(field string) queryCondition {
 	return queryCondition{
 		field: field,
 		conditions: List{
-			separator: "&",
+			separator: queryFieldsSeparator,
 		},
 	}
 }
