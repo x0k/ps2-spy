@@ -21,7 +21,7 @@ const (
 	Ns_mtgoV1     = "mtgo:v1"     //	Magic the Gathering: Online	Stable version, alias mtgo
 )
 
-type query struct {
+type Query struct {
 	queryType       string
 	namespace       string
 	collection      string
@@ -45,8 +45,8 @@ type query struct {
 	Language        string           `queryProp:"lang"`
 }
 
-func NewQuery(qt string, ns string, collection string) *query {
-	return &query{
+func NewQuery(qt string, ns string, collection string) *Query {
+	return &Query{
 		queryType:     qt,
 		namespace:     ns,
 		collection:    collection,
@@ -58,106 +58,106 @@ func NewQuery(qt string, ns string, collection string) *query {
 	}
 }
 
-func (q *query) Collection() string {
+func (q *Query) Collection() string {
 	return q.collection
 }
 
-func (q *query) WithJoin(join queryJoin) *query {
+func (q *Query) WithJoin(join queryJoin) *Query {
 	q.Join = append(q.Join, join)
 	return q
 }
 
-func (q *query) WithTree(tree queryTree) *query {
+func (q *Query) WithTree(tree queryTree) *Query {
 	q.Tree = append(q.Tree, tree)
 	return q
 }
 
-func (q *query) Where(cond queryCondition) *query {
+func (q *Query) Where(cond queryCondition) *Query {
 	q.Terms = append(q.Terms, cond)
 	return q
 }
 
-func (q *query) SetExactMatchFirst(exactMatchFirst bool) *query {
+func (q *Query) SetExactMatchFirst(exactMatchFirst bool) *Query {
 	q.ExactMatchFirst = exactMatchFirst
 	return q
 }
 
-func (q *query) SetTiming(timing bool) *query {
+func (q *Query) SetTiming(timing bool) *Query {
 	q.Timing = timing
 	return q
 }
 
-func (q *query) SetIncludeNull(includeNull bool) *query {
+func (q *Query) SetIncludeNull(includeNull bool) *Query {
 	q.IncludeNull = includeNull
 	return q
 }
 
-func (q *query) SetCase(caseSensitive bool) *query {
+func (q *Query) SetCase(caseSensitive bool) *Query {
 	q.CaseSensitive = caseSensitive
 	return q
 }
 
-func (q *query) SetRetry(retry bool) *query {
+func (q *Query) SetRetry(retry bool) *Query {
 	q.Retry = retry
 	return q
 }
 
-func (q *query) ShowFields(fields ...string) *query {
+func (q *Query) ShowFields(fields ...string) *Query {
 	q.Show = append(q.Show, fields...)
 	return q
 }
 
-func (q *query) HideFields(fields ...string) *query {
+func (q *Query) HideFields(fields ...string) *Query {
 	q.Hide = append(q.Hide, fields...)
 	return q
 }
 
-func (q *query) SortAscBy(field string) *query {
+func (q *Query) SortAscBy(field string) *Query {
 	q.Sort = append(q.Sort, field)
 	return q
 }
 
-func (q *query) SortDescBy(field string) *query {
+func (q *Query) SortDescBy(field string) *Query {
 	q.Sort = append(q.Sort, field+":-1")
 	return q
 }
 
-func (q *query) HasFields(fields ...string) *query {
+func (q *Query) HasFields(fields ...string) *Query {
 	q.Has = append(q.Has, fields...)
 	return q
 }
 
-func (q *query) SetLimit(limit int) *query {
+func (q *Query) SetLimit(limit int) *Query {
 	q.Limit = limit
 	return q
 }
 
-func (q *query) SetLimitPerDB(limit int) *query {
+func (q *Query) SetLimitPerDB(limit int) *Query {
 	q.LimitPerDB = limit
 	return q
 }
 
-func (q *query) SetStart(start int) *query {
+func (q *Query) SetStart(start int) *Query {
 	q.Start = start
 	return q
 }
 
-func (q *query) AddResolve(resolves ...string) *query {
+func (q *Query) AddResolve(resolves ...string) *Query {
 	q.Resolve = append(q.Resolve, resolves...)
 	return q
 }
 
-func (q *query) SetLanguage(language string) *query {
+func (q *Query) SetLanguage(language string) *Query {
 	q.Language = language
 	return q
 }
 
-func (q *query) SetDistinct(distinct string) *query {
+func (q *Query) SetDistinct(distinct string) *Query {
 	q.Distinct = distinct
 	return q
 }
 
-func (q *query) write(builder *strings.Builder) {
+func (q *Query) write(builder *strings.Builder) {
 	builder.WriteString(q.queryType)
 	builder.WriteString("/")
 	builder.WriteString(q.namespace)
@@ -166,7 +166,7 @@ func (q *query) write(builder *strings.Builder) {
 	writeCensusParameter(builder, q)
 }
 
-func (q *query) writeProperty(builder *strings.Builder, key string, value reflect.Value, i int) {
+func (q *Query) writeProperty(builder *strings.Builder, key string, value reflect.Value, i int) {
 	if i == 0 {
 		builder.WriteString("?")
 	} else {
@@ -182,7 +182,7 @@ func (q *query) writeProperty(builder *strings.Builder, key string, value reflec
 	writeCensusParameterValue(builder, value, ",", censusBasicValueMapper)
 }
 
-func (q *query) String() string {
+func (q *Query) String() string {
 	builder := strings.Builder{}
 	q.write(&builder)
 	return builder.String()
