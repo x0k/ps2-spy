@@ -15,7 +15,7 @@ func TestQueryBasicParams(t *testing.T) {
 		SetDistinct("foo").
 		SetLanguage(LangGerman)
 	s := q.String()
-	e := "get/ps2:v2/test?c:exactMatchFirst=true&c:timing=true&c:includeNull=true&c:case=false&c:retry=false&c:start=10&c:limit=100&c:limitPerDB=20&c:distinct=foo&c:lang=de"
+	e := "get/ps2:v2/test?c:case=false&c:limit=100&c:limitPerDB=20&c:start=10&c:includeNull=true&c:lang=de&c:timing=true&c:exactMatchFirst=true&c:distinct=foo&c:retry=false"
 	if s != e {
 		t.Errorf("expected %s, got %s", e, s)
 	}
@@ -56,7 +56,7 @@ func TestQueryTree(t *testing.T) {
 		WithTree(Tree("type_id").GroupPrefix("type_").IsList(true)).
 		SetLanguage(LangEnglish)
 	s := q.String()
-	e := "get/ps2:v2/vehicle?c:limit=500&c:tree=type_id^list:1^prefix:type_&c:lang=en"
+	e := "get/ps2:v2/vehicle?c:limit=500&c:lang=en&c:tree=type_id^list:1^prefix:type_"
 	if s != e {
 		t.Errorf("expected %s, got %s", e, s)
 	}
@@ -79,7 +79,7 @@ func TestQueryJoin(t *testing.T) {
 			IsList(true)).
 		SetLanguage(LangEnglish)
 	s := q.String()
-	e := "get/ps2:v2/zone?zone_id=2&c:join=map_region^list:1^hide:zone_id^inject_at:regions(map_hex^list:1^hide:zone_id'map_region_id^inject_at:hex)&c:tree=facility_type^list:1^start:regions&c:lang=en"
+	e := "get/ps2:v2/zone?zone_id=2&c:lang=en&c:join=map_region^list:1^hide:zone_id^inject_at:regions(map_hex^list:1^hide:zone_id'map_region_id^inject_at:hex)&c:tree=facility_type^list:1^start:regions"
 	if s != e {
 		t.Errorf("expected %s, got %s", e, s)
 	}

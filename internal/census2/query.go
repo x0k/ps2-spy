@@ -32,44 +32,44 @@ const (
 
 const (
 	termsField = iota
-	exactMatchFirstQueryField
-	timingQueryField
-	includeNullQueryField
-	caseSensitiveQueryField
-	retryQueryField
-	startQueryField
-	limitQueryField
-	limitPerDBQueryField
 	showQueryField
 	hideQueryField
 	sortQueryField
 	hasQueryField
 	resolveQueryField
+	caseSensitiveQueryField
+	limitQueryField
+	limitPerDBQueryField
+	startQueryField
+	includeNullQueryField
+	languageQueryField
 	joinQueryField
 	treeQueryField
+	timingQueryField
+	exactMatchFirstQueryField
 	distinctQueryField
-	languageQueryField
+	retryQueryField
 )
 
 var queryFieldNames = []string{
 	"__terms",
-	"c:exactMatchFirst",
-	"c:timing",
-	"c:includeNull",
-	"c:case",
-	"c:retry",
-	"c:start",
-	"c:limit",
-	"c:limitPerDB",
 	"c:show",
 	"c:hide",
 	"c:sort",
 	"c:has",
 	"c:resolve",
+	"c:case",
+	"c:limit",
+	"c:limitPerDB",
+	"c:start",
+	"c:includeNull",
+	"c:lang",
 	"c:join",
 	"c:tree",
+	"c:timing",
+	"c:exactMatchFirst",
 	"c:distinct",
-	"c:lang",
+	"c:retry",
 }
 
 type Query struct {
