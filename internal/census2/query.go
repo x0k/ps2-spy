@@ -33,7 +33,8 @@ const (
 type queryField int
 
 const (
-	exactMatchFirstField queryField = iota
+	termsField queryField = iota
+	exactMatchFirstField
 	timingField
 	includeNullField
 	caseSensitiveField
@@ -52,6 +53,7 @@ const (
 )
 
 var fieldNames = [fieldsCount]string{
+	"__terms",
 	"c:exactMatchFirst",
 	"c:timing",
 	"c:includeNull",
@@ -100,13 +102,29 @@ func setQueryField(q *Query, qf queryField, value extendablePrinter) {
 	}
 }
 
+func setAppendableQueryField(q *Query, qf queryField, pr printer) {
+	if q.fields[qf] == nil {
+		q.fieldsCount++
+		q.fields[qf] = field{
+			name:      fieldNames[qf],
+			separator: "=",
+			value: List{
+				values:    []printer{pr},
+				separator: ",",
+			},
+		}
+	} else {
+		q.fields[qf] = q.fields[qf].append(pr)
+	}
+}
+
 func setExtendableQueryField(q *Query, qf queryField, printers []printer) {
 	if q.fields[qf] == nil {
 		q.fieldsCount++
 		q.fields[qf] = field{
 			name:      fieldNames[qf],
 			separator: "=",
-			value: list{
+			value: List{
 				values:    printers,
 				separator: ",",
 			},
@@ -116,43 +134,53 @@ func setExtendableQueryField(q *Query, qf queryField, printers []printer) {
 	}
 }
 
+func (q *Query) Where(term queryCondition) *Query {
+	if q.fields[termsField] == nil {
+		q.fieldsCount++
+		q.fields[termsField] = term
+	} else {
+		q.fields[termsField] = q.fields[termsField].append(term)
+	}
+	return q
+}
+
 func (q *Query) SetExactMatchFirst(exactMatchFirst bool) *Query {
-	setQueryField(q, exactMatchFirstField, boolField(exactMatchFirst))
+	setQueryField(q, exactMatchFirstField, Bool(exactMatchFirst))
 	return q
 }
 
 func (q *Query) SetTiming(timing bool) *Query {
-	setQueryField(q, timingField, boolField(timing))
+	setQueryField(q, timingField, Bool(timing))
 	return q
 }
 
 func (q *Query) SetIncludeNull(includeNull bool) *Query {
-	setQueryField(q, includeNullField, boolField(includeNull))
+	setQueryField(q, includeNullField, Bool(includeNull))
 	return q
 }
 
 func (q *Query) IsCaseSensitive(caseSensitive bool) *Query {
-	setQueryField(q, caseSensitiveField, boolField(caseSensitive))
+	setQueryField(q, caseSensitiveField, Bool(caseSensitive))
 	return q
 }
 
 func (q *Query) SetRetry(retry bool) *Query {
-	setQueryField(q, retryField, boolField(retry))
+	setQueryField(q, retryField, Bool(retry))
 	return q
 }
 
 func (q *Query) SetStart(start int) *Query {
-	setQueryField(q, startField, intField(start))
+	setQueryField(q, startField, Int(start))
 	return q
 }
 
 func (q *Query) SetLimit(limit int) *Query {
-	setQueryField(q, limitField, intField(limit))
+	setQueryField(q, limitField, Int(limit))
 	return q
 }
 
 func (q *Query) SetLimitPerDB(limit int) *Query {
-	setQueryField(q, limitPerDBField, intField(limit))
+	setQueryField(q, limitPerDBField, Int(limit))
 	return q
 }
 
@@ -167,12 +195,12 @@ func (q *Query) HideFields(fields ...string) *Query {
 }
 
 func (q *Query) SortAscBy(field string) *Query {
-	setExtendableQueryField(q, sortField, []printer{printableString(field)})
+	setAppendableQueryField(q, sortField, Str(field))
 	return q
 }
 
 func (q *Query) SortDescBy(field string) *Query {
-	setExtendableQueryField(q, sortField, []printer{printableString(field + ":-1")})
+	setAppendableQueryField(q, sortField, Str(field+":-1"))
 	return q
 }
 
@@ -187,12 +215,12 @@ func (q *Query) Resolve(resolves ...string) *Query {
 }
 
 func (q *Query) SetDistinct(distinct string) *Query {
-	setQueryField(q, distinctField, printableString(distinct))
+	setQueryField(q, distinctField, Str(distinct))
 	return q
 }
 
 func (q *Query) SetLanguage(language string) *Query {
-	setQueryField(q, languageField, printableString(language))
+	setQueryField(q, languageField, Str(language))
 	return q
 }
 

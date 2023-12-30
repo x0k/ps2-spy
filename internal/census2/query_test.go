@@ -35,3 +35,15 @@ func TestQueryListParams(t *testing.T) {
 		t.Errorf("expected %s, got %s", e, s)
 	}
 }
+
+func TestQueryConditions(t *testing.T) {
+	q := NewQuery(GetQuery, Ns_ps2V2, "test").
+		Where(Cond("faction_id").IsLessThanOrEquals(Int(4))).
+		Where(Cond("item_category_id").IsGreaterThanOrEquals(Int(2)).IsLessThan(Int(5))).
+		Where(Cond("faction_id").IsGreaterThan(Int(1)))
+	s := q.String()
+	e := "get/ps2:v2/test?faction_id=[4&item_category_id=]2&item_category_id=<5&faction_id=>1"
+	if s != e {
+		t.Errorf("expected %s, got %s", e, s)
+	}
+}

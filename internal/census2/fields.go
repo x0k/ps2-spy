@@ -11,6 +11,7 @@ type printer interface {
 
 type extendablePrinter interface {
 	printer
+	append(printer printer) extendablePrinter
 	extend(printers []printer) extendablePrinter
 }
 
@@ -26,42 +27,50 @@ func (f field) print(writer io.StringWriter) {
 	f.value.print(writer)
 }
 
+func (f field) append(value printer) extendablePrinter {
+	f.value = f.value.append(value)
+	return f
+}
+
 func (f field) extend(value []printer) extendablePrinter {
 	f.value = f.value.extend(value)
 	return f
 }
 
-type boolField bool
+type Bool bool
 
-func (b boolField) print(writer io.StringWriter) {
+func (b Bool) print(writer io.StringWriter) {
 	if b {
 		writer.WriteString("true")
 	} else {
 		writer.WriteString("false")
 	}
 }
-func (b boolField) extend(printers []printer) extendablePrinter { return b }
+func (b Bool) append(printer printer) extendablePrinter    { return b }
+func (b Bool) extend(printers []printer) extendablePrinter { return b }
 
-type intField int
+type Int int
 
-func (i intField) print(writer io.StringWriter) {
+func (i Int) print(writer io.StringWriter) {
 	writer.WriteString(strconv.Itoa(int(i)))
 }
-func (i intField) extend(printers []printer) extendablePrinter { return i }
+func (i Int) append(printer printer) extendablePrinter    { return i }
+func (i Int) extend(printers []printer) extendablePrinter { return i }
 
-type printableString string
+type Str string
 
-func (s printableString) print(writer io.StringWriter) {
+func (s Str) print(writer io.StringWriter) {
 	writer.WriteString(string(s))
 }
-func (s printableString) extend(printers []printer) extendablePrinter { return s }
+func (s Str) append(printer printer) extendablePrinter    { return s }
+func (s Str) extend(printers []printer) extendablePrinter { return s }
 
-type list struct {
+type List struct {
 	values    []printer
 	separator string
 }
 
-func (l list) print(writer io.StringWriter) {
+func (l List) print(writer io.StringWriter) {
 	if len(l.values) == 0 {
 		return
 	}
@@ -72,7 +81,11 @@ func (l list) print(writer io.StringWriter) {
 	}
 }
 
-func (l list) extend(printers []printer) extendablePrinter {
+func (l List) append(value printer) extendablePrinter {
+	l.values = append(l.values, value)
+	return l
+}
+func (l List) extend(printers []printer) extendablePrinter {
 	l.values = append(l.values, printers...)
 	return l
 }
@@ -80,7 +93,7 @@ func (l list) extend(printers []printer) extendablePrinter {
 func stringsToList(strings []string) []printer {
 	values := make([]printer, len(strings))
 	for i, field := range strings {
-		values[i] = printableString(field)
+		values[i] = Str(field)
 	}
 	return values
 }
