@@ -1,7 +1,6 @@
 package census2
 
 import (
-	"fmt"
 	"io"
 	"strings"
 )
@@ -60,55 +59,12 @@ var fieldNames = [fieldsCount]string{
 	"c:lang",
 }
 
-type field interface {
-	write(builder io.StringWriter)
-}
-
-type booleanField struct {
-	field        queryField
-	value        bool
-	defaultValue bool
-}
-
-func (b booleanField) write(builder io.StringWriter) {
-	if b.value != b.defaultValue {
-		builder.WriteString(fieldNames[b.field])
-		builder.WriteString("=")
-		if b.value {
-			builder.WriteString("true")
-		} else {
-			builder.WriteString("false")
-		}
-	}
-}
-
-type intField struct {
-	field queryField
-	value int
-}
-
-func (i intField) write(builder io.StringWriter) {
-	builder.WriteString(fieldNames[i.field])
-	builder.WriteString("=")
-	builder.WriteString(fmt.Sprintf("%d", i.value))
-}
-
-type stringField struct {
-	field queryField
-	value string
-}
-
-func (s stringField) write(builder io.StringWriter) {
-	builder.WriteString(fieldNames[s.field])
-	builder.WriteString("=")
-	builder.WriteString(s.value)
-}
-
 type Query struct {
-	queryType  string
-	namespace  string
-	collection string
-	fields     [fieldsCount]field
+	queryType   string
+	namespace   string
+	collection  string
+	fields      [fieldsCount]printer
+	fieldsCount int
 }
 
 func NewQuery(queryType, namespace, collection string) *Query {
@@ -123,108 +79,86 @@ func (q *Query) Collection() string {
 	return q.collection
 }
 
-func (q *Query) SetExactMatchFirst(exactMatchFirst bool) *Query {
-	q.fields[exactMatchFirstField] = booleanField{
-		field: exactMatchFirstField,
-		value: exactMatchFirst,
+func setQueryField[T printer](q *Query, qf queryField, value T) {
+	if q.fields[qf] == nil {
+		q.fieldsCount++
 	}
+	q.fields[qf] = field[T]{
+		name:      fieldNames[qf],
+		separator: "=",
+		value:     value,
+	}
+}
+
+func (q *Query) SetExactMatchFirst(exactMatchFirst bool) *Query {
+	setQueryField(q, exactMatchFirstField, printableBool(exactMatchFirst))
 	return q
 }
 
 func (q *Query) SetTiming(timing bool) *Query {
-	q.fields[timingField] = booleanField{
-		field: timingField,
-		value: timing,
-	}
+	setQueryField(q, timingField, printableBool(timing))
 	return q
 }
 
 func (q *Query) SetIncludeNull(includeNull bool) *Query {
-	q.fields[includeNullField] = booleanField{
-		field: includeNullField,
-		value: includeNull,
-	}
+	setQueryField(q, includeNullField, printableBool(includeNull))
 	return q
 }
 
 func (q *Query) IsCaseSensitive(caseSensitive bool) *Query {
-	q.fields[caseSensitiveField] = booleanField{
-		field:        caseSensitiveField,
-		value:        caseSensitive,
-		defaultValue: true,
-	}
+	setQueryField(q, caseSensitiveField, printableBool(caseSensitive))
 	return q
 }
 
 func (q *Query) SetRetry(retry bool) *Query {
-	q.fields[retryField] = booleanField{
-		field:        retryField,
-		value:        retry,
-		defaultValue: true,
-	}
+	setQueryField(q, retryField, printableBool(retry))
 	return q
 }
 
 func (q *Query) SetStart(start int) *Query {
-	q.fields[startField] = intField{
-		field: startField,
-		value: start,
-	}
+	setQueryField(q, startField, printableInt(start))
 	return q
 }
 
 func (q *Query) SetLimit(limit int) *Query {
-	q.fields[limitField] = intField{
-		field: limitField,
-		value: limit,
-	}
+	setQueryField(q, limitField, printableInt(limit))
 	return q
 }
 
 func (q *Query) SetLimitPerDB(limit int) *Query {
-	q.fields[limitPerDBField] = intField{
-		field: limitPerDBField,
-		value: limit,
-	}
+	setQueryField(q, limitPerDBField, printableInt(limit))
 	return q
 }
 
 func (q *Query) SetDistinct(distinct string) *Query {
-	q.fields[distinctField] = stringField{
-		field: distinctField,
-		value: distinct,
-	}
+	setQueryField(q, distinctField, printableString(distinct))
 	return q
 }
 
 func (q *Query) SetLanguage(language string) *Query {
-	q.fields[languageField] = stringField{
-		field: languageField,
-		value: language,
-	}
+	setQueryField(q, languageField, printableString(language))
 	return q
 }
 
-func (q *Query) write(builder io.StringWriter) {
-	builder.WriteString(q.queryType)
-	builder.WriteString("/")
-	builder.WriteString(q.namespace)
-	builder.WriteString("/")
-	builder.WriteString(q.collection)
-	fields := make([]field, 0, fieldsCount)
-	for i := 0; i < int(fieldsCount); i++ {
-		if q.fields[i] != nil {
-			fields = append(fields, q.fields[i])
-		}
-	}
-	if len(fields) == 0 {
+func (q *Query) write(writer io.StringWriter) {
+	writer.WriteString(q.queryType)
+	writer.WriteString("/")
+	writer.WriteString(q.namespace)
+	writer.WriteString("/")
+	writer.WriteString(q.collection)
+	if q.fieldsCount == 0 {
 		return
 	}
-	builder.WriteString("?")
-	fields[0].write(builder)
-	for i := 1; i < len(fields); i++ {
-		builder.WriteString("&")
-		fields[i].write(builder)
+	writer.WriteString("?")
+	i := 0
+	for ; i < int(fieldsCount) && q.fields[i] == nil; i++ {
+	}
+	q.fields[i].print(writer)
+	for i++; i < int(fieldsCount); i++ {
+		if q.fields[i] != nil {
+			writer.WriteString("&")
+			q.fields[i].print(writer)
+		}
 	}
 }
 
