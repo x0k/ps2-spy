@@ -1,4 +1,4 @@
-package ps2live
+package population
 
 import "golang.org/x/exp/constraints"
 

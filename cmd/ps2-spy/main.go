@@ -15,7 +15,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/ps2/loaders"
 	"github.com/x0k/ps2-spy/internal/ps2alerts"
-	"github.com/x0k/ps2-spy/internal/ps2live"
+	"github.com/x0k/ps2-spy/internal/ps2live/population"
 	"github.com/x0k/ps2-spy/internal/voidwell"
 )
 
@@ -33,22 +33,22 @@ func main() {
 	honuClient := honu.NewClient("https://wt.honu.pw", httpClient)
 	fisuClient := fisu.NewClient("https://ps2.fisu.pw", httpClient)
 	voidWellClient := voidwell.NewClient("https://api.voidwell.com", httpClient)
-	ps2liveClient := ps2live.NewPopulationClient("https://agg.ps2.live", httpClient)
+	populationClient := population.NewClient("https://agg.ps2.live", httpClient)
 	ps2alertsClient := ps2alerts.NewClient("https://api.ps2alerts.com/", httpClient)
 	censusClient := census2.NewClient("https://census.daybreakgames.com", "", httpClient)
 	honuClient.Start()
 	fisuClient.Start()
 	voidWellClient.Start()
-	ps2liveClient.Start()
+	populationClient.Start()
 	ps2alertsClient.Start()
 	defer honuClient.Stop()
 	defer fisuClient.Stop()
 	defer voidWellClient.Stop()
-	defer ps2liveClient.Stop()
+	defer populationClient.Stop()
 	defer ps2alertsClient.Stop()
 	worldsLoader := ps2.WithFallback(
 		"Worlds",
-		ps2.WithLoaded(loaders.NewPS2LiveWorldsPopulationLoader(ps2liveClient)),
+		ps2.WithLoaded(loaders.NewPS2LiveWorldsPopulationLoader(populationClient)),
 		ps2.WithLoaded(loaders.NewHonuWorldsPopulationLoader(honuClient)),
 		ps2.WithLoaded(loaders.NewFisuWorldsPopulationLoader(fisuClient)),
 		ps2.WithLoaded(loaders.NewVoidWellWorldsPopulationLoader(voidWellClient)),

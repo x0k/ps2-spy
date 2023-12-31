@@ -5,14 +5,14 @@ import (
 	"fmt"
 
 	"github.com/x0k/ps2-spy/internal/ps2"
-	"github.com/x0k/ps2-spy/internal/ps2live"
+	"github.com/x0k/ps2-spy/internal/ps2live/population"
 )
 
 type PS2LiveWorldsPopulationLoader struct {
-	client *ps2live.PopulationClient
+	client *population.Client
 }
 
-func NewPS2LiveWorldsPopulationLoader(client *ps2live.PopulationClient) *PS2LiveWorldsPopulationLoader {
+func NewPS2LiveWorldsPopulationLoader(client *population.Client) *PS2LiveWorldsPopulationLoader {
 	return &PS2LiveWorldsPopulationLoader{
 		client: client,
 	}
