@@ -23,12 +23,22 @@ func NewExpiableValue[T any](ttl time.Duration) *ExpiableValue[T] {
 	}
 }
 
+func (e *ExpiableValue[T]) MarkAsExpired() {
+	e.actual.Store(false)
+	e.ticker.Stop()
+}
+
+func (e *ExpiableValue[T]) ResetExpiration() {
+	e.actual.Store(true)
+	e.ticker.Reset(e.ttl)
+}
+
 func (e *ExpiableValue[T]) StartExpiration() {
+	defer e.ticker.Stop()
 	for {
 		select {
 		case <-e.ticker.C:
-			e.actual.Store(false)
-			e.ticker.Stop()
+			e.MarkAsExpired()
 		case <-e.done:
 			return
 		}
@@ -39,14 +49,21 @@ func (e *ExpiableValue[T]) StopExpiration() {
 	close(e.done)
 }
 
-func (e *ExpiableValue[T]) read() (T, bool) {
+func (e *ExpiableValue[T]) Read() (T, bool) {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
 	return e.val, e.actual.Load()
 }
 
+func (e *ExpiableValue[T]) Write(val T) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	e.val = val
+	e.ResetExpiration()
+}
+
 func (e *ExpiableValue[T]) Load(loader func() (T, error)) (T, error) {
-	cached, ok := e.read()
+	cached, ok := e.Read()
 	if ok {
 		return cached, nil
 	}
@@ -57,7 +74,6 @@ func (e *ExpiableValue[T]) Load(loader func() (T, error)) (T, error) {
 		return cached, err
 	}
 	e.val = loaded
-	e.actual.Store(true)
-	e.ticker.Reset(e.ttl)
+	e.ResetExpiration()
 	return loaded, nil
 }

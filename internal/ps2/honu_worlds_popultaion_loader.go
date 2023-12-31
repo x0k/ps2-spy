@@ -7,27 +7,27 @@ import (
 	"github.com/x0k/ps2-spy/internal/honu"
 )
 
-type HonuPopulationProvider struct {
+type HonuWorldsPopulationLoader struct {
 	client *honu.Client
 }
 
-func NewHonuPopulationProvider(client *honu.Client) *HonuPopulationProvider {
-	return &HonuPopulationProvider{
+func NewHonuWorldsPopulationLoader(client *honu.Client) *HonuWorldsPopulationLoader {
+	return &HonuWorldsPopulationLoader{
 		client: client,
 	}
 }
 
-func (p *HonuPopulationProvider) Name() string {
+func (p *HonuWorldsPopulationLoader) Name() string {
 	return p.client.Endpoint()
 }
 
-func (p *HonuPopulationProvider) Load(ctx context.Context) (Population, error) {
+func (p *HonuWorldsPopulationLoader) Load(ctx context.Context) (WorldsPopulation, error) {
 	overview, err := p.client.WorldOverview(ctx)
 	if err != nil {
-		return Population{}, err
+		return WorldsPopulation{}, err
 	}
 	worlds := make(Worlds, len(overview))
-	population := Population{
+	population := WorldsPopulation{
 		Worlds: worlds,
 	}
 	for _, w := range overview {

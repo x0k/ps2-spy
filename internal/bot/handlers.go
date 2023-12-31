@@ -57,7 +57,7 @@ func makeHandlers(service *ps2.Service) map[string]interactionHandler {
 					return nil, fmt.Errorf("error getting population: %q", err)
 				}
 				embeds := []*discordgo.MessageEmbed{
-					renderPopulation(population, service.PopulationSource(), service.PopulationUpdatedAt()),
+					renderPopulation(population),
 				}
 				return &discordgo.WebhookEdit{
 					Embeds: &embeds,
@@ -69,7 +69,7 @@ func makeHandlers(service *ps2.Service) map[string]interactionHandler {
 				return nil, fmt.Errorf("error getting population: %q", err)
 			}
 			embeds := []*discordgo.MessageEmbed{
-				renderWorldDetailedPopulation(population, service.PopulationSource(), service.PopulationUpdatedAt()),
+				renderWorldDetailedPopulation(population),
 			}
 			return &discordgo.WebhookEdit{
 				Embeds: &embeds,
@@ -82,7 +82,7 @@ func makeHandlers(service *ps2.Service) map[string]interactionHandler {
 				if err != nil {
 					return nil, fmt.Errorf("error getting alerts: %q", err)
 				}
-				embeds := renderAlerts(alerts, service.AlertsSource(), service.AlertsUpdatedAt())
+				embeds := renderAlerts(alerts)
 				return &discordgo.WebhookEdit{
 					Embeds: &embeds,
 				}, nil
@@ -97,7 +97,7 @@ func makeHandlers(service *ps2.Service) map[string]interactionHandler {
 				worldName = fmt.Sprintf("World %d", server)
 			}
 			embed := []*discordgo.MessageEmbed{
-				renderWorldDetailedAlerts(worldName, alerts, service.AlertsSource(), service.AlertsUpdatedAt()),
+				renderWorldDetailedAlerts(worldName, alerts),
 			}
 			return &discordgo.WebhookEdit{
 				Embeds: &embed,
