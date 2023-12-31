@@ -12,6 +12,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/fisu"
 	"github.com/x0k/ps2-spy/internal/honu"
 	"github.com/x0k/ps2-spy/internal/ps2"
+	"github.com/x0k/ps2-spy/internal/ps2live"
 	"github.com/x0k/ps2-spy/internal/voidwell"
 )
 
@@ -29,13 +30,17 @@ func main() {
 	honuClient := honu.NewClient("https://wt.honu.pw", httpClient)
 	fisuClient := fisu.NewClient("https://ps2.fisu.pw", httpClient)
 	voidWellClient := voidwell.NewClient("https://api.voidwell.com", httpClient)
+	ps2liveClient := ps2live.NewPopulationClient("https://agg.ps2.live", httpClient)
 	honuClient.Start()
 	fisuClient.Start()
 	voidWellClient.Start()
+	ps2liveClient.Start()
 	defer honuClient.Stop()
 	defer fisuClient.Stop()
 	defer voidWellClient.Stop()
+	defer ps2liveClient.Stop()
 	worldsLoader := ps2.WithFallback(
+		ps2.WithLoaded(ps2liveClient.Endpoint(), ps2.NewPS2LiveWorldsPopulationLoader(ps2liveClient)),
 		ps2.WithLoaded(honuClient.Endpoint(), ps2.NewHonuWorldsPopulationLoader(honuClient)),
 		ps2.WithLoaded(fisuClient.Endpoint(), ps2.NewFisuWorldsPopulationLoader(fisuClient)),
 		ps2.WithLoaded(voidWellClient.Endpoint(), ps2.NewVoidWellWorldsPopulationLoader(voidWellClient)),

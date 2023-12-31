@@ -38,11 +38,6 @@ func (c *Client) Endpoint() string { return c.voidwellEndpoint }
 func (c *Client) WorldsState(ctx context.Context) ([]World, error) {
 	return c.worlds.Load(func() ([]World, error) {
 		url := c.voidwellEndpoint + worldsStateUrl
-		var contentBody []World
-		err := httpx.GetJson(ctx, c.httpClient, url, &contentBody)
-		if err != nil {
-			return nil, err
-		}
-		return contentBody, nil
+		return httpx.GetJson[[]World](ctx, c.httpClient, url)
 	})
 }

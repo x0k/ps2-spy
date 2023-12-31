@@ -42,15 +42,14 @@ func (l *FisuWorldsPopulationLoader) Load(ctx context.Context) (WorldsPopulation
 		if world.Name == "" {
 			world.Name = fmt.Sprintf("World %d", worldId)
 		}
-		total := w.VS + w.NC + w.TR + w.NS
-		world.Total.All = total
+		world.Total.All = w.VS + w.NC + w.TR + w.NS
 		world.Total.VS = w.VS
 		world.Total.NC = w.NC
 		world.Total.TR = w.TR
 		world.Total.NS = w.NS
 		world.Total.Other = w.Unknown
 		worlds[worldId] = world
-		population.Total.All += total
+		population.Total.All += world.Total.All
 		population.Total.VS += w.VS
 		population.Total.NC += w.NC
 		population.Total.TR += w.TR

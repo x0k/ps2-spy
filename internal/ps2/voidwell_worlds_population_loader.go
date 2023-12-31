@@ -16,10 +16,6 @@ func NewVoidWellWorldsPopulationLoader(client *voidwell.Client) *VoidWellWorldsP
 	}
 }
 
-func (p *VoidWellWorldsPopulationLoader) Name() string {
-	return p.client.Endpoint()
-}
-
 func (p *VoidWellWorldsPopulationLoader) Load(ctx context.Context) (WorldsPopulation, error) {
 	states, err := p.client.WorldsState(ctx)
 	if err != nil {
