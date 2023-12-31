@@ -20,15 +20,6 @@ type Localized struct {
 	Tr string `json:"tr"`
 }
 
-type MetagameEvent struct {
-	MetagameEventId string    `json:"metagame_event_id"`
-	Name            Localized `json:"name"`
-	Description     Localized `json:"description"`
-	Type            string    `json:"type"`
-	ExperienceBonus string    `json:"experience_bonus"`
-	DurationMinutes string    `json:"duration_minutes"`
-}
-
 //go:embed data/alerts.json
 var alertsFile []byte
 var AlertsMap = func() map[int]AlertInfo {
@@ -47,6 +38,16 @@ var AlertsMap = func() map[int]AlertInfo {
 	return alerts
 }()
 
+type MetagameEvent struct {
+	MetagameEventId string    `json:"metagame_event_id"`
+	Name            Localized `json:"name"`
+	Description     Localized `json:"description"`
+	Type            string    `json:"type"`
+	ExperienceBonus string    `json:"experience_bonus"`
+	DurationMinutes string    `json:"duration_minutes"`
+}
+
+//go:embed data/metagame_events.json
 var metagameEventsFile []byte
 var MetagameEventsMap = func() map[int]MetagameEvent {
 	var rawInfo map[string]MetagameEvent
@@ -62,4 +63,4 @@ var MetagameEventsMap = func() map[int]MetagameEvent {
 		events[id] = v
 	}
 	return events
-}
+}()

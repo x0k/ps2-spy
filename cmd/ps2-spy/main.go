@@ -9,6 +9,7 @@ import (
 	"syscall"
 
 	"github.com/x0k/ps2-spy/internal/bot"
+	"github.com/x0k/ps2-spy/internal/census2"
 	"github.com/x0k/ps2-spy/internal/fisu"
 	"github.com/x0k/ps2-spy/internal/honu"
 	"github.com/x0k/ps2-spy/internal/ps2"
@@ -34,6 +35,7 @@ func main() {
 	voidWellClient := voidwell.NewClient("https://api.voidwell.com", httpClient)
 	ps2liveClient := ps2live.NewPopulationClient("https://agg.ps2.live", httpClient)
 	ps2alertsClient := ps2alerts.NewClient("https://api.ps2alerts.com/", httpClient)
+	censusClient := census2.NewClient("https://census.daybreakgames.com", "", httpClient)
 	honuClient.Start()
 	fisuClient.Start()
 	voidWellClient.Start()
@@ -60,6 +62,7 @@ func main() {
 		"Alerts",
 		ps2.WithLoaded(loaders.NewPS2AlertsAlertsLoader(ps2alertsClient)),
 		ps2.WithLoaded(loaders.NewHonuAlertsLoader(honuClient)),
+		ps2.WithLoaded(loaders.NewCensusAlertsLoader(censusClient)),
 		ps2.WithLoaded(loaders.NewVoidWellAlertsLoader(voidWellClient)),
 	)
 	worldsLoader.Start()
