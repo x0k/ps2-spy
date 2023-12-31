@@ -40,6 +40,10 @@ func (c *Client) Endpoint() string {
 func (c *Client) WorldsPopulation(ctx context.Context) (WorldsPopulation, error) {
 	return c.worldsPopulation.Load(func() (WorldsPopulation, error) {
 		url := c.fisuEndpoint + populationApiUrl
-		return httpx.GetJson[WorldsPopulation](ctx, c.httpClient, url)
+		res, err := httpx.GetJson[Response[WorldsPopulation]](ctx, c.httpClient, url)
+		if err != nil {
+			return WorldsPopulation{}, err
+		}
+		return res.Result, nil
 	})
 }
