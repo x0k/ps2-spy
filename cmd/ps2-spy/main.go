@@ -34,7 +34,7 @@ func main() {
 	fisuClient := fisu.NewClient("https://ps2.fisu.pw", httpClient)
 	voidWellClient := voidwell.NewClient("https://api.voidwell.com", httpClient)
 	populationClient := population.NewClient("https://agg.ps2.live", httpClient)
-	ps2alertsClient := ps2alerts.NewClient("https://api.ps2alerts.com/", httpClient)
+	ps2alertsClient := ps2alerts.NewClient("https://api.ps2alerts.com", httpClient)
 	censusClient := census2.NewClient("https://census.daybreakgames.com", "", httpClient)
 	honuClient.Start()
 	fisuClient.Start()
