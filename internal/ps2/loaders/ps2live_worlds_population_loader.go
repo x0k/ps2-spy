@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/x0k/ps2-spy/internal/lib/ps2live/population"
 	"github.com/x0k/ps2-spy/internal/ps2"
-	"github.com/x0k/ps2-spy/internal/ps2live/population"
 )
 
 type PS2LiveWorldsPopulationLoader struct {

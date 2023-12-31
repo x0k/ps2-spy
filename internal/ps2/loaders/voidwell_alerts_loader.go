@@ -5,8 +5,8 @@ import (
 	"log"
 	"time"
 
+	"github.com/x0k/ps2-spy/internal/lib/voidwell"
 	"github.com/x0k/ps2-spy/internal/ps2"
-	"github.com/x0k/ps2-spy/internal/voidwell"
 )
 
 type VoidWellAlertsLoader struct {

@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/x0k/ps2-spy/internal/contextx"
+	"github.com/x0k/ps2-spy/internal/lib/contextx"
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
 

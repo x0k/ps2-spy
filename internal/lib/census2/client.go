@@ -9,7 +9,7 @@ import (
 
 	"github.com/hashicorp/golang-lru/v2/expirable"
 	"github.com/mitchellh/mapstructure"
-	"github.com/x0k/ps2-spy/internal/httpx"
+	"github.com/x0k/ps2-spy/internal/lib/httpx"
 )
 
 type Client struct {

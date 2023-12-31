@@ -6,8 +6,8 @@ import (
 	"log"
 	"time"
 
+	"github.com/x0k/ps2-spy/internal/lib/ps2alerts"
 	"github.com/x0k/ps2-spy/internal/ps2"
-	"github.com/x0k/ps2-spy/internal/ps2alerts"
 )
 
 type PS2AlertsAlertsLoader struct {

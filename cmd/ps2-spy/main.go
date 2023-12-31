@@ -9,14 +9,14 @@ import (
 	"syscall"
 
 	"github.com/x0k/ps2-spy/internal/bot"
-	"github.com/x0k/ps2-spy/internal/census2"
-	"github.com/x0k/ps2-spy/internal/fisu"
-	"github.com/x0k/ps2-spy/internal/honu"
+	"github.com/x0k/ps2-spy/internal/lib/census2"
+	"github.com/x0k/ps2-spy/internal/lib/fisu"
+	"github.com/x0k/ps2-spy/internal/lib/honu"
+	"github.com/x0k/ps2-spy/internal/lib/ps2alerts"
+	"github.com/x0k/ps2-spy/internal/lib/ps2live/population"
+	"github.com/x0k/ps2-spy/internal/lib/voidwell"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/ps2/loaders"
-	"github.com/x0k/ps2-spy/internal/ps2alerts"
-	"github.com/x0k/ps2-spy/internal/ps2live/population"
-	"github.com/x0k/ps2-spy/internal/voidwell"
 )
 
 var (

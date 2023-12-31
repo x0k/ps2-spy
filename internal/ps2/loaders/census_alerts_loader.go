@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/x0k/ps2-spy/internal/census2"
+	"github.com/x0k/ps2-spy/internal/lib/census2"
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
 

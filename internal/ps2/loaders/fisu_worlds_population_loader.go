@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/x0k/ps2-spy/internal/fisu"
+	"github.com/x0k/ps2-spy/internal/lib/fisu"
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
 

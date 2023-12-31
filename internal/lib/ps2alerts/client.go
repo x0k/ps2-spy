@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/x0k/ps2-spy/internal/containers"
-	"github.com/x0k/ps2-spy/internal/httpx"
+	"github.com/x0k/ps2-spy/internal/lib/containers"
+	"github.com/x0k/ps2-spy/internal/lib/httpx"
 )
 
 const alertsUrl = "/instances/active"
