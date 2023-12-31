@@ -2,6 +2,7 @@ package ps2
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"time"
 
@@ -120,7 +121,7 @@ func (l *fallbackLoader[T]) Load(ctx context.Context) (T, error) {
 		l.successLoader.Write(loader)
 		return value, nil
 	}
-	return *new(T), nil
+	return *new(T), fmt.Errorf("%s: all loaders failed", l.name)
 }
 
 type keyedFallbackLoader[K comparable, T any] struct {
@@ -171,5 +172,5 @@ func (l *keyedFallbackLoader[K, T]) Load(ctx context.Context, key K) (T, error) 
 		l.successLoader.Write(loader)
 		return value, nil
 	}
-	return *new(T), nil
+	return *new(T), fmt.Errorf("%s: all loaders failed", l.name)
 }
