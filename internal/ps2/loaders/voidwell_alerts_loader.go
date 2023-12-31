@@ -1,10 +1,11 @@
-package ps2
+package loaders
 
 import (
 	"context"
 	"log"
 	"time"
 
+	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/voidwell"
 )
 
@@ -18,13 +19,17 @@ func NewVoidWellAlertsLoader(client *voidwell.Client) *VoidWellAlertsLoader {
 	}
 }
 
-func (p *VoidWellAlertsLoader) Load(ctx context.Context) (Alerts, error) {
+func (p *VoidWellAlertsLoader) Name() string {
+	return p.client.Endpoint()
+}
+
+func (p *VoidWellAlertsLoader) Load(ctx context.Context) (ps2.Alerts, error) {
 	states, err := p.client.WorldsState(ctx)
 	if err != nil {
-		return Alerts{}, err
+		return ps2.Alerts{}, err
 	}
 	// Usually, worlds count is greater than alerts count
-	alerts := make(Alerts, 0, len(states))
+	alerts := make(ps2.Alerts, 0, len(states))
 	for _, s := range states {
 		for _, z := range s.ZoneStates {
 			e := z.AlertState.MetagameEvent
@@ -41,11 +46,11 @@ func (p *VoidWellAlertsLoader) Load(ctx context.Context) (Alerts, error) {
 				log.Printf("Failed to parse %q: %q", z.AlertState.Timestamp, err)
 				continue
 			}
-			alert := Alert{
-				WorldId:          WorldId(s.Id),
-				WorldName:        WorldNames[WorldId(s.Id)],
-				ZoneId:           ZoneId(e.ZoneId),
-				ZoneName:         ZoneNames[ZoneId(e.ZoneId)],
+			alert := ps2.Alert{
+				WorldId:          ps2.WorldId(s.Id),
+				WorldName:        ps2.WorldNames[ps2.WorldId(s.Id)],
+				ZoneId:           ps2.ZoneId(e.ZoneId),
+				ZoneName:         ps2.ZoneNames[ps2.ZoneId(e.ZoneId)],
 				AlertName:        e.Name,
 				AlertDescription: e.Description,
 				StartedAt:        startedAt,

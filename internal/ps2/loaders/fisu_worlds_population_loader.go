@@ -1,10 +1,11 @@
-package ps2
+package loaders
 
 import (
 	"context"
 	"fmt"
 
 	"github.com/x0k/ps2-spy/internal/fisu"
+	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
 type FisuWorldsPopulationLoader struct {
@@ -21,13 +22,13 @@ func (l *FisuWorldsPopulationLoader) Name() string {
 	return l.client.Endpoint()
 }
 
-func (l *FisuWorldsPopulationLoader) Load(ctx context.Context) (WorldsPopulation, error) {
+func (l *FisuWorldsPopulationLoader) Load(ctx context.Context) (ps2.WorldsPopulation, error) {
 	worldsPopulation, err := l.client.WorldsPopulation(ctx)
 	if err != nil {
-		return WorldsPopulation{}, err
+		return ps2.WorldsPopulation{}, err
 	}
-	worlds := make(Worlds, len(worldsPopulation))
-	population := WorldsPopulation{
+	worlds := make(ps2.Worlds, len(worldsPopulation))
+	population := ps2.WorldsPopulation{
 		Worlds: worlds,
 	}
 	for _, wArr := range worldsPopulation {
@@ -35,10 +36,10 @@ func (l *FisuWorldsPopulationLoader) Load(ctx context.Context) (WorldsPopulation
 			continue
 		}
 		w := wArr[0]
-		worldId := WorldId(w.WorldId)
+		worldId := ps2.WorldId(w.WorldId)
 		world := worlds[worldId]
 		world.Id = worldId
-		world.Name = WorldNames[worldId]
+		world.Name = ps2.WorldNames[worldId]
 		if world.Name == "" {
 			world.Name = fmt.Sprintf("World %d", worldId)
 		}

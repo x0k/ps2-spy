@@ -1,10 +1,11 @@
-package ps2
+package loaders
 
 import (
 	"context"
 	"fmt"
 
 	"github.com/x0k/ps2-spy/internal/honu"
+	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
 type HonuWorldPopulationLoader struct {
@@ -21,31 +22,31 @@ func (p *HonuWorldPopulationLoader) Name() string {
 	return p.client.Endpoint()
 }
 
-func (p *HonuWorldPopulationLoader) Load(ctx context.Context, worldId WorldId) (WorldPopulation, error) {
+func (p *HonuWorldPopulationLoader) Load(ctx context.Context, worldId ps2.WorldId) (ps2.WorldPopulation, error) {
 	overview, err := p.client.WorldOverview(ctx)
 	if err != nil {
-		return WorldPopulation{}, err
+		return ps2.WorldPopulation{}, err
 	}
 	for _, w := range overview {
-		wId := WorldId(w.WorldId)
+		wId := ps2.WorldId(w.WorldId)
 		if wId != worldId {
 			continue
 		}
-		world := WorldPopulation{}
+		world := ps2.WorldPopulation{}
 		world.Id = wId
-		world.Name = WorldNames[wId]
+		world.Name = ps2.WorldNames[wId]
 		if world.Name == "" {
 			world.Name = fmt.Sprintf("World %d", wId)
 		}
-		zones := make(Zones, len(w.Zones))
+		zones := make(ps2.Zones, len(w.Zones))
 		world.Zones = zones
 		for _, z := range w.Zones {
-			zoneId := ZoneId(z.ZoneId)
-			zone := ZonePopulation{
+			zoneId := ps2.ZoneId(z.ZoneId)
+			zone := ps2.ZonePopulation{
 				Id:     zoneId,
-				Name:   ZoneNames[zoneId],
+				Name:   ps2.ZoneNames[zoneId],
 				IsOpen: z.IsOpened,
-				StatsByFactions: StatsByFactions{
+				StatsByFactions: ps2.StatsByFactions{
 					All:   z.Players.All,
 					VS:    z.Players.VS,
 					NC:    z.Players.NC,
@@ -65,5 +66,5 @@ func (p *HonuWorldPopulationLoader) Load(ctx context.Context, worldId WorldId) (
 		}
 		return world, nil
 	}
-	return WorldPopulation{}, ErrWorldNotFound
+	return ps2.WorldPopulation{}, ps2.ErrWorldNotFound
 }

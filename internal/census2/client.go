@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/mitchellh/mapstructure"
 	"github.com/x0k/ps2-spy/internal/httpx"
 )
 
@@ -23,11 +24,13 @@ func NewClient(censusEndpoint string, serviceId string, httpClient *http.Client)
 	}
 }
 
-func (c *Client) Execute(ctx context.Context, q Query) ([]any, error) {
+func (c *Client) Execute(ctx context.Context, q *Query) ([]any, error) {
 	builder := strings.Builder{}
 	builder.WriteString(c.censusEndpoint)
-	builder.WriteString("s:")
-	builder.WriteString(c.serviceId)
+	if c.serviceId != "" {
+		builder.WriteString("/s:")
+		builder.WriteString(c.serviceId)
+	}
 	builder.WriteString("/json/")
 	q.print(&builder)
 	url := builder.String()
@@ -37,4 +40,16 @@ func (c *Client) Execute(ctx context.Context, q Query) ([]any, error) {
 	}
 	propertyIndex := fmt.Sprintf("%s_list", q.Collection())
 	return content[propertyIndex].([]any), nil
+}
+
+func ExecuteAndDecode[T any](ctx context.Context, c *Client, q *Query) ([]T, error) {
+	data, err := c.Execute(ctx, q)
+	if err != nil {
+		return nil, err
+	}
+	items := make([]T, len(data))
+	for i, item := range data {
+		mapstructure.Decode(item, &items[i])
+	}
+	return items, nil
 }
