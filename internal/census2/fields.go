@@ -127,7 +127,7 @@ func (l List) setSeparator(separator string) extendablePrinter {
 	return l
 }
 
-func stringsToList(strings []string) []extendablePrinter {
+func stringsToPrinters(strings []string) []extendablePrinter {
 	values := make([]extendablePrinter, len(strings))
 	for i, field := range strings {
 		values[i] = Str(field)

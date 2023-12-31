@@ -148,12 +148,12 @@ func (q *Query) SetLimitPerDB(limit int) *Query {
 }
 
 func (q *Query) Show(fields ...string) *Query {
-	q.fields = q.fields.extendListField(showQueryField, stringsToList(fields))
+	q.fields = q.fields.extendListField(showQueryField, stringsToPrinters(fields))
 	return q
 }
 
 func (q *Query) Hide(fields ...string) *Query {
-	q.fields = q.fields.extendListField(hideQueryField, stringsToList(fields))
+	q.fields = q.fields.extendListField(hideQueryField, stringsToPrinters(fields))
 	return q
 }
 
@@ -168,12 +168,12 @@ func (q *Query) SortDescBy(field string) *Query {
 }
 
 func (q *Query) HasFields(fields ...string) *Query {
-	q.fields = q.fields.extendListField(hasQueryField, stringsToList(fields))
+	q.fields = q.fields.extendListField(hasQueryField, stringsToPrinters(fields))
 	return q
 }
 
 func (q *Query) Resolve(resolves ...string) *Query {
-	q.fields = q.fields.extendListField(resolveQueryField, stringsToList(resolves))
+	q.fields = q.fields.extendListField(resolveQueryField, stringsToPrinters(resolves))
 	return q
 }
 

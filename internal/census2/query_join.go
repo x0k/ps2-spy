@@ -74,12 +74,12 @@ func (j queryJoin) IsOuter(isOuter bool) queryJoin {
 }
 
 func (j queryJoin) Show(fields ...string) queryJoin {
-	j.fields = j.fields.extendListField(showJoinField, stringsToList(fields))
+	j.fields = j.fields.extendListField(showJoinField, stringsToPrinters(fields))
 	return j
 }
 
 func (j queryJoin) Hide(fields ...string) queryJoin {
-	j.fields = j.fields.extendListField(hideJoinField, stringsToList(fields))
+	j.fields = j.fields.extendListField(hideJoinField, stringsToPrinters(fields))
 	return j
 }
 
