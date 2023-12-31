@@ -1,4 +1,4 @@
-package fisu
+package ps2alerts
 
 // import (
 // 	"context"
@@ -7,8 +7,8 @@ package fisu
 // )
 
 // func TestWorldsPopulation(t *testing.T) {
-// 	c := NewClient("https://ps2.fisu.pw", &http.Client{})
-// 	state, err := c.WorldsPopulation(context.Background())
+// 	c := NewClient("https://api.ps2alerts.com", &http.Client{})
+// 	state, err := c.Alerts(context.Background())
 // 	if err != nil {
 // 		t.Fatal(err)
 // 	}
