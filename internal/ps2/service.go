@@ -8,12 +8,9 @@ import (
 )
 
 type Service struct {
-	worldsPopulationProvider loader[Loaded[WorldsPopulation]]
-	worldsPopulation         *containers.LoadableValue[Loaded[WorldsPopulation]]
-	worldPopulationProvider  keyedLoader[WorldId, Loaded[WorldPopulation]]
-	worldPopulation          *containers.KeyedLoadableValues[WorldId, Loaded[WorldPopulation]]
-	alertsProvider           loader[Loaded[Alerts]]
-	alerts                   *containers.LoadableValue[Loaded[Alerts]]
+	worldsPopulation *containers.LoadableValue[Loaded[WorldsPopulation]]
+	worldPopulation  *containers.KeyedLoadableValues[WorldId, Loaded[WorldPopulation]]
+	alerts           *containers.LoadableValue[Loaded[Alerts]]
 }
 
 func NewService(
@@ -22,12 +19,9 @@ func NewService(
 	alertsProvider loader[Loaded[Alerts]],
 ) *Service {
 	return &Service{
-		worldsPopulationProvider: worldsPopulationProvider,
-		worldsPopulation:         containers.NewLoadableValue(worldsPopulationProvider, time.Minute),
-		worldPopulationProvider:  worldPopulationProvider,
-		worldPopulation:          containers.NewKeyedLoadableValue(worldPopulationProvider, 10, time.Minute),
-		alertsProvider:           alertsProvider,
-		alerts:                   containers.NewLoadableValue(alertsProvider, time.Minute),
+		worldsPopulation: containers.NewLoadableValue(worldsPopulationProvider, time.Minute),
+		worldPopulation:  containers.NewKeyedLoadableValue(worldPopulationProvider, 10, time.Minute),
+		alerts:           containers.NewLoadableValue(alertsProvider, time.Minute),
 	}
 }
 

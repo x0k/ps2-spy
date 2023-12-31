@@ -48,6 +48,10 @@ func renderWorldDetailedAlerts(worldName string, loaded ps2.Loaded[ps2.Alerts]) 
 	if len(alerts) == 0 {
 		return &discordgo.MessageEmbed{
 			Title: fmt.Sprintf("%s - No alerts", worldName),
+			Footer: &discordgo.MessageEmbedFooter{
+				Text: fmt.Sprintf("Source: %s", loaded.Source),
+			},
+			Timestamp: loaded.UpdatedAt.Format(time.RFC3339),
 		}
 	}
 	return &discordgo.MessageEmbed{
@@ -67,6 +71,10 @@ func renderAlerts(loaded ps2.Loaded[ps2.Alerts]) []*discordgo.MessageEmbed {
 		return []*discordgo.MessageEmbed{
 			{
 				Title: "No alerts",
+				Footer: &discordgo.MessageEmbedFooter{
+					Text: fmt.Sprintf("Source: %s", loaded.Source),
+				},
+				Timestamp: loaded.UpdatedAt.Format(time.RFC3339),
 			},
 		}
 	}

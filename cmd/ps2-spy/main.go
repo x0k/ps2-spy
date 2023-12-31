@@ -9,8 +9,10 @@ import (
 	"syscall"
 
 	"github.com/x0k/ps2-spy/internal/bot"
+	"github.com/x0k/ps2-spy/internal/fisu"
 	"github.com/x0k/ps2-spy/internal/honu"
 	"github.com/x0k/ps2-spy/internal/ps2"
+	"github.com/x0k/ps2-spy/internal/voidwell"
 )
 
 var (
@@ -25,12 +27,37 @@ func init() {
 func main() {
 	httpClient := &http.Client{}
 	honuClient := honu.NewClient("https://wt.honu.pw", httpClient)
+	fisuClient := fisu.NewClient("https://ps2.fisu.pw", httpClient)
+	voidWellClient := voidwell.NewClient("https://api.voidwell.com", httpClient)
 	honuClient.Start()
+	fisuClient.Start()
+	voidWellClient.Start()
 	defer honuClient.Stop()
-	ps2Service := ps2.NewService(
+	defer fisuClient.Stop()
+	defer voidWellClient.Stop()
+	worldsLoader := ps2.WithFallback(
 		ps2.WithLoaded(honuClient.Endpoint(), ps2.NewHonuWorldsPopulationLoader(honuClient)),
+		ps2.WithLoaded(fisuClient.Endpoint(), ps2.NewFisuWorldsPopulationLoader(fisuClient)),
+		ps2.WithLoaded(voidWellClient.Endpoint(), ps2.NewVoidWellWorldsPopulationLoader(voidWellClient)),
+	)
+	worldLoader := ps2.WithKeyedFallback(
 		ps2.WithKeyedLoaded(honuClient.Endpoint(), ps2.NewHonuWorldPopulationLoader(honuClient)),
+		ps2.WithKeyedLoaded(voidWellClient.Endpoint(), ps2.NewVoidWellWorldPopulationLoader(voidWellClient)),
+	)
+	alertsLoader := ps2.WithFallback(
 		ps2.WithLoaded(honuClient.Endpoint(), ps2.NewHonuAlertsLoader(honuClient)),
+		ps2.WithLoaded(voidWellClient.Endpoint(), ps2.NewVoidWellAlertsLoader(voidWellClient)),
+	)
+	worldsLoader.Start()
+	worldLoader.Start()
+	alertsLoader.Start()
+	defer worldsLoader.Stop()
+	defer worldLoader.Stop()
+	defer alertsLoader.Stop()
+	ps2Service := ps2.NewService(
+		worldsLoader,
+		worldLoader,
+		alertsLoader,
 	)
 	ps2Service.Start()
 	defer ps2Service.Stop()

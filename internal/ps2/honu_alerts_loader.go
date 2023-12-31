@@ -19,10 +19,6 @@ func NewHonuAlertsLoader(client *honu.Client) *HonuAlertsLoader {
 	}
 }
 
-func (p *HonuAlertsLoader) Name() string {
-	return p.client.Endpoint()
-}
-
 func (p *HonuAlertsLoader) Load(ctx context.Context) (Alerts, error) {
 	overview, err := p.client.WorldOverview(ctx)
 	if err != nil {
