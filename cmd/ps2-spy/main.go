@@ -38,6 +38,7 @@ func main() {
 	saerroClient := saerro.NewClient("https://saerro.ps2.live", httpClient)
 	ps2alertsClient := ps2alerts.NewClient("https://api.ps2alerts.com", httpClient)
 	censusClient := census2.NewClient("https://census.daybreakgames.com", "", httpClient)
+	sanctuaryClient := census2.NewClient("https://census.lithafalcon.cc", "", httpClient)
 	honuClient.Start()
 	fisuClient.Start()
 	voidWellClient.Start()
@@ -56,6 +57,7 @@ func main() {
 		ps2.WithLoaded(loaders.NewHonuWorldsPopulationLoader(honuClient)),
 		ps2.WithLoaded(loaders.NewSaerroWorldsPopulationLoader(saerroClient)),
 		ps2.WithLoaded(loaders.NewFisuWorldsPopulationLoader(fisuClient)),
+		ps2.WithLoaded(loaders.NewSanctuaryWorldsPopulationLoader(sanctuaryClient)),
 		ps2.WithLoaded(loaders.NewVoidWellWorldsPopulationLoader(voidWellClient)),
 	)
 	worldLoader := ps2.WithKeyedFallback(

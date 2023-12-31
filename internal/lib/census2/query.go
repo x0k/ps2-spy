@@ -13,6 +13,7 @@ const (
 const (
 	Ns_eq2 = "eq2" //	EverQuest II	Stable version.
 	// deprecated
+	Ns_ps2        = "ps2"         //	Latest PlanetSide 2 (PC) version. (if version is not supported by API)
 	Ns_ps2V1      = "ps2:v1"      //	PlanetSide 2 (PC)	Deprecated. Please use ps2:v2.
 	Ns_ps2V2      = "ps2:v2"      //	PlanetSide 2 (PC)	Stable version, alias is ps2.
 	Ns_ps2ps4usV2 = "ps2ps4us:v2" //	US PlanetSide 2 (Playstation 4)	Stable version, alias is ps2ps4us.

@@ -39,7 +39,8 @@ func (c *Client) Execute(ctx context.Context, q *Query) ([]any, error) {
 		builder.WriteString("/s:")
 		builder.WriteString(c.serviceId)
 	}
-	builder.WriteString("/json/")
+	// builder.WriteString("/json/")
+	builder.WriteByte('/')
 	q.print(&builder)
 	url := builder.String()
 	if cached, ok := c.cache.Get(url); ok {
