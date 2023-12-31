@@ -9,9 +9,11 @@ import (
 	"syscall"
 
 	"github.com/x0k/ps2-spy/internal/bot"
+	"github.com/x0k/ps2-spy/internal/census2"
 	"github.com/x0k/ps2-spy/internal/fisu"
 	"github.com/x0k/ps2-spy/internal/honu"
 	"github.com/x0k/ps2-spy/internal/ps2"
+	"github.com/x0k/ps2-spy/internal/ps2/loaders"
 	"github.com/x0k/ps2-spy/internal/ps2alerts"
 	"github.com/x0k/ps2-spy/internal/ps2live"
 	"github.com/x0k/ps2-spy/internal/voidwell"
@@ -33,6 +35,7 @@ func main() {
 	voidWellClient := voidwell.NewClient("https://api.voidwell.com", httpClient)
 	ps2liveClient := ps2live.NewPopulationClient("https://agg.ps2.live", httpClient)
 	ps2alertsClient := ps2alerts.NewClient("https://api.ps2alerts.com/", httpClient)
+	censusClient := census2.NewClient("https://census.daybreakgames.com", "", httpClient)
 	honuClient.Start()
 	fisuClient.Start()
 	voidWellClient.Start()
@@ -44,19 +47,23 @@ func main() {
 	defer ps2liveClient.Stop()
 	defer ps2alertsClient.Stop()
 	worldsLoader := ps2.WithFallback(
-		ps2.WithLoaded(ps2liveClient.Endpoint(), ps2.NewPS2LiveWorldsPopulationLoader(ps2liveClient)),
-		ps2.WithLoaded(honuClient.Endpoint(), ps2.NewHonuWorldsPopulationLoader(honuClient)),
-		ps2.WithLoaded(fisuClient.Endpoint(), ps2.NewFisuWorldsPopulationLoader(fisuClient)),
-		ps2.WithLoaded(voidWellClient.Endpoint(), ps2.NewVoidWellWorldsPopulationLoader(voidWellClient)),
+		"Worlds",
+		ps2.WithLoaded(loaders.NewPS2LiveWorldsPopulationLoader(ps2liveClient)),
+		ps2.WithLoaded(loaders.NewHonuWorldsPopulationLoader(honuClient)),
+		ps2.WithLoaded(loaders.NewFisuWorldsPopulationLoader(fisuClient)),
+		ps2.WithLoaded(loaders.NewVoidWellWorldsPopulationLoader(voidWellClient)),
 	)
 	worldLoader := ps2.WithKeyedFallback(
-		ps2.WithKeyedLoaded(honuClient.Endpoint(), ps2.NewHonuWorldPopulationLoader(honuClient)),
-		ps2.WithKeyedLoaded(voidWellClient.Endpoint(), ps2.NewVoidWellWorldPopulationLoader(voidWellClient)),
+		"World",
+		ps2.WithKeyedLoaded(loaders.NewHonuWorldPopulationLoader(honuClient)),
+		ps2.WithKeyedLoaded(loaders.NewVoidWellWorldPopulationLoader(voidWellClient)),
 	)
 	alertsLoader := ps2.WithFallback(
-		ps2.WithLoaded(ps2alertsClient.Endpoint(), ps2.NewPS2AlertsAlertsLoader(ps2alertsClient)),
-		ps2.WithLoaded(honuClient.Endpoint(), ps2.NewHonuAlertsLoader(honuClient)),
-		ps2.WithLoaded(voidWellClient.Endpoint(), ps2.NewVoidWellAlertsLoader(voidWellClient)),
+		"Alerts",
+		ps2.WithLoaded(loaders.NewPS2AlertsAlertsLoader(ps2alertsClient)),
+		ps2.WithLoaded(loaders.NewHonuAlertsLoader(honuClient)),
+		ps2.WithLoaded(loaders.NewCensusAlertsLoader(censusClient)),
+		ps2.WithLoaded(loaders.NewVoidWellAlertsLoader(voidWellClient)),
 	)
 	worldsLoader.Start()
 	worldLoader.Start()

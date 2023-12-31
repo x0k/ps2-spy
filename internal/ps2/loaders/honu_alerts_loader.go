@@ -1,4 +1,4 @@
-package ps2
+package loaders
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/x0k/ps2-spy/internal/honu"
+	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
 type HonuAlertsLoader struct {
@@ -19,13 +20,17 @@ func NewHonuAlertsLoader(client *honu.Client) *HonuAlertsLoader {
 	}
 }
 
-func (p *HonuAlertsLoader) Load(ctx context.Context) (Alerts, error) {
+func (p *HonuAlertsLoader) Name() string {
+	return p.client.Endpoint()
+}
+
+func (p *HonuAlertsLoader) Load(ctx context.Context) (ps2.Alerts, error) {
 	overview, err := p.client.WorldOverview(ctx)
 	if err != nil {
-		return Alerts{}, err
+		return ps2.Alerts{}, err
 	}
 	// Usually, worlds count is greater than alerts count
-	alerts := make(Alerts, 0, len(overview))
+	alerts := make(ps2.Alerts, 0, len(overview))
 	for _, w := range overview {
 		for _, z := range w.Zones {
 			if z.Alert.AlertId != 0 {
@@ -34,16 +39,16 @@ func (p *HonuAlertsLoader) Load(ctx context.Context) (Alerts, error) {
 					log.Printf("Failed to parse %q: %q", z.Alert.Timestamp, err)
 					continue
 				}
-				alert := Alert{
-					WorldId:          WorldId(w.WorldId),
-					WorldName:        WorldNames[WorldId(w.WorldId)],
-					ZoneId:           ZoneId(z.ZoneId),
-					ZoneName:         ZoneNames[ZoneId(z.ZoneId)],
+				alert := ps2.Alert{
+					WorldId:          ps2.WorldId(w.WorldId),
+					WorldName:        ps2.WorldNames[ps2.WorldId(w.WorldId)],
+					ZoneId:           ps2.ZoneId(z.ZoneId),
+					ZoneName:         ps2.ZoneNames[ps2.ZoneId(z.ZoneId)],
 					AlertName:        z.AlertInfo.Name,
 					AlertDescription: z.AlertInfo.Description,
 					StartedAt:        startedAt,
 					Duration:         time.Duration(z.AlertInfo.DurationMinutes) * time.Minute,
-					TerritoryControl: StatsByFactions{
+					TerritoryControl: ps2.StatsByFactions{
 						All:   z.Players.All,
 						VS:    z.Players.VS,
 						NC:    z.Players.NC,

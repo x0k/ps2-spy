@@ -22,7 +22,7 @@ func NewClient(censusEndpoint string, serviceId string, httpClient *http.Client)
 	}
 }
 
-func (c *Client) Execute(q query) ([]any, error) {
+func (c *Client) Execute(q Query) ([]any, error) {
 	builder := strings.Builder{}
 	builder.WriteString(c.censusEndpoint)
 	builder.WriteString("s:")

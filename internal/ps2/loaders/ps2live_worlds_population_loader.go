@@ -1,9 +1,10 @@
-package ps2
+package loaders
 
 import (
 	"context"
 	"fmt"
 
+	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/ps2live"
 )
 
@@ -17,20 +18,24 @@ func NewPS2LiveWorldsPopulationLoader(client *ps2live.PopulationClient) *PS2Live
 	}
 }
 
-func (p *PS2LiveWorldsPopulationLoader) Load(ctx context.Context) (WorldsPopulation, error) {
+func (p *PS2LiveWorldsPopulationLoader) Name() string {
+	return p.client.Endpoint()
+}
+
+func (p *PS2LiveWorldsPopulationLoader) Load(ctx context.Context) (ps2.WorldsPopulation, error) {
 	pops, err := p.client.AllPopulation(ctx)
 	if err != nil {
-		return WorldsPopulation{}, err
+		return ps2.WorldsPopulation{}, err
 	}
-	worlds := make(Worlds, len(pops))
-	population := WorldsPopulation{
+	worlds := make(ps2.Worlds, len(pops))
+	population := ps2.WorldsPopulation{
 		Worlds: worlds,
 	}
 	for _, pop := range pops {
-		worldId := WorldId(pop.Id)
+		worldId := ps2.WorldId(pop.Id)
 		world := worlds[worldId]
 		world.Id = worldId
-		world.Name = WorldNames[worldId]
+		world.Name = ps2.WorldNames[worldId]
 		if world.Name == "" {
 			world.Name = fmt.Sprintf("World %d", worldId)
 		}

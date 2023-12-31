@@ -1,4 +1,4 @@
-package ps2
+package loaders
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/ps2alerts"
 )
 
@@ -19,16 +20,20 @@ func NewPS2AlertsAlertsLoader(client *ps2alerts.Client) *PS2AlertsAlertsLoader {
 	}
 }
 
-func (p *PS2AlertsAlertsLoader) Load(ctx context.Context) (Alerts, error) {
+func (p *PS2AlertsAlertsLoader) Name() string {
+	return p.client.Endpoint()
+}
+
+func (p *PS2AlertsAlertsLoader) Load(ctx context.Context) (ps2.Alerts, error) {
 	ps2alerts, err := p.client.Alerts(ctx)
 	if err != nil {
-		return Alerts{}, err
+		return ps2.Alerts{}, err
 	}
-	alerts := make(Alerts, 0, len(ps2alerts))
+	alerts := make(ps2.Alerts, 0, len(ps2alerts))
 	for _, a := range ps2alerts {
-		alertInfo, ok := alertsMap[a.CensusMetagameEventType]
+		alertInfo, ok := ps2.AlertsMap[a.CensusMetagameEventType]
 		if !ok {
-			alertInfo = AlertInfo{
+			alertInfo = ps2.AlertInfo{
 				Name:        fmt.Sprintf("Unknown alert (%d)", a.CensusMetagameEventType),
 				Description: "This alert is not registered yet",
 			}
@@ -38,11 +43,11 @@ func (p *PS2AlertsAlertsLoader) Load(ctx context.Context) (Alerts, error) {
 			log.Printf("Failed to parse %q: %q", a.TimeStarted, err)
 			continue
 		}
-		alerts = append(alerts, Alert{
-			WorldId:          WorldId(a.World),
-			WorldName:        WorldNames[WorldId(a.World)],
-			ZoneId:           ZoneId(a.Zone),
-			ZoneName:         ZoneNames[ZoneId(a.Zone)],
+		alerts = append(alerts, ps2.Alert{
+			WorldId:          ps2.WorldId(a.World),
+			WorldName:        ps2.WorldNames[ps2.WorldId(a.World)],
+			ZoneId:           ps2.ZoneId(a.Zone),
+			ZoneName:         ps2.ZoneNames[ps2.ZoneId(a.Zone)],
 			AlertName:        alertInfo.Name,
 			AlertDescription: alertInfo.Description,
 			StartedAt:        startedAt,

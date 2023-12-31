@@ -1,8 +1,9 @@
-package ps2
+package loaders
 
 import (
 	"context"
 
+	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/voidwell"
 )
 
@@ -20,28 +21,28 @@ func (p *VoidWellWorldPopulationLoader) Name() string {
 	return p.client.Endpoint()
 }
 
-func (p *VoidWellWorldPopulationLoader) Load(ctx context.Context, worldId WorldId) (WorldPopulation, error) {
+func (p *VoidWellWorldPopulationLoader) Load(ctx context.Context, worldId ps2.WorldId) (ps2.WorldPopulation, error) {
 	states, err := p.client.WorldsState(ctx)
 	if err != nil {
-		return WorldPopulation{}, err
+		return ps2.WorldPopulation{}, err
 	}
 	for _, state := range states {
-		wId := WorldId(state.Id)
+		wId := ps2.WorldId(state.Id)
 		if wId != worldId {
 			continue
 		}
-		world := WorldPopulation{}
+		world := ps2.WorldPopulation{}
 		world.Id = wId
 		world.Name = state.Name
-		zones := make(Zones, len(state.ZoneStates))
+		zones := make(ps2.Zones, len(state.ZoneStates))
 		world.Zones = zones
 		for _, zoneState := range state.ZoneStates {
-			zoneId := ZoneId(zoneState.Id)
-			zone := ZonePopulation{
+			zoneId := ps2.ZoneId(zoneState.Id)
+			zone := ps2.ZonePopulation{
 				Id:     zoneId,
 				Name:   zoneState.Name,
 				IsOpen: zoneState.LockState.State == "UNLOCKED",
-				StatsByFactions: StatsByFactions{
+				StatsByFactions: ps2.StatsByFactions{
 					All: zoneState.Population.NC + zoneState.Population.TR + zoneState.Population.VS + zoneState.Population.NS,
 					VS:  zoneState.Population.VS,
 					NC:  zoneState.Population.NC,
@@ -58,5 +59,5 @@ func (p *VoidWellWorldPopulationLoader) Load(ctx context.Context, worldId WorldI
 		}
 		return world, nil
 	}
-	return WorldPopulation{}, ErrWorldNotFound
+	return ps2.WorldPopulation{}, ps2.ErrWorldNotFound
 }
