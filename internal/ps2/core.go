@@ -1,9 +1,35 @@
 package ps2
 
 import (
+	_ "embed"
+	"encoding/json"
 	"fmt"
+	"strconv"
 	"time"
 )
+
+type AlertInfo struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
+//go:embed data/alerts.json
+var alertsFile []byte
+var alertsMap = func() map[int]AlertInfo {
+	var rawInfo map[string]AlertInfo
+	if err := json.Unmarshal(alertsFile, &rawInfo); err != nil {
+		panic(err)
+	}
+	alerts := make(map[int]AlertInfo, len(rawInfo))
+	for k, v := range rawInfo {
+		id, err := strconv.Atoi(k)
+		if err != nil {
+			panic(err)
+		}
+		alerts[id] = v
+	}
+	return alerts
+}()
 
 type ZoneId int
 
