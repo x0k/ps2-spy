@@ -14,6 +14,7 @@ type StatsByFactions struct {
 	VS    int
 	NC    int
 	TR    int
+	NS    int
 	Other int
 }
 

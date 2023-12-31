@@ -22,7 +22,8 @@ func NewKeyedLoadableValue[K comparable, T any](
 	ttl time.Duration,
 ) *KeyedLoadableValues[K, T] {
 	return &KeyedLoadableValues[K, T]{
-		cache: expirable.NewLRU[K, T](maxSize, nil, ttl),
+		cache:  expirable.NewLRU[K, T](maxSize, nil, ttl),
+		loader: loader,
 	}
 }
 

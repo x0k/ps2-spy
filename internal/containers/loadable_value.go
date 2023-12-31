@@ -10,16 +10,14 @@ type valueLoader[T any] interface {
 }
 
 type LoadableValue[T any] struct {
-	value     *ExpiableValue[T]
-	loader    valueLoader[T]
-	updatedAt time.Time
+	value  *ExpiableValue[T]
+	loader valueLoader[T]
 }
 
 func NewLoadableValue[T any](loader valueLoader[T], ttl time.Duration) *LoadableValue[T] {
 	return &LoadableValue[T]{
-		value:     NewExpiableValue[T](ttl),
-		loader:    loader,
-		updatedAt: time.Now(),
+		value:  NewExpiableValue[T](ttl),
+		loader: loader,
 	}
 }
 
@@ -37,11 +35,6 @@ func (v *LoadableValue[T]) Load(ctx context.Context) (T, error) {
 		if err != nil {
 			return value, err
 		}
-		v.updatedAt = time.Now()
 		return value, nil
 	})
-}
-
-func (v *LoadableValue[T]) UpdatedAt() time.Time {
-	return v.updatedAt
 }

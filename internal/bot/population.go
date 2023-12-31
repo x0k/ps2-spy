@@ -24,7 +24,8 @@ func renderStatsByFactions(p ps2.StatsByFactions) string {
 	return builder.String()
 }
 
-func renderWorldDetailedPopulation(worldPopulation ps2.WorldPopulation, populationSource string, updatedAt time.Time) *discordgo.MessageEmbed {
+func renderWorldDetailedPopulation(loaded ps2.Loaded[ps2.WorldPopulation]) *discordgo.MessageEmbed {
+	worldPopulation := loaded.Value
 	zones := make([]*discordgo.MessageEmbedField, 0, len(worldPopulation.Zones))
 	for _, zonePopulation := range worldPopulation.Zones {
 		if zonePopulation.IsOpen {
@@ -40,9 +41,9 @@ func renderWorldDetailedPopulation(worldPopulation ps2.WorldPopulation, populati
 		Title:  fmt.Sprintf("%s - %d", worldPopulation.Name, worldPopulation.Total.All),
 		Fields: zones,
 		Footer: &discordgo.MessageEmbedFooter{
-			Text: fmt.Sprintf("Source: %s", populationSource),
+			Text: fmt.Sprintf("Source: %s", loaded.Source),
 		},
-		Timestamp: updatedAt.Format(time.RFC3339),
+		Timestamp: loaded.UpdatedAt.Format(time.RFC3339),
 	}
 }
 
@@ -54,7 +55,8 @@ func renderWorldTotalPopulation(worldPopulation ps2.WorldPopulation) *discordgo.
 	}
 }
 
-func renderPopulation(population ps2.WorldsPopulation, populationSource string, updatedAt time.Time) *discordgo.MessageEmbed {
+func renderPopulation(loaded ps2.Loaded[ps2.WorldsPopulation]) *discordgo.MessageEmbed {
+	population := loaded.Value
 	worlds := make([]ps2.WorldPopulation, 0, len(population.Worlds))
 	for _, worldPopulation := range population.Worlds {
 		worlds = append(worlds, worldPopulation)
@@ -71,8 +73,8 @@ func renderPopulation(population ps2.WorldsPopulation, populationSource string, 
 		Title:  fmt.Sprintf("Total population - %d", population.Total.All),
 		Fields: fields,
 		Footer: &discordgo.MessageEmbedFooter{
-			Text: fmt.Sprintf("Source: %q", populationSource),
+			Text: fmt.Sprintf("Source: %q", loaded.Source),
 		},
-		Timestamp: updatedAt.Format(time.RFC3339),
+		Timestamp: loaded.UpdatedAt.Format(time.RFC3339),
 	}
 }

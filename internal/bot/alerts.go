@@ -43,7 +43,8 @@ func renderWorldAlerts(alerts ps2.Alerts) []*discordgo.MessageEmbedField {
 	return fields
 }
 
-func renderWorldDetailedAlerts(worldName string, alerts ps2.Alerts, alertsSource string, updatedAt time.Time) *discordgo.MessageEmbed {
+func renderWorldDetailedAlerts(worldName string, loaded ps2.Loaded[ps2.Alerts]) *discordgo.MessageEmbed {
+	alerts := loaded.Value
 	if len(alerts) == 0 {
 		return &discordgo.MessageEmbed{
 			Title: fmt.Sprintf("%s - No alerts", worldName),
@@ -54,13 +55,14 @@ func renderWorldDetailedAlerts(worldName string, alerts ps2.Alerts, alertsSource
 		Title:  fmt.Sprintf("%s alerts", worldName),
 		Fields: renderWorldAlerts(alerts),
 		Footer: &discordgo.MessageEmbedFooter{
-			Text: fmt.Sprintf("Source: %s", alertsSource),
+			Text: fmt.Sprintf("Source: %s", loaded.Source),
 		},
-		Timestamp: updatedAt.Format(time.RFC3339),
+		Timestamp: loaded.UpdatedAt.Format(time.RFC3339),
 	}
 }
 
-func renderAlerts(alerts ps2.Alerts, alertsSource string, updatedAt time.Time) []*discordgo.MessageEmbed {
+func renderAlerts(loaded ps2.Loaded[ps2.Alerts]) []*discordgo.MessageEmbed {
+	alerts := loaded.Value
 	if len(alerts) == 0 {
 		return []*discordgo.MessageEmbed{
 			{
@@ -84,8 +86,9 @@ func renderAlerts(alerts ps2.Alerts, alertsSource string, updatedAt time.Time) [
 	for _, v := range sortedGroups {
 		alerts := groups[v]
 		worldName := alerts[0].WorldName
+		loaded.Value = alerts
 		embeds = append(embeds, renderWorldDetailedAlerts(
-			worldName, alerts, alertsSource, updatedAt,
+			worldName, loaded,
 		))
 	}
 	return embeds

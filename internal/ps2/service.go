@@ -7,29 +7,19 @@ import (
 	"github.com/x0k/ps2-spy/internal/containers"
 )
 
-type loader[T any] interface {
-	Name() string
-	Load(ctx context.Context) (T, error)
-}
-
-type keyedLoader[K comparable, T any] interface {
-	Name() string
-	Load(ctx context.Context, key K) (T, error)
-}
-
 type Service struct {
-	worldsPopulationProvider loader[WorldsPopulation]
-	worldsPopulation         *containers.LoadableValue[WorldsPopulation]
-	worldPopulationProvider  keyedLoader[WorldId, WorldPopulation]
-	worldPopulation          *containers.KeyedLoadableValues[WorldId, WorldPopulation]
-	alertsProvider           loader[Alerts]
-	alerts                   *containers.LoadableValue[Alerts]
+	worldsPopulationProvider loader[Loaded[WorldsPopulation]]
+	worldsPopulation         *containers.LoadableValue[Loaded[WorldsPopulation]]
+	worldPopulationProvider  keyedLoader[WorldId, Loaded[WorldPopulation]]
+	worldPopulation          *containers.KeyedLoadableValues[WorldId, Loaded[WorldPopulation]]
+	alertsProvider           loader[Loaded[Alerts]]
+	alerts                   *containers.LoadableValue[Loaded[Alerts]]
 }
 
 func NewService(
-	worldsPopulationProvider loader[WorldsPopulation],
-	worldPopulationProvider keyedLoader[WorldId, WorldPopulation],
-	alertsProvider loader[Alerts],
+	worldsPopulationProvider loader[Loaded[WorldsPopulation]],
+	worldPopulationProvider keyedLoader[WorldId, Loaded[WorldPopulation]],
+	alertsProvider loader[Loaded[Alerts]],
 ) *Service {
 	return &Service{
 		worldsPopulationProvider: worldsPopulationProvider,
@@ -51,44 +41,29 @@ func (s *Service) Stop() {
 	s.alerts.StopExpiration()
 }
 
-func (s *Service) PopulationUpdatedAt() time.Time {
-	return s.worldsPopulation.UpdatedAt()
-}
-
-func (s *Service) PopulationSource() string {
-	return s.worldsPopulationProvider.Name()
-}
-
-func (s *Service) Population(ctx context.Context) (WorldsPopulation, error) {
+func (s *Service) Population(ctx context.Context) (Loaded[WorldsPopulation], error) {
 	return s.worldsPopulation.Load(ctx)
 }
 
-func (s *Service) PopulationByWorldId(ctx context.Context, worldId WorldId) (WorldPopulation, error) {
+func (s *Service) PopulationByWorldId(ctx context.Context, worldId WorldId) (Loaded[WorldPopulation], error) {
 	return s.worldPopulation.Load(ctx, worldId)
 }
 
-func (s *Service) AlertsSource() string {
-	return s.alertsProvider.Name()
-}
-
-func (s *Service) AlertsUpdatedAt() time.Time {
-	return s.alerts.UpdatedAt()
-}
-
-func (s *Service) Alerts(ctx context.Context) (Alerts, error) {
+func (s *Service) Alerts(ctx context.Context) (Loaded[Alerts], error) {
 	return s.alerts.Load(ctx)
 }
 
-func (s *Service) AlertsByWorldId(ctx context.Context, worldId WorldId) (Alerts, error) {
-	alerts, err := s.alerts.Load(ctx)
+func (s *Service) AlertsByWorldId(ctx context.Context, worldId WorldId) (Loaded[Alerts], error) {
+	loaded, err := s.alerts.Load(ctx)
 	if err != nil {
-		return Alerts{}, err
+		return Loaded[Alerts]{}, err
 	}
-	worldAlerts := make(Alerts, 0, len(alerts))
-	for _, a := range alerts {
+	worldAlerts := make(Alerts, 0, len(loaded.Value))
+	for _, a := range loaded.Value {
 		if a.WorldId == worldId {
 			worldAlerts = append(worldAlerts, a)
 		}
 	}
-	return worldAlerts, nil
+	loaded.Value = worldAlerts
+	return loaded, nil
 }

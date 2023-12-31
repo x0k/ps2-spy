@@ -28,9 +28,9 @@ func main() {
 	honuClient.Start()
 	defer honuClient.Stop()
 	ps2Service := ps2.NewService(
-		ps2.NewHonuWorldsPopulationProvider(honuClient),
-		ps2.NewHonuWorldPopulationProvider(honuClient),
-		ps2.NewHonuAlertsProvider(honuClient),
+		ps2.WithLoaded(honuClient.Endpoint(), ps2.NewHonuWorldsPopulationLoader(honuClient)),
+		ps2.WithKeyedLoaded(honuClient.Endpoint(), ps2.NewHonuWorldPopulationLoader(honuClient)),
+		ps2.WithLoaded(honuClient.Endpoint(), ps2.NewHonuAlertsLoader(honuClient)),
 	)
 	ps2Service.Start()
 	defer ps2Service.Stop()

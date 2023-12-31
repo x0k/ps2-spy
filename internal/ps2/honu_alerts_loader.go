@@ -9,21 +9,21 @@ import (
 	"github.com/x0k/ps2-spy/internal/honu"
 )
 
-type HonuAlertsProvider struct {
+type HonuAlertsLoader struct {
 	client *honu.Client
 }
 
-func NewHonuAlertsProvider(client *honu.Client) *HonuAlertsProvider {
-	return &HonuAlertsProvider{
+func NewHonuAlertsLoader(client *honu.Client) *HonuAlertsLoader {
+	return &HonuAlertsLoader{
 		client: client,
 	}
 }
 
-func (p *HonuAlertsProvider) Name() string {
+func (p *HonuAlertsLoader) Name() string {
 	return p.client.Endpoint()
 }
 
-func (p *HonuAlertsProvider) Load(ctx context.Context) (Alerts, error) {
+func (p *HonuAlertsLoader) Load(ctx context.Context) (Alerts, error) {
 	overview, err := p.client.WorldOverview(ctx)
 	if err != nil {
 		return Alerts{}, err
