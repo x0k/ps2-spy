@@ -1,7 +1,5 @@
 package sanctuary
 
-const CensusJSONField = "c:censusJSON"
-
 const WorldPopulationCollection = "world_population"
 
 type Factions struct {

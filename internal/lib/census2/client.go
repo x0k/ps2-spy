@@ -56,6 +56,7 @@ func (c *Client) Execute(ctx context.Context, q *Query) ([]any, error) {
 	return data, nil
 }
 
+// Provided type `T` should have `mapstructure` tags
 func ExecuteAndDecode[T any](ctx context.Context, c *Client, q *Query) ([]T, error) {
 	data, err := c.Execute(ctx, q)
 	if err != nil {

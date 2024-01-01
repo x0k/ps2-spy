@@ -23,8 +23,7 @@ func (l *SanctuaryWorldsPopulationLoader) Name() string {
 	return l.client.Endpoint()
 }
 
-var WorldsPopulationQuery = census2.NewQuery(census2.GetQuery, census2.Ns_ps2, sanctuary.WorldPopulationCollection).
-	Where(census2.Cond(sanctuary.CensusJSONField).Equals(census2.Bool(false)))
+var WorldsPopulationQuery = sanctuary.NewQuery(sanctuary.GetQuery, sanctuary.Ns_ps2, sanctuary.WorldPopulationCollection)
 
 func (l *SanctuaryWorldsPopulationLoader) Load(ctx context.Context) (ps2.WorldsPopulation, error) {
 	wp, err := census2.ExecuteAndDecode[sanctuary.WorldPopulation](ctx, l.client, WorldsPopulationQuery)
