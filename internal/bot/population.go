@@ -12,13 +12,13 @@ import (
 
 func renderStatsByFactions(p ps2.StatsByFactions) string {
 	builder := strings.Builder{}
-	builder.Grow(60) // 17 characters per line
+	builder.Grow(60) // 16 characters per line
 	if p.All == 0 {
-		builder.WriteString("TR:   0 | 0.00%\nNC:   0 | 0.00%\nVS:   0 | 0.00%\n")
+		builder.WriteString("TR:   0 | 0.0%\nNC:   0 | 0.0%\nVS:   0 | 0.0%\n")
 	} else {
-		builder.WriteString(fmt.Sprintf("TR: %3d | %.2f%%\n", p.TR, float64(p.TR)/float64(p.All)*100))
-		builder.WriteString(fmt.Sprintf("NC: %3d | %.2f%%\n", p.NC, float64(p.NC)/float64(p.All)*100))
-		builder.WriteString(fmt.Sprintf("VS: %3d | %.2f%%\n", p.VS, float64(p.VS)/float64(p.All)*100))
+		builder.WriteString(fmt.Sprintf("TR: %3d | %.1f%%\n", p.TR, float64(p.TR)/float64(p.All)*100))
+		builder.WriteString(fmt.Sprintf("NC: %3d | %.1f%%\n", p.NC, float64(p.NC)/float64(p.All)*100))
+		builder.WriteString(fmt.Sprintf("VS: %3d | %.1f%%\n", p.VS, float64(p.VS)/float64(p.All)*100))
 		// builder.WriteString(fmt.Sprintf("Other: %3d | %.2f%\n", worldPopulation.Total.Other, float64(worldPopulation.Total.Other)/float64(worldPopulation.Total.All)*100))
 	}
 	return builder.String()
