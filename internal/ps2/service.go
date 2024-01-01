@@ -9,14 +9,14 @@ import (
 
 type Service struct {
 	worldsPopulation *containers.LoadableValue[Loaded[WorldsPopulation]]
-	worldPopulation  *containers.KeyedLoadableValues[WorldId, Loaded[WorldPopulation]]
+	worldPopulation  *containers.KeyedLoadableValues[WorldId, Loaded[DetailedWorldPopulation]]
 	alerts           *containers.LoadableValue[Loaded[Alerts]]
 }
 
 func NewService(
-	worldsPopulationProvider loader[Loaded[WorldsPopulation]],
-	worldPopulationProvider keyedLoader[WorldId, Loaded[WorldPopulation]],
-	alertsProvider loader[Loaded[Alerts]],
+	worldsPopulationProvider Loader[WorldsPopulation],
+	worldPopulationProvider KeyedLoader[WorldId, DetailedWorldPopulation],
+	alertsProvider Loader[Alerts],
 ) *Service {
 	return &Service{
 		worldsPopulation: containers.NewLoadableValue(worldsPopulationProvider, time.Minute),
@@ -39,7 +39,7 @@ func (s *Service) Population(ctx context.Context) (Loaded[WorldsPopulation], err
 	return s.worldsPopulation.Load(ctx)
 }
 
-func (s *Service) PopulationByWorldId(ctx context.Context, worldId WorldId) (Loaded[WorldPopulation], error) {
+func (s *Service) PopulationByWorldId(ctx context.Context, worldId WorldId) (Loaded[DetailedWorldPopulation], error) {
 	return s.worldPopulation.Load(ctx, worldId)
 }
 

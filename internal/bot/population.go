@@ -2,6 +2,7 @@ package bot
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -24,7 +25,7 @@ func renderStatsByFactions(p ps2.StatsByFactions) string {
 	return builder.String()
 }
 
-func renderWorldDetailedPopulation(loaded ps2.Loaded[ps2.WorldPopulation]) *discordgo.MessageEmbed {
+func renderWorldDetailedPopulation(loaded ps2.Loaded[ps2.DetailedWorldPopulation]) *discordgo.MessageEmbed {
 	worldPopulation := loaded.Value
 	zones := make([]*discordgo.MessageEmbedField, 0, len(worldPopulation.Zones))
 	for _, zonePopulation := range worldPopulation.Zones {
@@ -38,7 +39,7 @@ func renderWorldDetailedPopulation(loaded ps2.Loaded[ps2.WorldPopulation]) *disc
 	}
 	return &discordgo.MessageEmbed{
 		Type:   discordgo.EmbedTypeRich,
-		Title:  fmt.Sprintf("%s - %d", worldPopulation.Name, worldPopulation.Total.All),
+		Title:  fmt.Sprintf("%s - %d", worldPopulation.Name, worldPopulation.Total),
 		Fields: zones,
 		Footer: &discordgo.MessageEmbedFooter{
 			Text: fmt.Sprintf("Source: %s", loaded.Source),
@@ -49,18 +50,15 @@ func renderWorldDetailedPopulation(loaded ps2.Loaded[ps2.WorldPopulation]) *disc
 
 func renderWorldTotalPopulation(worldPopulation ps2.WorldPopulation) *discordgo.MessageEmbedField {
 	return &discordgo.MessageEmbedField{
-		Name:   fmt.Sprintf("%s - %d", worldPopulation.Name, worldPopulation.Total.All),
-		Value:  renderStatsByFactions(worldPopulation.Total),
+		Name:   fmt.Sprintf("%s - %d", worldPopulation.Name, worldPopulation.StatsByFactions.All),
+		Value:  renderStatsByFactions(worldPopulation.StatsByFactions),
 		Inline: true,
 	}
 }
 
 func renderPopulation(loaded ps2.Loaded[ps2.WorldsPopulation]) *discordgo.MessageEmbed {
 	population := loaded.Value
-	worlds := make([]ps2.WorldPopulation, 0, len(population.Worlds))
-	for _, worldPopulation := range population.Worlds {
-		worlds = append(worlds, worldPopulation)
-	}
+	worlds := slices.Clone(population.Worlds)
 	sort.Slice(worlds, func(i, j int) bool {
 		return worlds[i].Id < worlds[j].Id
 	})
@@ -70,7 +68,7 @@ func renderPopulation(loaded ps2.Loaded[ps2.WorldsPopulation]) *discordgo.Messag
 	}
 	return &discordgo.MessageEmbed{
 		Type:   discordgo.EmbedTypeRich,
-		Title:  fmt.Sprintf("Total population - %d", population.Total.All),
+		Title:  fmt.Sprintf("Total population - %d", population.Total),
 		Fields: fields,
 		Footer: &discordgo.MessageEmbedFooter{
 			Text: fmt.Sprintf("Source: %q", loaded.Source),

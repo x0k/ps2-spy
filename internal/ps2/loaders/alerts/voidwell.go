@@ -1,4 +1,4 @@
-package loaders
+package alerts
 
 import (
 	"context"
@@ -9,24 +9,20 @@ import (
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
-type VoidWellAlertsLoader struct {
+type VoidWellLoader struct {
 	client *voidwell.Client
 }
 
-func NewVoidWellAlertsLoader(client *voidwell.Client) *VoidWellAlertsLoader {
-	return &VoidWellAlertsLoader{
+func NewVoidWellLoader(client *voidwell.Client) *VoidWellLoader {
+	return &VoidWellLoader{
 		client: client,
 	}
 }
 
-func (p *VoidWellAlertsLoader) Name() string {
-	return p.client.Endpoint()
-}
-
-func (p *VoidWellAlertsLoader) Load(ctx context.Context) (ps2.Alerts, error) {
+func (p *VoidWellLoader) Load(ctx context.Context) (ps2.Loaded[ps2.Alerts], error) {
 	states, err := p.client.WorldsState(ctx)
 	if err != nil {
-		return ps2.Alerts{}, err
+		return ps2.Loaded[ps2.Alerts]{}, err
 	}
 	// Usually, worlds count is greater than alerts count
 	alerts := make(ps2.Alerts, 0, len(states))
@@ -38,12 +34,12 @@ func (p *VoidWellAlertsLoader) Load(ctx context.Context) (ps2.Alerts, error) {
 			}
 			startedAt, err := time.Parse(time.RFC3339, z.AlertState.Timestamp)
 			if err != nil {
-				log.Printf("Failed to parse %q: %q", z.AlertState.Timestamp, err)
+				log.Printf("[%s alerts loader] Failed to parse %q: %q", p.client.Endpoint(), z.AlertState.Timestamp, err)
 				continue
 			}
 			duration, err := time.ParseDuration(e.Duration)
 			if err != nil {
-				log.Printf("Failed to parse %q: %q", z.AlertState.Timestamp, err)
+				log.Printf("[%s alerts loader] Failed to parse %q: %q", p.client.Endpoint(), z.AlertState.Timestamp, err)
 				continue
 			}
 			alert := ps2.Alert{
@@ -59,5 +55,5 @@ func (p *VoidWellAlertsLoader) Load(ctx context.Context) (ps2.Alerts, error) {
 			alerts = append(alerts, alert)
 		}
 	}
-	return alerts, nil
+	return ps2.LoadedNow(p.client.Endpoint(), alerts), nil
 }

@@ -19,26 +19,55 @@ type StatsByFactions struct {
 }
 
 type ZonePopulation struct {
-	StatsByFactions
 	Id     ZoneId
 	Name   string
 	IsOpen bool
+	StatsByFactions
 }
 
-type Zones map[ZoneId]ZonePopulation
-
-type WorldPopulation struct {
+type DetailedWorldPopulation struct {
 	Id    WorldId
 	Name  string
-	Total StatsByFactions
-	Zones Zones
+	Total int
+	Zones []ZonePopulation
 }
 
-type Worlds map[WorldId]WorldPopulation
+func WorldNameById(id WorldId) string {
+	if name, ok := WorldNames[id]; ok {
+		return name
+	}
+	return fmt.Sprintf("World %d", id)
+}
+
+func ZoneNameById(id ZoneId) string {
+	if name, ok := ZoneNames[id]; ok {
+		return name
+	}
+	return fmt.Sprintf("Zone %d", id)
+}
+
+type WorldPopulation struct {
+	Id   WorldId
+	Name string
+	StatsByFactions
+}
+
+func NewWorldPopulation(id WorldId, name string) WorldPopulation {
+	if name == "" {
+		return WorldPopulation{
+			Id:   id,
+			Name: WorldNameById(id),
+		}
+	}
+	return WorldPopulation{
+		Id:   id,
+		Name: name,
+	}
+}
 
 type WorldsPopulation struct {
-	Total  StatsByFactions
-	Worlds Worlds
+	Total  int
+	Worlds []WorldPopulation
 }
 
 type Alert struct {

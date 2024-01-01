@@ -17,7 +17,9 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/ps2live/saerro"
 	"github.com/x0k/ps2-spy/internal/lib/voidwell"
 	"github.com/x0k/ps2-spy/internal/ps2"
-	"github.com/x0k/ps2-spy/internal/ps2/loaders"
+	"github.com/x0k/ps2-spy/internal/ps2/loaders/alerts"
+	"github.com/x0k/ps2-spy/internal/ps2/loaders/world"
+	"github.com/x0k/ps2-spy/internal/ps2/loaders/worlds"
 )
 
 var (
@@ -51,27 +53,36 @@ func main() {
 	defer populationClient.Stop()
 	defer saerroClient.Stop()
 	defer ps2alertsClient.Stop()
-	worldsLoader := ps2.WithFallback(
+	worldsLoader := ps2.NewFallbackLoader(
 		"Worlds",
-		ps2.WithLoaded(loaders.NewPS2LiveWorldsPopulationLoader(populationClient)),
-		ps2.WithLoaded(loaders.NewHonuWorldsPopulationLoader(honuClient)),
-		ps2.WithLoaded(loaders.NewSaerroWorldsPopulationLoader(saerroClient)),
-		ps2.WithLoaded(loaders.NewFisuWorldsPopulationLoader(fisuClient)),
-		ps2.WithLoaded(loaders.NewSanctuaryWorldsPopulationLoader(sanctuaryClient)),
-		ps2.WithLoaded(loaders.NewVoidWellWorldsPopulationLoader(voidWellClient)),
+		map[string]ps2.Loader[ps2.WorldsPopulation]{
+			"honu":      worlds.NewHonuLoader(honuClient),
+			"ps2live":   worlds.NewPS2LiveLoader(populationClient),
+			"saerro":    worlds.NewSaerroLoader(saerroClient),
+			"fisu":      worlds.NewFisuLoader(fisuClient),
+			"sanctuary": worlds.NewSanctuaryLoader(sanctuaryClient),
+			"voidwell":  worlds.NewVoidWellLoader(voidWellClient),
+		},
+		[]string{"honu", "ps2live", "saerro", "fisu", "sanctuary", "voidwell"},
 	)
-	worldLoader := ps2.WithKeyedFallback(
+	worldLoader := ps2.NewKeyedFallbackLoader(
 		"World",
-		ps2.WithKeyedLoaded(loaders.NewHonuWorldPopulationLoader(honuClient)),
-		ps2.WithKeyedLoaded(loaders.NewSaerroWorldPopulationLoader(saerroClient)),
-		ps2.WithKeyedLoaded(loaders.NewVoidWellWorldPopulationLoader(voidWellClient)),
+		map[string]ps2.KeyedLoader[ps2.WorldId, ps2.DetailedWorldPopulation]{
+			"honu":     world.NewHonuLoader(honuClient),
+			"saerro":   world.NewSaerroLoader(saerroClient),
+			"voidwell": world.NewVoidWellLoader(voidWellClient),
+		},
+		[]string{"honu", "saerro", "voidwell"},
 	)
-	alertsLoader := ps2.WithFallback(
+	alertsLoader := ps2.NewFallbackLoader(
 		"Alerts",
-		ps2.WithLoaded(loaders.NewPS2AlertsAlertsLoader(ps2alertsClient)),
-		ps2.WithLoaded(loaders.NewHonuAlertsLoader(honuClient)),
-		ps2.WithLoaded(loaders.NewCensusAlertsLoader(censusClient)),
-		ps2.WithLoaded(loaders.NewVoidWellAlertsLoader(voidWellClient)),
+		map[string]ps2.Loader[ps2.Alerts]{
+			"ps2alerts": alerts.NewPS2AlertsLoader(ps2alertsClient),
+			"honu":      alerts.NewHonuLoader(honuClient),
+			"census":    alerts.NewCensusLoader(censusClient),
+			"voidwell":  alerts.NewVoidWellLoader(voidWellClient),
+		},
+		[]string{"ps2alerts", "honu", "census", "voidwell"},
 	)
 	worldsLoader.Start()
 	worldLoader.Start()

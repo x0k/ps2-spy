@@ -1,4 +1,4 @@
-package loaders
+package alerts
 
 import (
 	"context"
@@ -10,24 +10,20 @@ import (
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
-type HonuAlertsLoader struct {
+type HonuLoader struct {
 	client *honu.Client
 }
 
-func NewHonuAlertsLoader(client *honu.Client) *HonuAlertsLoader {
-	return &HonuAlertsLoader{
+func NewHonuLoader(client *honu.Client) *HonuLoader {
+	return &HonuLoader{
 		client: client,
 	}
 }
 
-func (p *HonuAlertsLoader) Name() string {
-	return p.client.Endpoint()
-}
-
-func (p *HonuAlertsLoader) Load(ctx context.Context) (ps2.Alerts, error) {
+func (p *HonuLoader) Load(ctx context.Context) (ps2.Loaded[ps2.Alerts], error) {
 	overview, err := p.client.WorldOverview(ctx)
 	if err != nil {
-		return ps2.Alerts{}, err
+		return ps2.Loaded[ps2.Alerts]{}, err
 	}
 	// Usually, worlds count is greater than alerts count
 	alerts := make(ps2.Alerts, 0, len(overview))
@@ -66,5 +62,5 @@ func (p *HonuAlertsLoader) Load(ctx context.Context) (ps2.Alerts, error) {
 			}
 		}
 	}
-	return alerts, nil
+	return ps2.LoadedNow(p.client.Endpoint(), alerts), nil
 }

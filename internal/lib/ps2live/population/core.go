@@ -1,12 +1,6 @@
 package population
 
-import "golang.org/x/exp/constraints"
-
-type Number interface {
-	constraints.Integer | constraints.Float
-}
-
-type Factions[T Number] struct {
+type Factions[T any] struct {
 	NC T `json:"nc"`
 	VS T `json:"vs"`
 	TR T `json:"tr"`

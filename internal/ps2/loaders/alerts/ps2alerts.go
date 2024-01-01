@@ -1,4 +1,4 @@
-package loaders
+package alerts
 
 import (
 	"context"
@@ -10,24 +10,20 @@ import (
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
-type PS2AlertsAlertsLoader struct {
+type PS2AlertsLoader struct {
 	client *ps2alerts.Client
 }
 
-func NewPS2AlertsAlertsLoader(client *ps2alerts.Client) *PS2AlertsAlertsLoader {
-	return &PS2AlertsAlertsLoader{
+func NewPS2AlertsLoader(client *ps2alerts.Client) *PS2AlertsLoader {
+	return &PS2AlertsLoader{
 		client: client,
 	}
 }
 
-func (p *PS2AlertsAlertsLoader) Name() string {
-	return p.client.Endpoint()
-}
-
-func (p *PS2AlertsAlertsLoader) Load(ctx context.Context) (ps2.Alerts, error) {
+func (p *PS2AlertsLoader) Load(ctx context.Context) (ps2.Loaded[ps2.Alerts], error) {
 	ps2alerts, err := p.client.Alerts(ctx)
 	if err != nil {
-		return ps2.Alerts{}, err
+		return ps2.Loaded[ps2.Alerts]{}, err
 	}
 	alerts := make(ps2.Alerts, 0, len(ps2alerts))
 	for _, a := range ps2alerts {
@@ -54,5 +50,5 @@ func (p *PS2AlertsAlertsLoader) Load(ctx context.Context) (ps2.Alerts, error) {
 			Duration:         time.Duration(a.Duration) * time.Millisecond,
 		})
 	}
-	return alerts, nil
+	return ps2.LoadedNow(p.client.Endpoint(), alerts), nil
 }
