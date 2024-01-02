@@ -48,6 +48,13 @@ func (p *PS2AlertsLoader) Load(ctx context.Context) (ps2.Loaded[ps2.Alerts], err
 			AlertDescription: alertInfo.Description,
 			StartedAt:        startedAt,
 			Duration:         time.Duration(a.Duration) * time.Millisecond,
+			TerritoryControl: ps2.StatsByFactions{
+				All:   100,
+				VS:    a.Result.VS,
+				NC:    a.Result.NC,
+				TR:    a.Result.TR,
+				Other: a.Result.OutOfPlay,
+			},
 		})
 	}
 	return ps2.LoadedNow(p.client.Endpoint(), alerts), nil
