@@ -8,44 +8,6 @@ import (
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
-func serverNames() []*discordgo.ApplicationCommandOptionChoice {
-	choices := make([]*discordgo.ApplicationCommandOptionChoice, 0, len(ps2.WorldNames))
-	for k, v := range ps2.WorldNames {
-		choices = append(choices, &discordgo.ApplicationCommandOptionChoice{
-			Name:  v,
-			Value: k,
-		})
-	}
-	return choices
-}
-
-var commands = [2]*discordgo.ApplicationCommand{
-	{
-		Name:        "population",
-		Description: "Returns the population.",
-		Options: []*discordgo.ApplicationCommandOption{
-			{
-				Type:        discordgo.ApplicationCommandOptionInteger,
-				Name:        "server",
-				Description: "Server name",
-				Choices:     serverNames(),
-			},
-		},
-	},
-	{
-		Name:        "alerts",
-		Description: "Returns the alerts.",
-		Options: []*discordgo.ApplicationCommandOption{
-			{
-				Type:        discordgo.ApplicationCommandOptionInteger,
-				Name:        "server",
-				Description: "Server name",
-				Choices:     serverNames(),
-			},
-		},
-	},
-}
-
 type Bot struct {
 	session            *discordgo.Session
 	registeredCommands []*discordgo.ApplicationCommand
@@ -60,6 +22,7 @@ func NewBot(discordToken string, service *ps2.Service) (*Bot, error) {
 		log.Printf("Logged in as: %v#%v", s.State.User.Username, s.State.User.Discriminator)
 		log.Printf("Running on %d servers", len(s.State.Guilds))
 	})
+	commands := makeCommands(service)
 	handlers := makeHandlers(service)
 	session.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		if handler, ok := handlers[i.ApplicationCommandData().Name]; ok {

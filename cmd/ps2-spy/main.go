@@ -53,8 +53,7 @@ func main() {
 	defer populationClient.Stop()
 	defer saerroClient.Stop()
 	defer ps2alertsClient.Stop()
-	worldsLoader := ps2.NewFallbackLoader(
-		"Worlds",
+	ps2Service := ps2.NewService(
 		map[string]ps2.Loader[ps2.WorldsPopulation]{
 			"honu":      worlds.NewHonuLoader(honuClient),
 			"ps2live":   worlds.NewPS2LiveLoader(populationClient),
@@ -64,18 +63,14 @@ func main() {
 			"voidwell":  worlds.NewVoidWellLoader(voidWellClient),
 		},
 		[]string{"honu", "ps2live", "saerro", "fisu", "sanctuary", "voidwell"},
-	)
-	worldLoader := ps2.NewKeyedFallbackLoader(
-		"World",
+
 		map[string]ps2.KeyedLoader[ps2.WorldId, ps2.DetailedWorldPopulation]{
 			"honu":     world.NewHonuLoader(honuClient),
 			"saerro":   world.NewSaerroLoader(saerroClient),
 			"voidwell": world.NewVoidWellLoader(voidWellClient),
 		},
 		[]string{"honu", "saerro", "voidwell"},
-	)
-	alertsLoader := ps2.NewFallbackLoader(
-		"Alerts",
+
 		map[string]ps2.Loader[ps2.Alerts]{
 			"ps2alerts": alerts.NewPS2AlertsLoader(ps2alertsClient),
 			"honu":      alerts.NewHonuLoader(honuClient),
@@ -83,17 +78,6 @@ func main() {
 			"voidwell":  alerts.NewVoidWellLoader(voidWellClient),
 		},
 		[]string{"ps2alerts", "honu", "census", "voidwell"},
-	)
-	worldsLoader.Start()
-	worldLoader.Start()
-	alertsLoader.Start()
-	defer worldsLoader.Stop()
-	defer worldLoader.Stop()
-	defer alertsLoader.Stop()
-	ps2Service := ps2.NewService(
-		worldsLoader,
-		worldLoader,
-		alertsLoader,
 	)
 	ps2Service.Start()
 	defer ps2Service.Stop()

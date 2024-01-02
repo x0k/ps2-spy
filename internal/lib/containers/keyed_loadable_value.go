@@ -11,31 +11,14 @@ type keyedValueLoader[K comparable, T any] interface {
 	Load(ctx context.Context, key K) (T, error)
 }
 
-type KeyedLoadableValues[K comparable, T any] struct {
-	cache  *expirable.LRU[K, T]
-	loader keyedValueLoader[K, T]
-}
-
 func NewKeyedLoadableValue[K comparable, T any](
 	loader keyedValueLoader[K, T],
 	maxSize int,
 	ttl time.Duration,
-) *KeyedLoadableValues[K, T] {
-	return &KeyedLoadableValues[K, T]{
+) *QueriedLoadableValue[K, K, T] {
+	return &QueriedLoadableValue[K, K, T]{
 		cache:  expirable.NewLRU[K, T](maxSize, nil, ttl),
 		loader: loader,
+		mapper: func(k K) K { return k },
 	}
-}
-
-func (v *KeyedLoadableValues[K, T]) Load(ctx context.Context, key K) (T, error) {
-	cached, ok := v.cache.Get(key)
-	if ok {
-		return cached, nil
-	}
-	loaded, err := v.loader.Load(ctx, key)
-	if err != nil {
-		return loaded, err
-	}
-	v.cache.Add(key, loaded)
-	return loaded, nil
 }

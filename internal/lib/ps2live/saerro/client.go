@@ -43,6 +43,10 @@ const allWorldsPopulationQuery = graphqlUrl + "?query={allWorlds{id,name,zones{a
 
 func (c *Client) AllWorldsPopulation(ctx context.Context) (AllWorldsPopulation, error) {
 	return c.allWorldsPopulation.Load(func() (AllWorldsPopulation, error) {
-		return httpx.GetJson[AllWorldsPopulation](ctx, c.httpClient, c.endpoint+allWorldsPopulationQuery)
+		res, err := httpx.GetJson[GraphqlResponse[AllWorldsPopulation]](ctx, c.httpClient, c.endpoint+allWorldsPopulationQuery)
+		if err != nil {
+			return AllWorldsPopulation{}, err
+		}
+		return res.Data, nil
 	})
 }

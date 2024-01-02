@@ -51,20 +51,30 @@ func makeHandlers(service *ps2.Service) map[string]interactionHandler {
 	return map[string]interactionHandler{
 		"population": deferredResponse(func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.WebhookEdit, error) {
 			opts := i.ApplicationCommandData().Options
-			if len(opts) == 0 {
-				population, err := service.Population(ctx)
-				if err != nil {
-					return nil, fmt.Errorf("error getting population: %q", err)
-				}
-				embeds := []*discordgo.MessageEmbed{
-					renderPopulation(population),
-				}
-				return &discordgo.WebhookEdit{
-					Embeds: &embeds,
-				}, nil
+			var provider string
+			if len(opts) > 0 {
+				provider = opts[0].StringValue()
 			}
+			population, err := service.Population(ctx, provider)
+			if err != nil {
+				return nil, fmt.Errorf("error getting population: %q", err)
+			}
+			embeds := []*discordgo.MessageEmbed{
+				renderPopulation(population),
+			}
+			return &discordgo.WebhookEdit{
+				Embeds: &embeds,
+			}, nil
+
+		}),
+		"server-population": deferredResponse(func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.WebhookEdit, error) {
+			opts := i.ApplicationCommandData().Options
 			server := opts[0].IntValue()
-			population, err := service.PopulationByWorldId(ctx, ps2.WorldId(server))
+			var provider string
+			if len(opts) > 1 {
+				provider = opts[1].StringValue()
+			}
+			population, err := service.PopulationByWorldId(ctx, service.WorldPopulationQuery(ps2.WorldId(server), provider))
 			if err != nil {
 				return nil, fmt.Errorf("error getting population: %q", err)
 			}
@@ -77,28 +87,35 @@ func makeHandlers(service *ps2.Service) map[string]interactionHandler {
 		}),
 		"alerts": deferredResponse(func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.WebhookEdit, error) {
 			opts := i.ApplicationCommandData().Options
-			if len(opts) == 0 {
-				alerts, err := service.Alerts(ctx)
+			var worldId ps2.WorldId
+			var provider string
+			for _, opt := range opts {
+				switch opt.Name {
+				case "server":
+					worldId = ps2.WorldId(opt.IntValue())
+				case "provider":
+					provider = opt.StringValue()
+				}
+			}
+			if worldId > 0 {
+				worldId = ps2.WorldId(worldId)
+				alerts, err := service.AlertsByWorldId(ctx, provider, worldId)
 				if err != nil {
 					return nil, fmt.Errorf("error getting alerts: %q", err)
 				}
-				embeds := renderAlerts(alerts)
+				worldName := ps2.WorldNameById(worldId)
+				embed := []*discordgo.MessageEmbed{
+					renderWorldDetailedAlerts(worldName, alerts),
+				}
 				return &discordgo.WebhookEdit{
-					Embeds: &embeds,
+					Embeds: &embed,
 				}, nil
 			}
-			server := opts[0].IntValue()
-			alerts, err := service.AlertsByWorldId(ctx, ps2.WorldId(server))
+			alerts, err := service.Alerts(ctx, provider)
 			if err != nil {
 				return nil, fmt.Errorf("error getting alerts: %q", err)
 			}
-			worldName := ps2.WorldNames[ps2.WorldId(server)]
-			if worldName == "" {
-				worldName = fmt.Sprintf("World %d", server)
-			}
-			embed := []*discordgo.MessageEmbed{
-				renderWorldDetailedAlerts(worldName, alerts),
-			}
+			embed := renderAlerts(alerts)
 			return &discordgo.WebhookEdit{
 				Embeds: &embed,
 			}, nil
