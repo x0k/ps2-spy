@@ -1,8 +1,8 @@
-package census2
+package collections
 
-const WorldEventCollection = "world_event"
+const WorldEvent = "world_event"
 
-type WorldEvent struct {
+type WorldEventItem struct {
 	MetagameEventId        string `json:"metagame_event_id" mapstructure:"metagame_event_id"`
 	MetagameEventState     string `json:"metagame_event_state" mapstructure:"metagame_event_state"`
 	FactionNC              string `json:"faction_nc" mapstructure:"faction_nc"`
@@ -16,3 +16,16 @@ type WorldEvent struct {
 	InstanceId             string `json:"instance_id" mapstructure:"instance_id"`
 	MetagameEventStateName string `json:"metagame_event_state_name" mapstructure:"metagame_event_state_name"`
 }
+
+const Map = "map"
+const CharactersWorld = "characters_world"
+const CharactersOnlineStatus = "characters_online_status"
+const CharactersFriend = "characters_friend"
+const Leaderboard = "leaderboard"
+const CharactersLeaderboard = "characters_leaderboard"
+const Event = "event"
+const Characters = "characters_event"
+const CharactersEventGrouped = "characters_event_grouped"
+const SingleCharacterById = "single_character_by_id"
+const CharactersItem = "characters_item"
+const World = "world"

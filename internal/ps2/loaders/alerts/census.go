@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/x0k/ps2-spy/internal/lib/census2"
+	"github.com/x0k/ps2-spy/internal/lib/census2/collections"
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
@@ -21,17 +22,17 @@ func NewCensusLoader(client *census2.Client) *CensusLoader {
 	}
 }
 
-var WorldEventsQuery = census2.NewQuery(census2.GetQuery, census2.Ns_ps2V2, census2.WorldEventCollection).
+var WorldEventsQuery = census2.NewQuery(census2.GetQuery, census2.Ns_ps2V2, collections.WorldEvent).
 	Where(census2.Cond("type").Equals(census2.Str("METAGAME"))).
 	Where(census2.Cond("world_id").Equals(census2.Str("1,10,13,17,19,24,40,1000,2000"))).
 	SetLimit(100)
 
 func (l *CensusLoader) Load(ctx context.Context) (ps2.Loaded[ps2.Alerts], error) {
-	events, err := census2.ExecuteAndDecode[census2.WorldEvent](ctx, l.client, WorldEventsQuery)
+	events, err := census2.ExecuteAndDecode[collections.WorldEventItem](ctx, l.client, WorldEventsQuery)
 	if err != nil {
 		return ps2.Loaded[ps2.Alerts]{}, err
 	}
-	actualEvents := make(map[string]census2.WorldEvent, len(events))
+	actualEvents := make(map[string]collections.WorldEventItem, len(events))
 	for i := len(events) - 1; i >= 0; i-- {
 		e := events[i]
 		if e.MetagameEventStateName == "started" {

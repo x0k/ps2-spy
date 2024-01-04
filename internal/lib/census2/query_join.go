@@ -2,109 +2,137 @@ package census2
 
 import "io"
 
-const (
-	onJoinField = iota
-	toJoinField
-	listJoinField
-	showJoinField
-	hideJoinField
-	injectAtJoinField
-	termsJoinField
-	outerJoinField
-)
-
-var queryJoinFieldNames = []string{
-	"on",
-	"to",
-	"list",
-	"show",
-	"hide",
-	"inject_at",
-	"terms",
-	"outer",
-}
-
 type queryJoin struct {
-	collection    string
-	fields        fields
-	subJoins      extendablePrinter
-	subJoinsCount int
+	collection string
+	on         Field[Str]
+	to         Field[Str]
+	list       Field[Bit]
+	show       Field[List[Str]]
+	hide       Field[List[Str]]
+	injectAt   Field[Str]
+	terms      Field[List[queryCondition]]
+	outer      Field[BitWithDefaultTrue]
+	subJoins   List[queryJoin]
 }
+
+const joinKeyValueSeparator = ":"
+const joinFieldsSeparator = "^"
+const joinSubElementsSeparator = "'"
+const joinSubJoinsSeparator = ","
 
 func Join(collection string) queryJoin {
 	return queryJoin{
 		collection: collection,
-		fields:     newFields(queryJoinFieldNames, "^", "^", ":", "'"),
-		subJoins: List{
-			separator: ",",
+		on: Field[Str]{
+			name:      "on",
+			separator: joinKeyValueSeparator,
+		},
+		to: Field[Str]{
+			name:      "to",
+			separator: joinKeyValueSeparator,
+		},
+		list: Field[Bit]{
+			name:      "list",
+			separator: joinKeyValueSeparator,
+		},
+		show: Field[List[Str]]{
+			name:      "show",
+			separator: joinKeyValueSeparator,
+			value: List[Str]{
+				separator: joinSubElementsSeparator,
+			},
+		},
+		hide: Field[List[Str]]{
+			name:      "hide",
+			separator: joinKeyValueSeparator,
+			value: List[Str]{
+				separator: joinSubElementsSeparator,
+			},
+		},
+		injectAt: Field[Str]{
+			name:      "inject_at",
+			separator: joinKeyValueSeparator,
+		},
+		terms: Field[List[queryCondition]]{
+			name:      "terms",
+			separator: joinKeyValueSeparator,
+			value: List[queryCondition]{
+				separator: joinSubElementsSeparator,
+			},
+		},
+		outer: Field[BitWithDefaultTrue]{
+			name:      "outer",
+			separator: joinKeyValueSeparator,
+			value:     BitWithDefaultTrue(true),
+		},
+		subJoins: List[queryJoin]{
+			separator: joinSubJoinsSeparator,
 		},
 	}
 }
 
 func (j queryJoin) print(writer io.StringWriter) {
 	writer.WriteString(j.collection)
-	j.fields.print(writer)
-	if j.subJoinsCount > 0 {
-		writer.WriteString("(")
-		j.subJoins.print(writer)
-		writer.WriteString(")")
+	printFields(writer, joinFieldsSeparator, joinFieldsSeparator,
+		j.on,
+		j.to,
+		j.list,
+		j.show,
+		j.hide,
+		j.injectAt,
+		j.terms,
+		j.outer,
+	)
+	if j.subJoins.isEmpty() {
+		return
 	}
-}
-func (j queryJoin) concat(value extendablePrinter) extendablePrinter {
-	j.subJoins = j.subJoins.concat(value)
-	return j
-}
-func (j queryJoin) extend(value []extendablePrinter) extendablePrinter {
-	j.subJoins = j.subJoins.extend(value)
-	return j
-}
-func (j queryJoin) setSeparator(separator string) extendablePrinter {
-	j.subJoins = j.subJoins.setSeparator(separator)
-	return j
+	writer.WriteString("(")
+	j.subJoins.print(writer)
+	writer.WriteString(")")
 }
 
 func (j queryJoin) IsList(isList bool) queryJoin {
-	j.fields = j.fields.concatField(listJoinField, Bit(isList))
+	j.list.value = Bit(isList)
 	return j
 }
 
 func (j queryJoin) IsOuter(isOuter bool) queryJoin {
-	j.fields = j.fields.concatField(outerJoinField, Bit(isOuter))
+	j.outer.value = BitWithDefaultTrue(isOuter)
 	return j
 }
 
 func (j queryJoin) Show(fields ...string) queryJoin {
-	j.fields = j.fields.extendListField(showJoinField, stringsToPrinters(fields))
+	j.show.value.values = append(j.show.value.values, stringsToStr(fields)...)
 	return j
 }
 
 func (j queryJoin) Hide(fields ...string) queryJoin {
-	j.fields = j.fields.extendListField(hideJoinField, stringsToPrinters(fields))
+	j.hide.value.values = append(j.hide.value.values, stringsToStr(fields)...)
 	return j
 }
 
 func (j queryJoin) Where(term queryCondition) queryJoin {
-	j.fields = j.fields.concatListField(termsJoinField, term.setSeparator("'"))
+	term.conditions.separator = joinSubElementsSeparator
+	j.terms.value.values = append(j.terms.value.values, term)
 	return j
 }
 
 func (j queryJoin) On(field string) queryJoin {
-	j.fields = j.fields.concatField(onJoinField, Str(field))
+	j.on.value = Str(field)
 	return j
 }
 
 func (j queryJoin) To(field string) queryJoin {
-	j.fields = j.fields.concatField(toJoinField, Str(field))
+	j.to.value = Str(field)
 	return j
 }
 
 func (j queryJoin) InjectAt(field string) queryJoin {
-	j.fields = j.fields.concatField(injectAtJoinField, Str(field))
+	j.injectAt.value = Str(field)
 	return j
 }
 
 func (j queryJoin) WithJoin(join queryJoin) queryJoin {
-	j.subJoins = j.subJoins.concat(join)
-	j.subJoinsCount++
+	j.subJoins.values = append(j.subJoins.values, join)
 	return j
 }

@@ -2,74 +2,71 @@ package census2
 
 import "io"
 
-const (
-	listTreeField = iota
-	prefixTreeField
-	startTreeField
-)
-
-var queryTreeFieldNames = []string{
-	"list",
-	"prefix",
-	"start",
-}
-
 type queryTree struct {
-	field         string
-	fields        fields
-	subTrees      extendablePrinter
-	subTreesCount int
+	field    string
+	list     Field[Bit]
+	prefix   Field[Str]
+	start    Field[Str]
+	subTrees List[queryTree]
 }
+
+const treeFieldsSeparator = "^"
+const treeKeyValueSeparator = ":"
+const treeSubElementsSeparator = "'"
+const treeSubTreeSeparator = ","
 
 func Tree(field string) queryTree {
 	return queryTree{
-		field:  field,
-		fields: newFields(queryTreeFieldNames, "^", "^", ":", "'"),
-		subTrees: List{
-			separator: ",",
+		field: field,
+		list: Field[Bit]{
+			name:      "list",
+			separator: treeKeyValueSeparator,
+		},
+		prefix: Field[Str]{
+			name:      "prefix",
+			separator: treeKeyValueSeparator,
+		},
+		start: Field[Str]{
+			name:      "start",
+			separator: treeKeyValueSeparator,
+		},
+		subTrees: List[queryTree]{
+			separator: treeSubTreeSeparator,
 		},
 	}
 }
 
 func (t queryTree) print(writer io.StringWriter) {
 	writer.WriteString(t.field)
-	t.fields.print(writer)
-	if t.subTreesCount > 0 {
-		writer.WriteString("(")
-		t.subTrees.print(writer)
-		writer.WriteString(")")
+	printFields(writer, treeFieldsSeparator, treeFieldsSeparator,
+		t.list,
+		t.prefix,
+		t.start,
+	)
+	if t.subTrees.isEmpty() {
+		return
 	}
-}
-func (t queryTree) concat(value extendablePrinter) extendablePrinter {
-	t.subTrees = t.subTrees.concat(value)
-	return t
-}
-func (t queryTree) extend(value []extendablePrinter) extendablePrinter {
-	t.subTrees = t.subTrees.extend(value)
-	return t
-}
-func (t queryTree) setSeparator(separator string) extendablePrinter {
-	t.subTrees = t.subTrees.setSeparator(separator)
-	return t
+	writer.WriteString("(")
+	t.subTrees.print(writer)
+	writer.WriteString(")")
 }
 
 func (t queryTree) IsList(isList bool) queryTree {
-	t.fields = t.fields.concatField(listTreeField, Bit(isList))
+	t.list.value = Bit(isList)
 	return t
 }
 
 func (t queryTree) GroupPrefix(prefix string) queryTree {
-	t.fields = t.fields.concatField(prefixTreeField, Str(prefix))
+	t.prefix.value = Str(prefix)
 	return t
 }
 
 func (t queryTree) StartField(field string) queryTree {
-	t.fields = t.fields.concatField(startTreeField, Str(field))
+	t.start.value = Str(field)
 	return t
 }
 
 func (t queryTree) WithTree(tree queryTree) queryTree {
-	t.subTrees = t.subTrees.concat(tree)
-	t.subTreesCount++
+	t.subTrees.values = append(t.subTrees.values, tree)
 	return t
 }

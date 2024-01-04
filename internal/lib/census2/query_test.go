@@ -31,6 +31,7 @@ func TestQueryListParams(t *testing.T) {
 		Resolve("foo", "bar")
 	s := q.String()
 	e := "get/ps2:v2/test?c:show=foo,bar&c:hide=baz,qux&c:sort=foo,bar:-1&c:has=foo,bar&c:resolve=foo,bar"
+	//
 	if s != e {
 		t.Errorf("expected %s, got %s", e, s)
 	}
