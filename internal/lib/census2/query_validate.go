@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/x0k/ps2-spy/internal/lib/census2/collections"
+	collections "github.com/x0k/ps2-spy/internal/lib/census2/collections/ps2"
 )
 
 var eventTypes = map[string]struct{}{
