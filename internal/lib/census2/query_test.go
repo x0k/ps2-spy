@@ -14,6 +14,9 @@ func TestQueryBasicParams(t *testing.T) {
 		SetStart(10).
 		SetDistinct("foo").
 		SetLanguage(LangGerman)
+	if err := q.Validate(); err != nil {
+		t.Error(err)
+	}
 	s := q.String()
 	e := "get/ps2:v2/test?c:case=false&c:limit=100&c:limitPerDB=20&c:start=10&c:includeNull=true&c:lang=de&c:timing=true&c:exactMatchFirst=true&c:distinct=foo&c:retry=false"
 	if s != e {
@@ -29,6 +32,9 @@ func TestQueryListParams(t *testing.T) {
 		SortDescBy("bar").
 		HasFields("foo", "bar").
 		Resolve("foo", "bar")
+	if err := q.Validate(); err != nil {
+		t.Error(err)
+	}
 	s := q.String()
 	e := "get/ps2:v2/test?c:show=foo,bar&c:hide=baz,qux&c:sort=foo,bar:-1&c:has=foo,bar&c:resolve=foo,bar"
 	//
@@ -42,6 +48,9 @@ func TestQueryConditions(t *testing.T) {
 		Where(Cond("faction_id").IsLessThanOrEquals(Int(4))).
 		Where(Cond("item_category_id").IsGreaterThanOrEquals(Int(2)).IsLessThan(Int(5))).
 		Where(Cond("faction_id").IsGreaterThan(Int(1)))
+	if err := q.Validate(); err != nil {
+		t.Error(err)
+	}
 	s := q.String()
 	e := "get/ps2:v2/test?faction_id=[4&item_category_id=]2&item_category_id=<5&faction_id=>1"
 	if s != e {
@@ -55,6 +64,9 @@ func TestQueryTree(t *testing.T) {
 		SetLimit(500).
 		WithTree(Tree("type_id").GroupPrefix("type_").IsList(true)).
 		SetLanguage(LangEnglish)
+	if err := q.Validate(); err != nil {
+		t.Error(err)
+	}
 	s := q.String()
 	e := "get/ps2:v2/vehicle?c:limit=500&c:lang=en&c:tree=type_id^list:1^prefix:type_"
 	if s != e {
@@ -78,6 +90,9 @@ func TestQueryJoin(t *testing.T) {
 			StartField("regions").
 			IsList(true)).
 		SetLanguage(LangEnglish)
+	if err := q.Validate(); err != nil {
+		t.Error(err)
+	}
 	s := q.String()
 	e := "get/ps2:v2/zone?zone_id=2&c:lang=en&c:join=map_region^list:1^hide:zone_id^inject_at:regions(map_hex^list:1^hide:zone_id'map_region_id^inject_at:hex)&c:tree=facility_type^list:1^start:regions"
 	if s != e {
@@ -108,6 +123,9 @@ func TestQueryInnerJoin(t *testing.T) {
 				Where(Cond("weapon_id").NotEquals(Int(0)).IsLessThan(Int(100))),
 			),
 		)
+	if err := q.Validate(); err != nil {
+		t.Error(err)
+	}
 	s := q.String()
 	e := "get/ps2:v2/character?name.first_lower=auroram&c:show=name.first,character_id&c:join=characters_item^list:1^show:item_id^inject_at:items(item^show:name.en^inject_at:item_data,item_to_weapon^on:item_id^to:item_id^show:weapon_id^inject_at:weapon^terms:weapon_id=!0'weapon_id=<100^outer:0)"
 	if s != e {

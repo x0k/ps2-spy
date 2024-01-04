@@ -73,7 +73,7 @@ func Join(collection string) queryJoin {
 
 func (j queryJoin) print(writer io.StringWriter) {
 	writer.WriteString(j.collection)
-	printFields(writer, joinFieldsSeparator, joinFieldsSeparator,
+	printFields(writer, joinFieldsSeparator, joinFieldsSeparator, []optionalPrinter{
 		j.on,
 		j.to,
 		j.list,
@@ -82,7 +82,7 @@ func (j queryJoin) print(writer io.StringWriter) {
 		j.injectAt,
 		j.terms,
 		j.outer,
-	)
+	})
 	if j.subJoins.isEmpty() {
 		return
 	}

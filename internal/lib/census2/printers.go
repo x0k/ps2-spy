@@ -145,7 +145,11 @@ func stringsToStr(strings []string) []Str {
 	return values
 }
 
-func printFields(writer io.StringWriter, firstFieldSeparator string, fieldsSeparator string, fields ...optionalPrinter) {
+func StrList(strings ...string) List[Str] {
+	return List[Str]{values: stringsToStr(strings), separator: ","}
+}
+
+func printFields(writer io.StringWriter, firstFieldSeparator string, fieldsSeparator string, fields []optionalPrinter) {
 	l := len(fields)
 	i := 0
 	for i < l && fields[i].isEmpty() {
@@ -163,4 +167,19 @@ func printFields(writer io.StringWriter, firstFieldSeparator string, fieldsSepar
 		writer.WriteString(fieldsSeparator)
 		fields[i].print(writer)
 	}
+}
+
+type fakeWriter struct {
+	str string
+}
+
+func (f *fakeWriter) WriteString(s string) (int, error) {
+	f.str += s
+	return len(s), nil
+}
+
+func printerToString(p printer) string {
+	writer := fakeWriter{}
+	p.print(&writer)
+	return writer.str
 }

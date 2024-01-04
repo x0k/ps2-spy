@@ -3,14 +3,14 @@ package census2
 import "io"
 
 const (
-	equals                = "="
-	notEquals             = "=!"
-	isLessThan            = "=<"
-	isLessThanOrEquals    = "=["
-	isGreaterThan         = "=>"
-	isGreaterThanOrEquals = "=]"
-	startsWith            = "=^"
-	contains              = "=*"
+	equalsCondition                = "="
+	notEqualsCondition             = "=!"
+	isLessThanCondition            = "=<"
+	isLessThanOrEqualsCondition    = "=["
+	isGreaterThanCondition         = "=>"
+	isGreaterThanOrEqualsCondition = "=]"
+	startsWithCondition            = "=^"
+	containsCondition              = "=*"
 )
 
 type queryCondition struct {
@@ -38,33 +38,33 @@ func (c queryCondition) appendCondition(operator string, value optionalPrinter) 
 }
 
 func (c queryCondition) Equals(value optionalPrinter) queryCondition {
-	return c.appendCondition(equals, value)
+	return c.appendCondition(equalsCondition, value)
 }
 
 func (c queryCondition) NotEquals(value optionalPrinter) queryCondition {
-	return c.appendCondition(notEquals, value)
+	return c.appendCondition(notEqualsCondition, value)
 }
 
 func (c queryCondition) IsLessThan(value optionalPrinter) queryCondition {
-	return c.appendCondition(isLessThan, value)
+	return c.appendCondition(isLessThanCondition, value)
 }
 
 func (c queryCondition) IsLessThanOrEquals(value optionalPrinter) queryCondition {
-	return c.appendCondition(isLessThanOrEquals, value)
+	return c.appendCondition(isLessThanOrEqualsCondition, value)
 }
 
 func (c queryCondition) IsGreaterThan(value optionalPrinter) queryCondition {
-	return c.appendCondition(isGreaterThan, value)
+	return c.appendCondition(isGreaterThanCondition, value)
 }
 
 func (c queryCondition) IsGreaterThanOrEquals(value optionalPrinter) queryCondition {
-	return c.appendCondition(isGreaterThanOrEquals, value)
+	return c.appendCondition(isGreaterThanOrEqualsCondition, value)
 }
 
 func (c queryCondition) StartsWith(value optionalPrinter) queryCondition {
-	return c.appendCondition(startsWith, value)
+	return c.appendCondition(startsWithCondition, value)
 }
 
 func (c queryCondition) Contains(value optionalPrinter) queryCondition {
-	return c.appendCondition(contains, value)
+	return c.appendCondition(containsCondition, value)
 }

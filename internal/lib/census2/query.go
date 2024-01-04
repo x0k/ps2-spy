@@ -1,11 +1,8 @@
 package census2
 
 import (
-	"fmt"
 	"io"
 	"strings"
-
-	"github.com/x0k/ps2-spy/internal/lib/census2/collections"
 )
 
 const (
@@ -167,6 +164,14 @@ func NewQuery(queryType, namespace, collection string) *Query {
 	}
 }
 
+func NewQueryMustBeValid(queryType, namespace, collection string) *Query {
+	q := NewQuery(queryType, namespace, collection)
+	if err := q.Validate(); err != nil {
+		panic(err)
+	}
+	return q
+}
+
 func (q *Query) Collection() string {
 	return q.collection
 }
@@ -267,13 +272,29 @@ func (q *Query) SetLanguage(language string) *Query {
 	return q
 }
 
-func (q *Query) print(writer io.StringWriter) {
-	writer.WriteString(q.queryType)
-	writer.WriteString("/")
-	writer.WriteString(q.namespace)
-	writer.WriteString("/")
-	writer.WriteString(q.collection)
-	printFields(writer, queryFirstFieldsSeparator, queryFieldsSeparator,
+var queryFieldNames = [...]string{
+	"terms",
+	"c:show",
+	"c:hide",
+	"c:sort",
+	"c:has",
+	"c:resolve",
+	"c:case",
+	"c:limit",
+	"c:limitPerDB",
+	"c:start",
+	"c:includeNull",
+	"c:lang",
+	"c:join",
+	"c:tree",
+	"c:timing",
+	"c:exactMatchFirst",
+	"c:distinct",
+	"c:retry",
+}
+
+func (q *Query) fields() []optionalPrinter {
+	return []optionalPrinter{
 		q.terms,
 		q.show,
 		q.hide,
@@ -292,40 +313,20 @@ func (q *Query) print(writer io.StringWriter) {
 		q.exactMatchFirst,
 		q.distinct,
 		q.retry,
-	)
+	}
+}
+
+func (q *Query) print(writer io.StringWriter) {
+	writer.WriteString(q.queryType)
+	writer.WriteString("/")
+	writer.WriteString(q.namespace)
+	writer.WriteString("/")
+	writer.WriteString(q.collection)
+	printFields(writer, queryFirstFieldsSeparator, queryFieldsSeparator, q.fields())
 }
 
 func (q *Query) String() string {
 	builder := strings.Builder{}
 	q.print(&builder)
 	return builder.String()
-}
-
-func (q *Query) Validate() error {
-	// Collection:
-	// map	Can only be queried by 'world_id = x' and 'zone_ids = x,y,z...'. None of the 'c:' commands are supported (except c:join, c:tree). Only 'get' is supported, 'count' is not.
-	switch q.collection {
-	case collections.Map:
-		if q.queryType != "get" {
-			return fmt.Errorf("invalid query type %q for collection %q", q.queryType, q.collection)
-		}
-
-	}
-	// characters_world	Can only be queried by 'character_id = x,y,z...' or equivalently 'id = x,y,z...'. None of the 'c:' commands are supported (except c:join, c:tree). Only 'get' is supported, 'count' is not.
-	// characters_online_status	Can only be queried by 'character_id = x,y,z...' or equivalently 'id = x,y,z...'. None of the 'c:' commands are supported (except c:join, c:tree). Only 'get' is supported, 'count' is not.
-	// characters_friend	Can only be queried by 'character_id = x,y,z...' or equivalently 'id = x,y,z...'. None of the 'c:' commands are supported (except c:join, c:tree). Only 'get' is supported, 'count' is not.
-	// leaderboard	Can only be queried by 'name = x' (required), 'period = x' (required), 'world = [world_id]' (optional). Possible values for name are: Kills, Score, Time, Deaths. Possible value for period are: Forever, Monthly, Weekly, Daily, OneLife. The only 'c:' commands supported are c:start and c:limit (also c:join, c:tree). Only 'get' is supported, 'count' is not.
-	// characters_leaderboard	Limitations are the same as those for leaderboard except 'character_id = x,y,z...' or equivalently 'id = x,y,z...' are used to limit the characters returned. Please note that only the top 10,000 characters are in the leaderboard data, many characters will not have a leaderboard row. Only 'get' is supported, 'count' is not.
-	// event	Can only be queried by before, after and type.
-	// 'before = [timestamp]'. The before query field can be used to pull all rows by stepping through them backwards.
-	// 'after = [timestamp]'. The default value of after is 0. The after query field is provided for polling purposes.
-	// 'type = [BATTLE_RANK | ITEM | ACHIEVEMENT | DEATH | KILL | VEHICLE_DESTROY | FACILITY_CHARACTER]' (case-insensitive). Aliases for these types are listed below. Multiple types can be provided comma-delimited. The default value type is 'BATTLE_RANK,ACHIEVEMENT,ITEM'.
-	// The only 'c:' command supported is c:limit (also c:join, c:tree). Only 'get' is supported, 'count' is not.
-	// characters_event	Limitations are the same as those for event except 'character_id = x,y,z...' or equivalently 'id = x,y,z...' are used to limit the rows returned.
-	// world_event	Limitations are the same as those for event except 'world_id = x,y,z...' or equivalently 'id = x,y,z...' are used to limit the rows returned.
-	// characters_event_grouped	Can only be queried by 'character_id = x,y,z...' or equivalently 'id = x,y,z...' and 'type = [DEATH | KILL]' (case insensitive). Aliases for these types are listed below. Multiple types can be provided comma-delimited. The default value type is 'DEATH,KILL'. The only 'c:' commands supported are c:start and c:limit (also c:join, c:tree). Only 'get' is supported, 'count' is not.
-	// single_character_by_id	Can only be queried by 'character_id = x' or equivalently 'id = x'. None of the 'c:' commands are supported (except c:join, c:tree). Only 'get' is supported, 'count' is not.
-	// characters_item	Can only be queried by 'character_id = x,y,z...' or equivalently 'id = x,y,z...'. None of the 'c:' commands are supported (except c:join, c:tree).
-	// world	Querying by name.en, name.fr, etc is not supported.
-	return nil
 }
