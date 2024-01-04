@@ -322,7 +322,7 @@ func (q *Query) print(writer io.StringWriter) {
 	writer.WriteString(q.namespace)
 	writer.WriteString("/")
 	writer.WriteString(q.collection)
-	printFields(writer, queryFirstFieldsSeparator, queryFieldsSeparator, q.fields())
+	printList(writer, queryFirstFieldsSeparator, queryFieldsSeparator, q.fields())
 }
 
 func (q *Query) String() string {

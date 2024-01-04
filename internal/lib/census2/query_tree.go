@@ -36,9 +36,13 @@ func Tree(field string) queryTree {
 	}
 }
 
+func (t queryTree) isEmpty() bool {
+	return false
+}
+
 func (t queryTree) print(writer io.StringWriter) {
 	writer.WriteString(t.field)
-	printFields(writer, treeFieldsSeparator, treeFieldsSeparator, []optionalPrinter{
+	printList(writer, treeFieldsSeparator, treeFieldsSeparator, []optionalPrinter{
 		t.list,
 		t.prefix,
 		t.start,

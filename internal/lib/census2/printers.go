@@ -120,7 +120,7 @@ func (f Field[T]) print(writer io.StringWriter) {
 	f.value.print(writer)
 }
 
-type List[T printer] struct {
+type List[T optionalPrinter] struct {
 	values    []T
 	separator string
 }
@@ -130,11 +130,7 @@ func (list List[T]) isEmpty() bool {
 }
 
 func (l List[T]) print(writer io.StringWriter) {
-	l.values[0].print(writer)
-	for i := 1; i < len(l.values); i++ {
-		writer.WriteString(l.separator)
-		l.values[i].print(writer)
-	}
+	printList(writer, "", l.separator, l.values)
 }
 
 func stringsToStr(strings []string) []Str {
@@ -149,23 +145,23 @@ func StrList(strings ...string) List[Str] {
 	return List[Str]{values: stringsToStr(strings), separator: ","}
 }
 
-func printFields(writer io.StringWriter, firstFieldSeparator string, fieldsSeparator string, fields []optionalPrinter) {
-	l := len(fields)
+func printList[T optionalPrinter](writer io.StringWriter, firstFieldSeparator string, fieldsSeparator string, list []T) {
+	l := len(list)
 	i := 0
-	for i < l && fields[i].isEmpty() {
+	for i < l && list[i].isEmpty() {
 		i++
 	}
 	if i == l {
 		return
 	}
 	writer.WriteString(firstFieldSeparator)
-	fields[i].print(writer)
+	list[i].print(writer)
 	for i++; i < l; i++ {
-		if fields[i].isEmpty() {
+		if list[i].isEmpty() {
 			continue
 		}
 		writer.WriteString(fieldsSeparator)
-		fields[i].print(writer)
+		list[i].print(writer)
 	}
 }
 
