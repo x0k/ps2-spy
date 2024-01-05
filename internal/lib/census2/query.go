@@ -11,14 +11,14 @@ const (
 )
 
 const (
-	Ns_eq2 = "eq2" //	EverQuest II	Stable version.
+	Eq2_NS = "eq2" //	EverQuest II	Stable version.
 	// deprecated
-	Ns_ps2V1      = "ps2:v1"      //	PlanetSide 2 (PC)	Deprecated. Please use ps2:v2.
-	Ns_ps2V2      = "ps2:v2"      //	PlanetSide 2 (PC)	Stable version, alias is ps2.
-	Ns_ps2ps4usV2 = "ps2ps4us:v2" //	US PlanetSide 2 (Playstation 4)	Stable version, alias is ps2ps4us.
-	Ns_ps2ps4euV2 = "ps2ps4eu:v2" //	EU PlanetSide 2 (Playstation 4)	Stable version, alias is ps2ps4eu.
-	Ns_dcuoV1     = "dcuo:v1"     //	DC Univese Online (PC and Playstation 3)	Stable version, alias dcuo.
-	Ns_mtgoV1     = "mtgo:v1"     //	Magic the Gathering: Online	Stable version, alias mtgo
+	Ps2_v1_NS      = "ps2:v1"      //	PlanetSide 2 (PC)	Deprecated. Please use ps2:v2.
+	Ps2_v2_NS      = "ps2:v2"      //	PlanetSide 2 (PC)	Stable version, alias is ps2.
+	Ps2ps4us_v2_NS = "ps2ps4us:v2" //	US PlanetSide 2 (Playstation 4)	Stable version, alias is ps2ps4us.
+	Ps2ps4eu_v2_NS = "ps2ps4eu:v2" //	EU PlanetSide 2 (Playstation 4)	Stable version, alias is ps2ps4eu.
+	Dcuo_v1_NS     = "dcuo:v1"     //	DC Univese Online (PC and Playstation 3)	Stable version, alias dcuo.
+	Mtgo_v1_NS     = "mtgo:v1"     //	Magic the Gathering: Online	Stable version, alias mtgo
 )
 
 const (

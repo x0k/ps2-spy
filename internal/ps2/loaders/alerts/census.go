@@ -22,7 +22,7 @@ func NewCensusLoader(client *census2.Client) *CensusLoader {
 	}
 }
 
-var WorldEventsQuery = census2.NewQueryMustBeValid(census2.GetQuery, census2.Ns_ps2V2, collections.WorldEvent).
+var WorldEventsQuery = census2.NewQueryMustBeValid(census2.GetQuery, census2.Ps2_v2_NS, collections.WorldEvent).
 	Where(census2.Cond("type").Equals(census2.Str("METAGAME"))).
 	Where(census2.Cond("world_id").Equals(census2.Str("1,10,13,17,19,24,40,1000,2000"))).
 	SetLimit(100)

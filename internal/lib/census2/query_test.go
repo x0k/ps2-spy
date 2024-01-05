@@ -3,7 +3,7 @@ package census2
 import "testing"
 
 func TestQueryBasicParams(t *testing.T) {
-	q := NewQuery(GetQuery, Ns_ps2V2, "test").
+	q := NewQuery(GetQuery, Ps2_v2_NS, "test").
 		SetExactMatchFirst(true).
 		SetTiming(true).
 		SetIncludeNull(true).
@@ -25,7 +25,7 @@ func TestQueryBasicParams(t *testing.T) {
 }
 
 func TestQueryListParams(t *testing.T) {
-	q := NewQuery(GetQuery, Ns_ps2V2, "test").
+	q := NewQuery(GetQuery, Ps2_v2_NS, "test").
 		Show("foo", "bar").
 		Hide("baz", "qux").
 		SortAscBy("foo").
@@ -44,7 +44,7 @@ func TestQueryListParams(t *testing.T) {
 }
 
 func TestQueryConditions(t *testing.T) {
-	q := NewQuery(GetQuery, Ns_ps2V2, "test").
+	q := NewQuery(GetQuery, Ps2_v2_NS, "test").
 		Where(Cond("faction_id").IsLessThanOrEquals(Int(4))).
 		Where(Cond("item_category_id").IsGreaterThanOrEquals(Int(2)).IsLessThan(Int(5))).
 		Where(Cond("faction_id").IsGreaterThan(Int(1)))
@@ -60,7 +60,7 @@ func TestQueryConditions(t *testing.T) {
 
 func TestQueryTree(t *testing.T) {
 	// Organize a list of vehicles by type:
-	q := NewQuery(GetQuery, Ns_ps2V2, "vehicle").
+	q := NewQuery(GetQuery, Ps2_v2_NS, "vehicle").
 		SetLimit(500).
 		WithTree(Tree("type_id").GroupPrefix("type_").IsList(true)).
 		SetLanguage(LangEnglish)
@@ -76,7 +76,7 @@ func TestQueryTree(t *testing.T) {
 
 func TestQueryJoin(t *testing.T) {
 	// Organize zones, map_regions, map_hexes by facility_type:
-	q := NewQuery(GetQuery, Ns_ps2V2, "zone").
+	q := NewQuery(GetQuery, Ps2_v2_NS, "zone").
 		Where(Cond("zone_id").Equals(Int(2))).
 		WithJoin(Join("map_region").
 			IsList(true).
@@ -103,7 +103,7 @@ func TestQueryJoin(t *testing.T) {
 func TestQueryInnerJoin(t *testing.T) {
 	// This query looks up items unlocked by a given character but discarding any items that are not linked to a weapon
 	// `IsLessThan(100)` is redundant and only for testing purposes
-	q := NewQuery(GetQuery, Ns_ps2V2, "character").
+	q := NewQuery(GetQuery, Ps2_v2_NS, "character").
 		Where(Cond("name.first_lower").Equals(Str("auroram"))).
 		Show("name.first", "character_id").
 		WithJoin(Join("characters_item").
