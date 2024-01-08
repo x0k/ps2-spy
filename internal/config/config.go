@@ -8,6 +8,13 @@ import (
 	"github.com/ilyakaznacheev/cleanenv"
 )
 
+type Env string
+
+const (
+	LocalEnv Env = "local"
+	ProdEnv  Env = "prod"
+)
+
 type HttpClientConfig struct {
 	Timeout     time.Duration `yaml:"timeout" env:"HTTP_CLIENT_TIMEOUT" env-default:"4s"`
 	IdleTimeout time.Duration `yaml:"idle_timeout" env:"HTTP_CLIENT_IDLE_TIMEOUT" env-default:"10s"`
@@ -18,7 +25,7 @@ type DiscordConfig struct {
 }
 
 type Config struct {
-	Env         string           `yaml:"env" env:"ENV" env-required:"true"`
+	Env         Env              `yaml:"env" env:"ENV" env-required:"true"`
 	StoragePath string           `yaml:"storage_path" env:"STORAGE_PATH" env-required:"true"`
 	HttpClient  HttpClientConfig `yaml:"http_client"`
 	Discord     DiscordConfig    `yaml:"discord"`

@@ -3,7 +3,8 @@ package main
 import (
 	"context"
 	"flag"
-	"log"
+	stdLog "log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -34,8 +35,30 @@ func init() {
 	flag.Parse()
 }
 
+func setupLogger(env config.Env) *slog.Logger {
+	var log *slog.Logger
+	switch env {
+	case config.LocalEnv:
+		log = slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+			Level: slog.LevelDebug,
+		}))
+	case config.ProdEnv:
+		log = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+			Level: slog.LevelInfo,
+		}))
+	default:
+		stdLog.Fatalf("unknown env: %s", env)
+	}
+	return log
+}
+
 func main() {
 	cfg := config.MustLoad(config_path)
+	log := setupLogger(cfg.Env)
+
+	log = log.With(slog.String("env", string(cfg.Env)))
+
+	log.Info("Starting...")
 
 	httpClient := &http.Client{}
 	honuClient := honu.NewClient("https://wt.honu.pw", httpClient)
@@ -91,20 +114,22 @@ func main() {
 	ps2events := streaming.NewClient("wss://push.planetside2.com/streaming", streaming.Ps2_env, "example")
 	err := ps2events.Connect(ctx)
 	if err != nil {
-		log.Fatalln(err)
+		log.Error("Failed to connect to websocket", slog.String("error", err.Error()))
+		os.Exit(1)
 	}
 	defer ps2events.Close()
 
 	b, err := bot.NewBot(ctx, cfg.Discord.Token, ps2Service)
 	if err != nil {
-		log.Fatalln(err)
+		log.Error("Failed to create bot", slog.String("error", err.Error()))
+		os.Exit(1)
 	}
 	defer b.Stop()
 
-	log.Println("Bot is now running. Press CTRL-C to exit.")
+	log.Info("Bot is now running. Press CTRL-C to exit.")
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 	<-stop
 
-	log.Println("Gracefully shutting down.")
+	log.Info("Gracefully shutting down.")
 }
