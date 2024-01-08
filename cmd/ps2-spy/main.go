@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"log"
 	"net/http"
@@ -32,6 +33,7 @@ func init() {
 }
 
 func main() {
+
 	httpClient := &http.Client{}
 	honuClient := honu.NewClient("https://wt.honu.pw", httpClient)
 	fisuClient := fisu.NewClient("https://ps2.fisu.pw", httpClient)
@@ -79,9 +81,11 @@ func main() {
 		},
 		[]string{"ps2alerts", "honu", "census", "voidwell"},
 	)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	ps2Service.Start()
 	defer ps2Service.Stop()
-	b, err := bot.NewBot(discord_token, ps2Service)
+	b, err := bot.NewBot(ctx, discord_token, ps2Service)
 	if err != nil {
 		log.Fatalln(err)
 	}

@@ -13,8 +13,8 @@ import (
 
 type interactionHandler func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) error
 
-func run(handler interactionHandler, s *discordgo.Session, i *discordgo.InteractionCreate) {
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+func run(ctx context.Context, handler interactionHandler, s *discordgo.Session, i *discordgo.InteractionCreate) {
+	ctx, cancel := context.WithTimeout(ctx, 20*time.Second)
 	defer cancel()
 	err := contextx.Await(ctx, func() error {
 		err := handler(ctx, s, i)

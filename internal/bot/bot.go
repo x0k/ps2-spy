@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"context"
 	"fmt"
 	"log"
 
@@ -13,7 +14,7 @@ type Bot struct {
 	registeredCommands []*discordgo.ApplicationCommand
 }
 
-func NewBot(discordToken string, service *ps2.Service) (*Bot, error) {
+func NewBot(ctx context.Context, discordToken string, service *ps2.Service) (*Bot, error) {
 	session, err := discordgo.New("Bot " + discordToken)
 	if err != nil {
 		return nil, fmt.Errorf("error creating Discord session: %w", err)
@@ -26,7 +27,7 @@ func NewBot(discordToken string, service *ps2.Service) (*Bot, error) {
 	handlers := makeHandlers(service)
 	session.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		if handler, ok := handlers[i.ApplicationCommandData().Name]; ok {
-			go run(handler, s, i)
+			go run(ctx, handler, s, i)
 		} else {
 			log.Printf("Unknown command %q", i.ApplicationCommandData().Name)
 		}
