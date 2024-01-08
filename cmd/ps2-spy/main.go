@@ -16,6 +16,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming"
 	"github.com/x0k/ps2-spy/internal/lib/fisu"
 	"github.com/x0k/ps2-spy/internal/lib/honu"
+	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/lib/ps2alerts"
 	"github.com/x0k/ps2-spy/internal/lib/ps2live/population"
 	"github.com/x0k/ps2-spy/internal/lib/ps2live/saerro"
@@ -24,6 +25,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/ps2/loaders/alerts"
 	"github.com/x0k/ps2-spy/internal/ps2/loaders/world"
 	"github.com/x0k/ps2-spy/internal/ps2/loaders/worlds"
+	"github.com/x0k/ps2-spy/internal/storage/sqlite"
 )
 
 var (
@@ -36,20 +38,18 @@ func init() {
 }
 
 func setupLogger(env config.Env) *slog.Logger {
-	var log *slog.Logger
 	switch env {
 	case config.LocalEnv:
-		log = slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		return slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
 			Level: slog.LevelDebug,
 		}))
 	case config.ProdEnv:
-		log = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		return slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 			Level: slog.LevelInfo,
 		}))
-	default:
-		stdLog.Fatalf("unknown env: %s", env)
 	}
-	return log
+	stdLog.Fatalf("Unknown env: %s, expect %q or %q", env, config.LocalEnv, config.ProdEnv)
+	return nil
 }
 
 func main() {
@@ -59,6 +59,22 @@ func main() {
 	log = log.With(slog.String("env", string(cfg.Env)))
 
 	log.Info("Starting...")
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	storage, err := sqlite.New(ctx, cfg.StoragePath)
+	if err != nil {
+		log.Error("Cannot open storage", sl.Err(err))
+		os.Exit(1)
+	}
+	defer storage.Close()
+
+	err = storage.Migrate(ctx)
+	if err != nil {
+		log.Error("Cannot migrate storage", sl.Err(err))
+		os.Exit(1)
+	}
 
 	httpClient := &http.Client{}
 	honuClient := honu.NewClient("https://wt.honu.pw", httpClient)
@@ -109,19 +125,18 @@ func main() {
 	)
 	ps2Service.Start()
 	defer ps2Service.Stop()
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+
 	ps2events := streaming.NewClient("wss://push.planetside2.com/streaming", streaming.Ps2_env, "example")
-	err := ps2events.Connect(ctx)
+	err = ps2events.Connect(ctx)
 	if err != nil {
-		log.Error("Failed to connect to websocket", slog.String("error", err.Error()))
+		log.Error("Failed to connect to websocket", sl.Err(err))
 		os.Exit(1)
 	}
 	defer ps2events.Close()
 
 	b, err := bot.NewBot(ctx, cfg.Discord.Token, ps2Service)
 	if err != nil {
-		log.Error("Failed to create bot", slog.String("error", err.Error()))
+		log.Error("Failed to create bot", sl.Err(err))
 		os.Exit(1)
 	}
 	defer b.Stop()
