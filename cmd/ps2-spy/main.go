@@ -11,6 +11,7 @@ import (
 
 	"github.com/x0k/ps2-spy/internal/bot"
 	"github.com/x0k/ps2-spy/internal/lib/census2"
+	"github.com/x0k/ps2-spy/internal/lib/census2/streaming"
 	"github.com/x0k/ps2-spy/internal/lib/fisu"
 	"github.com/x0k/ps2-spy/internal/lib/honu"
 	"github.com/x0k/ps2-spy/internal/lib/ps2alerts"
@@ -81,10 +82,17 @@ func main() {
 		},
 		[]string{"ps2alerts", "honu", "census", "voidwell"},
 	)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 	ps2Service.Start()
 	defer ps2Service.Stop()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	ps2events := streaming.NewClient("wss://push.planetside2.com/streaming", streaming.Ps2_env, "example")
+	go func() {
+		err := ps2events.Connect(ctx)
+		if err != nil {
+			log.Fatalln(err)
+		}
+	}()
 	b, err := bot.NewBot(ctx, discord_token, ps2Service)
 	if err != nil {
 		log.Fatalln(err)

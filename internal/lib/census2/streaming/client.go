@@ -3,8 +3,10 @@ package streaming
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"nhooyr.io/websocket"
+	"nhooyr.io/websocket/wsjson"
 )
 
 // wss://push.planetside2.com/streaming?environment=[ps2|ps2ps4us|ps2ps4eu]&service-id=s:[your service id]
@@ -35,7 +37,26 @@ func (c *Client) Connect(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	c.conn = conn
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+			err = c.handleMessage(ctx, conn)
+			if err != nil {
+				return err
+			}
+		}
+	}
+}
+
+func (c *Client) handleMessage(ctx context.Context, conn *websocket.Conn) error {
+	var data interface{}
+	err := wsjson.Read(ctx, conn, &data)
+	if err != nil {
+		return err
+	}
+	log.Println(data)
 	return nil
 }
 
