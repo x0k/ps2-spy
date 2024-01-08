@@ -37,17 +37,8 @@ func (c *Client) Connect(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		default:
-			err = c.handleMessage(ctx, conn)
-			if err != nil {
-				return err
-			}
-		}
-	}
+	c.conn = conn
+	return nil
 }
 
 func (c *Client) handleMessage(ctx context.Context, conn *websocket.Conn) error {

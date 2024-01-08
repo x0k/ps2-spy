@@ -87,12 +87,12 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	ps2events := streaming.NewClient("wss://push.planetside2.com/streaming", streaming.Ps2_env, "example")
-	go func() {
-		err := ps2events.Connect(ctx)
-		if err != nil {
-			log.Fatalln(err)
-		}
-	}()
+	err := ps2events.Connect(ctx)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	defer ps2events.Close()
+
 	b, err := bot.NewBot(ctx, discord_token, ps2Service)
 	if err != nil {
 		log.Fatalln(err)
