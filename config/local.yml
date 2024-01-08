@@ -1,0 +1,5 @@
+env: "local"
+storage_path: "./storage/storage.db"
+http_client:
+  timeout: 4s
+  idle_timeout: 10s

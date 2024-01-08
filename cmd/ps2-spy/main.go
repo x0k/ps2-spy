@@ -10,6 +10,7 @@ import (
 	"syscall"
 
 	"github.com/x0k/ps2-spy/internal/bot"
+	"github.com/x0k/ps2-spy/internal/config"
 	"github.com/x0k/ps2-spy/internal/lib/census2"
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming"
 	"github.com/x0k/ps2-spy/internal/lib/fisu"
@@ -25,15 +26,16 @@ import (
 )
 
 var (
-	discord_token string
+	config_path string
 )
 
 func init() {
-	flag.StringVar(&discord_token, "t", "", "Bot Token")
+	flag.StringVar(&config_path, "config", os.Getenv("CONFIG_PATH"), "Config path")
 	flag.Parse()
 }
 
 func main() {
+	cfg := config.MustLoad(config_path)
 
 	httpClient := &http.Client{}
 	honuClient := honu.NewClient("https://wt.honu.pw", httpClient)
@@ -93,7 +95,7 @@ func main() {
 	}
 	defer ps2events.Close()
 
-	b, err := bot.NewBot(ctx, discord_token, ps2Service)
+	b, err := bot.NewBot(ctx, cfg.Discord.Token, ps2Service)
 	if err != nil {
 		log.Fatalln(err)
 	}

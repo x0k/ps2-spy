@@ -1,4 +1,4 @@
 #!/bin/bash -e
 
 run:
-    go run cmd/ps2-spy/main.go -t $(cat ~/Sync/ps2-spy/test-token)
+    DISCORD_TOKEN=$(cat ~/Sync/ps2-spy/test-token) go run cmd/ps2-spy/main.go --config config/local.yml
