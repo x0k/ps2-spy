@@ -65,7 +65,7 @@ func New(ctx context.Context, cfg *BotConfig, log *slog.Logger, service *ps2.Ser
 	if err != nil {
 		return nil, err
 	}
-	log.Info("adding commands...")
+	log.Info("adding commands")
 	registeredCommands := make([]*discordgo.ApplicationCommand, 0, len(commands))
 	for _, v := range commands {
 		cmd, err := session.ApplicationCommandCreate(session.State.User.ID, "", v)
@@ -83,6 +83,7 @@ func New(ctx context.Context, cfg *BotConfig, log *slog.Logger, service *ps2.Ser
 }
 
 func (b *Bot) Stop() error {
+	b.log.Info("stopping bot")
 	for _, v := range b.registeredCommands {
 		err := b.session.ApplicationCommandDelete(b.session.State.User.ID, "", v.ID)
 		if err != nil {

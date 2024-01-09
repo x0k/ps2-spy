@@ -3,6 +3,7 @@ package ps2
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"maps"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 )
 
 type Service struct {
+	log                  *slog.Logger
 	worldsFallbackLoader *fallbackLoader[WorldsPopulation]
 	worldsPopulation     *containers.QueriedLoadableValue[string, string, Loaded[WorldsPopulation]]
 	worldsLoaders        []string
@@ -22,6 +24,7 @@ type Service struct {
 }
 
 func NewService(
+	log *slog.Logger,
 	populationLoaders map[string]Loader[WorldsPopulation],
 	populationLoadersPriority []string,
 	worldPopulationLoaders map[string]KeyedLoader[WorldId, DetailedWorldPopulation],
@@ -54,6 +57,7 @@ func NewService(
 	alertsLoadersWithDefault["default"] = alertsFallbackLoader
 	alertsMultiLoader := NewMultiLoader(alertsLoadersWithDefault)
 	return &Service{
+		log:                  log.With(slog.String("component", "ps2service")),
 		worldsFallbackLoader: worldsFallbackLoader,
 		worldsLoaders:        populationLoadersPriority,
 		worldsPopulation:     containers.NewKeyedLoadableValue(worldsMultiLoader, len(populationLoaders)+1, time.Minute),
@@ -85,6 +89,7 @@ func (s *Service) Start() {
 }
 
 func (s *Service) Stop() {
+	s.log.Info("stopping service")
 	s.worldsFallbackLoader.Stop()
 	s.worldFallbackLoader.Stop()
 	s.alertsFallbackLoader.Stop()

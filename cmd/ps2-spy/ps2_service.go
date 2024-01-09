@@ -18,34 +18,40 @@ import (
 	"github.com/x0k/ps2-spy/internal/ps2/loaders/worlds"
 )
 
-func setupPs2Service(ctx context.Context, cfg *config.Ps2ServiceConfig) *ps2.Service {
+type starter interface {
+	Start()
+	Stop()
+}
+
+func startInContext(s *Setup, starter starter) {
+	starter.Start()
+	s.wg.Add(1)
+	context.AfterFunc(s.ctx, func() {
+		defer s.wg.Done()
+		starter.Stop()
+	})
+}
+
+func setupPs2Service(s *Setup, cfg *config.Ps2ServiceConfig) *ps2.Service {
 	httpClient := &http.Client{
 		Timeout: cfg.HttpClientTimeout,
 	}
 	honuClient := honu.NewClient("https://wt.honu.pw", httpClient)
+	startInContext(s, honuClient)
 	fisuClient := fisu.NewClient("https://ps2.fisu.pw", httpClient)
+	startInContext(s, fisuClient)
 	voidWellClient := voidwell.NewClient("https://api.voidwell.com", httpClient)
+	startInContext(s, voidWellClient)
 	populationClient := population.NewClient("https://agg.ps2.live", httpClient)
+	startInContext(s, populationClient)
 	saerroClient := saerro.NewClient("https://saerro.ps2.live", httpClient)
+	startInContext(s, saerroClient)
 	ps2alertsClient := ps2alerts.NewClient("https://api.ps2alerts.com", httpClient)
+	startInContext(s, ps2alertsClient)
 	censusClient := census2.NewClient("https://census.daybreakgames.com", "", httpClient)
 	sanctuaryClient := census2.NewClient("https://census.lithafalcon.cc", "", httpClient)
-	honuClient.Start()
-	fisuClient.Start()
-	voidWellClient.Start()
-	populationClient.Start()
-	saerroClient.Start()
-	ps2alertsClient.Start()
-	go func() {
-		<-ctx.Done()
-		honuClient.Stop()
-		fisuClient.Stop()
-		voidWellClient.Stop()
-		populationClient.Stop()
-		saerroClient.Stop()
-		ps2alertsClient.Stop()
-	}()
-	return ps2.NewService(
+	ps2service := ps2.NewService(
+		s.log,
 		map[string]ps2.Loader[ps2.WorldsPopulation]{
 			"honu":      worlds.NewHonuLoader(honuClient),
 			"ps2live":   worlds.NewPS2LiveLoader(populationClient),
@@ -71,4 +77,6 @@ func setupPs2Service(ctx context.Context, cfg *config.Ps2ServiceConfig) *ps2.Ser
 		},
 		[]string{"ps2alerts", "honu", "census", "voidwell"},
 	)
+	startInContext(s, ps2service)
+	return ps2service
 }

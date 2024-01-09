@@ -67,9 +67,16 @@ func New(ctx context.Context, log *slog.Logger, storagePath string) (*Storage, e
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
-	s := &Storage{db: db, log: log.With(slog.String("component", "sqlite"))}
-	if err = s.migrate(ctx); err != nil {
-		return nil, fmt.Errorf("%s cannot migrate: %w", op, err)
+	return &Storage{
+		db:  db,
+		log: log.With(slog.String("component", "sqlite")),
+	}, nil
+}
+
+func (s *Storage) Start(ctx context.Context) error {
+	const op = "storage.sqlite.Start"
+	if err := s.migrate(ctx); err != nil {
+		return fmt.Errorf("%s cannot migrate: %w", op, err)
 	}
 	rawStatements := [statementsCount]struct {
 		name int
@@ -81,16 +88,17 @@ func New(ctx context.Context, log *slog.Logger, storagePath string) (*Storage, e
 		{insertGuildCharacter, "INSERT INTO guild_to_character VALUES (?, ?, ?)"},
 	}
 	for _, raw := range rawStatements {
-		stmt, err := db.Prepare(raw.stmt)
+		stmt, err := s.db.Prepare(raw.stmt)
 		if err != nil {
-			return nil, fmt.Errorf("%s: %w", op, err)
+			return fmt.Errorf("%s: %w", op, err)
 		}
 		s.statements[raw.name] = stmt
 	}
-	return s, nil
+	return nil
 }
 
 func (s *Storage) Close() error {
+	s.log.Info("closing storage")
 	const op = "storage.sqlite.Close"
 	errs := make([]string, 0, statementsCount+1)
 	for _, st := range s.statements {

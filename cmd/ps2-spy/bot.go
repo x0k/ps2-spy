@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log/slog"
 	"os"
 
 	"github.com/x0k/ps2-spy/internal/bot"
@@ -11,14 +10,21 @@ import (
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
-func mustSetupBot(ctx context.Context, cfg *config.BotConfig, log *slog.Logger, service *ps2.Service) *bot.Bot {
-	b, err := bot.New(ctx, &bot.BotConfig{
+func mustSetupBot(s *Setup, cfg *config.BotConfig, service *ps2.Service) *bot.Bot {
+	b, err := bot.New(s.ctx, &bot.BotConfig{
 		DiscordToken:          cfg.DiscordToken,
 		CommandHandlerTimeout: cfg.CommandHandlerTimeout,
-	}, log, service)
+	}, s.log, service)
 	if err != nil {
-		log.Error("failed to create bot", sl.Err(err))
+		s.log.Error("failed to create bot", sl.Err(err))
 		os.Exit(1)
 	}
+	s.wg.Add(1)
+	context.AfterFunc(s.ctx, func() {
+		defer s.wg.Done()
+		if err := b.Stop(); err != nil {
+			s.log.Error("failed to stop bot", sl.Err(err))
+		}
+	})
 	return b
 }

@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 
 	"github.com/x0k/ps2-spy/internal/config"
@@ -26,20 +27,18 @@ func main() {
 	cfg := config.MustLoad(config_path)
 	log := mustSetupLogger(&cfg.Logger)
 	log.Info("starting...", slog.String("log_level", cfg.Logger.Level))
-
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+	s := &Setup{
+		log: log,
+		ctx: ctx,
+		wg:  &sync.WaitGroup{},
+	}
 
-	storage := mustSetupStorage(ctx, &cfg.Storage, log)
-	defer func() {
-		if err := storage.Close(); err != nil {
-			log.Error("cannot close storage", sl.Err(err))
-		}
-	}()
+	storage := mustSetupStorage(s, &cfg.Storage)
+	_ = storage
 
-	ps2Service := setupPs2Service(ctx, &cfg.Ps2Service)
-	ps2Service.Start()
-	defer ps2Service.Stop()
+	ps2Service := setupPs2Service(s, &cfg.Ps2Service)
 
 	ps2events := streaming.NewClient("wss://push.planetside2.com/streaming", streaming.Ps2_env, "example")
 	err := ps2events.Connect(ctx)
@@ -49,8 +48,8 @@ func main() {
 		defer ps2events.Close()
 	}
 
-	b := mustSetupBot(ctx, &cfg.Bot, log, ps2Service)
-	defer b.Stop()
+	b := mustSetupBot(s, &cfg.Bot, ps2Service)
+	_ = b
 
 	log.Info("bot is now running. Press CTRL-C to exit.")
 	stop := make(chan os.Signal, 1)
@@ -58,4 +57,6 @@ func main() {
 	<-stop
 
 	log.Info("gracefully shutting down.")
+	cancel()
+	s.wg.Wait()
 }
