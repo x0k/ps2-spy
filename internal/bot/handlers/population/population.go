@@ -20,7 +20,6 @@ func New(popProvider PopulationProvider) handlers.InteractionHandler {
 		const op = "handlers.population"
 		log = log.With(slog.String("op", op))
 		opts := i.ApplicationCommandData().Options
-		log.Debug("command options", slog.Any("options", opts))
 		var provider string
 		if len(opts) > 0 {
 			provider = opts[0].StringValue()

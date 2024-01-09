@@ -25,14 +25,13 @@ type LoggerConfig struct {
 	HandlerType string `yaml:"handler_type" env:"LOGGER_HANDLER_TYPE" env-default:"text"`
 }
 
-type HttpClientConfig struct {
-	Timeout     time.Duration `yaml:"timeout" env:"HTTP_CLIENT_TIMEOUT" env-default:"4s"`
-	IdleTimeout time.Duration `yaml:"idle_timeout" env:"HTTP_CLIENT_IDLE_TIMEOUT" env-default:"10s"`
+type Ps2ServiceConfig struct {
+	HttpClientTimeout time.Duration `yaml:"http_client_timeout" env:"PS2_SERVICE_HTTP_CLIENT_TIMEOUT" env-default:"8s"`
 }
 
 type BotConfig struct {
-	CommandHandlerTimeout time.Duration `yaml:"command_handler_timeout" env:"COMMAND_HANDLER_TIMEOUT" env-default:"20s"`
-	DiscordToken          string        `yaml:"token" env:"DISCORD_TOKEN" env-required:"true"`
+	CommandHandlerTimeout time.Duration `yaml:"command_handler_timeout" env:"BOT_COMMAND_HANDLER_TIMEOUT" env-default:"20s"`
+	DiscordToken          string        `yaml:"token" env:"BOT_DISCORD_TOKEN" env-required:"true"`
 }
 
 type StorageConfig struct {
@@ -40,10 +39,10 @@ type StorageConfig struct {
 }
 
 type Config struct {
-	LoggerConfig LoggerConfig     `yaml:"logger"`
-	Storage      StorageConfig    `yaml:"storage"`
-	HttpClient   HttpClientConfig `yaml:"http_client"`
-	Bot          BotConfig        `yaml:"bot"`
+	Logger     LoggerConfig     `yaml:"logger"`
+	Storage    StorageConfig    `yaml:"storage"`
+	Ps2Service Ps2ServiceConfig `yaml:"ps2_service"`
+	Bot        BotConfig        `yaml:"bot"`
 }
 
 func MustLoad(configPath string) *Config {

@@ -20,7 +20,6 @@ func New(worldPopProvider WorldPopulationProvider) handlers.InteractionHandler {
 		const op = "handlers.server_population"
 		log = log.With(slog.String("op", op))
 		opts := i.ApplicationCommandData().Options
-		log.Debug("command options", slog.Any("options", opts))
 		server := opts[0].IntValue()
 		var provider string
 		if len(opts) > 1 {

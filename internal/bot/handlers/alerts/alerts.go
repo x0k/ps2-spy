@@ -21,7 +21,6 @@ func New(alertsProvider AlertsProvider) handlers.InteractionHandler {
 		const op = "handlers.alerts"
 		log = log.With(slog.String("op", op))
 		opts := i.ApplicationCommandData().Options
-		log.Debug("command options", slog.Any("options", opts))
 		var worldId ps2.WorldId
 		var provider string
 		for _, opt := range opts {

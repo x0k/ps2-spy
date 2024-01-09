@@ -26,6 +26,41 @@ type Storage struct {
 	statements [statementsCount]*sql.Stmt
 }
 
+func (s *Storage) migrate(ctx context.Context) error {
+	_, err := s.db.ExecContext(ctx, `
+CREATE TABLE IF NOT EXISTS guild_to_outfit (
+	guild_id TEXT NOT NULL,
+	platform_id TEXT NOT NULL,
+	outfit_id TEXT NOT NULL,
+	PRIMARY KEY (guild_id, platform_id, outfit_id)
+);`)
+	if err != nil {
+		return err
+	}
+
+	_, err = s.db.ExecContext(ctx, `
+CREATE TABLE IF NOT EXISTS guild_to_character (
+	guild_id TEXT NOT NULL,
+	platform_id TEXT NOT NULL,
+	character_id TEXT NOT NULL,
+	PRIMARY KEY (guild_id, platform_id, character_id)
+);`)
+	if err != nil {
+		return err
+	}
+
+	_, err = s.db.ExecContext(ctx, `
+CREATE TABLE IF NOT EXISTS guild_to_platform (
+	guild_id TEXT PRIMARY KEY NOT NULL,
+	platform_id TEXT NOT NULL
+);`)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func New(ctx context.Context, log *slog.Logger, storagePath string) (*Storage, error) {
 	const op = "storage.sqlite.New"
 	db, err := sql.Open("sqlite3", storagePath)
@@ -33,6 +68,9 @@ func New(ctx context.Context, log *slog.Logger, storagePath string) (*Storage, e
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 	s := &Storage{db: db, log: log.With(slog.String("component", "sqlite"))}
+	if err = s.migrate(ctx); err != nil {
+		return nil, fmt.Errorf("%s cannot migrate: %w", op, err)
+	}
 	rawStatements := [statementsCount]struct {
 		name int
 		stmt string
@@ -50,42 +88,6 @@ func New(ctx context.Context, log *slog.Logger, storagePath string) (*Storage, e
 		s.statements[raw.name] = stmt
 	}
 	return s, nil
-}
-
-func (s *Storage) Migrate(ctx context.Context) error {
-	const op = "storage.sqlite.Migrate"
-	_, err := s.db.ExecContext(ctx, `
-CREATE TABLE IF NOT EXISTS guild_to_outfit (
-	guild_id TEXT NOT NULL,
-	platform_id TEXT NOT NULL,
-	outfit_id TEXT NOT NULL,
-	PRIMARY KEY (guild_id, platform_id, outfit_id)
-);`)
-	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
-	}
-
-	_, err = s.db.ExecContext(ctx, `
-CREATE TABLE IF NOT EXISTS guild_to_character (
-	guild_id TEXT NOT NULL,
-	platform_id TEXT NOT NULL,
-	character_id TEXT NOT NULL,
-	PRIMARY KEY (guild_id, platform_id, character_id)
-);`)
-	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
-	}
-
-	_, err = s.db.ExecContext(ctx, `
-CREATE TABLE IF NOT EXISTS guild_to_platform (
-	guild_id TEXT PRIMARY KEY NOT NULL,
-	platform_id TEXT NOT NULL
-);`)
-	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
-	}
-
-	return nil
 }
 
 func (s *Storage) Close() error {

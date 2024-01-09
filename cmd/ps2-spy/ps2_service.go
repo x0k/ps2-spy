@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/x0k/ps2-spy/internal/config"
 	"github.com/x0k/ps2-spy/internal/lib/census2"
 	"github.com/x0k/ps2-spy/internal/lib/fisu"
 	"github.com/x0k/ps2-spy/internal/lib/honu"
@@ -17,8 +18,10 @@ import (
 	"github.com/x0k/ps2-spy/internal/ps2/loaders/worlds"
 )
 
-func setupPs2Service(ctx context.Context) *ps2.Service {
-	httpClient := &http.Client{}
+func setupPs2Service(ctx context.Context, cfg *config.Ps2ServiceConfig) *ps2.Service {
+	httpClient := &http.Client{
+		Timeout: cfg.HttpClientTimeout,
+	}
 	honuClient := honu.NewClient("https://wt.honu.pw", httpClient)
 	fisuClient := fisu.NewClient("https://ps2.fisu.pw", httpClient)
 	voidWellClient := voidwell.NewClient("https://api.voidwell.com", httpClient)

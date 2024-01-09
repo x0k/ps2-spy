@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
@@ -23,9 +24,8 @@ func init() {
 
 func main() {
 	cfg := config.MustLoad(config_path)
-	log := mustSetupLogger(&cfg.LoggerConfig)
-
-	log.Info("starting...")
+	log := mustSetupLogger(&cfg.Logger)
+	log.Info("starting...", slog.String("log_level", cfg.Logger.Level))
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -36,18 +36,13 @@ func main() {
 			log.Error("cannot close storage", sl.Err(err))
 		}
 	}()
-	err := storage.Migrate(ctx)
-	if err != nil {
-		log.Error("cannot migrate storage", sl.Err(err))
-		os.Exit(1)
-	}
 
-	ps2Service := setupPs2Service(ctx)
+	ps2Service := setupPs2Service(ctx, &cfg.Ps2Service)
 	ps2Service.Start()
 	defer ps2Service.Stop()
 
 	ps2events := streaming.NewClient("wss://push.planetside2.com/streaming", streaming.Ps2_env, "example")
-	err = ps2events.Connect(ctx)
+	err := ps2events.Connect(ctx)
 	if err != nil {
 		log.Error("failed to connect to websocket", sl.Err(err))
 	} else {
