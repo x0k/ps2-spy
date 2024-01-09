@@ -20,3 +20,8 @@ type MessageBase struct {
 	Service string `json:"service"`
 	Type    string `json:"type"`
 }
+
+type EventBase struct {
+	EventName string `json:"event_name"`
+	Timestamp string `json:"timestamp"`
+}

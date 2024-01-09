@@ -25,35 +25,35 @@ func Echo[T any](payload T) EchoCommand[T] {
 	}
 }
 
-type ChangeSubscribePayload struct {
+type SubscriptionSettings struct {
 	Characters                     []string `json:"characters,omitempty"`
 	EventNames                     []string `json:"eventNames,omitempty"`
 	Worlds                         []string `json:"worlds,omitempty"`
 	LogicalAndCharactersWithWorlds bool     `json:"logicalAndCharactersWithWorlds,omitempty"`
 }
 
-type ChangeSubscribeCommand struct {
+type ChangeSubscriptionCommand struct {
 	core.CommandBase
-	ChangeSubscribePayload
+	SubscriptionSettings
 }
 
-func Subscribe(payload ChangeSubscribePayload) ChangeSubscribeCommand {
-	return ChangeSubscribeCommand{
+func Subscribe(payload SubscriptionSettings) ChangeSubscriptionCommand {
+	return ChangeSubscriptionCommand{
 		CommandBase: core.CommandBase{
 			Service: core.EventService,
 			Action:  SubscribeAction,
 		},
-		ChangeSubscribePayload: payload,
+		SubscriptionSettings: payload,
 	}
 }
 
-func ClearSubscribe(payload ChangeSubscribePayload) ChangeSubscribeCommand {
-	return ChangeSubscribeCommand{
+func ClearSubscribe(payload SubscriptionSettings) ChangeSubscriptionCommand {
+	return ChangeSubscriptionCommand{
 		CommandBase: core.CommandBase{
 			Service: core.EventService,
 			Action:  ClearSubscribeAction,
 		},
-		ChangeSubscribePayload: payload,
+		SubscriptionSettings: payload,
 	}
 }
 
@@ -72,14 +72,14 @@ func ClearAllSubscribe(all core.StrBool) ClearAllSubscribeCommand {
 	}
 }
 
-func NewRecentCharacters() core.CommandBase {
+func RecentCharacters() core.CommandBase {
 	return core.CommandBase{
 		Service: core.EventService,
 		Action:  RecentCharacterIdsAction,
 	}
 }
 
-func NewRecentCharactersCount() core.CommandBase {
+func RecentCharactersCount() core.CommandBase {
 	return core.CommandBase{
 		Service: core.EventService,
 		Action:  RecentCharacterIdsCountAction,
