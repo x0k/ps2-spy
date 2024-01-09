@@ -5,54 +5,56 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log/slog"
+	"strings"
 
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/x0k/ps2-spy/internal/storage"
 )
 
+const (
+	upsertGuildPlatform = iota
+	selectGuildPlatform
+	insertGuildOutfit
+	insertGuildCharacter
+	statementsCount
+)
+
 type Storage struct {
-	db *sql.DB
+	log        *slog.Logger
+	db         *sql.DB
+	statements [statementsCount]*sql.Stmt
 }
 
-func (s *Storage) prepareAndExec(ctx context.Context, statement string, args ...any) error {
-	st, err := s.db.PrepareContext(ctx, statement)
-	if err != nil {
-		return fmt.Errorf("error preparing statement: %w", err)
-	}
-	_, err = st.ExecContext(ctx, args...)
-	if err != nil {
-		return fmt.Errorf("error executing statement: %w", err)
-	}
-	return nil
-}
-
-func preparedAndQueryRow[R any](ctx context.Context, db *sql.DB, result R, statement string, args ...any) error {
-	st, err := db.PrepareContext(ctx, statement)
-	if err != nil {
-		return fmt.Errorf("error preparing statement: %w", err)
-	}
-	err = st.QueryRowContext(ctx, args...).Scan(result)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return storage.ErrNotFound
-		}
-		return fmt.Errorf("error executing statement: %w", err)
-	}
-	return nil
-}
-
-func New(ctx context.Context, storagePath string) (*Storage, error) {
+func New(ctx context.Context, log *slog.Logger, storagePath string) (*Storage, error) {
 	const op = "storage.sqlite.New"
 	db, err := sql.Open("sqlite3", storagePath)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
-	return &Storage{db: db}, nil
+	s := &Storage{db: db, log: log.With(slog.String("component", "sqlite"))}
+	rawStatements := [statementsCount]struct {
+		name int
+		stmt string
+	}{
+		{upsertGuildPlatform, "INSERT INTO guild_to_platform VALUES (?, ?) ON CONFLICT(guild_id) DO UPDATE SET platform_id = EXCLUDED.platform_id"},
+		{selectGuildPlatform, "SELECT platform_id FROM guild_to_platform WHERE guild_id = ?"},
+		{insertGuildOutfit, "INSERT INTO guild_to_outfit VALUES (?, ?, ?)"},
+		{insertGuildCharacter, "INSERT INTO guild_to_character VALUES (?, ?, ?)"},
+	}
+	for _, raw := range rawStatements {
+		stmt, err := db.Prepare(raw.stmt)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", op, err)
+		}
+		s.statements[raw.name] = stmt
+	}
+	return s, nil
 }
 
 func (s *Storage) Migrate(ctx context.Context) error {
 	const op = "storage.sqlite.Migrate"
-	err := s.prepareAndExec(ctx, `
+	_, err := s.db.ExecContext(ctx, `
 CREATE TABLE IF NOT EXISTS guild_to_outfit (
 	guild_id TEXT NOT NULL,
 	platform_id TEXT NOT NULL,
@@ -63,7 +65,7 @@ CREATE TABLE IF NOT EXISTS guild_to_outfit (
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
-	err = s.prepareAndExec(ctx, `
+	_, err = s.db.ExecContext(ctx, `
 CREATE TABLE IF NOT EXISTS guild_to_character (
 	guild_id TEXT NOT NULL,
 	platform_id TEXT NOT NULL,
@@ -74,7 +76,7 @@ CREATE TABLE IF NOT EXISTS guild_to_character (
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
-	err = s.prepareAndExec(ctx, `
+	_, err = s.db.ExecContext(ctx, `
 CREATE TABLE IF NOT EXISTS guild_to_platform (
 	guild_id TEXT PRIMARY KEY NOT NULL,
 	platform_id TEXT NOT NULL
@@ -87,12 +89,42 @@ CREATE TABLE IF NOT EXISTS guild_to_platform (
 }
 
 func (s *Storage) Close() error {
-	return s.db.Close()
+	const op = "storage.sqlite.Close"
+	errs := make([]string, 0, statementsCount+1)
+	for _, st := range s.statements {
+		if err := st.Close(); err != nil {
+			errs = append(errs, err.Error())
+		}
+	}
+	if err := s.db.Close(); err != nil {
+		errs = append(errs, err.Error())
+	}
+	if len(errs) > 0 {
+		return fmt.Errorf("%s: %s", op, strings.Join(errs, ", "))
+	}
+	return nil
+}
+
+func (s *Storage) exec(ctx context.Context, statement int, args ...any) error {
+	if _, err := s.statements[statement].ExecContext(ctx, args...); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Storage) queryRow(ctx context.Context, result any, statement int, args ...any) error {
+	if err := s.statements[statement].QueryRowContext(ctx, args...).Scan(result); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return storage.ErrNotFound
+		}
+		return err
+	}
+	return nil
 }
 
 func (s *Storage) SaveGuildPlatform(ctx context.Context, guildID, platformID string) error {
 	const op = "storage.sqlite.SaveGuildPlatform"
-	err := s.prepareAndExec(ctx, "INSERT INTO guild_to_platform VALUES (?, ?) ON CONFLICT(guild_id) DO UPDATE SET platform_id = EXCLUDED.platform_id", guildID, platformID)
+	err := s.exec(ctx, upsertGuildPlatform, guildID, platformID)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
@@ -102,13 +134,7 @@ func (s *Storage) SaveGuildPlatform(ctx context.Context, guildID, platformID str
 func (s *Storage) GetGuildPlatform(ctx context.Context, guildID string) (string, error) {
 	const op = "storage.sqlite.GetGuildPlatform"
 	var platformID string
-	err := preparedAndQueryRow(
-		ctx,
-		s.db,
-		&platformID,
-		"SELECT platform_id FROM guild_to_platform WHERE guild_id = ?",
-		guildID,
-	)
+	err := s.queryRow(ctx, &platformID, selectGuildPlatform, guildID)
 	if err != nil {
 		return "", fmt.Errorf("%s: %w", op, err)
 	}
@@ -117,7 +143,7 @@ func (s *Storage) GetGuildPlatform(ctx context.Context, guildID string) (string,
 
 func (s *Storage) SaveGuildOutfit(ctx context.Context, guildID, platformId, outfitID string) error {
 	const op = "storage.sqlite.SaveGuildOutfit"
-	err := s.prepareAndExec(ctx, "INSERT INTO guild_to_outfit VALUES (?, ?, ?)", guildID, platformId, outfitID)
+	err := s.exec(ctx, insertGuildOutfit, guildID, platformId, outfitID)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
@@ -126,7 +152,7 @@ func (s *Storage) SaveGuildOutfit(ctx context.Context, guildID, platformId, outf
 
 func (s *Storage) SaveGuildCharacter(ctx context.Context, guildID, platformId, characterID string) error {
 	const op = "storage.sqlite.SaveGuildCharacter"
-	err := s.prepareAndExec(ctx, "INSERT INTO guild_to_character VALUES (?, ?, ?)", guildID, platformId, characterID)
+	err := s.exec(ctx, insertGuildCharacter, guildID, platformId, characterID)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}

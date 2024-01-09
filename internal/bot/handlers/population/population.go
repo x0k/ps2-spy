@@ -1,0 +1,40 @@
+package population
+
+import (
+	"context"
+	"fmt"
+	"log/slog"
+
+	"github.com/bwmarrin/discordgo"
+	"github.com/x0k/ps2-spy/internal/bot/handlers"
+	"github.com/x0k/ps2-spy/internal/bot/render"
+	"github.com/x0k/ps2-spy/internal/ps2"
+)
+
+type PopulationProvider interface {
+	Population(ctx context.Context, provider string) (ps2.Loaded[ps2.WorldsPopulation], error)
+}
+
+func New(popProvider PopulationProvider) handlers.InteractionHandler {
+	return handlers.DeferredResponse(func(ctx context.Context, log *slog.Logger, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.WebhookEdit, error) {
+		const op = "handlers.population"
+		log = log.With(slog.String("op", op))
+		opts := i.ApplicationCommandData().Options
+		log.Debug("command options", slog.Any("options", opts))
+		var provider string
+		if len(opts) > 0 {
+			provider = opts[0].StringValue()
+		}
+		log.Debug("parsed options", slog.String("provider", provider))
+		population, err := popProvider.Population(ctx, provider)
+		if err != nil {
+			return nil, fmt.Errorf("%s error getting population: %q", op, err)
+		}
+		embeds := []*discordgo.MessageEmbed{
+			render.RenderPopulation(population),
+		}
+		return &discordgo.WebhookEdit{
+			Embeds: &embeds,
+		}, nil
+	})
+}

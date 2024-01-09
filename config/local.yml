@@ -1,5 +1,7 @@
-env: "local"
-storage_path: "./storage/storage.db"
+storage:
+  path: "./storage/storage.db"
+bot:
+  command_handler_timeout: 10s
 http_client:
   timeout: 4s
   idle_timeout: 10s

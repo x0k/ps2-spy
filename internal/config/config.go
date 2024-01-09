@@ -8,27 +8,42 @@ import (
 	"github.com/ilyakaznacheev/cleanenv"
 )
 
-type Env string
+const (
+	TextHandler = "text"
+	JSONHandler = "json"
+)
 
 const (
-	LocalEnv Env = "local"
-	ProdEnv  Env = "prod"
+	DebugLevel = "debug"
+	InfoLevel  = "info"
+	WarnLevel  = "warn"
+	ErrorLevel = "error"
 )
+
+type LoggerConfig struct {
+	Level       string `yaml:"level" env:"LOGGER_LEVEL" env-default:"info"`
+	HandlerType string `yaml:"handler_type" env:"LOGGER_HANDLER_TYPE" env-default:"text"`
+}
 
 type HttpClientConfig struct {
 	Timeout     time.Duration `yaml:"timeout" env:"HTTP_CLIENT_TIMEOUT" env-default:"4s"`
 	IdleTimeout time.Duration `yaml:"idle_timeout" env:"HTTP_CLIENT_IDLE_TIMEOUT" env-default:"10s"`
 }
 
-type DiscordConfig struct {
-	Token string `yaml:"token" env:"DISCORD_TOKEN" env-required:"true"`
+type BotConfig struct {
+	CommandHandlerTimeout time.Duration `yaml:"command_handler_timeout" env:"COMMAND_HANDLER_TIMEOUT" env-default:"20s"`
+	DiscordToken          string        `yaml:"token" env:"DISCORD_TOKEN" env-required:"true"`
+}
+
+type StorageConfig struct {
+	Path string `yaml:"path" env:"STORAGE_PATH" env-required:"true"`
 }
 
 type Config struct {
-	Env         Env              `yaml:"env" env:"ENV" env-required:"true"`
-	StoragePath string           `yaml:"storage_path" env:"STORAGE_PATH" env-required:"true"`
-	HttpClient  HttpClientConfig `yaml:"http_client"`
-	Discord     DiscordConfig    `yaml:"discord"`
+	LoggerConfig LoggerConfig     `yaml:"logger"`
+	Storage      StorageConfig    `yaml:"storage"`
+	HttpClient   HttpClientConfig `yaml:"http_client"`
+	Bot          BotConfig        `yaml:"bot"`
 }
 
 func MustLoad(configPath string) *Config {

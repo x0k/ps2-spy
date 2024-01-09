@@ -102,15 +102,11 @@ func (s *Service) PopulationByWorldIdProviders() []string {
 	return s.worldLoaders
 }
 
-func (s *Service) WorldPopulationQuery(worldId WorldId, provider string) multiLoaderQuery[WorldId] {
-	return multiLoaderQuery[WorldId]{
+func (s *Service) PopulationByWorldId(ctx context.Context, worldId WorldId, provider string) (Loaded[DetailedWorldPopulation], error) {
+	return s.worldPopulation.Load(ctx, multiLoaderQuery[WorldId]{
 		loader: providerName(provider),
 		key:    worldId,
-	}
-}
-
-func (s *Service) PopulationByWorldId(ctx context.Context, query multiLoaderQuery[WorldId]) (Loaded[DetailedWorldPopulation], error) {
-	return s.worldPopulation.Load(ctx, query)
+	})
 }
 
 func (s *Service) AlertsLoaders() []string {
