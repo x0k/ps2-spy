@@ -61,6 +61,9 @@ func (e *ExpiableValue[T]) StartExpiration() {
 }
 
 func (e *ExpiableValue[T]) StopExpiration() {
+	if !e.isStarted() {
+		return
+	}
 	close(e.done)
 }
 

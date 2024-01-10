@@ -40,7 +40,7 @@ func main() {
 
 	startBot(s, &cfg.Bot)
 
-	log.Info("bot is now running. Press CTRL-C to exit.")
+	log.Info("Press CTRL-C to exit.")
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 	<-stop
