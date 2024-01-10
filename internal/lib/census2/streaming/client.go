@@ -3,7 +3,7 @@ package streaming
 import (
 	"context"
 	"fmt"
-	"log/slog"
+	"log"
 	"sync"
 
 	ps2commands "github.com/x0k/ps2-spy/internal/lib/census2/streaming/commands"
@@ -20,12 +20,13 @@ const (
 	Ps2ps4eu_env = "ps2ps4eu"
 )
 
+var ErrUnknownEventHandler = fmt.Errorf("unknown event handler")
+
 type eventHandlerInstance struct {
 	eventHandler ps2events.EventHandler
 }
 
 type Client struct {
-	log             *slog.Logger
 	endpoint        string
 	env             string
 	serviceId       string
@@ -34,9 +35,8 @@ type Client struct {
 	eventHandlers   map[string][]*eventHandlerInstance
 }
 
-func NewClient(log *slog.Logger, endpoint string, env string, serviceId string) *Client {
+func NewClient(endpoint string, env string, serviceId string) *Client {
 	return &Client{
-		log:           log.With(slog.String("component", "census2.streaming.Client")),
 		endpoint:      endpoint,
 		env:           env,
 		serviceId:     serviceId,
@@ -75,24 +75,23 @@ func (c *Client) addEventHandler(handler ps2events.EventHandler) func() {
 	}
 }
 
-func (c *Client) AddEventHandler(handler any) func() {
+func (c *Client) AddEventHandler(handler any) (func(), error) {
 	eventHandler := ps2events.EventHandlerForInterface(handler)
 
 	if eventHandler == nil {
-		c.log.Error("invalid event handler type, handler will never be called")
-		return func() {}
+		return func() {}, ErrUnknownEventHandler
 	}
 
-	return c.addEventHandler(eventHandler)
+	return c.addEventHandler(eventHandler), nil
 }
 
 func (c *Client) onMessage(msg any) {
-	c.log.Debug("onMessage", slog.Any("msg", msg))
+	log.Printf("onMessage: %v", msg)
 }
 
 func (c *Client) Subscribe(ctx context.Context, settings ps2commands.SubscriptionSettings) error {
 	const op = "census2.streaming.Client.Subscribe"
-	err := wsjson.Write(ctx, c.conn, settings)
+	err := wsjson.Write(ctx, c.conn, ps2commands.Subscribe(settings))
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}

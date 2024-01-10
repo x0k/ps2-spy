@@ -27,6 +27,7 @@ type LoggerConfig struct {
 
 type Ps2ServiceConfig struct {
 	HttpClientTimeout time.Duration `yaml:"http_client_timeout" env:"PS2_SERVICE_HTTP_CLIENT_TIMEOUT" env-default:"8s"`
+	ServiceId         string        `yaml:"service_id" env:"PS2_SERVICE_ID" env-required:"true"`
 }
 
 type BotConfig struct {
