@@ -11,7 +11,11 @@ const (
 
 type ConnectionStateChanged struct {
 	core.MessageBase
-	Connected core.StrBool `json:"connected"`
+	Connected core.StrBool `json:"connected" mapstructure:"connected"`
+}
+
+func IsConnectionStateChangedMessage(msg core.MessageBase) bool {
+	return msg.Service == core.PushService && msg.Type == ConnectionStateChangedType
 }
 
 type ServiceStateChanged struct {

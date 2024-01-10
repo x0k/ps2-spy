@@ -3,11 +3,14 @@ package streaming
 import (
 	"context"
 	"fmt"
-	"log"
-	"sync"
+	"log/slog"
+	"time"
 
+	"github.com/mitchellh/mapstructure"
 	ps2commands "github.com/x0k/ps2-spy/internal/lib/census2/streaming/commands"
+	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/core"
 	ps2events "github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
+	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/messages"
 	"nhooyr.io/websocket"
 	"nhooyr.io/websocket/wsjson"
 )
@@ -21,72 +24,115 @@ const (
 )
 
 var ErrUnknownEventHandler = fmt.Errorf("unknown event handler")
+var ErrInvalidConnectionMessage = fmt.Errorf("invalid connection message")
+var ErrConnectionFailed = fmt.Errorf("failed to connect")
+var ErrDisconnectedByServer = fmt.Errorf("disconnected by server")
 
 type eventHandlerInstance struct {
 	eventHandler ps2events.EventHandler
 }
 
 type Client struct {
-	endpoint        string
-	env             string
-	serviceId       string
-	conn            *websocket.Conn
-	eventHandlersMu sync.RWMutex
-	eventHandlers   map[string][]*eventHandlerInstance
+	log                      *slog.Logger
+	endpoint                 string
+	env                      string
+	serviceId                string
+	conn                     *websocket.Conn
+	msgBuffer                core.MessageBase
+	connStateChangeMsgBuffer messages.ConnectionStateChanged
+	connectionTimeout        time.Duration
+	Msg                      chan map[string]any
 }
 
-func NewClient(endpoint string, env string, serviceId string) *Client {
+func NewClient(log *slog.Logger, endpoint string, env string, serviceId string) *Client {
 	return &Client{
-		endpoint:      endpoint,
-		env:           env,
-		serviceId:     serviceId,
-		eventHandlers: map[string][]*eventHandlerInstance{},
+		log: log.With(
+			slog.String("component", "census2.streaming.Client"),
+			slog.String("endpoint", endpoint),
+			slog.String("env", env),
+		),
+		endpoint:          endpoint,
+		env:               env,
+		serviceId:         serviceId,
+		connectionTimeout: time.Duration(10) * time.Second,
+		Msg:               make(chan map[string]any, 1),
+	}
+}
+
+func (c *Client) fillConnectionStateChangedBuffer(msg map[string]any) error {
+	err := core.AsMessageBase(msg, &c.msgBuffer)
+	if err != nil {
+		return err
+	}
+	if !messages.IsConnectionStateChangedMessage(c.msgBuffer) {
+		return ErrInvalidConnectionMessage
+	}
+	err = mapstructure.Decode(msg, &c.connStateChangeMsgBuffer)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *Client) writeMsg(msg map[string]any) {
+	select {
+	case c.Msg <- msg:
+		return
+	default:
+		c.log.Debug("message is dropped", slog.Any("message", msg))
+		return
 	}
 }
 
 func (c *Client) Connect(ctx context.Context) error {
+	c.log.Info("connecting to websocket")
 	const op = "census2.streaming.Client.Connect"
 	conn, _, err := websocket.Dial(ctx, c.endpoint+fmt.Sprintf("?environment=%s&service-id=s:%s", c.env, c.serviceId), nil)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
+	defer func() {
+		if c.conn != nil {
+			return
+		}
+		conn.Close(websocket.StatusNormalClosure, "connection failed")
+	}()
+	timeout := time.AfterFunc(c.connectionTimeout, func() {
+		conn.Close(websocket.StatusNormalClosure, "connection timeout")
+	})
+	defer timeout.Stop()
+	var data map[string]any
+	err = wsjson.Read(ctx, conn, &data)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+	// TODO: check that timeout was not triggered before assigning connection
+	timeout.Stop()
+	err = c.fillConnectionStateChangedBuffer(data)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+	if c.connStateChangeMsgBuffer.Connected != core.True {
+		return fmt.Errorf("%s: %w", op, ErrConnectionFailed)
+	}
 	c.conn = conn
+	c.writeMsg(data)
+	c.log.Info("connected")
 	return nil
 }
 
-func (c *Client) removeEventHandlerInstance(eventType string, instance *eventHandlerInstance) {
-	c.eventHandlersMu.Lock()
-	defer c.eventHandlersMu.Unlock()
-	for i, v := range c.eventHandlers[eventType] {
-		if v == instance {
-			c.eventHandlers[eventType] = append(c.eventHandlers[eventType][:i], c.eventHandlers[eventType][i+1:]...)
-			return
-		}
+func (c *Client) onMessage(msg any) error {
+	m, ok := msg.(map[string]any)
+	if !ok {
+		c.log.Warn("unexpected message type", slog.Any("msg", msg))
+		return nil
 	}
-}
-
-func (c *Client) addEventHandler(handler ps2events.EventHandler) func() {
-	c.eventHandlersMu.Lock()
-	defer c.eventHandlersMu.Unlock()
-	instance := &eventHandlerInstance{handler}
-	c.eventHandlers[handler.Type()] = append(c.eventHandlers[handler.Type()], instance)
-	return func() {
-		c.removeEventHandlerInstance(handler.Type(), instance)
+	if c.fillConnectionStateChangedBuffer(m) == nil && c.connStateChangeMsgBuffer.Connected == core.False {
+		c.log.Info("disconnected by server")
+		return ErrDisconnectedByServer
 	}
-}
-
-func (c *Client) AddEventHandler(handler any) (func(), error) {
-	eventHandler := ps2events.EventHandlerForInterface(handler)
-
-	if eventHandler == nil {
-		return func() {}, ErrUnknownEventHandler
-	}
-
-	return c.addEventHandler(eventHandler), nil
-}
-
-func (c *Client) onMessage(msg any) {
-	log.Printf("onMessage: %v", msg)
+	c.writeMsg(m)
+	return nil
 }
 
 func (c *Client) Subscribe(ctx context.Context, settings ps2commands.SubscriptionSettings) error {
@@ -101,10 +147,17 @@ func (c *Client) Subscribe(ctx context.Context, settings ps2commands.Subscriptio
 		if err != nil {
 			return fmt.Errorf("%s: %w", op, err)
 		}
-		c.onMessage(data)
+		err = c.onMessage(data)
+		if err != nil {
+			return fmt.Errorf("%s: %w", op, err)
+		}
 	}
 }
 
 func (c *Client) Close() error {
+	c.log.Info("closing websocket connection")
+	defer func() {
+		c.conn = nil
+	}()
 	return c.conn.Close(websocket.StatusNormalClosure, "")
 }
