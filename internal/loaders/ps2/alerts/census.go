@@ -9,6 +9,7 @@ import (
 
 	"github.com/x0k/ps2-spy/internal/lib/census2"
 	collections "github.com/x0k/ps2-spy/internal/lib/census2/collections/ps2"
+	"github.com/x0k/ps2-spy/internal/loaders"
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
@@ -27,10 +28,10 @@ var WorldEventsQuery = census2.NewQueryMustBeValid(census2.GetQuery, census2.Ps2
 	Where(census2.Cond("world_id").Equals(census2.Str("1,10,13,17,19,24,40,1000,2000"))).
 	SetLimit(100)
 
-func (l *CensusLoader) Load(ctx context.Context) (ps2.Loaded[ps2.Alerts], error) {
+func (l *CensusLoader) Load(ctx context.Context) (loaders.Loaded[ps2.Alerts], error) {
 	events, err := census2.ExecuteAndDecode[collections.WorldEventItem](ctx, l.client, WorldEventsQuery)
 	if err != nil {
-		return ps2.Loaded[ps2.Alerts]{}, err
+		return loaders.Loaded[ps2.Alerts]{}, err
 	}
 	actualEvents := make(map[string]collections.WorldEventItem, len(events))
 	for i := len(events) - 1; i >= 0; i-- {
@@ -101,5 +102,5 @@ func (l *CensusLoader) Load(ctx context.Context) (ps2.Loaded[ps2.Alerts], error)
 		}
 		alerts = append(alerts, alert)
 	}
-	return ps2.LoadedNow(l.client.Endpoint(), alerts), nil
+	return loaders.LoadedNow(l.client.Endpoint(), alerts), nil
 }

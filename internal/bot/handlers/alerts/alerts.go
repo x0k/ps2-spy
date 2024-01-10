@@ -8,15 +8,14 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/x0k/ps2-spy/internal/bot/handlers"
 	"github.com/x0k/ps2-spy/internal/bot/render"
+	"github.com/x0k/ps2-spy/internal/loaders"
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
-type AlertsProvider interface {
-	Alerts(ctx context.Context, provider string) (ps2.Loaded[ps2.Alerts], error)
-	AlertsByWorldId(ctx context.Context, provider string, worldId ps2.WorldId) (ps2.Loaded[ps2.Alerts], error)
-}
-
-func New(alertsProvider AlertsProvider) handlers.InteractionHandler {
+func New(
+	alertsLoader loaders.KeyedLoader[string, ps2.Alerts],
+	worldAlertsLoader loaders.QueriedLoader[loaders.MultiLoaderQuery[ps2.WorldId], ps2.Alerts],
+) handlers.InteractionHandler {
 	return handlers.DeferredResponse(func(ctx context.Context, log *slog.Logger, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.WebhookEdit, error) {
 		const op = "handlers.alerts"
 		log = log.With(slog.String("op", op))
@@ -34,7 +33,7 @@ func New(alertsProvider AlertsProvider) handlers.InteractionHandler {
 		log.Debug("parsed options", slog.Int("world_id", int(worldId)), slog.String("provider", provider))
 		if worldId > 0 {
 			log.Debug("getting world alerts")
-			alerts, err := alertsProvider.AlertsByWorldId(ctx, provider, worldId)
+			alerts, err := worldAlertsLoader.Load(ctx, loaders.NewMultiLoaderQuery(provider, worldId))
 			if err != nil {
 				return nil, fmt.Errorf("%s error getting alerts: %w", op, err)
 			}
@@ -47,7 +46,7 @@ func New(alertsProvider AlertsProvider) handlers.InteractionHandler {
 			}, nil
 		}
 		log.Debug("getting global alerts")
-		alerts, err := alertsProvider.Alerts(ctx, provider)
+		alerts, err := alertsLoader.Load(ctx, provider)
 		if err != nil {
 			return nil, fmt.Errorf("error getting alerts: %q", err)
 		}

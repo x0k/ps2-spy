@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/x0k/ps2-spy/internal/lib/voidwell"
+	"github.com/x0k/ps2-spy/internal/loaders"
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
@@ -19,10 +20,10 @@ func NewVoidWellLoader(client *voidwell.Client) *VoidWellLoader {
 	}
 }
 
-func (p *VoidWellLoader) Load(ctx context.Context) (ps2.Loaded[ps2.Alerts], error) {
+func (p *VoidWellLoader) Load(ctx context.Context) (loaders.Loaded[ps2.Alerts], error) {
 	states, err := p.client.WorldsState(ctx)
 	if err != nil {
-		return ps2.Loaded[ps2.Alerts]{}, err
+		return loaders.Loaded[ps2.Alerts]{}, err
 	}
 	// Usually, worlds count is greater than alerts count
 	alerts := make(ps2.Alerts, 0, len(states))
@@ -55,5 +56,5 @@ func (p *VoidWellLoader) Load(ctx context.Context) (ps2.Loaded[ps2.Alerts], erro
 			alerts = append(alerts, alert)
 		}
 	}
-	return ps2.LoadedNow(p.client.Endpoint(), alerts), nil
+	return loaders.LoadedNow(p.client.Endpoint(), alerts), nil
 }

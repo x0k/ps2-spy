@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/x0k/ps2-spy/internal/lib/honu"
+	"github.com/x0k/ps2-spy/internal/loaders"
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
@@ -21,10 +22,10 @@ func (p *HonuLoader) Name() string {
 	return p.client.Endpoint()
 }
 
-func (p *HonuLoader) Load(ctx context.Context, worldId ps2.WorldId) (ps2.Loaded[ps2.DetailedWorldPopulation], error) {
+func (p *HonuLoader) Load(ctx context.Context, worldId ps2.WorldId) (loaders.Loaded[ps2.DetailedWorldPopulation], error) {
 	overview, err := p.client.WorldOverview(ctx)
 	if err != nil {
-		return ps2.Loaded[ps2.DetailedWorldPopulation]{}, err
+		return loaders.Loaded[ps2.DetailedWorldPopulation]{}, err
 	}
 	for _, w := range overview {
 		wId := ps2.WorldId(w.WorldId)
@@ -52,7 +53,7 @@ func (p *HonuLoader) Load(ctx context.Context, worldId ps2.WorldId) (ps2.Loaded[
 			}
 			world.Total += z.Players.All
 		}
-		return ps2.LoadedNow(p.client.Endpoint(), world), nil
+		return loaders.LoadedNow(p.client.Endpoint(), world), nil
 	}
-	return ps2.Loaded[ps2.DetailedWorldPopulation]{}, ps2.ErrWorldNotFound
+	return loaders.Loaded[ps2.DetailedWorldPopulation]{}, ps2.ErrWorldNotFound
 }

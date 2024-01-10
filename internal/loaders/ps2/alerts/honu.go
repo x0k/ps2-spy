@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/x0k/ps2-spy/internal/lib/honu"
+	"github.com/x0k/ps2-spy/internal/loaders"
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
@@ -20,10 +21,10 @@ func NewHonuLoader(client *honu.Client) *HonuLoader {
 	}
 }
 
-func (p *HonuLoader) Load(ctx context.Context) (ps2.Loaded[ps2.Alerts], error) {
+func (p *HonuLoader) Load(ctx context.Context) (loaders.Loaded[ps2.Alerts], error) {
 	overview, err := p.client.WorldOverview(ctx)
 	if err != nil {
-		return ps2.Loaded[ps2.Alerts]{}, err
+		return loaders.Loaded[ps2.Alerts]{}, err
 	}
 	// Usually, worlds count is greater than alerts count
 	alerts := make(ps2.Alerts, 0, len(overview))
@@ -62,5 +63,5 @@ func (p *HonuLoader) Load(ctx context.Context) (ps2.Loaded[ps2.Alerts], error) {
 			}
 		}
 	}
-	return ps2.LoadedNow(p.client.Endpoint(), alerts), nil
+	return loaders.LoadedNow(p.client.Endpoint(), alerts), nil
 }

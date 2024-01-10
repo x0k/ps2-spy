@@ -2,5 +2,5 @@ storage:
   path: "./storage/storage.db"
 logger:
   level: debug
-ps2_service:
-  service_id: example
+bot:
+  census_service_id: example

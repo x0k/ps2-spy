@@ -19,7 +19,6 @@ func NewExpiableValue[T any](ttl time.Duration) *ExpiableValue[T] {
 	return &ExpiableValue[T]{
 		ttl:    ttl,
 		ticker: time.NewTicker(ttl),
-		done:   make(chan struct{}),
 	}
 }
 
@@ -33,7 +32,23 @@ func (e *ExpiableValue[T]) ResetExpiration() {
 	e.ticker.Reset(e.ttl)
 }
 
+func (e *ExpiableValue[T]) isStarted() bool {
+	if e.done == nil {
+		return false
+	}
+	select {
+	case <-e.done:
+		return false
+	default:
+		return true
+	}
+}
+
 func (e *ExpiableValue[T]) StartExpiration() {
+	if e.isStarted() {
+		return
+	}
+	e.done = make(chan struct{})
 	defer e.ticker.Stop()
 	for {
 		select {

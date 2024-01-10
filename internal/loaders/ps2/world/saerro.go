@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/x0k/ps2-spy/internal/lib/ps2live/saerro"
+	"github.com/x0k/ps2-spy/internal/loaders"
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
@@ -17,10 +18,10 @@ func NewSaerroLoader(client *saerro.Client) *SaerroLoader {
 	}
 }
 
-func (p *SaerroLoader) Load(ctx context.Context, worldId ps2.WorldId) (ps2.Loaded[ps2.DetailedWorldPopulation], error) {
+func (p *SaerroLoader) Load(ctx context.Context, worldId ps2.WorldId) (loaders.Loaded[ps2.DetailedWorldPopulation], error) {
 	data, err := p.client.AllWorldsPopulation(ctx)
 	if err != nil {
-		return ps2.Loaded[ps2.DetailedWorldPopulation]{}, err
+		return loaders.Loaded[ps2.DetailedWorldPopulation]{}, err
 	}
 	for _, w := range data.AllWorlds {
 		wId := ps2.WorldId(w.Id)
@@ -49,7 +50,7 @@ func (p *SaerroLoader) Load(ctx context.Context, worldId ps2.WorldId) (ps2.Loade
 			}
 			world.Total += z.Population.Total
 		}
-		return ps2.LoadedNow(p.client.Endpoint(), world), nil
+		return loaders.LoadedNow(p.client.Endpoint(), world), nil
 	}
-	return ps2.Loaded[ps2.DetailedWorldPopulation]{}, ps2.ErrWorldNotFound
+	return loaders.Loaded[ps2.DetailedWorldPopulation]{}, ps2.ErrWorldNotFound
 }

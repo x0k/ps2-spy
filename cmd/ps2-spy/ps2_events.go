@@ -16,7 +16,7 @@ import (
 	"nhooyr.io/websocket"
 )
 
-func setupPs2Events(s *Setup, cfg *config.Ps2ServiceConfig) {
+func setupPs2Events(s *Setup, cfg *config.BotConfig) {
 	ps2pcStream := streaming.NewClient(
 		"wss://push.planetside2.com/streaming",
 		streaming.Ps2_env,
@@ -29,8 +29,8 @@ func setupPs2Events(s *Setup, cfg *config.Ps2ServiceConfig) {
 			slog.String("component", "ps2_events"),
 			slog.String("platform", streaming.Ps2_env),
 		)
-		retry.RetryWhile(retry.Retryable{
-			Action: func() error {
+		retry.RetryWhileWithRecover(retry.Retryable{
+			Try: func() error {
 				log.Info("connecting to websocket")
 				err := ps2pcStream.Connect(s.ctx)
 				if err != nil {
@@ -42,8 +42,8 @@ func setupPs2Events(s *Setup, cfg *config.Ps2ServiceConfig) {
 						log.Error("failed to close websocket", sl.Err(err))
 					}
 				}()
-				return retry.RetryWhile(retry.Retryable{
-					Action: func() error {
+				return retry.RetryWhileWithRecover(retry.Retryable{
+					Try: func() error {
 						log.Info("subscribing to events")
 						return ps2pcStream.Subscribe(s.ctx, ps2commands.SubscriptionSettings{
 							Worlds: []string{"1", "10", "13", "17", "19", "40"},
@@ -53,7 +53,7 @@ func setupPs2Events(s *Setup, cfg *config.Ps2ServiceConfig) {
 							},
 						})
 					},
-					Condition: func(err error) bool {
+					While: func(err error, _ int) bool {
 						if errors.Is(err, context.Canceled) {
 							return false
 						}
@@ -71,9 +71,7 @@ func setupPs2Events(s *Setup, cfg *config.Ps2ServiceConfig) {
 					},
 				})
 			},
-			Condition: func(err error) bool {
-				return !errors.Is(err, context.Canceled)
-			},
+			While: retry.ContextIsNotCanceled,
 			BeforeSleep: func(d time.Duration) {
 				log.Debug("retry to connect", slog.Duration("after", d))
 			},

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/x0k/ps2-spy/internal/lib/voidwell"
+	"github.com/x0k/ps2-spy/internal/loaders"
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
@@ -17,10 +18,10 @@ func NewVoidWellLoader(client *voidwell.Client) *VoidWellLoader {
 	}
 }
 
-func (p *VoidWellLoader) Load(ctx context.Context, worldId ps2.WorldId) (ps2.Loaded[ps2.DetailedWorldPopulation], error) {
+func (p *VoidWellLoader) Load(ctx context.Context, worldId ps2.WorldId) (loaders.Loaded[ps2.DetailedWorldPopulation], error) {
 	states, err := p.client.WorldsState(ctx)
 	if err != nil {
-		return ps2.Loaded[ps2.DetailedWorldPopulation]{}, err
+		return loaders.Loaded[ps2.DetailedWorldPopulation]{}, err
 	}
 	for _, state := range states {
 		wId := ps2.WorldId(state.Id)
@@ -48,7 +49,7 @@ func (p *VoidWellLoader) Load(ctx context.Context, worldId ps2.WorldId) (ps2.Loa
 			}
 			world.Total += world.Zones[i].StatsByFactions.All
 		}
-		return ps2.LoadedNow(p.client.Endpoint(), world), nil
+		return loaders.LoadedNow(p.client.Endpoint(), world), nil
 	}
-	return ps2.Loaded[ps2.DetailedWorldPopulation]{}, ps2.ErrWorldNotFound
+	return loaders.Loaded[ps2.DetailedWorldPopulation]{}, ps2.ErrWorldNotFound
 }

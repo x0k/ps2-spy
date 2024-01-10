@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/x0k/ps2-spy/internal/lib/ps2live/population"
+	"github.com/x0k/ps2-spy/internal/loaders"
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
@@ -18,10 +19,10 @@ func NewPS2LiveLoader(client *population.Client) *PS2LiveLoader {
 	}
 }
 
-func (p *PS2LiveLoader) Load(ctx context.Context) (ps2.Loaded[ps2.WorldsPopulation], error) {
+func (p *PS2LiveLoader) Load(ctx context.Context) (loaders.Loaded[ps2.WorldsPopulation], error) {
 	pops, err := p.client.AllPopulation(ctx)
 	if err != nil {
-		return ps2.Loaded[ps2.WorldsPopulation]{}, err
+		return loaders.Loaded[ps2.WorldsPopulation]{}, err
 	}
 	worlds := make([]ps2.WorldPopulation, len(pops))
 	population := ps2.WorldsPopulation{
@@ -40,7 +41,7 @@ func (p *PS2LiveLoader) Load(ctx context.Context) (ps2.Loaded[ps2.WorldsPopulati
 		worlds[i] = world
 		population.Total += pop.Average
 	}
-	return ps2.Loaded[ps2.WorldsPopulation]{
+	return loaders.Loaded[ps2.WorldsPopulation]{
 		Value:     population,
 		Source:    p.client.Endpoint(),
 		UpdatedAt: updatedAt,

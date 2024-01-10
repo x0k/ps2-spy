@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/x0k/ps2-spy/internal/lib/honu"
+	"github.com/x0k/ps2-spy/internal/loaders"
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
@@ -17,10 +18,10 @@ func NewHonuLoader(client *honu.Client) *HonuLoader {
 	}
 }
 
-func (p *HonuLoader) Load(ctx context.Context) (ps2.Loaded[ps2.WorldsPopulation], error) {
+func (p *HonuLoader) Load(ctx context.Context) (loaders.Loaded[ps2.WorldsPopulation], error) {
 	overview, err := p.client.WorldOverview(ctx)
 	if err != nil {
-		return ps2.Loaded[ps2.WorldsPopulation]{}, err
+		return loaders.Loaded[ps2.WorldsPopulation]{}, err
 	}
 	worlds := make([]ps2.WorldPopulation, len(overview))
 	population := ps2.WorldsPopulation{
@@ -38,5 +39,5 @@ func (p *HonuLoader) Load(ctx context.Context) (ps2.Loaded[ps2.WorldsPopulation]
 		worlds[i] = world
 		population.Total += world.All
 	}
-	return ps2.LoadedNow(p.client.Endpoint(), population), nil
+	return loaders.LoadedNow(p.client.Endpoint(), population), nil
 }

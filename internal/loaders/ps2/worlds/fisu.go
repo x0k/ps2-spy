@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/x0k/ps2-spy/internal/lib/fisu"
+	"github.com/x0k/ps2-spy/internal/loaders"
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
@@ -17,10 +18,10 @@ func NewFisuLoader(client *fisu.Client) *FisuLoader {
 	}
 }
 
-func (l *FisuLoader) Load(ctx context.Context) (ps2.Loaded[ps2.WorldsPopulation], error) {
+func (l *FisuLoader) Load(ctx context.Context) (loaders.Loaded[ps2.WorldsPopulation], error) {
 	worldsPopulation, err := l.client.WorldsPopulation(ctx)
 	if err != nil {
-		return ps2.Loaded[ps2.WorldsPopulation]{}, err
+		return loaders.Loaded[ps2.WorldsPopulation]{}, err
 	}
 	worlds := make([]ps2.WorldPopulation, 0, len(worldsPopulation))
 	population := ps2.WorldsPopulation{}
@@ -41,5 +42,5 @@ func (l *FisuLoader) Load(ctx context.Context) (ps2.Loaded[ps2.WorldsPopulation]
 		population.Total += world.All
 	}
 	population.Worlds = worlds
-	return ps2.LoadedNow(l.client.Endpoint(), population), nil
+	return loaders.LoadedNow(l.client.Endpoint(), population), nil
 }

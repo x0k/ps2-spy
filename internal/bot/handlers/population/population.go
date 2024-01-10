@@ -8,14 +8,13 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/x0k/ps2-spy/internal/bot/handlers"
 	"github.com/x0k/ps2-spy/internal/bot/render"
+	"github.com/x0k/ps2-spy/internal/loaders"
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
-type PopulationProvider interface {
-	Population(ctx context.Context, provider string) (ps2.Loaded[ps2.WorldsPopulation], error)
-}
-
-func New(popProvider PopulationProvider) handlers.InteractionHandler {
+func New(
+	popLoader loaders.KeyedLoader[string, ps2.WorldsPopulation],
+) handlers.InteractionHandler {
 	return handlers.DeferredResponse(func(ctx context.Context, log *slog.Logger, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.WebhookEdit, error) {
 		const op = "handlers.population"
 		log = log.With(slog.String("op", op))
@@ -25,7 +24,7 @@ func New(popProvider PopulationProvider) handlers.InteractionHandler {
 			provider = opts[0].StringValue()
 		}
 		log.Debug("parsed options", slog.String("provider", provider))
-		population, err := popProvider.Population(ctx, provider)
+		population, err := popLoader.Load(ctx, provider)
 		if err != nil {
 			return nil, fmt.Errorf("%s error getting population: %q", op, err)
 		}

@@ -1,4 +1,4 @@
-package ps2
+package loaders
 
 import (
 	"context"
@@ -32,31 +32,31 @@ type QueriedLoader[Q any, T any] interface {
 
 type KeyedLoader[K comparable, T any] QueriedLoader[K, T]
 
-type fallbackLoader[T any] struct {
+type FallbackLoader[T any] struct {
 	fallbacks *containers.Fallbacks[Loader[T]]
 }
 
-func NewFallbackLoader[T any](name string, loaders map[string]Loader[T], priority []string) *fallbackLoader[T] {
-	return &fallbackLoader[T]{
+func NewFallbackLoader[T any](name string, loaders map[string]Loader[T], priority []string) *FallbackLoader[T] {
+	return &FallbackLoader[T]{
 		fallbacks: containers.NewFallbacks(name, loaders, priority, time.Hour),
 	}
 }
 
-func (l *fallbackLoader[T]) Start() {
+func (l *FallbackLoader[T]) Start() {
 	l.fallbacks.Start()
 }
 
-func (l *fallbackLoader[T]) Stop() {
+func (l *FallbackLoader[T]) Stop() {
 	l.fallbacks.Stop()
 }
 
-func (l *fallbackLoader[T]) Load(ctx context.Context) (Loaded[T], error) {
+func (l *FallbackLoader[T]) Load(ctx context.Context) (Loaded[T], error) {
 	return containers.ExecFallback(l.fallbacks, func(loader Loader[T]) (Loaded[T], error) {
 		return loader.Load(ctx)
 	})
 }
 
-type keyedFallbackLoader[K comparable, T any] struct {
+type KeyedFallbackLoader[K comparable, T any] struct {
 	fallbacks *containers.Fallbacks[KeyedLoader[K, T]]
 }
 
@@ -64,21 +64,21 @@ func NewKeyedFallbackLoader[K comparable, T any](
 	name string,
 	loaders map[string]KeyedLoader[K, T],
 	priority []string,
-) *keyedFallbackLoader[K, T] {
-	return &keyedFallbackLoader[K, T]{
+) *KeyedFallbackLoader[K, T] {
+	return &KeyedFallbackLoader[K, T]{
 		fallbacks: containers.NewFallbacks(name, loaders, priority, time.Hour),
 	}
 }
 
-func (l *keyedFallbackLoader[K, T]) Start() {
+func (l *KeyedFallbackLoader[K, T]) Start() {
 	l.fallbacks.Start()
 }
 
-func (l *keyedFallbackLoader[K, T]) Stop() {
+func (l *KeyedFallbackLoader[K, T]) Stop() {
 	l.fallbacks.Stop()
 }
 
-func (l *keyedFallbackLoader[K, T]) Load(ctx context.Context, key K) (Loaded[T], error) {
+func (l *KeyedFallbackLoader[K, T]) Load(ctx context.Context, key K) (Loaded[T], error) {
 	return containers.ExecFallback(l.fallbacks, func(loader KeyedLoader[K, T]) (Loaded[T], error) {
 		return loader.Load(ctx, key)
 	})
@@ -86,37 +86,44 @@ func (l *keyedFallbackLoader[K, T]) Load(ctx context.Context, key K) (Loaded[T],
 
 var ErrLoaderNotFound = fmt.Errorf("loader not found")
 
-type multiLoader[T any] struct {
+type MultiLoader[T any] struct {
 	loaders map[string]Loader[T]
 }
 
-func NewMultiLoader[T any](loaders map[string]Loader[T]) *multiLoader[T] {
-	return &multiLoader[T]{loaders}
+func NewMultiLoader[T any](loaders map[string]Loader[T]) *MultiLoader[T] {
+	return &MultiLoader[T]{loaders}
 }
 
-func (l *multiLoader[T]) Load(ctx context.Context, loader string) (Loaded[T], error) {
+func (l *MultiLoader[T]) Load(ctx context.Context, loader string) (Loaded[T], error) {
 	if loader, ok := l.loaders[loader]; ok {
 		return loader.Load(ctx)
 	}
 	return Loaded[T]{}, fmt.Errorf("unknown loader %q: %w", loader, ErrLoaderNotFound)
 }
 
-type keyedMultiLoader[K comparable, T any] struct {
+type KeyedMultiLoader[K comparable, T any] struct {
 	loaders map[string]KeyedLoader[K, T]
 }
 
-func NewKeyedMultiLoader[K comparable, T any](loaders map[string]KeyedLoader[K, T]) *keyedMultiLoader[K, T] {
-	return &keyedMultiLoader[K, T]{loaders}
+func NewKeyedMultiLoader[K comparable, T any](loaders map[string]KeyedLoader[K, T]) *KeyedMultiLoader[K, T] {
+	return &KeyedMultiLoader[K, T]{loaders}
 }
 
-type multiLoaderQuery[K comparable] struct {
-	loader string
-	key    K
+type MultiLoaderQuery[K comparable] struct {
+	Loader string
+	Key    K
 }
 
-func (l *keyedMultiLoader[K, T]) Load(ctx context.Context, q multiLoaderQuery[K]) (Loaded[T], error) {
-	if loader, ok := l.loaders[q.loader]; ok {
-		return loader.Load(ctx, q.key)
+func NewMultiLoaderQuery[K comparable](loader string, key K) MultiLoaderQuery[K] {
+	return MultiLoaderQuery[K]{
+		Loader: loader,
+		Key:    key,
 	}
-	return Loaded[T]{}, fmt.Errorf("unknown loader %q: %w", q.loader, ErrLoaderNotFound)
+}
+
+func (l *KeyedMultiLoader[K, T]) Load(ctx context.Context, q MultiLoaderQuery[K]) (Loaded[T], error) {
+	if loader, ok := l.loaders[q.Loader]; ok {
+		return loader.Load(ctx, q.Key)
+	}
+	return Loaded[T]{}, fmt.Errorf("unknown loader %q: %w", q.Loader, ErrLoaderNotFound)
 }

@@ -2,6 +2,7 @@ package bot
 
 import (
 	"github.com/bwmarrin/discordgo"
+	multiloaders "github.com/x0k/ps2-spy/internal/multi_loaders"
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
@@ -27,7 +28,11 @@ func providerChoices(providers []string) []*discordgo.ApplicationCommandOptionCh
 	return choices
 }
 
-func makeCommands(service *ps2.Service) []*discordgo.ApplicationCommand {
+func NewCommands(
+	popMultiLoader multiloaders.MultiLoader,
+	worldPopMultiLoader multiloaders.MultiLoader,
+	alertsMultiLoader multiloaders.MultiLoader,
+) []*discordgo.ApplicationCommand {
 	return []*discordgo.ApplicationCommand{
 		{
 			Name:        "population",
@@ -37,7 +42,7 @@ func makeCommands(service *ps2.Service) []*discordgo.ApplicationCommand {
 					Type:        discordgo.ApplicationCommandOptionString,
 					Name:        "provider",
 					Description: "Provider name",
-					Choices:     providerChoices(service.PopulationLoaders()),
+					Choices:     providerChoices(popMultiLoader.Loaders()),
 				},
 			},
 		},
@@ -56,7 +61,7 @@ func makeCommands(service *ps2.Service) []*discordgo.ApplicationCommand {
 					Type:        discordgo.ApplicationCommandOptionString,
 					Name:        "provider",
 					Description: "Provider name",
-					Choices:     providerChoices(service.PopulationByWorldIdProviders()),
+					Choices:     providerChoices(worldPopMultiLoader.Loaders()),
 				},
 			},
 		},
@@ -74,7 +79,7 @@ func makeCommands(service *ps2.Service) []*discordgo.ApplicationCommand {
 					Type:        discordgo.ApplicationCommandOptionString,
 					Name:        "provider",
 					Description: "Provider name",
-					Choices:     providerChoices(service.AlertsLoaders()),
+					Choices:     providerChoices(alertsMultiLoader.Loaders()),
 				},
 			},
 		},

@@ -36,12 +36,9 @@ func main() {
 	storage := mustSetupStorage(s, &cfg.Storage)
 	_ = storage
 
-	ps2Service := setupPs2Service(s, &cfg.Ps2Service)
+	// setupPs2Events(s, &cfg.Ps2Service)
 
-	setupPs2Events(s, &cfg.Ps2Service)
-
-	b := mustSetupBot(s, &cfg.Bot, ps2Service)
-	_ = b
+	startBot(s, &cfg.Bot)
 
 	log.Info("bot is now running. Press CTRL-C to exit.")
 	stop := make(chan os.Signal, 1)

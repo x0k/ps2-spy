@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/x0k/ps2-spy/internal/loaders"
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
@@ -25,7 +26,7 @@ func RenderStatsByFactions(p ps2.StatsByFactions) string {
 	return builder.String()
 }
 
-func RenderWorldDetailedPopulation(loaded ps2.Loaded[ps2.DetailedWorldPopulation]) *discordgo.MessageEmbed {
+func RenderWorldDetailedPopulation(loaded loaders.Loaded[ps2.DetailedWorldPopulation]) *discordgo.MessageEmbed {
 	worldPopulation := loaded.Value
 	zones := make([]*discordgo.MessageEmbedField, 0, len(worldPopulation.Zones))
 	for _, zonePopulation := range worldPopulation.Zones {
@@ -56,7 +57,7 @@ func RenderWorldTotalPopulation(worldPopulation ps2.WorldPopulation) *discordgo.
 	}
 }
 
-func RenderPopulation(loaded ps2.Loaded[ps2.WorldsPopulation]) *discordgo.MessageEmbed {
+func RenderPopulation(loaded loaders.Loaded[ps2.WorldsPopulation]) *discordgo.MessageEmbed {
 	population := loaded.Value
 	worlds := slices.Clone(population.Worlds)
 	sort.Slice(worlds, func(i, j int) bool {
@@ -111,7 +112,7 @@ func RenderWorldAlerts(alerts ps2.Alerts) []*discordgo.MessageEmbedField {
 	return fields
 }
 
-func RenderWorldDetailedAlerts(worldName string, loaded ps2.Loaded[ps2.Alerts]) *discordgo.MessageEmbed {
+func RenderWorldDetailedAlerts(worldName string, loaded loaders.Loaded[ps2.Alerts]) *discordgo.MessageEmbed {
 	alerts := loaded.Value
 	if len(alerts) == 0 {
 		return &discordgo.MessageEmbed{
@@ -133,7 +134,7 @@ func RenderWorldDetailedAlerts(worldName string, loaded ps2.Loaded[ps2.Alerts]) 
 	}
 }
 
-func RenderAlerts(loaded ps2.Loaded[ps2.Alerts]) []*discordgo.MessageEmbed {
+func RenderAlerts(loaded loaders.Loaded[ps2.Alerts]) []*discordgo.MessageEmbed {
 	alerts := loaded.Value
 	if len(alerts) == 0 {
 		return []*discordgo.MessageEmbed{

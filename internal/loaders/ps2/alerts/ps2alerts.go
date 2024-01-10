@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/x0k/ps2-spy/internal/lib/ps2alerts"
+	"github.com/x0k/ps2-spy/internal/loaders"
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
@@ -20,10 +21,10 @@ func NewPS2AlertsLoader(client *ps2alerts.Client) *PS2AlertsLoader {
 	}
 }
 
-func (p *PS2AlertsLoader) Load(ctx context.Context) (ps2.Loaded[ps2.Alerts], error) {
+func (p *PS2AlertsLoader) Load(ctx context.Context) (loaders.Loaded[ps2.Alerts], error) {
 	ps2alerts, err := p.client.Alerts(ctx)
 	if err != nil {
-		return ps2.Loaded[ps2.Alerts]{}, err
+		return loaders.Loaded[ps2.Alerts]{}, err
 	}
 	alerts := make(ps2.Alerts, 0, len(ps2alerts))
 	for _, a := range ps2alerts {
@@ -57,5 +58,5 @@ func (p *PS2AlertsLoader) Load(ctx context.Context) (ps2.Loaded[ps2.Alerts], err
 			},
 		})
 	}
-	return ps2.LoadedNow(p.client.Endpoint(), alerts), nil
+	return loaders.LoadedNow(p.client.Endpoint(), alerts), nil
 }
