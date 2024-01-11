@@ -1,11 +1,11 @@
 package ps2events
 
-type EventHandler interface {
+type eventHandler interface {
 	Type() string
 	Handle(e any)
 }
 
-type achievementEarnedHandler func(e *AchievementEarned)
+type achievementEarnedHandler chan<- AchievementEarned
 
 func (h achievementEarnedHandler) Type() string {
 	return AchievementEarnedEventName
@@ -13,11 +13,11 @@ func (h achievementEarnedHandler) Type() string {
 
 func (h achievementEarnedHandler) Handle(e any) {
 	if t, ok := e.(*AchievementEarned); ok {
-		h(t)
+		h <- *t
 	}
 }
 
-type battleRankUpHandler func(e *BattleRankUp)
+type battleRankUpHandler chan<- BattleRankUp
 
 func (h battleRankUpHandler) Type() string {
 	return BattleRankUpEventName
@@ -25,11 +25,11 @@ func (h battleRankUpHandler) Type() string {
 
 func (h battleRankUpHandler) Handle(e any) {
 	if t, ok := e.(*BattleRankUp); ok {
-		h(t)
+		h <- *t
 	}
 }
 
-type deathHandler func(e *Death)
+type deathHandler chan<- Death
 
 func (h deathHandler) Type() string {
 	return DeathEventName
@@ -37,11 +37,11 @@ func (h deathHandler) Type() string {
 
 func (h deathHandler) Handle(e any) {
 	if t, ok := e.(*Death); ok {
-		h(t)
+		h <- *t
 	}
 }
 
-type gainExperienceHandler func(e *GainExperience)
+type gainExperienceHandler chan<- GainExperience
 
 func (h gainExperienceHandler) Type() string {
 	return GainExperienceEventName
@@ -49,11 +49,11 @@ func (h gainExperienceHandler) Type() string {
 
 func (h gainExperienceHandler) Handle(e any) {
 	if t, ok := e.(*GainExperience); ok {
-		h(t)
+		h <- *t
 	}
 }
 
-type itemAddedHandler func(e *ItemAdded)
+type itemAddedHandler chan<- ItemAdded
 
 func (h itemAddedHandler) Type() string {
 	return ItemAddedEventName
@@ -61,11 +61,11 @@ func (h itemAddedHandler) Type() string {
 
 func (h itemAddedHandler) Handle(e any) {
 	if t, ok := e.(*ItemAdded); ok {
-		h(t)
+		h <- *t
 	}
 }
 
-type playerFacilityCaptureHandler func(e *PlayerFacilityCapture)
+type playerFacilityCaptureHandler chan<- PlayerFacilityCapture
 
 func (h playerFacilityCaptureHandler) Type() string {
 	return PlayerFacilityCaptureEventName
@@ -73,11 +73,11 @@ func (h playerFacilityCaptureHandler) Type() string {
 
 func (h playerFacilityCaptureHandler) Handle(e any) {
 	if t, ok := e.(*PlayerFacilityCapture); ok {
-		h(t)
+		h <- *t
 	}
 }
 
-type playerFacilityDefendHandler func(e *PlayerFacilityDefend)
+type playerFacilityDefendHandler chan<- PlayerFacilityDefend
 
 func (h playerFacilityDefendHandler) Type() string {
 	return PlayerFacilityDefendEventName
@@ -85,11 +85,11 @@ func (h playerFacilityDefendHandler) Type() string {
 
 func (h playerFacilityDefendHandler) Handle(e any) {
 	if t, ok := e.(*PlayerFacilityDefend); ok {
-		h(t)
+		h <- *t
 	}
 }
 
-type playerLoginHandler func(e *PlayerLogin)
+type playerLoginHandler chan<- PlayerLogin
 
 func (h playerLoginHandler) Type() string {
 	return PlayerLoginEventName
@@ -97,11 +97,11 @@ func (h playerLoginHandler) Type() string {
 
 func (h playerLoginHandler) Handle(e any) {
 	if t, ok := e.(*PlayerLogin); ok {
-		h(t)
+		h <- *t
 	}
 }
 
-type playerLogoutHandler func(e *PlayerLogout)
+type playerLogoutHandler chan<- PlayerLogout
 
 func (h playerLogoutHandler) Type() string {
 	return PlayerLogoutEventName
@@ -109,11 +109,11 @@ func (h playerLogoutHandler) Type() string {
 
 func (h playerLogoutHandler) Handle(e any) {
 	if t, ok := e.(*PlayerLogout); ok {
-		h(t)
+		h <- *t
 	}
 }
 
-type skillAddedHandler func(e *SkillAdded)
+type skillAddedHandler chan<- SkillAdded
 
 func (h skillAddedHandler) Type() string {
 	return SkillAddedEventName
@@ -121,11 +121,11 @@ func (h skillAddedHandler) Type() string {
 
 func (h skillAddedHandler) Handle(e any) {
 	if t, ok := e.(*SkillAdded); ok {
-		h(t)
+		h <- *t
 	}
 }
 
-type vehicleDestroyHandler func(e *VehicleDestroy)
+type vehicleDestroyHandler chan<- VehicleDestroy
 
 func (h vehicleDestroyHandler) Type() string {
 	return VehicleDestroyEventName
@@ -133,11 +133,11 @@ func (h vehicleDestroyHandler) Type() string {
 
 func (h vehicleDestroyHandler) Handle(e any) {
 	if t, ok := e.(*VehicleDestroy); ok {
-		h(t)
+		h <- *t
 	}
 }
 
-type continentLockHandler func(e *ContinentLock)
+type continentLockHandler chan<- ContinentLock
 
 func (h continentLockHandler) Type() string {
 	return ContinentLockEventName
@@ -145,11 +145,11 @@ func (h continentLockHandler) Type() string {
 
 func (h continentLockHandler) Handle(e any) {
 	if t, ok := e.(*ContinentLock); ok {
-		h(t)
+		h <- *t
 	}
 }
 
-type facilityControlHandler func(e *FacilityControl)
+type facilityControlHandler chan<- FacilityControl
 
 func (h facilityControlHandler) Type() string {
 	return FacilityControlEventName
@@ -157,11 +157,11 @@ func (h facilityControlHandler) Type() string {
 
 func (h facilityControlHandler) Handle(e any) {
 	if t, ok := e.(*FacilityControl); ok {
-		h(t)
+		h <- *t
 	}
 }
 
-type metagameEventHandler func(e *MetagameEvent)
+type metagameEventHandler chan<- MetagameEvent
 
 func (h metagameEventHandler) Type() string {
 	return MetagameEventEventName
@@ -169,51 +169,67 @@ func (h metagameEventHandler) Type() string {
 
 func (h metagameEventHandler) Handle(e any) {
 	if t, ok := e.(*MetagameEvent); ok {
-		h(t)
+		h <- *t
 	}
 }
 
-type anyEventHandler func(e any)
-
-func (h anyEventHandler) Type() string {
-	return "all"
-}
-
-func (h anyEventHandler) Handle(e any) {
-	h(e)
-}
-
-func EventHandlerForInterface(handler interface{}) EventHandler {
+func handlerForInterface(handler any) eventHandler {
 	switch v := handler.(type) {
-	case func(e any):
-		return anyEventHandler(v)
-	case func(e *AchievementEarned):
+	case chan AchievementEarned:
 		return achievementEarnedHandler(v)
-	case func(e *BattleRankUp):
+	case chan<- AchievementEarned:
+		return achievementEarnedHandler(v)
+	case chan BattleRankUp:
 		return battleRankUpHandler(v)
-	case func(e *Death):
+	case chan<- BattleRankUp:
+		return battleRankUpHandler(v)
+	case chan Death:
 		return deathHandler(v)
-	case func(e *GainExperience):
+	case chan<- Death:
+		return deathHandler(v)
+	case chan GainExperience:
 		return gainExperienceHandler(v)
-	case func(e *ItemAdded):
+	case chan<- GainExperience:
+		return gainExperienceHandler(v)
+	case chan ItemAdded:
 		return itemAddedHandler(v)
-	case func(e *PlayerFacilityCapture):
+	case chan<- ItemAdded:
+		return itemAddedHandler(v)
+	case chan PlayerFacilityCapture:
 		return playerFacilityCaptureHandler(v)
-	case func(e *PlayerFacilityDefend):
+	case chan<- PlayerFacilityCapture:
+		return playerFacilityCaptureHandler(v)
+	case chan PlayerFacilityDefend:
 		return playerFacilityDefendHandler(v)
-	case func(e *PlayerLogin):
+	case chan<- PlayerFacilityDefend:
+		return playerFacilityDefendHandler(v)
+	case chan PlayerLogin:
 		return playerLoginHandler(v)
-	case func(e *PlayerLogout):
+	case chan<- PlayerLogin:
+		return playerLoginHandler(v)
+	case chan PlayerLogout:
 		return playerLogoutHandler(v)
-	case func(e *SkillAdded):
+	case chan<- PlayerLogout:
+		return playerLogoutHandler(v)
+	case chan SkillAdded:
 		return skillAddedHandler(v)
-	case func(e *VehicleDestroy):
+	case chan<- SkillAdded:
+		return skillAddedHandler(v)
+	case chan VehicleDestroy:
 		return vehicleDestroyHandler(v)
-	case func(e *ContinentLock):
+	case chan<- VehicleDestroy:
+		return vehicleDestroyHandler(v)
+	case chan ContinentLock:
 		return continentLockHandler(v)
-	case func(e *FacilityControl):
+	case chan<- ContinentLock:
+		return continentLockHandler(v)
+	case chan FacilityControl:
 		return facilityControlHandler(v)
-	case func(e *MetagameEvent):
+	case chan<- FacilityControl:
+		return facilityControlHandler(v)
+	case chan MetagameEvent:
+		return metagameEventHandler(v)
+	case chan<- MetagameEvent:
 		return metagameEventHandler(v)
 	}
 	return nil

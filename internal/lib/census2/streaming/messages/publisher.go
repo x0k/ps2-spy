@@ -60,7 +60,7 @@ func (p *Publisher) addHandler(h messageHandler) func() {
 func (p *Publisher) AddHandler(h any) (func(), error) {
 	handler := handlerForInterface(h)
 	if handler == nil {
-		return func() {}, ErrUnknownMessageHandler
+		return nil, ErrUnknownMessageHandler
 	}
 	return p.addHandler(handler), nil
 }
@@ -109,5 +109,5 @@ func (p *Publisher) Publish(msg map[string]any) {
 		p.publish(p.msgBaseBuff.Type, buff)
 		return
 	}
-	err = ErrUnknownMessageType
+	err = fmt.Errorf("%s: %w", p.msgBaseBuff.Type, ErrUnknownMessageType)
 }

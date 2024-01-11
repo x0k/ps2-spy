@@ -13,7 +13,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/retry"
 )
 
-func startEventsClient(s *Setup, cfg *config.BotConfig, env string) *streaming.Client {
+func startEventsClient(s *Setup, cfg *config.BotConfig, env string, settings ps2commands.SubscriptionSettings) *streaming.Client {
 	client := streaming.NewClient(
 		s.log,
 		"wss://push.planetside2.com/streaming",
@@ -39,13 +39,7 @@ func startEventsClient(s *Setup, cfg *config.BotConfig, env string) *streaming.C
 						log.Error("failed to close websocket", sl.Err(err))
 					}
 				}()
-				return client.Subscribe(s.ctx, ps2commands.SubscriptionSettings{
-					Worlds: []string{"1", "10", "13", "17", "19", "40"},
-					EventNames: []string{
-						ps2events.PlayerLoginEventName,
-						ps2events.PlayerLogoutEventName,
-					},
-				})
+				return client.Subscribe(s.ctx, settings)
 			},
 			While: retry.ContextIsNotCanceled,
 			BeforeSleep: func(d time.Duration) {
@@ -57,28 +51,64 @@ func startEventsClient(s *Setup, cfg *config.BotConfig, env string) *streaming.C
 }
 
 func startPrinter(s *Setup, cfg *config.BotConfig) {
-	msgPublisher := ps2messages.NewPublisher(s.log)
-	srv := make(chan ps2messages.ServiceMessage[map[string]any])
-	unSub, err := msgPublisher.AddHandler(srv)
+	eventPublisher := ps2events.NewPublisher(s.log)
+	logins := make(chan ps2events.PlayerLogin)
+	loginsUnSub, err := eventPublisher.AddHandler(logins)
 	if err != nil {
-		s.log.Error("failed to add handler", sl.Err(err))
+		s.log.Error("failed to add login handler", sl.Err(err))
+		return
+	}
+	logouts := make(chan ps2events.PlayerLogout)
+	logoutsUnSub, err := eventPublisher.AddHandler(logouts)
+	if err != nil {
+		s.log.Error("failed to add logout handler", sl.Err(err))
 		return
 	}
 	s.wg.Add(1)
 	go func() {
 		defer s.wg.Done()
-		defer unSub()
+		defer loginsUnSub()
+		defer logoutsUnSub()
+		for {
+			select {
+			case <-s.ctx.Done():
+				return
+			case msg := <-logins:
+				s.log.Debug("login msg", slog.Any("msg", msg))
+			case msg := <-logouts:
+				s.log.Debug("logout msg", slog.Any("msg", msg))
+			}
+		}
+	}()
+
+	msgPublisher := ps2messages.NewPublisher(s.log)
+	srv := make(chan ps2messages.ServiceMessage[map[string]any])
+	srvUnSub, err := msgPublisher.AddHandler(srv)
+	if err != nil {
+		s.log.Error("failed to add message handler", sl.Err(err))
+		return
+	}
+	s.wg.Add(1)
+	go func() {
+		defer s.wg.Done()
+		defer srvUnSub()
 		for {
 			select {
 			case <-s.ctx.Done():
 				return
 			case msg := <-srv:
-				s.log.Debug("srv msg", slog.Any("msg", msg))
+				eventPublisher.Publish(msg.Payload)
 			}
 		}
 	}()
 
-	pc := startEventsClient(s, cfg, streaming.Ps2_env)
+	pc := startEventsClient(s, cfg, streaming.Ps2_env, ps2commands.SubscriptionSettings{
+		Worlds: []string{"1", "10", "13", "17", "19", "40"},
+		EventNames: []string{
+			ps2events.PlayerLoginEventName,
+			ps2events.PlayerLogoutEventName,
+		},
+	})
 	s.wg.Add(1)
 	go func() {
 		defer s.wg.Done()
