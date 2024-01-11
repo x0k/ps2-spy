@@ -272,27 +272,6 @@ func (q *Query) SetLanguage(language string) *Query {
 	return q
 }
 
-var queryFieldNames = [...]string{
-	"terms",
-	"c:show",
-	"c:hide",
-	"c:sort",
-	"c:has",
-	"c:resolve",
-	"c:case",
-	"c:limit",
-	"c:limitPerDB",
-	"c:start",
-	"c:includeNull",
-	"c:lang",
-	"c:join",
-	"c:tree",
-	"c:timing",
-	"c:exactMatchFirst",
-	"c:distinct",
-	"c:retry",
-}
-
 func (q *Query) fields() []optionalPrinter {
 	return []optionalPrinter{
 		q.terms,

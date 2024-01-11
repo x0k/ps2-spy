@@ -2,3 +2,8 @@
 
 run:
     BOT_DISCORD_TOKEN=$(cat ~/Sync/ps2-spy/test-token) go run cmd/ps2-spy/*.go --config config/local.yml
+
+all:
+
+test:
+    go test ./...
