@@ -10,8 +10,8 @@ const (
 )
 
 type ConnectionStateChanged struct {
-	core.MessageBase
-	Connected core.StrBool `json:"connected" mapstructure:"connected"`
+	core.MessageBase `mapstructure:",squash"`
+	Connected        core.StrBool `json:"connected" mapstructure:"connected"`
 }
 
 func IsConnectionStateChangedMessage(msg core.MessageBase) bool {
@@ -19,20 +19,20 @@ func IsConnectionStateChangedMessage(msg core.MessageBase) bool {
 }
 
 type ServiceStateChanged struct {
-	core.MessageBase
-	Detail string       `json:"detail" mapstructure:"detail"`
-	Online core.StrBool `json:"online" mapstructure:"online"`
+	core.MessageBase `mapstructure:",squash"`
+	Detail           string       `json:"detail" mapstructure:"detail"`
+	Online           core.StrBool `json:"online" mapstructure:"online"`
 }
 
 type Heartbeat struct {
-	core.MessageBase
-	Timestamp string                  `json:"timestamp" mapstructure:"timestamp"`
-	Online    map[string]core.StrBool `json:"online" mapstructure:"online"`
+	core.MessageBase `mapstructure:",squash"`
+	Timestamp        string                  `json:"timestamp" mapstructure:"timestamp"`
+	Online           map[string]core.StrBool `json:"online" mapstructure:"online"`
 }
 
 type ServiceMessage[T any] struct {
-	core.MessageBase
-	Payload T `json:"payload" mapstructure:"payload"`
+	core.MessageBase `mapstructure:",squash"`
+	Payload          T `json:"payload" mapstructure:"payload"`
 }
 
 type SubscriptionSettings struct {
