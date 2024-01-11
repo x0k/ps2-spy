@@ -1,4 +1,4 @@
-package messages
+package ps2messages
 
 import "github.com/x0k/ps2-spy/internal/lib/census2/streaming/core"
 
@@ -20,41 +20,37 @@ func IsConnectionStateChangedMessage(msg core.MessageBase) bool {
 
 type ServiceStateChanged struct {
 	core.MessageBase
-	Detail string       `json:"detail"`
-	Online core.StrBool `json:"online"`
+	Detail string       `json:"detail" mapstructure:"detail"`
+	Online core.StrBool `json:"online" mapstructure:"online"`
 }
 
 type Heartbeat struct {
 	core.MessageBase
-	Timestamp string                  `json:"timestamp"`
-	Online    map[string]core.StrBool `json:"online"`
+	Timestamp string                  `json:"timestamp" mapstructure:"timestamp"`
+	Online    map[string]core.StrBool `json:"online" mapstructure:"online"`
 }
 
 type ServiceMessage[T any] struct {
 	core.MessageBase
-	Payload T `json:"payload"`
+	Payload T `json:"payload" mapstructure:"payload"`
 }
 
-type SubscriptionBase struct {
-	EventNames                     []string `json:"eventNames"`
-	Worlds                         []string `json:"worlds"`
-	LogicalAndCharactersWithWorlds bool     `json:"logicalAndCharactersWithWorlds"`
+type SubscriptionSettings struct {
+	Characters                     []string `json:"characters" mapstructure:"characters"`
+	CharactersCount                int      `json:"charactersCount" mapstructure:"charactersCount"`
+	EventNames                     []string `json:"eventNames" mapstructure:"eventNames"`
+	Worlds                         []string `json:"worlds" mapstructure:"worlds"`
+	LogicalAndCharactersWithWorlds bool     `json:"logicalAndCharactersWithWorlds" mapstructure:"logicalAndCharactersWithWorlds"`
 }
 
-type AllCharactersSubscription struct {
-	SubscriptionBase
-	Characters []string `json:"characters"`
+const SubscriptionSignatureField = "subscription"
+
+type Subscription struct {
+	Subscription SubscriptionSettings `json:"subscription" mapstructure:"subscription"`
 }
 
-type CharactersCountSubscription struct {
-	SubscriptionBase
-	CharactersCount int `json:"charactersCount"`
-}
-
-type Subscription[S any] struct {
-	Subscription S `json:"subscription"`
-}
+const HelpSignatureField = "send this for help"
 
 type Help struct {
-	Help core.CommandBase `json:"send this for help"`
+	Help core.CommandBase `json:"send this for help" mapstructure:"send this for help"`
 }

@@ -54,6 +54,8 @@ func AsMessageBase(m map[string]any, b *MessageBase) error {
 	return nil
 }
 
+const EventNameField = "event_name"
+
 type EventBase struct {
 	EventName string `json:"event_name"`
 	Timestamp string `json:"timestamp"`

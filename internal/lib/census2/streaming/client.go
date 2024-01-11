@@ -9,8 +9,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	ps2commands "github.com/x0k/ps2-spy/internal/lib/census2/streaming/commands"
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/core"
-	ps2events "github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
-	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/messages"
+	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/ps2messages"
 	"nhooyr.io/websocket"
 	"nhooyr.io/websocket/wsjson"
 )
@@ -28,10 +27,6 @@ var ErrInvalidConnectionMessage = fmt.Errorf("invalid connection message")
 var ErrConnectionFailed = fmt.Errorf("failed to connect")
 var ErrDisconnectedByServer = fmt.Errorf("disconnected by server")
 
-type eventHandlerInstance struct {
-	eventHandler ps2events.EventHandler
-}
-
 type Client struct {
 	log                      *slog.Logger
 	endpoint                 string
@@ -39,7 +34,7 @@ type Client struct {
 	serviceId                string
 	conn                     *websocket.Conn
 	msgBuffer                core.MessageBase
-	connStateChangeMsgBuffer messages.ConnectionStateChanged
+	connStateChangeMsgBuffer ps2messages.ConnectionStateChanged
 	connectionTimeout        time.Duration
 	Msg                      chan map[string]any
 }
@@ -55,7 +50,7 @@ func NewClient(log *slog.Logger, endpoint string, env string, serviceId string) 
 		env:               env,
 		serviceId:         serviceId,
 		connectionTimeout: time.Duration(10) * time.Second,
-		Msg:               make(chan map[string]any, 1),
+		Msg:               make(chan map[string]any),
 	}
 }
 
@@ -64,7 +59,7 @@ func (c *Client) fillConnectionStateChangedBuffer(msg map[string]any) error {
 	if err != nil {
 		return err
 	}
-	if !messages.IsConnectionStateChangedMessage(c.msgBuffer) {
+	if !ps2messages.IsConnectionStateChangedMessage(c.msgBuffer) {
 		return ErrInvalidConnectionMessage
 	}
 	err = mapstructure.Decode(msg, &c.connStateChangeMsgBuffer)
@@ -72,16 +67,6 @@ func (c *Client) fillConnectionStateChangedBuffer(msg map[string]any) error {
 		return err
 	}
 	return nil
-}
-
-func (c *Client) writeMsg(msg map[string]any) {
-	select {
-	case c.Msg <- msg:
-		return
-	default:
-		c.log.Debug("message is dropped", slog.Any("message", msg))
-		return
-	}
 }
 
 func (c *Client) Connect(ctx context.Context) error {
@@ -116,7 +101,13 @@ func (c *Client) Connect(ctx context.Context) error {
 		return fmt.Errorf("%s: %w", op, ErrConnectionFailed)
 	}
 	c.conn = conn
-	c.writeMsg(data)
+	// Skip the write of connection message cause this write
+	// can lock the execution in unexpected place.
+	//
+	// Non blocking write (drop msg if buffer is full)
+	// is the same as no write at all.
+	//
+	// c.Msg <- data
 	c.log.Info("connected")
 	return nil
 }
@@ -131,7 +122,8 @@ func (c *Client) onMessage(msg any) error {
 		c.log.Info("disconnected by server")
 		return ErrDisconnectedByServer
 	}
-	c.writeMsg(m)
+	// Lock for backpressure
+	c.Msg <- m
 	return nil
 }
 
