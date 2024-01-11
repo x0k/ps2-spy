@@ -9,7 +9,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	ps2commands "github.com/x0k/ps2-spy/internal/lib/census2/streaming/commands"
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/core"
-	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/ps2messages"
+	ps2messages "github.com/x0k/ps2-spy/internal/lib/census2/streaming/messages"
 	"nhooyr.io/websocket"
 	"nhooyr.io/websocket/wsjson"
 )

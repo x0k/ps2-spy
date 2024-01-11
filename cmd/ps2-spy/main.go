@@ -21,6 +21,12 @@ func init() {
 	flag.Parse()
 }
 
+type Setup struct {
+	log *slog.Logger
+	ctx context.Context
+	wg  *sync.WaitGroup
+}
+
 func main() {
 	cfg := config.MustLoad(config_path)
 	log := mustSetupLogger(&cfg.Logger)

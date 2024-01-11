@@ -57,8 +57,28 @@ func startEventsClient(s *Setup, cfg *config.BotConfig, env string) *streaming.C
 }
 
 func startPrinter(s *Setup, cfg *config.BotConfig) {
-	pc := startEventsClient(s, cfg, streaming.Ps2_env)
 	msgPublisher := ps2messages.NewPublisher(s.log)
+	srv := make(chan ps2messages.ServiceMessage[map[string]any])
+	unSub, err := msgPublisher.AddHandler(srv)
+	if err != nil {
+		s.log.Error("failed to add handler", sl.Err(err))
+		return
+	}
+	s.wg.Add(1)
+	go func() {
+		defer s.wg.Done()
+		defer unSub()
+		for {
+			select {
+			case <-s.ctx.Done():
+				return
+			case msg := <-srv:
+				s.log.Debug("srv msg", slog.Any("msg", msg))
+			}
+		}
+	}()
+
+	pc := startEventsClient(s, cfg, streaming.Ps2_env)
 	s.wg.Add(1)
 	go func() {
 		defer s.wg.Done()
@@ -71,4 +91,5 @@ func startPrinter(s *Setup, cfg *config.BotConfig) {
 			}
 		}
 	}()
+
 }
