@@ -17,6 +17,20 @@ type WorldEventItem struct {
 	MetagameEventStateName string `json:"metagame_event_state_name" mapstructure:"metagame_event_state_name"`
 }
 
+const Outfit = "outfit"
+
+type OutfitItem struct {
+	OutfitId          string `json:"outfit_id" mapstructure:"outfit_id"`
+	Name              string `json:"name" mapstructure:"name"`
+	NameLower         string `json:"name_lower" mapstructure:"name_lower"`
+	Alias             string `json:"alias" mapstructure:"alias"`
+	AliasLower        string `json:"alias_lower" mapstructure:"alias_lower"`
+	TimeCreated       string `json:"time_created" mapstructure:"time_created"`
+	TimeCreatedDate   string `json:"time_created_date" mapstructure:"time_created_date"`
+	LeaderCharacterId string `json:"leader_character_id" mapstructure:"leader_character_id"`
+	MemberCount       string `json:"member_count" mapstructure:"member_count"`
+}
+
 const Map = "map"
 const CharactersWorld = "characters_world"
 const CharactersOnlineStatus = "characters_online_status"

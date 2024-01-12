@@ -56,15 +56,41 @@ func (c *Client) Execute(ctx context.Context, q *Query) ([]any, error) {
 	return data, nil
 }
 
+type DecodeError struct {
+	Index int
+	Err   error
+}
+
+func (e *DecodeError) Error() string {
+	return fmt.Sprintf("failed to decode item %d: %s", e.Index, e.Err.Error())
+}
+
+type DecodeErrors []DecodeError
+
+func (e DecodeErrors) Error() string {
+	return fmt.Sprintf("failed to decode %d items", len(e))
+}
+
+func DecodeCollection[T any](items []any) ([]T, error) {
+	res := make([]T, len(items))
+	errs := make([]DecodeError, 0, len(items))
+	for i, item := range items {
+		err := mapstructure.Decode(item, &res[i])
+		if err != nil {
+			errs = append(errs, DecodeError{Index: i, Err: err})
+		}
+	}
+	if len(errs) > 0 {
+		return res, DecodeErrors(errs)
+	}
+	return res, nil
+}
+
 // Provided type `T` should have `mapstructure` tags
 func ExecuteAndDecode[T any](ctx context.Context, c *Client, q *Query) ([]T, error) {
 	data, err := c.Execute(ctx, q)
 	if err != nil {
 		return nil, err
 	}
-	items := make([]T, len(data))
-	for i, item := range data {
-		mapstructure.Decode(item, &items[i])
-	}
-	return items, nil
+	return DecodeCollection[T](data)
 }
