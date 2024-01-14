@@ -26,7 +26,7 @@ func New(
 		log.Debug("parsed options", slog.String("provider", provider))
 		population, err := popLoader.Load(ctx, provider)
 		if err != nil {
-			return nil, fmt.Errorf("%s error getting population: %q", op, err)
+			return nil, fmt.Errorf("%s error getting population: %w", op, err)
 		}
 		embeds := []*discordgo.MessageEmbed{
 			render.RenderPopulation(population),

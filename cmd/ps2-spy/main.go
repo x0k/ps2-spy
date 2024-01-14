@@ -42,8 +42,8 @@ func main() {
 	storage := mustSetupStorage(s, &cfg.Storage)
 	_ = storage
 
+	mustSetupEventsPublisher(s, &cfg.Bot)
 	startBot(s, &cfg.Bot)
-	startPrinter(s, &cfg.Bot)
 
 	log.Info("Press CTRL-C to exit.")
 	stop := make(chan os.Signal, 1)

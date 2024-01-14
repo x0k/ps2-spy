@@ -4,14 +4,17 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"sync"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/x0k/ps2-spy/internal/bot/handlers"
+	ps2events "github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 )
 
 type Bot struct {
+	wg                 sync.WaitGroup
 	log                *slog.Logger
 	session            *discordgo.Session
 	registeredCommands []*discordgo.ApplicationCommand
@@ -22,7 +25,8 @@ type BotConfig struct {
 	CommandHandlerTimeout time.Duration
 	Commands              []*discordgo.ApplicationCommand
 	Handlers              map[string]handlers.InteractionHandler
-	ChanId                string
+	PlayerLoginHandler    handlers.Ps2EventHandler[ps2events.PlayerLogin]
+	EventsPublisher       *ps2events.Publisher
 }
 
 func New(
@@ -58,6 +62,32 @@ func New(
 			l.Warn("unknown command")
 		}
 	})
+
+	wg := sync.WaitGroup{}
+	if cfg.PlayerLoginHandler != nil {
+		playerLogin := make(chan ps2events.PlayerLogin)
+		playerLoginUnSub, err := cfg.EventsPublisher.AddHandler(playerLogin)
+		if err != nil {
+			return nil, err
+		}
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			defer playerLoginUnSub()
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case pl := <-playerLogin:
+					// TODO: Add specific timeout
+					go cfg.PlayerLoginHandler.Run(ctx, log, cfg.CommandHandlerTimeout, session, pl)
+				}
+			}
+		}()
+	} else {
+		log.Warn("no player login handler")
+	}
+
 	err = session.Open()
 	if err != nil {
 		return nil, err
@@ -72,8 +102,8 @@ func New(
 			registeredCommands = append(registeredCommands, cmd)
 		}
 	}
-	session.ChannelMessageSend()
 	return &Bot{
+		wg:                 wg,
 		log:                log,
 		session:            session,
 		registeredCommands: registeredCommands,
