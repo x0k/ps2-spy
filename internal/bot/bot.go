@@ -22,6 +22,7 @@ type BotConfig struct {
 	CommandHandlerTimeout time.Duration
 	Commands              []*discordgo.ApplicationCommand
 	Handlers              map[string]handlers.InteractionHandler
+	ChanId                string
 }
 
 func New(
@@ -71,6 +72,7 @@ func New(
 			registeredCommands = append(registeredCommands, cmd)
 		}
 	}
+	session.ChannelMessageSend()
 	return &Bot{
 		log:                log,
 		session:            session,

@@ -48,3 +48,19 @@ func DeferredResponse(handle func(ctx context.Context, log *slog.Logger, s *disc
 		return err
 	}
 }
+
+type Ps2EventHandler[E any] func(ctx context.Context, log *slog.Logger, s *discordgo.Session, event E) error
+
+func (handler Ps2EventHandler[E]) Run(ctx context.Context, log *slog.Logger, timeout time.Duration, s *discordgo.Session, event E) {
+	log.Debug("handling", slog.Duration("timeout", timeout))
+	t := time.Now()
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+	err := contextx.Await(ctx, func() error {
+		return handler(ctx, log, s, event)
+	})
+	if err != nil {
+		log.Error("error handling", sl.Err(err))
+	}
+	log.Debug("handled", slog.Duration("duration", time.Since(t)))
+}
