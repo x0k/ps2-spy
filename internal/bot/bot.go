@@ -14,7 +14,7 @@ import (
 )
 
 type Bot struct {
-	wg                 sync.WaitGroup
+	wg                 *sync.WaitGroup
 	log                *slog.Logger
 	session            *discordgo.Session
 	registeredCommands []*discordgo.ApplicationCommand
@@ -62,8 +62,13 @@ func New(
 			l.Warn("unknown command")
 		}
 	})
-
-	wg := sync.WaitGroup{}
+	eventHandlersConfig := &handlers.Ps2EventHandlerConfig{
+		Log:     log,
+		Session: session,
+		Timeout: cfg.CommandHandlerTimeout,
+		// TrackingManager: cfg.EventsPublisher,
+	}
+	wg := &sync.WaitGroup{}
 	if cfg.PlayerLoginHandler != nil {
 		playerLogin := make(chan ps2events.PlayerLogin)
 		playerLoginUnSub, err := cfg.EventsPublisher.AddHandler(playerLogin)
@@ -80,7 +85,7 @@ func New(
 					return
 				case pl := <-playerLogin:
 					// TODO: Add specific timeout
-					go cfg.PlayerLoginHandler.Run(ctx, log, cfg.CommandHandlerTimeout, session, pl)
+					go cfg.PlayerLoginHandler.Run(ctx, eventHandlersConfig, pl)
 				}
 			}
 		}()
