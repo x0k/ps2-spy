@@ -18,7 +18,7 @@ func New(charLoader loaders.KeyedLoader[string, ps2.Character]) handlers.Ps2Even
 		if err != nil {
 			return "", fmt.Errorf("%s error getting character: %w", op, err)
 		}
-		return render.RenderCharacterLogin(character.Value), nil
+		return render.RenderCharacterLogin(character), nil
 
 	})
 }

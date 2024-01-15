@@ -10,10 +10,10 @@ import (
 )
 
 func NewHandlers(
-	popLoader loaders.KeyedLoader[string, ps2.WorldsPopulation],
-	worldPopLoader loaders.QueriedLoader[loaders.MultiLoaderQuery[ps2.WorldId], ps2.DetailedWorldPopulation],
-	alertsLoader loaders.KeyedLoader[string, ps2.Alerts],
-	worldAlertsLoader loaders.QueriedLoader[loaders.MultiLoaderQuery[ps2.WorldId], ps2.Alerts],
+	popLoader loaders.KeyedLoader[string, loaders.Loaded[ps2.WorldsPopulation]],
+	worldPopLoader loaders.QueriedLoader[loaders.MultiLoaderQuery[ps2.WorldId], loaders.Loaded[ps2.DetailedWorldPopulation]],
+	alertsLoader loaders.KeyedLoader[string, loaders.Loaded[ps2.Alerts]],
+	worldAlertsLoader loaders.QueriedLoader[loaders.MultiLoaderQuery[ps2.WorldId], loaders.Loaded[ps2.Alerts]],
 ) map[string]handlers.InteractionHandler {
 	return map[string]handlers.InteractionHandler{
 		"population":        population.New(popLoader),

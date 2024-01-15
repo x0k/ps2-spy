@@ -66,6 +66,9 @@ type CharacterItem struct {
 	Certs         CharacterCerts       `json:"certs" mapstructure:"certs"`
 	BattleRank    CharacterBattleRank  `json:"battle_rank" mapstructure:"battle_rank"`
 	DailyRibbon   CharacterDailyRibbon `json:"daily_ribbon" mapstructure:"daily_ribbon"`
+	// Resolvable
+	Outfit  OutfitItem `json:"outfit" mapstructure:"outfit"`
+	WorldId string     `json:"world_id" mapstructure:"world_id"`
 }
 
 const Outfit = "outfit"

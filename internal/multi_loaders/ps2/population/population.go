@@ -13,12 +13,12 @@ import (
 
 type PopulationMultiLoader struct {
 	value          *containers.QueriedLoadableValue[string, string, loaders.Loaded[ps2.WorldsPopulation]]
-	fallbackLoader *loaders.FallbackLoader[ps2.WorldsPopulation]
+	fallbackLoader *loaders.FallbackLoader[loaders.Loaded[ps2.WorldsPopulation]]
 	loaders        []string
 }
 
 func New(
-	loadersMap map[string]loaders.Loader[ps2.WorldsPopulation],
+	loadersMap map[string]loaders.Loader[loaders.Loaded[ps2.WorldsPopulation]],
 	priority []string,
 ) *PopulationMultiLoader {
 	loadersWithDefault := maps.Clone(loadersMap)

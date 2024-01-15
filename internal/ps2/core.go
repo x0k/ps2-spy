@@ -85,11 +85,11 @@ type Alert struct {
 type Alerts []Alert
 
 type Character struct {
-	CharacterId string
-	FactionId   string
-	Name        string
-	OutfitTag   string
-	WorldId     WorldId
+	Id        string
+	FactionId string
+	Name      string
+	OutfitTag string
+	WorldId   WorldId
 }
 
 var ErrWorldNotFound = fmt.Errorf("world not found")

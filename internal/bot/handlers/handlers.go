@@ -52,7 +52,7 @@ func DeferredResponse(handle func(ctx context.Context, log *slog.Logger, s *disc
 }
 
 type TrackingManager interface {
-	ChannelIds(event any) ([]string, error)
+	ChannelIds(ctx context.Context, event any) ([]string, error)
 }
 
 type Ps2EventHandlerConfig struct {
@@ -70,7 +70,7 @@ func (handler Ps2EventHandler[E]) Run(ctx context.Context, cfg *Ps2EventHandlerC
 	ctx, cancel := context.WithTimeout(ctx, cfg.Timeout)
 	defer cancel()
 	err := contextx.Await(ctx, func() error {
-		channels, err := cfg.TrackingManager.ChannelIds(event)
+		channels, err := cfg.TrackingManager.ChannelIds(ctx, event)
 		if err != nil {
 			return err
 		}

@@ -18,6 +18,26 @@ type optionalPrinter interface {
 	optional
 }
 
+type Ptr struct {
+	value *optionalPrinter
+}
+
+func NewPtr(p optionalPrinter) Ptr {
+	return Ptr{value: &p}
+}
+
+func (p Ptr) isEmpty() bool {
+	return p.value == nil || (*p.value).isEmpty()
+}
+
+func (p Ptr) print(writer io.StringWriter) {
+	(*p.value).print(writer)
+}
+
+func (p Ptr) Set(v optionalPrinter) {
+	*p.value = v
+}
+
 type Bool bool
 
 func (b Bool) isEmpty() bool {

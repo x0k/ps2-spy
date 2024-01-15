@@ -182,6 +182,11 @@ func (q *Query) Where(term queryCondition) *Query {
 	return q
 }
 
+func (q *Query) ResetConditions() *Query {
+	q.terms.values = nil
+	return q
+}
+
 func (q *Query) WithJoin(join queryJoin) *Query {
 	q.join.value.values = append(q.join.value.values, join)
 	return q

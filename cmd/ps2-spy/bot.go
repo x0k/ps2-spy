@@ -149,7 +149,7 @@ func startBot(s *Setup, cfg *config.BotConfig) {
 	sanctuaryClient := census2.NewClient("https://census.lithafalcon.cc", "", httpClient)
 	// multi loaders
 	popLoader := popMultiLoader.New(
-		map[string]loaders.Loader[ps2.WorldsPopulation]{
+		map[string]loaders.Loader[loaders.Loaded[ps2.WorldsPopulation]]{
 			"honu":      worlds.NewHonuLoader(honuClient),
 			"ps2live":   worlds.NewPS2LiveLoader(populationClient),
 			"saerro":    worlds.NewSaerroLoader(saerroClient),
@@ -161,7 +161,7 @@ func startBot(s *Setup, cfg *config.BotConfig) {
 	)
 	startInContext(s, popLoader)
 	worldPopLoader := worldPopMultiLoader.New(
-		map[string]loaders.KeyedLoader[ps2.WorldId, ps2.DetailedWorldPopulation]{
+		map[string]loaders.KeyedLoader[ps2.WorldId, loaders.Loaded[ps2.DetailedWorldPopulation]]{
 			"honu":     world.NewHonuLoader(honuClient),
 			"saerro":   world.NewSaerroLoader(saerroClient),
 			"voidwell": world.NewVoidWellLoader(voidWellClient),
@@ -170,7 +170,7 @@ func startBot(s *Setup, cfg *config.BotConfig) {
 	)
 	startInContext(s, worldPopLoader)
 	alertsLoader := alertsMultiLoader.New(
-		map[string]loaders.Loader[ps2.Alerts]{
+		map[string]loaders.Loader[loaders.Loaded[ps2.Alerts]]{
 			"ps2alerts": alerts.NewPS2AlertsLoader(ps2alertsClient),
 			"honu":      alerts.NewHonuLoader(honuClient),
 			"census":    alerts.NewCensusLoader(censusClient),

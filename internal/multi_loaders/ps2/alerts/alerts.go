@@ -13,16 +13,16 @@ import (
 
 type AlertsMultiLoader struct {
 	alerts         *containers.QueriedLoadableValue[string, string, loaders.Loaded[ps2.Alerts]]
-	fallbackLoader *loaders.FallbackLoader[ps2.Alerts]
+	fallbackLoader *loaders.FallbackLoader[loaders.Loaded[ps2.Alerts]]
 	loaders        []string
 }
 
 func New(
-	loadersMap map[string]loaders.Loader[ps2.Alerts],
+	loadersMap map[string]loaders.Loader[loaders.Loaded[ps2.Alerts]],
 	priority []string,
 ) *AlertsMultiLoader {
 	loadersWithDefault := maps.Clone(loadersMap)
-	fallbackLoader := loaders.NewFallbackLoader[ps2.Alerts](
+	fallbackLoader := loaders.NewFallbackLoader[loaders.Loaded[ps2.Alerts]](
 		"Alerts",
 		loadersMap,
 		priority,

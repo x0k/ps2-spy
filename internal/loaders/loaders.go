@@ -8,6 +8,8 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/containers"
 )
 
+var ErrNotFound = fmt.Errorf("not found")
+
 type Loaded[T any] struct {
 	Value     T
 	Source    string
@@ -23,11 +25,11 @@ func LoadedNow[T any](source string, value T) Loaded[T] {
 }
 
 type Loader[T any] interface {
-	Load(ctx context.Context) (Loaded[T], error)
+	Load(ctx context.Context) (T, error)
 }
 
 type QueriedLoader[Q any, T any] interface {
-	Load(ctx context.Context, query Q) (Loaded[T], error)
+	Load(ctx context.Context, query Q) (T, error)
 }
 
 type KeyedLoader[K comparable, T any] QueriedLoader[K, T]
@@ -50,8 +52,8 @@ func (l *FallbackLoader[T]) Stop() {
 	l.fallbacks.Stop()
 }
 
-func (l *FallbackLoader[T]) Load(ctx context.Context) (Loaded[T], error) {
-	return containers.ExecFallback(l.fallbacks, func(loader Loader[T]) (Loaded[T], error) {
+func (l *FallbackLoader[T]) Load(ctx context.Context) (T, error) {
+	return containers.ExecFallback(l.fallbacks, func(loader Loader[T]) (T, error) {
 		return loader.Load(ctx)
 	})
 }
@@ -78,8 +80,8 @@ func (l *KeyedFallbackLoader[K, T]) Stop() {
 	l.fallbacks.Stop()
 }
 
-func (l *KeyedFallbackLoader[K, T]) Load(ctx context.Context, key K) (Loaded[T], error) {
-	return containers.ExecFallback(l.fallbacks, func(loader KeyedLoader[K, T]) (Loaded[T], error) {
+func (l *KeyedFallbackLoader[K, T]) Load(ctx context.Context, key K) (T, error) {
+	return containers.ExecFallback(l.fallbacks, func(loader KeyedLoader[K, T]) (T, error) {
 		return loader.Load(ctx, key)
 	})
 }
@@ -94,11 +96,12 @@ func NewMultiLoader[T any](loaders map[string]Loader[T]) *MultiLoader[T] {
 	return &MultiLoader[T]{loaders}
 }
 
-func (l *MultiLoader[T]) Load(ctx context.Context, loader string) (Loaded[T], error) {
+func (l *MultiLoader[T]) Load(ctx context.Context, loader string) (T, error) {
 	if loader, ok := l.loaders[loader]; ok {
 		return loader.Load(ctx)
 	}
-	return Loaded[T]{}, fmt.Errorf("unknown loader %q: %w", loader, ErrLoaderNotFound)
+	var t T
+	return t, fmt.Errorf("unknown loader %q: %w", loader, ErrLoaderNotFound)
 }
 
 type KeyedMultiLoader[K comparable, T any] struct {
@@ -121,9 +124,10 @@ func NewMultiLoaderQuery[K comparable](loader string, key K) MultiLoaderQuery[K]
 	}
 }
 
-func (l *KeyedMultiLoader[K, T]) Load(ctx context.Context, q MultiLoaderQuery[K]) (Loaded[T], error) {
+func (l *KeyedMultiLoader[K, T]) Load(ctx context.Context, q MultiLoaderQuery[K]) (T, error) {
 	if loader, ok := l.loaders[q.Loader]; ok {
 		return loader.Load(ctx, q.Key)
 	}
-	return Loaded[T]{}, fmt.Errorf("unknown loader %q: %w", q.Loader, ErrLoaderNotFound)
+	var t T
+	return t, fmt.Errorf("unknown loader %q: %w", q.Loader, ErrLoaderNotFound)
 }

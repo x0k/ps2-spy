@@ -10,3 +10,6 @@ test:
 
 o:
     go run tools/explorer/*.go --tag $1 --output tmp
+
+c:
+    go run tools/explorer/*.go --character $1 --output tmp

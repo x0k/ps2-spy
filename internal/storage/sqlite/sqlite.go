@@ -9,14 +9,17 @@ import (
 	"strings"
 
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
+	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/storage"
 )
 
 const (
-	upsertGuildPlatform = iota
-	selectGuildPlatform
-	insertGuildOutfit
-	insertGuildCharacter
+	upsertChatPlatform = iota
+	selectChatPlatform
+	insertChatOutfit
+	insertChatCharacter
+	selectChatIdsByCharacter
 	statementsCount
 )
 
@@ -28,36 +31,35 @@ type Storage struct {
 
 func (s *Storage) migrate(ctx context.Context) error {
 	_, err := s.db.ExecContext(ctx, `
-CREATE TABLE IF NOT EXISTS guild_to_outfit (
-	guild_id TEXT NOT NULL,
+CREATE TABLE IF NOT EXISTS chat_to_outfit (
+	chat_id TEXT NOT NULL,
 	platform_id TEXT NOT NULL,
-	outfit_id TEXT NOT NULL,
-	PRIMARY KEY (guild_id, platform_id, outfit_id)
+	outfit_tag TEXT NOT NULL,
+	PRIMARY KEY (chat_id, platform_id, outfit_tag),
 );`)
 	if err != nil {
 		return err
 	}
 
 	_, err = s.db.ExecContext(ctx, `
-CREATE TABLE IF NOT EXISTS guild_to_character (
-	guild_id TEXT NOT NULL,
+CREATE TABLE IF NOT EXISTS chat_to_character (
+	chat_id TEXT NOT NULL,
 	platform_id TEXT NOT NULL,
 	character_id TEXT NOT NULL,
-	PRIMARY KEY (guild_id, platform_id, character_id)
+	PRIMARY KEY (chat_id, platform_id, character_id)
 );`)
 	if err != nil {
 		return err
 	}
 
 	_, err = s.db.ExecContext(ctx, `
-CREATE TABLE IF NOT EXISTS guild_to_platform (
-	guild_id TEXT PRIMARY KEY NOT NULL,
+CREATE TABLE IF NOT EXISTS chat_to_platform (
+	chat_id TEXT PRIMARY KEY NOT NULL,
 	platform_id TEXT NOT NULL
 );`)
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -82,10 +84,16 @@ func (s *Storage) Start(ctx context.Context) error {
 		name int
 		stmt string
 	}{
-		{upsertGuildPlatform, "INSERT INTO guild_to_platform VALUES (?, ?) ON CONFLICT(guild_id) DO UPDATE SET platform_id = EXCLUDED.platform_id"},
-		{selectGuildPlatform, "SELECT platform_id FROM guild_to_platform WHERE guild_id = ?"},
-		{insertGuildOutfit, "INSERT INTO guild_to_outfit VALUES (?, ?, ?)"},
-		{insertGuildCharacter, "INSERT INTO guild_to_character VALUES (?, ?, ?)"},
+		{upsertChatPlatform, "INSERT INTO chat_to_platform VALUES (?, ?) ON CONFLICT(chat_id) DO UPDATE SET platform_id = EXCLUDED.platform_id"},
+		{selectChatPlatform, "SELECT platform_id FROM chat_to_platform WHERE chat_id = ?"},
+		{insertChatOutfit, "INSERT INTO chat_to_outfit VALUES (?, ?, lower(?))"},
+		{insertChatCharacter, "INSERT INTO chat_to_character VALUES (?, ?, ?)"},
+		{
+			name: selectChatIdsByCharacter,
+			stmt: `SELECT chat_id FROM chat_to_character WHERE character_id = ?
+				   UNION
+				   SELECT chat_id FROM chat_to_outfit WHERE outfit_tag = lower(?)`,
+		},
 	}
 	for _, raw := range rawStatements {
 		stmt, err := s.db.Prepare(raw.stmt)
@@ -132,39 +140,67 @@ func (s *Storage) queryRow(ctx context.Context, result any, statement int, args 
 	return nil
 }
 
-func (s *Storage) SaveGuildPlatform(ctx context.Context, guildID, platformID string) error {
-	const op = "storage.sqlite.SaveGuildPlatform"
-	err := s.exec(ctx, upsertGuildPlatform, guildID, platformID)
+func query[T any](ctx context.Context, s *Storage, statement int, args ...any) ([]T, error) {
+	rows, err := s.statements[statement].QueryContext(ctx, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	results := make([]T, 0)
+	for rows.Next() {
+		var result T
+		err = rows.Scan(&result)
+		if err != nil {
+			s.log.Error("cannot scan row", sl.Err(err))
+			continue
+		}
+		results = append(results, result)
+	}
+	return results, rows.Err()
+}
+
+func (s *Storage) SaveChatPlatform(ctx context.Context, chatId, platformID string) error {
+	const op = "storage.sqlite.SaveChatPlatform"
+	err := s.exec(ctx, upsertChatPlatform, chatId, platformID)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 	return nil
 }
 
-func (s *Storage) GetGuildPlatform(ctx context.Context, guildID string) (string, error) {
-	const op = "storage.sqlite.GetGuildPlatform"
+func (s *Storage) GetChatPlatform(ctx context.Context, chatId string) (string, error) {
+	const op = "storage.sqlite.GetChatPlatform"
 	var platformID string
-	err := s.queryRow(ctx, &platformID, selectGuildPlatform, guildID)
+	err := s.queryRow(ctx, &platformID, selectChatPlatform, chatId)
 	if err != nil {
 		return "", fmt.Errorf("%s: %w", op, err)
 	}
 	return platformID, nil
 }
 
-func (s *Storage) SaveGuildOutfit(ctx context.Context, guildID, platformId, outfitID string) error {
-	const op = "storage.sqlite.SaveGuildOutfit"
-	err := s.exec(ctx, insertGuildOutfit, guildID, platformId, outfitID)
+func (s *Storage) SaveChatOutfit(ctx context.Context, chatId, platformId, outfitID string) error {
+	const op = "storage.sqlite.SaveChatOutfit"
+	err := s.exec(ctx, insertChatOutfit, chatId, platformId, outfitID)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 	return nil
 }
 
-func (s *Storage) SaveGuildCharacter(ctx context.Context, guildID, platformId, characterID string) error {
-	const op = "storage.sqlite.SaveGuildCharacter"
-	err := s.exec(ctx, insertGuildCharacter, guildID, platformId, characterID)
+func (s *Storage) SaveChatCharacter(ctx context.Context, chatId, platformId, characterID string) error {
+	const op = "storage.sqlite.SaveChatCharacter"
+	err := s.exec(ctx, insertChatCharacter, chatId, platformId, characterID)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 	return nil
+}
+
+func (s *Storage) TrackingChannelIdsForCharacter(ctx context.Context, character ps2.Character) ([]string, error) {
+	const op = "storage.sqlite.TrackingChannelIdsForCharacter"
+	rows, err := query[string](ctx, s, selectChatIdsByCharacter, character.Id, character.OutfitTag)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	return rows, nil
 }

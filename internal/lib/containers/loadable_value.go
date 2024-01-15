@@ -29,6 +29,10 @@ func (v *LoadableValue[T]) StopExpiration() {
 	v.value.StopExpiration()
 }
 
+func (v *LoadableValue[T]) Cached() (T, bool) {
+	return v.value.Read()
+}
+
 func (v *LoadableValue[T]) Load(ctx context.Context) (T, error) {
 	return v.value.Load(func() (T, error) {
 		value, err := v.loader.Load(ctx)

@@ -6,6 +6,7 @@ require github.com/bwmarrin/discordgo v0.27.1
 
 require (
 	github.com/BurntSushi/toml v1.3.2 // indirect
+	github.com/bits-and-blooms/bitset v1.10.0 // indirect
 	github.com/ilyakaznacheev/cleanenv v1.5.0 // indirect
 	github.com/joho/godotenv v1.5.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
@@ -14,6 +15,7 @@ require (
 )
 
 require (
+	github.com/bits-and-blooms/bloom/v3 v3.6.0
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/mattn/go-sqlite3 v1.14.19

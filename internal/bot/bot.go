@@ -65,6 +65,7 @@ func New(
 	eventHandlersConfig := &handlers.Ps2EventHandlerConfig{
 		Log:     log,
 		Session: session,
+		// TODO: Add specific timeout
 		Timeout: cfg.CommandHandlerTimeout,
 		// TrackingManager: cfg.EventsPublisher,
 	}
@@ -84,7 +85,6 @@ func New(
 				case <-ctx.Done():
 					return
 				case pl := <-playerLogin:
-					// TODO: Add specific timeout
 					go cfg.PlayerLoginHandler.Run(ctx, eventHandlersConfig, pl)
 				}
 			}

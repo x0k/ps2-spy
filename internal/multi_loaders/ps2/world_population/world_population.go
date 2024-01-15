@@ -2,7 +2,6 @@ package worldpopulation
 
 import (
 	"context"
-	"fmt"
 	"maps"
 	"time"
 
@@ -13,13 +12,13 @@ import (
 )
 
 type WorldPopulationMultiLoader struct {
-	value          *containers.QueriedLoadableValue[loaders.MultiLoaderQuery[ps2.WorldId], string, loaders.Loaded[ps2.DetailedWorldPopulation]]
-	fallbackLoader *loaders.KeyedFallbackLoader[ps2.WorldId, ps2.DetailedWorldPopulation]
+	value          *containers.QueriedLoadableValue[loaders.MultiLoaderQuery[ps2.WorldId], loaders.MultiLoaderQuery[ps2.WorldId], loaders.Loaded[ps2.DetailedWorldPopulation]]
+	fallbackLoader *loaders.KeyedFallbackLoader[ps2.WorldId, loaders.Loaded[ps2.DetailedWorldPopulation]]
 	loaders        []string
 }
 
 func New(
-	loadersMap map[string]loaders.KeyedLoader[ps2.WorldId, ps2.DetailedWorldPopulation],
+	loadersMap map[string]loaders.KeyedLoader[ps2.WorldId, loaders.Loaded[ps2.DetailedWorldPopulation]],
 	priority []string,
 ) *WorldPopulationMultiLoader {
 	loadersWithDefault := maps.Clone(loadersMap)
@@ -30,13 +29,10 @@ func New(
 	)
 	loadersWithDefault[multiloaders.DefaultLoader] = fallbackLoader
 	multiLoader := loaders.NewKeyedMultiLoader(loadersWithDefault)
-	value := containers.NewQueriedLoadableValue[loaders.MultiLoaderQuery[ps2.WorldId], string, loaders.Loaded[ps2.DetailedWorldPopulation]](
+	value := containers.NewKeyedLoadableValue[loaders.MultiLoaderQuery[ps2.WorldId], loaders.Loaded[ps2.DetailedWorldPopulation]](
 		multiLoader,
 		(len(priority)+1)*len(ps2.ZoneNames),
 		time.Minute,
-		func(q loaders.MultiLoaderQuery[ps2.WorldId]) string {
-			return fmt.Sprintf("%s:%d", q.Loader, q.Key)
-		},
 	)
 	return &WorldPopulationMultiLoader{
 		value:          value,

@@ -13,8 +13,8 @@ import (
 )
 
 func New(
-	alertsLoader loaders.KeyedLoader[string, ps2.Alerts],
-	worldAlertsLoader loaders.QueriedLoader[loaders.MultiLoaderQuery[ps2.WorldId], ps2.Alerts],
+	alertsLoader loaders.KeyedLoader[string, loaders.Loaded[ps2.Alerts]],
+	worldAlertsLoader loaders.QueriedLoader[loaders.MultiLoaderQuery[ps2.WorldId], loaders.Loaded[ps2.Alerts]],
 ) handlers.InteractionHandler {
 	return handlers.DeferredResponse(func(ctx context.Context, log *slog.Logger, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.WebhookEdit, error) {
 		const op = "handlers.alerts"

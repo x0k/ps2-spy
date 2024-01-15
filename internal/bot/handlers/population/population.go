@@ -13,7 +13,7 @@ import (
 )
 
 func New(
-	popLoader loaders.KeyedLoader[string, ps2.WorldsPopulation],
+	popLoader loaders.KeyedLoader[string, loaders.Loaded[ps2.WorldsPopulation]],
 ) handlers.InteractionHandler {
 	return handlers.DeferredResponse(func(ctx context.Context, log *slog.Logger, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.WebhookEdit, error) {
 		const op = "handlers.population"
