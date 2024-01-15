@@ -41,8 +41,8 @@ func New(
 	}
 }
 
-func (l *WorldPopulationMultiLoader) Start() {
-	l.fallbackLoader.Start()
+func (l *WorldPopulationMultiLoader) Start(ctx context.Context) {
+	l.fallbackLoader.Start(ctx)
 }
 
 func (l *WorldPopulationMultiLoader) Stop() {

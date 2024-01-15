@@ -26,10 +26,11 @@ type LoggerConfig struct {
 }
 
 type BotConfig struct {
-	CommandHandlerTimeout time.Duration `yaml:"command_handler_timeout" env:"BOT_COMMAND_HANDLER_TIMEOUT" env-default:"20s"`
-	DiscordToken          string        `yaml:"token" env:"BOT_DISCORD_TOKEN" env-required:"true"`
-	HttpClientTimeout     time.Duration `yaml:"http_client_timeout" env:"BOT_HTTP_CLIENT_TIMEOUT" env-default:"8s"`
-	ServiceId             string        `yaml:"census_service_id" env:"BOT_CENSUS_SERVICE_ID" env-required:"true"`
+	CommandHandlerTimeout  time.Duration `yaml:"command_handler_timeout" env:"BOT_COMMAND_HANDLER_TIMEOUT" env-default:"20s"`
+	Ps2EventHandlerTimeout time.Duration `yaml:"ps2_event_handler_timeout" env:"BOT_PS2_EVENT_HANDLER_TIMEOUT" env-default:"2m"`
+	DiscordToken           string        `yaml:"token" env:"BOT_DISCORD_TOKEN" env-required:"true"`
+	HttpClientTimeout      time.Duration `yaml:"http_client_timeout" env:"BOT_HTTP_CLIENT_TIMEOUT" env-default:"8s"`
+	CensusServiceId        string        `yaml:"census_service_id" env:"BOT_CENSUS_SERVICE_ID" env-required:"true"`
 }
 
 type StorageConfig struct {

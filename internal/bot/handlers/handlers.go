@@ -56,16 +56,15 @@ type TrackingManager interface {
 }
 
 type Ps2EventHandlerConfig struct {
-	Log             *slog.Logger
 	Session         *discordgo.Session
 	Timeout         time.Duration
 	TrackingManager TrackingManager
 }
 
-type Ps2EventHandler[E any] func(ctx context.Context, channelIds []string, cfg *Ps2EventHandlerConfig, event E) error
+type Ps2EventHandler[E any] func(ctx context.Context, log *slog.Logger, channelIds []string, cfg *Ps2EventHandlerConfig, event E) error
 
-func (handler Ps2EventHandler[E]) Run(ctx context.Context, cfg *Ps2EventHandlerConfig, event E) {
-	cfg.Log.Debug("handling", slog.Duration("timeout", cfg.Timeout))
+func (handler Ps2EventHandler[E]) Run(ctx context.Context, log *slog.Logger, cfg *Ps2EventHandlerConfig, event E) {
+	log.Debug("handling", slog.Duration("timeout", cfg.Timeout))
 	t := time.Now()
 	ctx, cancel := context.WithTimeout(ctx, cfg.Timeout)
 	defer cancel()
@@ -77,16 +76,16 @@ func (handler Ps2EventHandler[E]) Run(ctx context.Context, cfg *Ps2EventHandlerC
 		if len(channels) == 0 {
 			return nil
 		}
-		return handler(ctx, channels, cfg, event)
+		return handler(ctx, log, channels, cfg, event)
 	})
 	if err != nil {
-		cfg.Log.Error("error handling", sl.Err(err))
+		log.Error("error handling", sl.Err(err))
 	}
-	cfg.Log.Debug("handled", slog.Duration("duration", time.Since(t)))
+	log.Debug("handled", slog.Duration("duration", time.Since(t)))
 }
 
 func SimpleMessage[E any](handle func(ctx context.Context, cfg *Ps2EventHandlerConfig, event E) (string, error)) Ps2EventHandler[E] {
-	return func(ctx context.Context, channelIds []string, cfg *Ps2EventHandlerConfig, event E) error {
+	return func(ctx context.Context, log *slog.Logger, channelIds []string, cfg *Ps2EventHandlerConfig, event E) error {
 		msg, err := handle(ctx, cfg, event)
 		if err != nil {
 			return err
@@ -95,7 +94,7 @@ func SimpleMessage[E any](handle func(ctx context.Context, cfg *Ps2EventHandlerC
 		for _, channel := range channelIds {
 			_, err = cfg.Session.ChannelMessageSend(channel, msg)
 			if err != nil {
-				cfg.Log.Error("error sending login message", slog.String("channel", channel), sl.Err(err))
+				log.Error("error sending login message", slog.String("channel", channel), sl.Err(err))
 				errors = append(errors, err.Error())
 			}
 		}

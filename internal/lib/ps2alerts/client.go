@@ -25,8 +25,8 @@ func NewClient(endpoint string, httpClient *http.Client) *Client {
 	}
 }
 
-func (c *Client) Start() {
-	go c.alerts.StartExpiration()
+func (c *Client) Start(ctx context.Context) {
+	go c.alerts.StartExpiration(ctx)
 }
 
 func (c *Client) Stop() {

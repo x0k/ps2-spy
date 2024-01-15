@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS chat_to_outfit (
 	chat_id TEXT NOT NULL,
 	platform_id TEXT NOT NULL,
 	outfit_tag TEXT NOT NULL,
-	PRIMARY KEY (chat_id, platform_id, outfit_tag),
+	PRIMARY KEY (chat_id, platform_id, outfit_tag)
 );`)
 	if err != nil {
 		return err

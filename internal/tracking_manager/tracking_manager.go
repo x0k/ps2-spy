@@ -15,7 +15,7 @@ import (
 var ErrUnknownEvent = fmt.Errorf("unknown event")
 
 type Store interface {
-	TrackingChannelIdsForCharacter(char ps2.Character) ([]string, error)
+	TrackingChannelIdsForCharacter(ctx context.Context, char ps2.Character) ([]string, error)
 }
 
 type TrackingManager struct {
@@ -60,7 +60,7 @@ func (tm *TrackingManager) ChannelIds(ctx context.Context, event any) ([]string,
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", op, err)
 		}
-		return tm.store.TrackingChannelIdsForCharacter(char)
+		return tm.store.TrackingChannelIdsForCharacter(ctx, char)
 	}
 	return nil, fmt.Errorf("%s: %w", op, ErrUnknownEvent)
 }

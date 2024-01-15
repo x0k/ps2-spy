@@ -25,8 +25,8 @@ func NewClient(fisuEndpoint string, httpClient *http.Client) *Client {
 	}
 }
 
-func (c *Client) Start() {
-	go c.worldsPopulation.StartExpiration()
+func (c *Client) Start(ctx context.Context) {
+	go c.worldsPopulation.StartExpiration(ctx)
 }
 
 func (c *Client) Stop() {

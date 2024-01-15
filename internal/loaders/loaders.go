@@ -44,8 +44,8 @@ func NewFallbackLoader[T any](name string, loaders map[string]Loader[T], priorit
 	}
 }
 
-func (l *FallbackLoader[T]) Start() {
-	l.fallbacks.Start()
+func (l *FallbackLoader[T]) Start(ctx context.Context) {
+	l.fallbacks.Start(ctx)
 }
 
 func (l *FallbackLoader[T]) Stop() {
@@ -72,8 +72,8 @@ func NewKeyedFallbackLoader[K comparable, T any](
 	}
 }
 
-func (l *KeyedFallbackLoader[K, T]) Start() {
-	l.fallbacks.Start()
+func (l *KeyedFallbackLoader[K, T]) Start(ctx context.Context) {
+	l.fallbacks.Start(ctx)
 }
 
 func (l *KeyedFallbackLoader[K, T]) Stop() {

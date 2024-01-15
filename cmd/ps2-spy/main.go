@@ -40,10 +40,7 @@ func main() {
 	}
 
 	storage := mustSetupStorage(s, &cfg.Storage)
-	_ = storage
-
-	mustSetupEventsPublisher(s, &cfg.Bot)
-	startBot(s, &cfg.Bot)
+	startBot(s, &cfg.Bot, storage)
 
 	log.Info("Press CTRL-C to exit.")
 	stop := make(chan os.Signal, 1)

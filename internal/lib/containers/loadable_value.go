@@ -21,8 +21,8 @@ func NewLoadableValue[T any](loader valueLoader[T], ttl time.Duration) *Loadable
 	}
 }
 
-func (v *LoadableValue[T]) StartExpiration() {
-	v.value.StartExpiration()
+func (v *LoadableValue[T]) StartExpiration(ctx context.Context) {
+	v.value.StartExpiration(ctx)
 }
 
 func (v *LoadableValue[T]) StopExpiration() {

@@ -1,6 +1,7 @@
 package containers
 
 import (
+	"context"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -44,7 +45,7 @@ func (e *ExpiableValue[T]) isStarted() bool {
 	}
 }
 
-func (e *ExpiableValue[T]) StartExpiration() {
+func (e *ExpiableValue[T]) StartExpiration(ctx context.Context) {
 	if e.isStarted() {
 		return
 	}
@@ -52,6 +53,8 @@ func (e *ExpiableValue[T]) StartExpiration() {
 	defer e.ticker.Stop()
 	for {
 		select {
+		case <-ctx.Done():
+			return
 		case <-e.ticker.C:
 			e.MarkAsExpired()
 		case <-e.done:

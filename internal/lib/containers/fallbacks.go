@@ -1,6 +1,7 @@
 package containers
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"time"
@@ -25,8 +26,8 @@ func NewFallbacks[T any](name string, entities map[string]T, priority []string, 
 	}
 }
 
-func (f *Fallbacks[T]) Start() {
-	go f.lastSuccessfulEntity.StartExpiration()
+func (f *Fallbacks[T]) Start(ctx context.Context) {
+	go f.lastSuccessfulEntity.StartExpiration(ctx)
 }
 
 func (f *Fallbacks[T]) Stop() {

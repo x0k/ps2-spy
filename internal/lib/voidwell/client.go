@@ -25,8 +25,8 @@ func NewClient(voidwellEndpoint string, httpClient *http.Client) *Client {
 	}
 }
 
-func (c *Client) Start() {
-	go c.worlds.StartExpiration()
+func (c *Client) Start(ctx context.Context) {
+	go c.worlds.StartExpiration(ctx)
 }
 
 func (c *Client) Stop() {

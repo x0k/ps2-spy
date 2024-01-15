@@ -37,8 +37,8 @@ func New(
 	}
 }
 
-func (l *PopulationMultiLoader) Start() {
-	l.fallbackLoader.Start()
+func (l *PopulationMultiLoader) Start(ctx context.Context) {
+	l.fallbackLoader.Start(ctx)
 }
 
 func (l *PopulationMultiLoader) Stop() {

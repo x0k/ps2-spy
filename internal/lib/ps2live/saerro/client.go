@@ -31,8 +31,8 @@ func (c *Client) Endpoint() string {
 	return c.endpoint
 }
 
-func (c *Client) Start() {
-	go c.allWorldsPopulation.StartExpiration()
+func (c *Client) Start(ctx context.Context) {
+	go c.allWorldsPopulation.StartExpiration(ctx)
 }
 
 func (c *Client) Stop() {

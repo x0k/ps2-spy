@@ -14,7 +14,7 @@ import (
 
 type CharacterLoader struct {
 	wg          sync.WaitGroup
-	log         slog.Logger
+	log         *slog.Logger
 	cache       *expirable.LRU[string, ps2.Character]
 	loader      loaders.QueriedLoader[[]string, map[string]ps2.Character]
 	charId      chan string
@@ -25,12 +25,12 @@ type CharacterLoader struct {
 }
 
 func New(
-	log slog.Logger,
+	log *slog.Logger,
 	loader loaders.QueriedLoader[[]string, map[string]ps2.Character],
 ) *CharacterLoader {
 	return &CharacterLoader{
 		cache:       expirable.NewLRU[string, ps2.Character](1000, nil, time.Hour*12),
-		log:         *log.With(slog.String("loaders.batch", "character")),
+		log:         log.With(slog.String("loaders.batch", "character")),
 		loader:      loader,
 		charId:      make(chan string, 1000),
 		charIdBatch: make(chan []string),

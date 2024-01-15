@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/x0k/ps2-spy/internal/bot"
+	"github.com/x0k/ps2-spy/internal/bot/handlers/login"
 	"github.com/x0k/ps2-spy/internal/config"
 	"github.com/x0k/ps2-spy/internal/lib/census2"
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming"
@@ -23,13 +24,17 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/retry"
 	"github.com/x0k/ps2-spy/internal/lib/voidwell"
 	"github.com/x0k/ps2-spy/internal/loaders"
+	"github.com/x0k/ps2-spy/internal/loaders/batch/character"
 	"github.com/x0k/ps2-spy/internal/loaders/ps2/alerts"
+	"github.com/x0k/ps2-spy/internal/loaders/ps2/characters"
 	"github.com/x0k/ps2-spy/internal/loaders/ps2/world"
 	"github.com/x0k/ps2-spy/internal/loaders/ps2/worlds"
 	alertsMultiLoader "github.com/x0k/ps2-spy/internal/multi_loaders/ps2/alerts"
 	popMultiLoader "github.com/x0k/ps2-spy/internal/multi_loaders/ps2/population"
 	worldPopMultiLoader "github.com/x0k/ps2-spy/internal/multi_loaders/ps2/world_population"
 	"github.com/x0k/ps2-spy/internal/ps2"
+	"github.com/x0k/ps2-spy/internal/storage/sqlite"
+	trackingmanager "github.com/x0k/ps2-spy/internal/tracking_manager"
 )
 
 func startEventsClient(s *Setup, cfg *config.BotConfig, env string, settings ps2commands.SubscriptionSettings) *streaming.Client {
@@ -37,7 +42,7 @@ func startEventsClient(s *Setup, cfg *config.BotConfig, env string, settings ps2
 		s.log,
 		"wss://push.planetside2.com/streaming",
 		env,
-		cfg.ServiceId,
+		cfg.CensusServiceId,
 	)
 	s.wg.Add(1)
 	go func() {
@@ -114,12 +119,12 @@ func mustSetupEventsPublisher(s *Setup, cfg *config.BotConfig) *ps2events.Publis
 }
 
 type starter interface {
-	Start()
+	Start(ctx context.Context)
 	Stop()
 }
 
 func startInContext(s *Setup, starter starter) {
-	starter.Start()
+	starter.Start(s.ctx)
 	s.wg.Add(1)
 	context.AfterFunc(s.ctx, func() {
 		defer s.wg.Done()
@@ -127,7 +132,7 @@ func startInContext(s *Setup, starter starter) {
 	})
 }
 
-func startBot(s *Setup, cfg *config.BotConfig) {
+func startBot(s *Setup, cfg *config.BotConfig, storage *sqlite.Storage) {
 	eventsPublisher := mustSetupEventsPublisher(s, cfg)
 	httpClient := &http.Client{
 		Timeout: cfg.HttpClientTimeout,
@@ -181,10 +186,14 @@ func startBot(s *Setup, cfg *config.BotConfig) {
 	startInContext(s, alertsLoader)
 	worldAlertsLoader := alertsMultiLoader.NewWorldAlertsLoader(alertsLoader)
 	startInContext(s, worldAlertsLoader)
+	characterLoader := character.New(s.log, characters.NewCensusLoader(censusClient))
+	startInContext(s, characterLoader)
+	trackingManager := trackingmanager.New(characterLoader, storage)
 	// bot
 	botConfig := &bot.BotConfig{
-		DiscordToken:          cfg.DiscordToken,
-		CommandHandlerTimeout: cfg.CommandHandlerTimeout,
+		DiscordToken:           cfg.DiscordToken,
+		CommandHandlerTimeout:  cfg.CommandHandlerTimeout,
+		Ps2EventHandlerTimeout: cfg.Ps2EventHandlerTimeout,
 		Commands: bot.NewCommands(
 			popLoader,
 			worldPopLoader,
@@ -196,7 +205,9 @@ func startBot(s *Setup, cfg *config.BotConfig) {
 			alertsLoader,
 			worldAlertsLoader,
 		),
-		EventsPublisher: eventsPublisher,
+		EventsPublisher:    eventsPublisher,
+		PlayerLoginHandler: login.New(characterLoader),
+		TrackingManager:    trackingManager,
 	}
 	s.wg.Add(1)
 	go func() {

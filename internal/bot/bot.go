@@ -21,12 +21,14 @@ type Bot struct {
 }
 
 type BotConfig struct {
-	DiscordToken          string
-	CommandHandlerTimeout time.Duration
-	Commands              []*discordgo.ApplicationCommand
-	Handlers              map[string]handlers.InteractionHandler
-	PlayerLoginHandler    handlers.Ps2EventHandler[ps2events.PlayerLogin]
-	EventsPublisher       *ps2events.Publisher
+	DiscordToken           string
+	CommandHandlerTimeout  time.Duration
+	Ps2EventHandlerTimeout time.Duration
+	Commands               []*discordgo.ApplicationCommand
+	Handlers               map[string]handlers.InteractionHandler
+	PlayerLoginHandler     handlers.Ps2EventHandler[ps2events.PlayerLogin]
+	TrackingManager        handlers.TrackingManager
+	EventsPublisher        *ps2events.Publisher
 }
 
 func New(
@@ -63,11 +65,9 @@ func New(
 		}
 	})
 	eventHandlersConfig := &handlers.Ps2EventHandlerConfig{
-		Log:     log,
-		Session: session,
-		// TODO: Add specific timeout
-		Timeout: cfg.CommandHandlerTimeout,
-		// TrackingManager: cfg.EventsPublisher,
+		Session:         session,
+		Timeout:         cfg.Ps2EventHandlerTimeout,
+		TrackingManager: cfg.TrackingManager,
 	}
 	wg := &sync.WaitGroup{}
 	if cfg.PlayerLoginHandler != nil {
@@ -85,7 +85,12 @@ func New(
 				case <-ctx.Done():
 					return
 				case pl := <-playerLogin:
-					go cfg.PlayerLoginHandler.Run(ctx, eventHandlersConfig, pl)
+					go cfg.PlayerLoginHandler.Run(
+						ctx,
+						log.With(slog.Any("event", pl)),
+						eventHandlersConfig,
+						pl,
+					)
 				}
 			}
 		}()

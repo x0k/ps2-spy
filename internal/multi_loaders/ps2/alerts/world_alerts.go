@@ -17,8 +17,8 @@ func NewWorldAlertsLoader(
 	return &WorldAlertsLoader{loader}
 }
 
-func (l *WorldAlertsLoader) Start() {
-	l.loader.Start()
+func (l *WorldAlertsLoader) Start(ctx context.Context) {
+	l.loader.Start(ctx)
 }
 
 func (l *WorldAlertsLoader) Stop() {

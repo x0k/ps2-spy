@@ -37,8 +37,8 @@ func New(
 	}
 }
 
-func (l *AlertsMultiLoader) Start() {
-	l.fallbackLoader.Start()
+func (l *AlertsMultiLoader) Start(ctx context.Context) {
+	l.fallbackLoader.Start(ctx)
 }
 
 func (l *AlertsMultiLoader) Stop() {
