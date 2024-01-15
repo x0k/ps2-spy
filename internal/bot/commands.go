@@ -2,7 +2,7 @@ package bot
 
 import (
 	"github.com/bwmarrin/discordgo"
-	multiloaders "github.com/x0k/ps2-spy/internal/multi_loaders"
+	multiloaders "github.com/x0k/ps2-spy/internal/loaders/multi"
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
