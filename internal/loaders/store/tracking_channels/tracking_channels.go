@@ -3,6 +3,7 @@ package trackingchannels
 import (
 	"context"
 
+	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/storage/sqlite"
 )
 
@@ -16,6 +17,6 @@ func New(store *sqlite.Storage) *TrackingChannelsLoader {
 	}
 }
 
-func (l *TrackingChannelsLoader) Load(ctx context.Context, key [2]string) ([]string, error) {
-	return l.store.TrackingChannelIdsForCharacter(ctx, key[0], key[1])
+func (l *TrackingChannelsLoader) Load(ctx context.Context, char ps2.Character) ([]string, error) {
+	return l.store.TrackingChannelIdsForCharacter(ctx, char.Id, char.OutfitTag)
 }
