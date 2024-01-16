@@ -12,6 +12,10 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 )
 
+const (
+	CHANNEL_SETUP_MODAL = "channel_setup"
+)
+
 type InteractionHandler func(ctx context.Context, log *slog.Logger, s *discordgo.Session, i *discordgo.InteractionCreate) error
 
 func (handler InteractionHandler) Run(ctx context.Context, log *slog.Logger, timeout time.Duration, s *discordgo.Session, i *discordgo.InteractionCreate) {

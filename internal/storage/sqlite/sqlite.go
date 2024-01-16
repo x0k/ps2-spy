@@ -20,6 +20,8 @@ const (
 	insertChatOutfit
 	insertChatCharacter
 	selectChatIdsByCharacter
+	selectOutfitsForPlatform
+	selectCharactersForPlatform
 	statementsCount
 )
 
@@ -48,19 +50,7 @@ CREATE TABLE IF NOT EXISTS chat_to_character (
 	character_id TEXT NOT NULL,
 	PRIMARY KEY (chat_id, platform_id, character_id)
 );`)
-	if err != nil {
-		return err
-	}
-
-	_, err = s.db.ExecContext(ctx, `
-CREATE TABLE IF NOT EXISTS chat_to_platform (
-	chat_id TEXT PRIMARY KEY NOT NULL,
-	platform_id TEXT NOT NULL
-);`)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 func New(ctx context.Context, log *slog.Logger, storagePath string) (*Storage, error) {
@@ -94,6 +84,8 @@ func (s *Storage) Start(ctx context.Context) error {
 				   UNION
 				   SELECT chat_id FROM chat_to_outfit WHERE outfit_tag = lower(?)`,
 		},
+		{selectOutfitsForPlatform, "SELECT outfit_tag FROM chat_to_outfit WHERE chat_id = ? AND platform_id = ?"},
+		{selectCharactersForPlatform, "SELECT character_id FROM chat_to_character WHERE chat_id = ? AND platform_id = ?"},
 	}
 	for _, raw := range rawStatements {
 		stmt, err := s.db.Prepare(raw.stmt)
@@ -199,6 +191,24 @@ func (s *Storage) SaveChatCharacter(ctx context.Context, chatId, platformId, cha
 func (s *Storage) TrackingChannelIdsForCharacter(ctx context.Context, character ps2.Character) ([]string, error) {
 	const op = "storage.sqlite.TrackingChannelIdsForCharacter"
 	rows, err := query[string](ctx, s, selectChatIdsByCharacter, character.Id, character.OutfitTag)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	return rows, nil
+}
+
+func (s *Storage) TrackingOutfitsForPlatform(ctx context.Context, chatId, platformId string) ([]string, error) {
+	const op = "storage.sqlite.TrackingOutfitsForPlatform"
+	rows, err := query[string](ctx, s, selectOutfitsForPlatform, chatId, platformId)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	return rows, nil
+}
+
+func (s *Storage) TrackingCharactersForPlatform(ctx context.Context, chatId, platformId string) ([]string, error) {
+	const op = "storage.sqlite.TrackingCharactersForPlatform"
+	rows, err := query[string](ctx, s, selectCharactersForPlatform, chatId, platformId)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}

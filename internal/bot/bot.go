@@ -53,15 +53,21 @@ func New(
 			userId = i.User.ID
 		}
 		l := log.With(
-			slog.String("command", i.ApplicationCommandData().Name),
 			slog.String("guild_id", i.GuildID),
 			slog.String("user_id", userId),
 		)
-		l.Debug("command received")
-		if handler, ok := cfg.Handlers[i.ApplicationCommandData().Name]; ok {
-			go handler.Run(ctx, l, cfg.CommandHandlerTimeout, s, i)
-		} else {
-			l.Warn("unknown command")
+		switch i.Type {
+		case discordgo.InteractionApplicationCommand:
+			l.Debug("command received", slog.String("command", i.ApplicationCommandData().Name))
+			if handler, ok := cfg.Handlers[i.ApplicationCommandData().Name]; ok {
+				go handler.Run(ctx, l, cfg.CommandHandlerTimeout, s, i)
+			} else {
+				l.Warn("unknown command")
+			}
+		case discordgo.InteractionMessageComponent:
+			l.Debug("component invoked")
+		case discordgo.InteractionModalSubmit:
+			l.Debug("modal submitted")
 		}
 	})
 	eventHandlersConfig := &handlers.Ps2EventHandlerConfig{

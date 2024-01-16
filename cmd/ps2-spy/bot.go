@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/x0k/ps2-spy/internal/bot"
-	"github.com/x0k/ps2-spy/internal/bot/handlers/login"
+	"github.com/x0k/ps2-spy/internal/bot/handlers/event/login"
 	"github.com/x0k/ps2-spy/internal/config"
 	"github.com/x0k/ps2-spy/internal/lib/census2"
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming"
@@ -32,6 +32,7 @@ import (
 	alertsMultiLoader "github.com/x0k/ps2-spy/internal/loaders/multi/alerts"
 	popMultiLoader "github.com/x0k/ps2-spy/internal/loaders/multi/population"
 	worldPopMultiLoader "github.com/x0k/ps2-spy/internal/loaders/multi/world_population"
+	subscriptionsettings "github.com/x0k/ps2-spy/internal/loaders/store/subscription_settings"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/storage/sqlite"
 	trackingmanager "github.com/x0k/ps2-spy/internal/tracking_manager"
@@ -189,6 +190,7 @@ func startBot(s *Setup, cfg *config.BotConfig, storage *sqlite.Storage) {
 	characterLoader := character.New(s.log, characters.NewCensusLoader(censusClient))
 	startInContext(s, characterLoader)
 	trackingManager := trackingmanager.New(characterLoader, storage)
+	settingsLoader := subscriptionsettings.New(storage)
 	// bot
 	botConfig := &bot.BotConfig{
 		DiscordToken:           cfg.DiscordToken,
@@ -204,6 +206,7 @@ func startBot(s *Setup, cfg *config.BotConfig, storage *sqlite.Storage) {
 			worldPopLoader,
 			alertsLoader,
 			worldAlertsLoader,
+			settingsLoader,
 		),
 		EventsPublisher:    eventsPublisher,
 		PlayerLoginHandler: login.New(characterLoader),
