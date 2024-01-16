@@ -51,6 +51,19 @@ func DeferredResponse(handle func(ctx context.Context, log *slog.Logger, s *disc
 	}
 }
 
+func ShowModal(handle func(ctx context.Context, log *slog.Logger, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.InteractionResponseData, error)) InteractionHandler {
+	return func(ctx context.Context, log *slog.Logger, s *discordgo.Session, i *discordgo.InteractionCreate) error {
+		data, err := handle(ctx, log, s, i)
+		if err != nil {
+			return err
+		}
+		return s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseModal,
+			Data: data,
+		})
+	}
+}
+
 type TrackingManager interface {
 	ChannelIds(ctx context.Context, event any) ([]string, error)
 }
