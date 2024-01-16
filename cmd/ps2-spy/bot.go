@@ -33,6 +33,7 @@ import (
 	popMultiLoader "github.com/x0k/ps2-spy/internal/loaders/multi/population"
 	worldPopMultiLoader "github.com/x0k/ps2-spy/internal/loaders/multi/world_population"
 	subscriptionsettings "github.com/x0k/ps2-spy/internal/loaders/store/subscription_settings"
+	trackingchannels "github.com/x0k/ps2-spy/internal/loaders/store/tracking_channels"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/storage/sqlite"
 	trackingmanager "github.com/x0k/ps2-spy/internal/tracking_manager"
@@ -189,7 +190,8 @@ func startBot(s *Setup, cfg *config.BotConfig, storage *sqlite.Storage) {
 	startInContext(s, worldAlertsLoader)
 	characterLoader := character.New(s.log, characters.NewCensusLoader(censusClient))
 	startInContext(s, characterLoader)
-	trackingManager := trackingmanager.New(characterLoader, storage)
+	channelsLoader := trackingchannels.New(storage)
+	trackingManager := trackingmanager.New(characterLoader, channelsLoader)
 	settingsLoader := subscriptionsettings.New(storage)
 	// bot
 	botConfig := &bot.BotConfig{

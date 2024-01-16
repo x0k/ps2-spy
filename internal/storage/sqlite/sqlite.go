@@ -10,7 +10,6 @@ import (
 
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
-	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/storage"
 )
 
@@ -188,9 +187,9 @@ func (s *Storage) SaveChatCharacter(ctx context.Context, chatId, platformId, cha
 	return nil
 }
 
-func (s *Storage) TrackingChannelIdsForCharacter(ctx context.Context, character ps2.Character) ([]string, error) {
+func (s *Storage) TrackingChannelIdsForCharacter(ctx context.Context, characterId, outfitTag string) ([]string, error) {
 	const op = "storage.sqlite.TrackingChannelIdsForCharacter"
-	rows, err := query[string](ctx, s, selectChatIdsByCharacter, character.Id, character.OutfitTag)
+	rows, err := query[string](ctx, s, selectChatIdsByCharacter, characterId, outfitTag)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}

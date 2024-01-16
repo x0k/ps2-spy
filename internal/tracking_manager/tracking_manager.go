@@ -21,17 +21,17 @@ type Store interface {
 type TrackingManager struct {
 	charactersFilter *bloom.BloomFilter
 	characterLoader  loaders.KeyedLoader[string, ps2.Character]
-	store            Store
+	channelsLoader   loaders.KeyedLoader[[2]string, []string]
 }
 
 func New(
 	charLoader loaders.KeyedLoader[string, ps2.Character],
-	store Store,
+	channelsLoader loaders.KeyedLoader[[2]string, []string],
 ) *TrackingManager {
 	return &TrackingManager{
 		charactersFilter: bloom.New(10000, 5),
 		characterLoader:  charLoader,
-		store:            store,
+		channelsLoader:   channelsLoader,
 	}
 }
 
@@ -60,7 +60,7 @@ func (tm *TrackingManager) ChannelIds(ctx context.Context, event any) ([]string,
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", op, err)
 		}
-		return tm.store.TrackingChannelIdsForCharacter(ctx, char)
+		return tm.channelsLoader.Load(ctx, [2]string{char.Id, char.OutfitTag})
 	}
 	return nil, fmt.Errorf("%s: %w", op, ErrUnknownEvent)
 }
