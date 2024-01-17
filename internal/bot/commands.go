@@ -2,7 +2,7 @@ package bot
 
 import (
 	"github.com/bwmarrin/discordgo"
-	multiloaders "github.com/x0k/ps2-spy/internal/loaders/multi"
+	"github.com/x0k/ps2-spy/internal/loaders/multi_loaders"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
@@ -30,9 +30,9 @@ func providerChoices(providers []string) []*discordgo.ApplicationCommandOptionCh
 }
 
 func NewCommands(
-	popMultiLoader multiloaders.MultiLoader,
-	worldPopMultiLoader multiloaders.MultiLoader,
-	alertsMultiLoader multiloaders.MultiLoader,
+	popMultiLoader multi_loaders.MultiLoader,
+	worldPopMultiLoader multi_loaders.MultiLoader,
+	alertsMultiLoader multi_loaders.MultiLoader,
 ) []*discordgo.ApplicationCommand {
 	return []*discordgo.ApplicationCommand{
 		{
