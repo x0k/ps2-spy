@@ -87,6 +87,17 @@ type OutfitItem struct {
 	Members []CharacterItem `json:"members" mapstructure:"members"`
 }
 
+const OutfitMember = "outfit_member"
+
+type OutfitMemberItem struct {
+	OutfitId        string `json:"outfit_id" mapstructure:"outfit_id"`
+	CharacterId     string `json:"character_id" mapstructure:"character_id"`
+	MemberSince     string `json:"member_since" mapstructure:"member_since"`
+	MemberSinceDate string `json:"member_since_date" mapstructure:"member_since_date"`
+	Rank            string `json:"rank" mapstructure:"rank"`
+	RankOrdinal     string `json:"rank_ordinal" mapstructure:"rank_ordinal"`
+}
+
 const Map = "map"
 const CharactersWorld = "characters_world"
 const CharactersOnlineStatus = "characters_online_status"

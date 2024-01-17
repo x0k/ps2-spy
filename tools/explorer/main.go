@@ -17,18 +17,14 @@ import (
 )
 
 var (
-	outfitTag      string
-	outfitTags     string
-	characterName  string
-	characterNames string
-	outputFolder   string
+	resource     string
+	query        string
+	outputFolder string
 )
 
 func init() {
-	flag.StringVar(&outfitTag, "tag", "", "outfit tag")
-	flag.StringVar(&outfitTags, "tags", "", "outfit tags")
-	flag.StringVar(&characterName, "character", "", "character name")
-	flag.StringVar(&characterNames, "characters", "", "character names")
+	flag.StringVar(&resource, "resource", "", "resource")
+	flag.StringVar(&query, "query", "", "query")
 	flag.StringVar(&outputFolder, "output", "", "output folder")
 	flag.Parse()
 }
@@ -40,7 +36,7 @@ func loadOutfitInfo(c *census2.Client, tag string) (any, error) {
 		census2.NewQuery(census2.GetQuery, census2.Ps2_v2_NS, collections.Outfit).
 			Where(
 				census2.Cond("alias_lower").
-					Equals(census2.Str(strings.ToLower(outfitTag))),
+					Equals(census2.Str(strings.ToLower(tag))),
 			).
 			Resolve("member_character"),
 	)
@@ -105,30 +101,46 @@ func loadCharacters(c *census2.Client, namesStr string) (any, error) {
 	return characters, nil
 }
 
-func handleFlags(c *census2.Client) (string, any, error) {
-	if outfitTag != "" {
-		info, err := loadOutfitInfo(c, outfitTag)
-		return strings.ToLower(outfitTag), info, err
+func loadOutfitMembers(c *census2.Client, outfitTag string) (any, error) {
+	const op = "loadOutfitMembers"
+	q := census2.NewQuery(census2.GetQuery, census2.Ps2_v2_NS, collections.Outfit).
+		Where(
+			census2.Cond("alias_lower").Equals(census2.Str(strings.ToLower(outfitTag))),
+		).
+		Show("outfit_id").
+		WithJoin(
+			census2.Join(collections.OutfitMember).
+				Show("character_id").
+				InjectAt("members").
+				IsList(true),
+		)
+	log.Printf("run query: %s", q.String())
+	outfits, err := c.Execute(context.Background(), q)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
 	}
-	if outfitTags != "" {
-		info, err := loadOutfits(c, outfitTags)
-		return "outfits", info, err
+	if len(outfits) == 0 {
+		return nil, fmt.Errorf("%s: outfit %q not found", op, outfitTag)
 	}
-	if characterName != "" {
-		info, err := loadCharacterInfo(c, characterName)
-		return strings.ToLower(characterName), info, err
-	}
-	if characterNames != "" {
-		info, err := loadCharacters(c, characterNames)
-		return "characters", info, err
-	}
-	return "", nil, fmt.Errorf("Invalid flags combination")
+	return outfits[0], nil
+}
+
+var handlers = map[string]func(c *census2.Client, query string) (any, error){
+	"outfit":     loadOutfitInfo,
+	"outfits":    loadOutfits,
+	"character":  loadCharacterInfo,
+	"characters": loadCharacters,
+	"members":    loadOutfitMembers,
 }
 
 func main() {
 	httpClient := &http.Client{}
 	censusClient := census2.NewClient("https://census.daybreakgames.com", "", httpClient)
-	filename, data, err := handleFlags(censusClient)
+	handler, ok := handlers[resource]
+	if !ok {
+		log.Fatalf("unknown resource: %s", resource)
+	}
+	data, err := handler(censusClient, query)
 	if err != nil {
 		log.Fatalf("failed to handle flags: %s", err)
 	}
@@ -136,7 +148,7 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	outputFileName := fmt.Sprintf("%s.yaml", filename)
+	outputFileName := fmt.Sprintf("%s.yaml", resource)
 	outputPath := path.Join(outputFolder, outputFileName)
 	err = os.WriteFile(outputPath, out, 0644)
 	if err != nil {
