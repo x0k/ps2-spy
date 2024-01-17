@@ -1,7 +1,9 @@
 #!/bin/bash -e
 
 run:
-    BOT_DISCORD_TOKEN=$(cat ~/Sync/ps2-spy/test-token) go run cmd/ps2-spy/*.go --config config/local.yml
+    BOT_DISCORD_TOKEN=$(cat ~/Sync/ps2-spy/test-token) \
+    BOT_CENSUS_SERVICE_ID=$(cat ~/Sync/ps2-spy/test-service) \
+      go run cmd/ps2-spy/*.go --config config/local.yml
 
 all:
 
@@ -10,6 +12,9 @@ test:
 
 o:
     go run tools/explorer/*.go --tag $1 --output tmp
+
+os:
+    go run tools/explorer/*.go --tags $1 --output tmp
 
 c:
     go run tools/explorer/*.go --character $1 --output tmp

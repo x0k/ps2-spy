@@ -18,6 +18,7 @@ import (
 
 var (
 	outfitTag      string
+	outfitTags     string
 	characterName  string
 	characterNames string
 	outputFolder   string
@@ -25,6 +26,7 @@ var (
 
 func init() {
 	flag.StringVar(&outfitTag, "tag", "", "outfit tag")
+	flag.StringVar(&outfitTags, "tags", "", "outfit tags")
 	flag.StringVar(&characterName, "character", "", "character name")
 	flag.StringVar(&characterNames, "characters", "", "character names")
 	flag.StringVar(&outputFolder, "output", "", "output folder")
@@ -49,6 +51,22 @@ func loadOutfitInfo(c *census2.Client, tag string) (any, error) {
 		return nil, fmt.Errorf("%s: outfit %q not found", op, tag)
 	}
 	return outfits[0], nil
+}
+
+func loadOutfits(c *census2.Client, tagsStr string) (any, error) {
+	const op = "loadOutfits"
+	tags := stringsx.SplitAndTrim(strings.ToLower(tagsStr), ",")
+	q := census2.NewQuery(census2.GetQuery, census2.Ps2_v2_NS, collections.Outfit).
+		Where(
+			census2.Cond("alias_lower").Equals(census2.StrList(tags...)),
+		).
+		SetLimit(len(tags))
+	log.Printf("%s run query: %s", op, q.String())
+	outfits, err := c.Execute(context.Background(), q)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	return outfits, nil
 }
 
 func loadCharacterInfo(c *census2.Client, name string) (any, error) {
@@ -91,6 +109,10 @@ func handleFlags(c *census2.Client) (string, any, error) {
 	if outfitTag != "" {
 		info, err := loadOutfitInfo(c, outfitTag)
 		return strings.ToLower(outfitTag), info, err
+	}
+	if outfitTags != "" {
+		info, err := loadOutfits(c, outfitTags)
+		return "outfits", info, err
 	}
 	if characterName != "" {
 		info, err := loadCharacterInfo(c, characterName)
