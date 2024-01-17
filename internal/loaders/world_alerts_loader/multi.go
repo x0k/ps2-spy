@@ -1,35 +1,36 @@
-package alerts_multi_loader
+package world_alerts_loader
 
 import (
 	"context"
 
 	"github.com/x0k/ps2-spy/internal/loaders"
+	"github.com/x0k/ps2-spy/internal/loaders/alerts_loader"
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
-type WorldAlertsLoader struct {
-	loader *AlertsMultiLoader
+type MultiLoader struct {
+	loader *alerts_loader.MultiLoader
 }
 
-func NewWorldAlertsLoader(
-	loader *AlertsMultiLoader,
-) *WorldAlertsLoader {
-	return &WorldAlertsLoader{loader}
+func NewMulti(
+	loader *alerts_loader.MultiLoader,
+) *MultiLoader {
+	return &MultiLoader{loader}
 }
 
-func (l *WorldAlertsLoader) Start(ctx context.Context) {
+func (l *MultiLoader) Start(ctx context.Context) {
 	l.loader.Start(ctx)
 }
 
-func (l *WorldAlertsLoader) Stop() {
+func (l *MultiLoader) Stop() {
 	l.loader.Stop()
 }
 
-func (l *WorldAlertsLoader) Loaders() []string {
+func (l *MultiLoader) Loaders() []string {
 	return l.loader.Loaders()
 }
 
-func (l *WorldAlertsLoader) Load(ctx context.Context, query loaders.MultiLoaderQuery[ps2.WorldId]) (loaders.Loaded[ps2.Alerts], error) {
+func (l *MultiLoader) Load(ctx context.Context, query loaders.MultiLoaderQuery[ps2.WorldId]) (loaders.Loaded[ps2.Alerts], error) {
 	loaded, err := l.loader.Load(ctx, query.Loader)
 	if err != nil {
 		return loaders.Loaded[ps2.Alerts]{}, err

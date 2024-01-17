@@ -1,4 +1,4 @@
-package character_batch_loader
+package character_loader
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
-type CharacterBatchLoader struct {
+type BatchLoader struct {
 	wg          sync.WaitGroup
 	log         *slog.Logger
 	cache       *expirable.LRU[string, ps2.Character]
@@ -24,11 +24,11 @@ type CharacterBatchLoader struct {
 	batchRate   time.Duration
 }
 
-func New(
+func NewBatch(
 	log *slog.Logger,
 	loader loaders.QueriedLoader[[]string, map[string]ps2.Character],
-) *CharacterBatchLoader {
-	return &CharacterBatchLoader{
+) *BatchLoader {
+	return &BatchLoader{
 		cache:       expirable.NewLRU[string, ps2.Character](1000, nil, time.Hour*12),
 		log:         log.With(slog.String("loaders.batch", "character")),
 		loader:      loader,
@@ -38,7 +38,7 @@ func New(
 	}
 }
 
-func (l *CharacterBatchLoader) batcher(ctx context.Context) {
+func (l *BatchLoader) batcher(ctx context.Context) {
 	defer l.wg.Done()
 	timer := time.NewTimer(l.batchRate)
 	defer timer.Stop()
@@ -59,7 +59,7 @@ func (l *CharacterBatchLoader) batcher(ctx context.Context) {
 	}
 }
 
-func (l *CharacterBatchLoader) releaseAwaiters(batch []string, chars map[string]ps2.Character) {
+func (l *BatchLoader) releaseAwaiters(batch []string, chars map[string]ps2.Character) {
 	l.awaitersMu.Lock()
 	defer l.awaitersMu.Unlock()
 	for _, id := range batch {
@@ -73,7 +73,7 @@ func (l *CharacterBatchLoader) releaseAwaiters(batch []string, chars map[string]
 	}
 }
 
-func (l *CharacterBatchLoader) worker(ctx context.Context) {
+func (l *BatchLoader) worker(ctx context.Context) {
 	defer l.wg.Done()
 	for {
 		select {
@@ -90,7 +90,7 @@ func (l *CharacterBatchLoader) worker(ctx context.Context) {
 	}
 }
 
-func (l *CharacterBatchLoader) load(charId string) chan ps2.Character {
+func (l *BatchLoader) load(charId string) chan ps2.Character {
 	l.awaitersMu.Lock()
 	defer l.awaitersMu.Unlock()
 	c := make(chan ps2.Character)
@@ -99,14 +99,14 @@ func (l *CharacterBatchLoader) load(charId string) chan ps2.Character {
 	return c
 }
 
-func (l *CharacterBatchLoader) Start(ctx context.Context) {
+func (l *BatchLoader) Start(ctx context.Context) {
 	l.log.Info("starting loader")
 	l.wg.Add(2)
 	go l.batcher(ctx)
 	go l.worker(ctx)
 }
 
-func (l *CharacterBatchLoader) Stop() {
+func (l *BatchLoader) Stop() {
 	l.log.Info("stopping loader")
 	l.awaitersMu.Lock()
 	defer l.awaitersMu.Unlock()
@@ -117,7 +117,7 @@ func (l *CharacterBatchLoader) Stop() {
 	l.wg.Wait()
 }
 
-func (l *CharacterBatchLoader) Load(ctx context.Context, charId string) (ps2.Character, error) {
+func (l *BatchLoader) Load(ctx context.Context, charId string) (ps2.Character, error) {
 	cached, ok := l.cache.Get(charId)
 	if ok {
 		return cached, nil

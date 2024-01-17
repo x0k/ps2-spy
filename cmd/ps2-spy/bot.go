@@ -22,18 +22,16 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/voidwell"
 	"github.com/x0k/ps2-spy/internal/loaders"
 	"github.com/x0k/ps2-spy/internal/loaders/alerts_loader"
-	"github.com/x0k/ps2-spy/internal/loaders/alerts_multi_loader"
-	"github.com/x0k/ps2-spy/internal/loaders/character_batch_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/character_ids_loader"
+	"github.com/x0k/ps2-spy/internal/loaders/character_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/character_names_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/characters_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/outfit_tags_loader"
-	"github.com/x0k/ps2-spy/internal/loaders/population_multi_loader"
+	"github.com/x0k/ps2-spy/internal/loaders/population_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/subscription_settings_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/tracking_channels_loader"
-	"github.com/x0k/ps2-spy/internal/loaders/world_loader"
-	"github.com/x0k/ps2-spy/internal/loaders/world_population_multi_loader"
-	"github.com/x0k/ps2-spy/internal/loaders/worlds_loader"
+	"github.com/x0k/ps2-spy/internal/loaders/world_alerts_loader"
+	"github.com/x0k/ps2-spy/internal/loaders/world_population_loader"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/ps2/platforms"
 	"github.com/x0k/ps2-spy/internal/savers/subscription_settings_saver"
@@ -91,28 +89,28 @@ func startBot(s *setup, cfg *config.Config) error {
 	censusClient := census2.NewClient("https://census.daybreakgames.com", cfg.CensusServiceId, httpClient)
 	sanctuaryClient := census2.NewClient("https://census.lithafalcon.cc", cfg.CensusServiceId, httpClient)
 	// multi loaders
-	popLoader := population_multi_loader.New(
+	popLoader := population_loader.NewMulti(
 		map[string]loaders.Loader[loaders.Loaded[ps2.WorldsPopulation]]{
-			"honu":      worlds_loader.NewHonu(honuClient),
-			"ps2live":   worlds_loader.NewPS2Live(populationClient),
-			"saerro":    worlds_loader.NewSaerro(saerroClient),
-			"fisu":      worlds_loader.NewFisu(fisuClient),
-			"sanctuary": worlds_loader.NewSanctuary(sanctuaryClient),
-			"voidwell":  worlds_loader.NewVoidWell(voidWellClient),
+			"honu":      population_loader.NewHonu(honuClient),
+			"ps2live":   population_loader.NewPS2Live(populationClient),
+			"saerro":    population_loader.NewSaerro(saerroClient),
+			"fisu":      population_loader.NewFisu(fisuClient),
+			"sanctuary": population_loader.NewSanctuary(sanctuaryClient),
+			"voidwell":  population_loader.NewVoidWell(voidWellClient),
 		},
 		[]string{"honu", "ps2live", "saerro", "fisu", "sanctuary", "voidwell"},
 	)
 	startInContext(s, popLoader)
-	worldPopLoader := world_population_multi_loader.New(
+	worldPopLoader := world_population_loader.NewMulti(
 		map[string]loaders.KeyedLoader[ps2.WorldId, loaders.Loaded[ps2.DetailedWorldPopulation]]{
-			"honu":     world_loader.NewHonu(honuClient),
-			"saerro":   world_loader.NewSaerro(saerroClient),
-			"voidwell": world_loader.NewVoidWell(voidWellClient),
+			"honu":     world_population_loader.NewHonu(honuClient),
+			"saerro":   world_population_loader.NewSaerro(saerroClient),
+			"voidwell": world_population_loader.NewVoidWell(voidWellClient),
 		},
 		[]string{"honu", "saerro", "voidwell"},
 	)
 	startInContext(s, worldPopLoader)
-	alertsLoader := alerts_multi_loader.New(
+	alertsLoader := alerts_loader.NewMulti(
 		map[string]loaders.Loader[loaders.Loaded[ps2.Alerts]]{
 			"ps2alerts": alerts_loader.NewPS2Alerts(ps2alertsClient),
 			"honu":      alerts_loader.NewHonu(honuClient),
@@ -122,9 +120,9 @@ func startBot(s *setup, cfg *config.Config) error {
 		[]string{"ps2alerts", "honu", "census", "voidwell"},
 	)
 	startInContext(s, alertsLoader)
-	worldAlertsLoader := alerts_multi_loader.NewWorldAlertsLoader(alertsLoader)
+	worldAlertsLoader := world_alerts_loader.NewMulti(alertsLoader)
 	startInContext(s, worldAlertsLoader)
-	characterLoader := character_batch_loader.New(s.log, characters_loader.NewCensus(censusClient))
+	characterLoader := character_loader.NewBatch(s.log, characters_loader.NewCensus(censusClient))
 	startInContext(s, characterLoader)
 	channelsLoader := tracking_channels_loader.New(storage)
 	trackingManager := tracking_manager.New(characterLoader, channelsLoader)

@@ -1,4 +1,4 @@
-package world_population_multi_loader
+package world_population_loader
 
 import (
 	"context"
@@ -11,16 +11,16 @@ import (
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
-type WorldPopulationMultiLoader struct {
+type MultiLoader struct {
 	value          *containers.QueriedLoadableValue[loaders.MultiLoaderQuery[ps2.WorldId], loaders.MultiLoaderQuery[ps2.WorldId], loaders.Loaded[ps2.DetailedWorldPopulation]]
 	fallbackLoader *loaders.KeyedFallbackLoader[ps2.WorldId, loaders.Loaded[ps2.DetailedWorldPopulation]]
 	loaders        []string
 }
 
-func New(
+func NewMulti(
 	loadersMap map[string]loaders.KeyedLoader[ps2.WorldId, loaders.Loaded[ps2.DetailedWorldPopulation]],
 	priority []string,
-) *WorldPopulationMultiLoader {
+) *MultiLoader {
 	loadersWithDefault := maps.Clone(loadersMap)
 	fallbackLoader := loaders.NewKeyedFallbackLoader(
 		"World",
@@ -34,26 +34,26 @@ func New(
 		(len(priority)+1)*len(ps2.ZoneNames),
 		time.Minute,
 	)
-	return &WorldPopulationMultiLoader{
+	return &MultiLoader{
 		value:          value,
 		fallbackLoader: fallbackLoader,
 		loaders:        priority,
 	}
 }
 
-func (l *WorldPopulationMultiLoader) Start(ctx context.Context) {
+func (l *MultiLoader) Start(ctx context.Context) {
 	l.fallbackLoader.Start(ctx)
 }
 
-func (l *WorldPopulationMultiLoader) Stop() {
+func (l *MultiLoader) Stop() {
 	l.fallbackLoader.Stop()
 }
 
-func (l *WorldPopulationMultiLoader) Loaders() []string {
+func (l *MultiLoader) Loaders() []string {
 	return l.loaders
 }
 
-func (l *WorldPopulationMultiLoader) Load(ctx context.Context, query loaders.MultiLoaderQuery[ps2.WorldId]) (loaders.Loaded[ps2.DetailedWorldPopulation], error) {
+func (l *MultiLoader) Load(ctx context.Context, query loaders.MultiLoaderQuery[ps2.WorldId]) (loaders.Loaded[ps2.DetailedWorldPopulation], error) {
 	query.Loader = multi_loaders.LoaderName(query.Loader)
 	return l.value.Load(ctx, query)
 }

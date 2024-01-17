@@ -1,4 +1,4 @@
-package alerts_multi_loader
+package alerts_loader
 
 import (
 	"context"
@@ -11,16 +11,16 @@ import (
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
-type AlertsMultiLoader struct {
+type MultiLoader struct {
 	alerts         *containers.QueriedLoadableValue[string, string, loaders.Loaded[ps2.Alerts]]
 	fallbackLoader *loaders.FallbackLoader[loaders.Loaded[ps2.Alerts]]
 	loaders        []string
 }
 
-func New(
+func NewMulti(
 	loadersMap map[string]loaders.Loader[loaders.Loaded[ps2.Alerts]],
 	priority []string,
-) *AlertsMultiLoader {
+) *MultiLoader {
 	loadersWithDefault := maps.Clone(loadersMap)
 	fallbackLoader := loaders.NewFallbackLoader[loaders.Loaded[ps2.Alerts]](
 		"Alerts",
@@ -30,25 +30,25 @@ func New(
 	loadersWithDefault[multi_loaders.DefaultLoader] = fallbackLoader
 	multiLoader := loaders.NewMultiLoader(loadersWithDefault)
 	alerts := containers.NewKeyedLoadableValue(multiLoader, len(priority)+1, time.Minute)
-	return &AlertsMultiLoader{
+	return &MultiLoader{
 		alerts:         alerts,
 		fallbackLoader: fallbackLoader,
 		loaders:        priority,
 	}
 }
 
-func (l *AlertsMultiLoader) Start(ctx context.Context) {
+func (l *MultiLoader) Start(ctx context.Context) {
 	l.fallbackLoader.Start(ctx)
 }
 
-func (l *AlertsMultiLoader) Stop() {
+func (l *MultiLoader) Stop() {
 	l.fallbackLoader.Stop()
 }
 
-func (l *AlertsMultiLoader) Loaders() []string {
+func (l *MultiLoader) Loaders() []string {
 	return l.loaders
 }
 
-func (l *AlertsMultiLoader) Load(ctx context.Context, provider string) (loaders.Loaded[ps2.Alerts], error) {
+func (l *MultiLoader) Load(ctx context.Context, provider string) (loaders.Loaded[ps2.Alerts], error) {
 	return l.alerts.Load(ctx, multi_loaders.LoaderName(provider))
 }

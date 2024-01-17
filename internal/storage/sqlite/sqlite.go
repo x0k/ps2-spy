@@ -36,7 +36,19 @@ type Storage struct {
 }
 
 func (s *Storage) migrate(ctx context.Context) error {
+
 	_, err := s.db.ExecContext(ctx, `
+CREATE TABLE IF NOT EXISTS outfit_members (
+	outfit_tag TEXT NOT NULL,
+	character_id TEXT NOT NULL,	
+	PRIMARY KEY (outfit_tag, character_id)
+)
+`)
+	if err != nil {
+		return err
+	}
+
+	_, err = s.db.ExecContext(ctx, `
 CREATE TABLE IF NOT EXISTS channel_to_outfit (
 	channel_id TEXT NOT NULL,
 	platform TEXT NOT NULL,
