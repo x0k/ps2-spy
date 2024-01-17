@@ -1,4 +1,4 @@
-package outfit_members_ids_loader
+package outfit_member_ids_loader
 
 import (
 	"context"
@@ -7,15 +7,17 @@ import (
 )
 
 type StoreLoader struct {
-	storage *sqlite.Storage
+	storage  *sqlite.Storage
+	platform string
 }
 
-func NewStorage(storage *sqlite.Storage) *StoreLoader {
+func NewStorage(storage *sqlite.Storage, platform string) *StoreLoader {
 	return &StoreLoader{
-		storage: storage,
+		storage:  storage,
+		platform: platform,
 	}
 }
 
 func (l *StoreLoader) Load(ctx context.Context, outfitTag string) ([]string, error) {
-	return l.storage.OutfitMembers(ctx, outfitTag)
+	return l.storage.OutfitMembers(ctx, l.platform, outfitTag)
 }

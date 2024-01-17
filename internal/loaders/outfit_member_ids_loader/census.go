@@ -1,4 +1,4 @@
-package outfit_members_ids_loader
+package outfit_member_ids_loader
 
 import (
 	"context"

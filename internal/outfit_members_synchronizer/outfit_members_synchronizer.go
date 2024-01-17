@@ -16,10 +16,10 @@ type Saver interface {
 }
 
 type OutfitMembersSynchronizer struct {
-	log          *slog.Logger
-	censusLoader loaders.KeyedLoader[string, []string]
-	membersSaver Saver
-	// Platform specific
+	log *slog.Logger
+	// Loaders and saver are platform specific
+	censusLoader    loaders.KeyedLoader[string, []string]
+	membersSaver    Saver
 	outfitsLoader   loaders.Loader[[]string]
 	refreshInterval time.Duration
 	ticker          *time.Ticker
@@ -34,7 +34,7 @@ func New(
 	refreshInterval time.Duration,
 ) *OutfitMembersSynchronizer {
 	return &OutfitMembersSynchronizer{
-		log:             log,
+		log:             log.With(slog.String("component", "outfit_members_synchronizer")),
 		censusLoader:    censusMembersLoader,
 		outfitsLoader:   trackableOutfitsLoader,
 		membersSaver:    membersSaver,
@@ -42,31 +42,37 @@ func New(
 	}
 }
 
-func (s *OutfitMembersSynchronizer) saveMembers(ctx context.Context, wg *sync.WaitGroup, outfit string, members []string) {
+func (s *OutfitMembersSynchronizer) saveMembers(ctx context.Context, wg *sync.WaitGroup, outfitTag string, members []string) {
 	defer wg.Done()
-	if err := s.membersSaver.Save(ctx, outfit, members); err != nil {
-		s.log.Error("failed to save members", slog.String("outfit", outfit), sl.Err(err))
+	if err := s.membersSaver.Save(ctx, outfitTag, members); err != nil {
+		s.log.Error("failed to save members", slog.String("outfit", outfitTag), sl.Err(err))
 	}
+}
+
+func (s *OutfitMembersSynchronizer) SyncOutfit(ctx context.Context, wg *sync.WaitGroup, outfitTag string) {
+	members, err := s.censusLoader.Load(ctx, outfitTag)
+	s.log.Debug("synchronizing", slog.String("outfit", outfitTag), slog.Int("members", len(members)))
+	if err != nil {
+		s.log.Error("failed to load members from census", slog.String("outfit", outfitTag), sl.Err(err))
+		return
+	}
+	wg.Add(1)
+	go s.saveMembers(ctx, wg, outfitTag, members)
 }
 
 func (s *OutfitMembersSynchronizer) sync(ctx context.Context, wg *sync.WaitGroup) {
 	outfits, err := s.outfitsLoader.Load(ctx)
+	s.log.Debug("synchronizing", slog.Int("outfits", len(outfits)))
 	if err != nil {
 		s.log.Error("failed to load trackable outfits", sl.Err(err))
 		return
 	}
-	for _, outfits := range outfits {
+	for _, outfit := range outfits {
 		select {
 		case <-ctx.Done():
 			return
 		default:
-			members, err := s.censusLoader.Load(ctx, outfits)
-			if err != nil {
-				s.log.Error("failed to load members from census", slog.String("outfit", outfits), sl.Err(err))
-				continue
-			}
-			wg.Add(1)
-			go s.saveMembers(ctx, wg, outfits, members)
+			s.SyncOutfit(ctx, wg, outfit)
 		}
 	}
 }
@@ -75,9 +81,11 @@ func (s *OutfitMembersSynchronizer) Start(ctx context.Context, wg *sync.WaitGrou
 	if s.started.Swap(true) {
 		return
 	}
+	s.log.Debug("started")
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
+		s.sync(ctx, wg)
 		s.ticker = time.NewTicker(s.refreshInterval)
 		defer s.ticker.Stop()
 		for {

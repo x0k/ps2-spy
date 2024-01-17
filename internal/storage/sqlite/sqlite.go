@@ -18,6 +18,8 @@ const (
 	deleteChannelOutfit
 	insertChannelCharacter
 	deleteChannelCharacter
+	insertOutfitCharacter
+	deleteOutfitCharacter
 	selectChannelsByCharacter
 	selectChannelOutfitsForPlatform
 	selectChannelCharactersForPlatform
@@ -40,10 +42,11 @@ type Storage struct {
 func (s *Storage) migrate(ctx context.Context) error {
 
 	_, err := s.db.ExecContext(ctx, `
-CREATE TABLE IF NOT EXISTS outfit_members (
+CREATE TABLE IF NOT EXISTS outfit_to_character (
+	platform TEXT NOT NULL,
 	outfit_tag TEXT NOT NULL,
 	character_id TEXT NOT NULL,	
-	PRIMARY KEY (outfit_tag, character_id)
+	PRIMARY KEY (platform, outfit_tag, character_id)
 )
 `)
 	if err != nil {
@@ -83,8 +86,9 @@ func New(
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 	return &Storage{
-		db:  db,
-		log: log.With(slog.String("component", "sqlite")),
+		db:        db,
+		log:       log.With(slog.String("component", "sqlite")),
+		publisher: publisher,
 	}, nil
 }
 
@@ -101,6 +105,8 @@ func (s *Storage) Start(ctx context.Context) error {
 		{deleteChannelOutfit, "DELETE FROM channel_to_outfit WHERE channel_id = ? AND platform = ? AND outfit_tag = lower(?)"},
 		{insertChannelCharacter, "INSERT INTO channel_to_character VALUES (?, ?, ?)"},
 		{deleteChannelCharacter, "DELETE FROM channel_to_character WHERE channel_id = ? AND platform = ? AND character_id = ?"},
+		{insertOutfitCharacter, "INSERT INTO outfit_to_character VALUES (?, lower(?), ?)"},
+		{deleteOutfitCharacter, "DELETE FROM outfit_to_character WHERE platform = ? AND outfit_tag = lower(?) AND character_id = ?"},
 		{
 			name: selectChannelsByCharacter,
 			stmt: `SELECT channel_id FROM channel_to_character WHERE character_id = ?
@@ -110,7 +116,7 @@ func (s *Storage) Start(ctx context.Context) error {
 		{selectChannelOutfitsForPlatform, "SELECT outfit_tag FROM channel_to_outfit WHERE channel_id = ? AND platform = ?"},
 		{selectChannelCharactersForPlatform, "SELECT character_id FROM channel_to_character WHERE channel_id = ? AND platform = ?"},
 		{selectAllOutfitsForPlatform, "SELECT DISTINCT outfit_tag FROM channel_to_outfit WHERE platform = ?"},
-		{selectOutfitMembers, "SELECT character_id FROM outfit_members WHERE outfit_tag = lower(?)"},
+		{selectOutfitMembers, "SELECT character_id FROM outfit_to_character WHERE platform = ? AND outfit_tag = lower(?)"},
 	}
 	for _, raw := range rawStatements {
 		stmt, err := s.db.Prepare(raw.stmt)
@@ -149,6 +155,7 @@ func (s *Storage) Begin(ctx context.Context, expectedEventsCount int) (*Storage,
 		log:         s.log,
 		db:          s.db,
 		statements:  s.statements,
+		publisher:   s.publisher,
 		tx:          tx,
 		eventsBatch: make([]storage.Event, 0, expectedEventsCount),
 	}, nil
@@ -285,6 +292,34 @@ func (s *Storage) DeleteChannelCharacter(ctx context.Context, channelId, platfor
 	return nil
 }
 
+func (s *Storage) SaveOutfitMember(ctx context.Context, platform, outfitTag, characterId string) error {
+	const op = "storage.sqlite.SaveOutfitMember"
+	err := s.exec(ctx, insertOutfitCharacter, platform, outfitTag, characterId)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+	s.publish(storage.OutfitMemberSaved{
+		Platform:    platform,
+		OutfitTag:   outfitTag,
+		CharacterId: characterId,
+	})
+	return nil
+}
+
+func (s *Storage) DeleteOutfitMember(ctx context.Context, platform, outfitTag, characterId string) error {
+	const op = "storage.sqlite.DeleteOutfitMember"
+	err := s.exec(ctx, deleteOutfitCharacter, platform, outfitTag, characterId)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+	s.publish(storage.OutfitMemberDeleted{
+		Platform:    platform,
+		OutfitTag:   outfitTag,
+		CharacterId: characterId,
+	})
+	return nil
+}
+
 func (s *Storage) TrackingChannelIdsForCharacter(ctx context.Context, characterId, outfitTag string) ([]string, error) {
 	const op = "storage.sqlite.TrackingChannelIdsForCharacter"
 	rows, err := query[string](ctx, s, selectChannelsByCharacter, characterId, outfitTag)
@@ -321,9 +356,9 @@ func (s *Storage) AllTrackableOutfitsForPlatform(ctx context.Context, platform s
 	return rows, nil
 }
 
-func (s *Storage) OutfitMembers(ctx context.Context, outfitTag string) ([]string, error) {
+func (s *Storage) OutfitMembers(ctx context.Context, platform, outfitTag string) ([]string, error) {
 	const op = "storage.sqlite.OutfitMembers"
-	rows, err := query[string](ctx, s, selectOutfitMembers, outfitTag)
+	rows, err := query[string](ctx, s, selectOutfitMembers, platform, outfitTag)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}

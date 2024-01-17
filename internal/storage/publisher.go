@@ -51,9 +51,6 @@ func (p *Publisher) AddHandler(h any) (func(), error) {
 	return p.addHandler(handler), nil
 }
 
-func (p *Publisher) publish(eventType string, msg any) {
-}
-
 func (p *Publisher) Publish(event Event) {
 	p.handlersMu.RLock()
 	defer p.handlersMu.RUnlock()
