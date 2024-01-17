@@ -18,23 +18,23 @@ type optionalPrinter interface {
 	optional
 }
 
-type Ptr struct {
-	value *optionalPrinter
+type Ptr[V optionalPrinter] struct {
+	value *V
 }
 
-func NewPtr(p optionalPrinter) Ptr {
-	return Ptr{value: &p}
+func NewPtr[V optionalPrinter](p V) Ptr[V] {
+	return Ptr[V]{value: &p}
 }
 
-func (p Ptr) isEmpty() bool {
+func (p Ptr[V]) isEmpty() bool {
 	return p.value == nil || (*p.value).isEmpty()
 }
 
-func (p Ptr) print(writer io.StringWriter) {
+func (p Ptr[V]) print(writer io.StringWriter) {
 	(*p.value).print(writer)
 }
 
-func (p Ptr) Set(v optionalPrinter) {
+func (p Ptr[V]) Set(v V) {
 	*p.value = v
 }
 

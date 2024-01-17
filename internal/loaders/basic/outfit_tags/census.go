@@ -1,4 +1,4 @@
-package characterIds
+package outfitTags
 
 import (
 	"context"
@@ -21,12 +21,12 @@ func NewCensusLoader(client *census2.Client) *CensusLoader {
 	return &CensusLoader{
 		client:  client,
 		operand: operand,
-		query: census2.NewQuery(census2.GetQuery, census2.Ps2_v2_NS, collections.Character).
-			Where(census2.Cond("name.first_lower").Equals(operand)).Show("character_id"),
+		query: census2.NewQuery(census2.GetQuery, census2.Ps2_v2_NS, collections.Outfit).
+			Where(census2.Cond("alias_lower").Equals(operand)).Show("alias"),
 	}
 }
 
-func (l *CensusLoader) toURL(values []census2.Str) string {
+func (l *CensusLoader) toUrl(values []census2.Str) string {
 	l.queryMu.Lock()
 	defer l.queryMu.Unlock()
 	l.operand.Set(census2.NewList(values, ","))
@@ -34,27 +34,27 @@ func (l *CensusLoader) toURL(values []census2.Str) string {
 	return l.client.ToURL(l.query)
 }
 
-func (l *CensusLoader) Load(ctx context.Context, charNames []string) ([]string, error) {
-	if len(charNames) == 0 {
+func (l *CensusLoader) Load(ctx context.Context, outfitTags []string) ([]string, error) {
+	if len(outfitTags) == 0 {
 		return nil, nil
 	}
-	values := make([]census2.Str, len(charNames))
-	for i, name := range charNames {
-		values[i] = census2.Str(strings.ToLower(name))
+	values := make([]census2.Str, len(outfitTags))
+	for i, tag := range outfitTags {
+		values[i] = census2.Str(strings.ToLower(tag))
 	}
-	url := l.toURL(values)
-	chars, err := census2.ExecutePreparedAndDecode[collections.CharacterItem](
+	url := l.toUrl(values)
+	outfits, err := census2.ExecutePreparedAndDecode[collections.OutfitItem](
 		ctx,
 		l.client,
-		collections.Character,
+		collections.Outfit,
 		url,
 	)
 	if err != nil {
 		return nil, err
 	}
-	ids := make([]string, len(chars))
-	for i, char := range chars {
-		ids[i] = char.CharacterId
+	tags := make([]string, len(outfits))
+	for i, outfit := range outfits {
+		tags[i] = outfit.Alias
 	}
-	return ids, nil
+	return tags, nil
 }

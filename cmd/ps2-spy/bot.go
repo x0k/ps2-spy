@@ -28,6 +28,7 @@ import (
 	characterIds "github.com/x0k/ps2-spy/internal/loaders/basic/character_ids"
 	characterNames "github.com/x0k/ps2-spy/internal/loaders/basic/character_names"
 	"github.com/x0k/ps2-spy/internal/loaders/basic/characters"
+	outfitTags "github.com/x0k/ps2-spy/internal/loaders/basic/outfit_tags"
 	"github.com/x0k/ps2-spy/internal/loaders/basic/world"
 	"github.com/x0k/ps2-spy/internal/loaders/basic/worlds"
 	"github.com/x0k/ps2-spy/internal/loaders/batch/character"
@@ -156,8 +157,8 @@ func startBot(s *Setup, cfg *config.BotConfig, storage *sqlite.Storage) {
 	startInContext(s, saerroClient)
 	ps2alertsClient := ps2alerts.NewClient("https://api.ps2alerts.com", httpClient)
 	startInContext(s, ps2alertsClient)
-	censusClient := census2.NewClient("https://census.daybreakgames.com", "", httpClient)
-	sanctuaryClient := census2.NewClient("https://census.lithafalcon.cc", "", httpClient)
+	censusClient := census2.NewClient("https://census.daybreakgames.com", cfg.CensusServiceId, httpClient)
+	sanctuaryClient := census2.NewClient("https://census.lithafalcon.cc", cfg.CensusServiceId, httpClient)
 	// multi loaders
 	popLoader := popMultiLoader.New(
 		map[string]loaders.Loader[loaders.Loaded[ps2.WorldsPopulation]]{
@@ -197,6 +198,8 @@ func startBot(s *Setup, cfg *config.BotConfig, storage *sqlite.Storage) {
 	channelsLoader := trackingchannels.New(storage)
 	trackingManager := trackingmanager.New(characterLoader, channelsLoader)
 	subSettingsLoader := subscriptionsettingsloader.New(storage)
+	characterNamesLoader := characterNames.NewCensusLoader(censusClient)
+	outfitTagsLoader := outfitTags.NewCensusLoader(censusClient)
 	// bot
 	botConfig := &bot.BotConfig{
 		DiscordToken:           cfg.DiscordToken,
@@ -213,10 +216,13 @@ func startBot(s *Setup, cfg *config.BotConfig, storage *sqlite.Storage) {
 			alertsLoader,
 			worldAlertsLoader,
 			subSettingsLoader,
-			characterNames.NewCensusLoader(censusClient),
+			characterNamesLoader,
+			outfitTagsLoader,
 		),
 		SubmitHandlers: bot.NewSubmitHandlers(
 			characterIds.NewCensusLoader(censusClient),
+			characterNamesLoader,
+			outfitTagsLoader,
 			subscriptionsettings.New(storage, subSettingsLoader, platforms.PC),
 			subscriptionsettings.New(storage, subSettingsLoader, platforms.PS4_EU),
 			subscriptionsettings.New(storage, subSettingsLoader, platforms.PS4_US),

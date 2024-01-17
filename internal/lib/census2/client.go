@@ -32,7 +32,7 @@ func (c *Client) Endpoint() string {
 	return c.censusEndpoint
 }
 
-func (c *Client) Execute(ctx context.Context, q *Query) ([]any, error) {
+func (c *Client) ToURL(q *Query) string {
 	builder := strings.Builder{}
 	builder.WriteString(c.censusEndpoint)
 	if c.serviceId != "" {
@@ -42,7 +42,10 @@ func (c *Client) Execute(ctx context.Context, q *Query) ([]any, error) {
 	// builder.WriteString("/json/")
 	builder.WriteByte('/')
 	q.print(&builder)
-	url := builder.String()
+	return builder.String()
+}
+
+func (c *Client) ExecutePrepared(ctx context.Context, collection, url string) ([]any, error) {
 	if cached, ok := c.cache.Get(url); ok {
 		return cached, nil
 	}
@@ -50,10 +53,14 @@ func (c *Client) Execute(ctx context.Context, q *Query) ([]any, error) {
 	if err != nil {
 		return nil, err
 	}
-	propertyIndex := fmt.Sprintf("%s_list", q.Collection())
+	propertyIndex := fmt.Sprintf("%s_list", collection)
 	data := content[propertyIndex].([]any)
 	c.cache.Add(url, data)
 	return data, nil
+}
+
+func (c *Client) Execute(ctx context.Context, q *Query) ([]any, error) {
+	return c.ExecutePrepared(ctx, q.Collection(), c.ToURL(q))
 }
 
 type DecodeError struct {
@@ -89,6 +96,14 @@ func DecodeCollection[T any](items []any) ([]T, error) {
 // Provided type `T` should have `mapstructure` tags
 func ExecuteAndDecode[T any](ctx context.Context, c *Client, q *Query) ([]T, error) {
 	data, err := c.Execute(ctx, q)
+	if err != nil {
+		return nil, err
+	}
+	return DecodeCollection[T](data)
+}
+
+func ExecutePreparedAndDecode[T any](ctx context.Context, c *Client, collection, url string) ([]T, error) {
+	data, err := c.ExecutePrepared(ctx, collection, url)
 	if err != nil {
 		return nil, err
 	}

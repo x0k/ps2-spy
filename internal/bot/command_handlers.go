@@ -18,6 +18,7 @@ func NewCommandHandlers(
 	worldAlertsLoader loaders.QueriedLoader[loaders.MultiLoaderQuery[ps2.WorldId], loaders.Loaded[ps2.Alerts]],
 	settingsLoader loaders.KeyedLoader[[2]string, meta.SubscriptionSettings],
 	charNamesLoader loaders.QueriedLoader[[]string, []string],
+	outfitTagsLoader loaders.QueriedLoader[[]string, []string],
 ) map[string]handlers.InteractionHandler {
 	return map[string]handlers.InteractionHandler{
 		"population":        population.New(popLoader),
@@ -26,6 +27,6 @@ func NewCommandHandlers(
 			alertsLoader,
 			worldAlertsLoader,
 		),
-		"setup": channelsetup.New(settingsLoader, charNamesLoader),
+		"setup": channelsetup.New(settingsLoader, charNamesLoader, outfitTagsLoader),
 	}
 }

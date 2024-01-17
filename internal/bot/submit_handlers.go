@@ -8,13 +8,30 @@ import (
 
 func NewSubmitHandlers(
 	characterIdsLoader loaders.QueriedLoader[[]string, []string],
+	characterNamesLoader loaders.QueriedLoader[[]string, []string],
+	outfitTagsLoader loaders.QueriedLoader[[]string, []string],
 	pcSaver channelsetup.Saver,
 	ps4euSave channelsetup.Saver,
 	ps4usSave channelsetup.Saver,
 ) map[string]handlers.InteractionHandler {
 	return map[string]handlers.InteractionHandler{
-		handlers.CHANNEL_SETUP_PC_MODAL:     channelsetup.New(characterIdsLoader, pcSaver),
-		handlers.CHANNEL_SETUP_PS4_EU_MODAL: channelsetup.New(characterIdsLoader, ps4euSave),
-		handlers.CHANNEL_SETUP_PS4_US_MODAL: channelsetup.New(characterIdsLoader, ps4usSave),
+		handlers.CHANNEL_SETUP_PC_MODAL: channelsetup.New(
+			characterIdsLoader,
+			characterNamesLoader,
+			outfitTagsLoader,
+			pcSaver,
+		),
+		handlers.CHANNEL_SETUP_PS4_EU_MODAL: channelsetup.New(
+			characterIdsLoader,
+			characterNamesLoader,
+			outfitTagsLoader,
+			ps4euSave,
+		),
+		handlers.CHANNEL_SETUP_PS4_US_MODAL: channelsetup.New(
+			characterIdsLoader,
+			characterNamesLoader,
+			outfitTagsLoader,
+			ps4usSave,
+		),
 	}
 }

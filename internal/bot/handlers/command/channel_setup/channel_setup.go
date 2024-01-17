@@ -15,10 +15,15 @@ import (
 func New(
 	settingsLoader loaders.KeyedLoader[[2]string, meta.SubscriptionSettings],
 	namesLoader loaders.QueriedLoader[[]string, []string],
+	outfitTagsLoader loaders.QueriedLoader[[]string, []string],
 ) handlers.InteractionHandler {
 	return handlers.ShowModal(func(ctx context.Context, log *slog.Logger, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.InteractionResponseData, error) {
 		platform := i.ApplicationCommandData().Options[0].Name
 		settings, err := settingsLoader.Load(ctx, [2]string{i.ChannelID, platform})
+		if err != nil {
+			return nil, err
+		}
+		tags, err := outfitTagsLoader.Load(ctx, settings.Outfits)
 		if err != nil {
 			return nil, err
 		}
@@ -41,14 +46,14 @@ func New(
 							Label:       "Which outfits do you want to track?",
 							Placeholder: "Enter the outfit tags separated by comma",
 							Style:       discordgo.TextInputShort,
-							Value:       strings.Join(settings.Outfits, ", "),
+							Value:       strings.Join(tags, ", "),
 						},
 					},
 				},
 				discordgo.ActionsRow{
 					Components: []discordgo.MessageComponent{
 						discordgo.TextInput{
-							CustomID:    "suggestions",
+							CustomID:    "characters",
 							Label:       "Which characters do you want to track?",
 							Placeholder: "Enter the character names separated by comma",
 							Style:       discordgo.TextInputParagraph,
