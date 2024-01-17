@@ -27,19 +27,21 @@ const (
 var ErrTransactionNotStarted = errors.New("transaction not started")
 
 type Storage struct {
-	log        *slog.Logger
-	db         *sql.DB
-	statements [statementsCount]*sql.Stmt
-	tx         *sql.Tx
+	log         *slog.Logger
+	db          *sql.DB
+	statements  [statementsCount]*sql.Stmt
+	tx          *sql.Tx
+	publisher   *storage.Publisher
+	eventsBatch []storage.Event
 }
 
 func (s *Storage) migrate(ctx context.Context) error {
 	_, err := s.db.ExecContext(ctx, `
 CREATE TABLE IF NOT EXISTS channel_to_outfit (
 	channel_id TEXT NOT NULL,
-	platform_id TEXT NOT NULL,
+	platform TEXT NOT NULL,
 	outfit_tag TEXT NOT NULL,
-	PRIMARY KEY (channel_id, platform_id, outfit_tag)
+	PRIMARY KEY (channel_id, platform, outfit_tag)
 );`)
 	if err != nil {
 		return err
@@ -48,14 +50,19 @@ CREATE TABLE IF NOT EXISTS channel_to_outfit (
 	_, err = s.db.ExecContext(ctx, `
 CREATE TABLE IF NOT EXISTS channel_to_character (
 	channel_id TEXT NOT NULL,
-	platform_id TEXT NOT NULL,
+	platform TEXT NOT NULL,
 	character_id TEXT NOT NULL,
-	PRIMARY KEY (channel_id, platform_id, character_id)
+	PRIMARY KEY (channel_id, platform, character_id)
 );`)
 	return err
 }
 
-func New(ctx context.Context, log *slog.Logger, storagePath string) (*Storage, error) {
+func New(
+	ctx context.Context,
+	log *slog.Logger,
+	storagePath string,
+	publisher *storage.Publisher,
+) (*Storage, error) {
 	const op = "storage.sqlite.New"
 	db, err := sql.Open("sqlite3", storagePath)
 	if err != nil {
@@ -77,17 +84,17 @@ func (s *Storage) Start(ctx context.Context) error {
 		stmt string
 	}{
 		{insertChannelOutfit, "INSERT INTO channel_to_outfit VALUES (?, ?, lower(?))"},
-		{deleteChannelOutfit, "DELETE FROM channel_to_outfit WHERE channel_id = ? AND platform_id = ? AND outfit_tag = lower(?)"},
+		{deleteChannelOutfit, "DELETE FROM channel_to_outfit WHERE channel_id = ? AND platform = ? AND outfit_tag = lower(?)"},
 		{insertChannelCharacter, "INSERT INTO channel_to_character VALUES (?, ?, ?)"},
-		{deleteChannelCharacter, "DELETE FROM channel_to_character WHERE channel_id = ? AND platform_id = ? AND character_id = ?"},
+		{deleteChannelCharacter, "DELETE FROM channel_to_character WHERE channel_id = ? AND platform = ? AND character_id = ?"},
 		{
 			name: selectChannelsByCharacter,
 			stmt: `SELECT channel_id FROM channel_to_character WHERE character_id = ?
 				   UNION
 				   SELECT channel_id FROM channel_to_outfit WHERE outfit_tag = lower(?)`,
 		},
-		{selectOutfitsForPlatform, "SELECT outfit_tag FROM channel_to_outfit WHERE channel_id = ? AND platform_id = ?"},
-		{selectCharactersForPlatform, "SELECT character_id FROM channel_to_character WHERE channel_id = ? AND platform_id = ?"},
+		{selectOutfitsForPlatform, "SELECT outfit_tag FROM channel_to_outfit WHERE channel_id = ? AND platform = ?"},
+		{selectCharactersForPlatform, "SELECT character_id FROM channel_to_character WHERE channel_id = ? AND platform = ?"},
 	}
 	for _, raw := range rawStatements {
 		stmt, err := s.db.Prepare(raw.stmt)
@@ -117,16 +124,17 @@ func (s *Storage) Close() error {
 	return nil
 }
 
-func (s *Storage) Begin(ctx context.Context) (*Storage, error) {
+func (s *Storage) Begin(ctx context.Context, expectedEventsCount int) (*Storage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
 	return &Storage{
-		log:        s.log,
-		db:         s.db,
-		statements: s.statements,
-		tx:         tx,
+		log:         s.log,
+		db:          s.db,
+		statements:  s.statements,
+		tx:          tx,
+		eventsBatch: make([]storage.Event, 0, expectedEventsCount),
 	}, nil
 }
 
@@ -134,13 +142,23 @@ func (s *Storage) Commit() error {
 	if s.tx == nil {
 		return ErrTransactionNotStarted
 	}
-	return s.tx.Commit()
+	err := s.tx.Commit()
+	if err != nil {
+		return err
+	}
+	for _, event := range s.eventsBatch {
+		s.publisher.Publish(event)
+	}
+	s.eventsBatch = nil
+	s.tx = nil
+	return nil
 }
 
 func (s *Storage) Rollback() error {
 	if s.tx == nil {
 		return ErrTransactionNotStarted
 	}
+	s.eventsBatch = nil
 	return s.tx.Rollback()
 }
 
@@ -187,39 +205,67 @@ func query[T any](ctx context.Context, s *Storage, statement int, args ...any) (
 	return results, rows.Err()
 }
 
-func (s *Storage) SaveChannelOutfit(ctx context.Context, channelId, platformId, outfitID string) error {
+func (s *Storage) publish(event storage.Event) {
+	if s.tx != nil {
+		s.eventsBatch = append(s.eventsBatch, event)
+		return
+	}
+	s.publisher.Publish(event)
+}
+
+func (s *Storage) SaveChannelOutfit(ctx context.Context, channelId, platform, outfitID string) error {
 	const op = "storage.sqlite.SaveChannelOutfit"
-	err := s.exec(ctx, insertChannelOutfit, channelId, platformId, outfitID)
+	err := s.exec(ctx, insertChannelOutfit, channelId, platform, outfitID)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
+	s.publish(storage.ChannelOutfitSaved{
+		ChannelId: channelId,
+		Platform:  platform,
+		OutfitId:  outfitID,
+	})
 	return nil
 }
 
-func (s *Storage) DeleteChannelOutfit(ctx context.Context, channelId, platformId, outfitID string) error {
+func (s *Storage) DeleteChannelOutfit(ctx context.Context, channelId, platform, outfitID string) error {
 	const op = "storage.sqlite.DeleteChannelOutfit"
-	err := s.exec(ctx, deleteChannelOutfit, channelId, platformId, outfitID)
+	err := s.exec(ctx, deleteChannelOutfit, channelId, platform, outfitID)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
+	s.publish(storage.ChannelOutfitDeleted{
+		ChannelId: channelId,
+		Platform:  platform,
+		OutfitId:  outfitID,
+	})
 	return nil
 }
 
-func (s *Storage) SaveChannelCharacter(ctx context.Context, channelId, platformId, characterID string) error {
+func (s *Storage) SaveChannelCharacter(ctx context.Context, channelId, platform, characterID string) error {
 	const op = "storage.sqlite.SaveChannelCharacter"
-	err := s.exec(ctx, insertChannelCharacter, channelId, platformId, characterID)
+	err := s.exec(ctx, insertChannelCharacter, channelId, platform, characterID)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
+	s.publish(storage.ChannelCharacterSaved{
+		ChannelId:   channelId,
+		Platform:    platform,
+		CharacterId: characterID,
+	})
 	return nil
 }
 
-func (s *Storage) DeleteChannelCharacter(ctx context.Context, channelId, platformId, characterID string) error {
+func (s *Storage) DeleteChannelCharacter(ctx context.Context, channelId, platform, characterID string) error {
 	const op = "storage.sqlite.DeleteChannelCharacter"
-	err := s.exec(ctx, deleteChannelCharacter, channelId, platformId, characterID)
+	err := s.exec(ctx, deleteChannelCharacter, channelId, platform, characterID)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
+	s.publish(storage.ChannelCharacterDeleted{
+		ChannelId:   channelId,
+		Platform:    platform,
+		CharacterId: characterID,
+	})
 	return nil
 }
 
@@ -232,18 +278,18 @@ func (s *Storage) TrackingChannelIdsForCharacter(ctx context.Context, characterI
 	return rows, nil
 }
 
-func (s *Storage) TrackingOutfitsForPlatform(ctx context.Context, channelId, platformId string) ([]string, error) {
+func (s *Storage) TrackingOutfitsForPlatform(ctx context.Context, channelId, platform string) ([]string, error) {
 	const op = "storage.sqlite.TrackingOutfitsForPlatform"
-	rows, err := query[string](ctx, s, selectOutfitsForPlatform, channelId, platformId)
+	rows, err := query[string](ctx, s, selectOutfitsForPlatform, channelId, platform)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 	return rows, nil
 }
 
-func (s *Storage) TrackingCharactersForPlatform(ctx context.Context, channelId, platformId string) ([]string, error) {
+func (s *Storage) TrackingCharactersForPlatform(ctx context.Context, channelId, platform string) ([]string, error) {
 	const op = "storage.sqlite.TrackingCharactersForPlatform"
-	rows, err := query[string](ctx, s, selectCharactersForPlatform, channelId, platformId)
+	rows, err := query[string](ctx, s, selectCharactersForPlatform, channelId, platform)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}

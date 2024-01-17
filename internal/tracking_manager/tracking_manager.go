@@ -2,11 +2,9 @@ package tracking_manager
 
 import (
 	"context"
-	"encoding/binary"
 	"fmt"
-	"strconv"
+	"sync"
 
-	"github.com/bits-and-blooms/bloom/v3"
 	ps2events "github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
 	"github.com/x0k/ps2-spy/internal/loaders"
 	"github.com/x0k/ps2-spy/internal/ps2"
@@ -15,9 +13,10 @@ import (
 var ErrUnknownEvent = fmt.Errorf("unknown event")
 
 type TrackingManager struct {
-	charactersFilter *bloom.BloomFilter
-	characterLoader  loaders.KeyedLoader[string, ps2.Character]
-	channelsLoader   loaders.KeyedLoader[ps2.Character, []string]
+	charactersFilterMu sync.RWMutex
+	charactersFilter   map[string]int
+	characterLoader    loaders.KeyedLoader[string, ps2.Character]
+	channelsLoader     loaders.KeyedLoader[ps2.Character, []string]
 }
 
 func New(
@@ -25,31 +24,24 @@ func New(
 	channelsLoader loaders.KeyedLoader[ps2.Character, []string],
 ) *TrackingManager {
 	return &TrackingManager{
-		charactersFilter: bloom.New(10000, 5),
+		charactersFilter: make(map[string]int),
 		characterLoader:  charLoader,
 		channelsLoader:   channelsLoader,
 	}
 }
 
-func strIdToByte(id string) ([]byte, error) {
-	number, err := strconv.ParseUint(id, 10, 64)
-	if err != nil {
-		return nil, err
-	}
-	byteSlice := make([]byte, 8)
-	binary.BigEndian.PutUint64(byteSlice, number)
-	return byteSlice, nil
+func (tm *TrackingManager) isCharacterTracked(charId string) bool {
+	tm.charactersFilterMu.RLock()
+	defer tm.charactersFilterMu.RUnlock()
+	_, ok := tm.charactersFilter[charId]
+	return ok
 }
 
 func (tm *TrackingManager) ChannelIds(ctx context.Context, event any) ([]string, error) {
 	const op = "TrackingManager.ChannelIds"
 	switch e := event.(type) {
 	case ps2events.PlayerLogin:
-		charId, err := strIdToByte(e.CharacterID)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", op, err)
-		}
-		if !tm.charactersFilter.Test(charId) {
+		if !tm.isCharacterTracked(e.CharacterID) {
 			return nil, nil
 		}
 		char, err := tm.characterLoader.Load(ctx, e.CharacterID)

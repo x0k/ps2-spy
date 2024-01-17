@@ -32,7 +32,7 @@ func (s *SubscriptionSettingsSaver) Save(ctx context.Context, channelId string, 
 		return err
 	}
 	diff := meta.CalculateSubscriptionSettingsDiff(old, settings)
-	storage, err := s.storage.Begin(ctx)
+	storage, err := s.storage.Begin(ctx, len(diff.Outfits.ToAdd)+len(diff.Outfits.ToDel)+len(diff.Characters.ToAdd)+len(diff.Characters.ToDel))
 	if err != nil {
 		return err
 	}

@@ -84,7 +84,8 @@ type OutfitItem struct {
 	LeaderCharacterId string `json:"leader_character_id" mapstructure:"leader_character_id"`
 	MemberCount       string `json:"member_count" mapstructure:"member_count"`
 	// Resolvable
-	Members []CharacterItem `json:"members" mapstructure:"members"`
+	Members       []CharacterItem    `json:"members" mapstructure:"members"`
+	OutfitMembers []OutfitMemberItem `json:"outfit_members" mapstructure:"outfit_members"`
 }
 
 const OutfitMember = "outfit_member"
