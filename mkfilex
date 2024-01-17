@@ -13,3 +13,6 @@ o:
 
 c:
     go run tools/explorer/*.go --character $1 --output tmp
+
+cs:
+    go run tools/explorer/*.go --characters $1 --output tmp
