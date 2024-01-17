@@ -25,6 +25,8 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/voidwell"
 	"github.com/x0k/ps2-spy/internal/loaders"
 	"github.com/x0k/ps2-spy/internal/loaders/basic/alerts"
+	characterIds "github.com/x0k/ps2-spy/internal/loaders/basic/character_ids"
+	characterNames "github.com/x0k/ps2-spy/internal/loaders/basic/character_names"
 	"github.com/x0k/ps2-spy/internal/loaders/basic/characters"
 	"github.com/x0k/ps2-spy/internal/loaders/basic/world"
 	"github.com/x0k/ps2-spy/internal/loaders/basic/worlds"
@@ -32,9 +34,11 @@ import (
 	alertsMultiLoader "github.com/x0k/ps2-spy/internal/loaders/multi/alerts"
 	popMultiLoader "github.com/x0k/ps2-spy/internal/loaders/multi/population"
 	worldPopMultiLoader "github.com/x0k/ps2-spy/internal/loaders/multi/world_population"
-	subscriptionsettings "github.com/x0k/ps2-spy/internal/loaders/store/subscription_settings"
+	subscriptionsettingsloader "github.com/x0k/ps2-spy/internal/loaders/store/subscription_settings"
 	trackingchannels "github.com/x0k/ps2-spy/internal/loaders/store/tracking_channels"
 	"github.com/x0k/ps2-spy/internal/ps2"
+	"github.com/x0k/ps2-spy/internal/ps2/platforms"
+	subscriptionsettings "github.com/x0k/ps2-spy/internal/savers/subscription_settings"
 	"github.com/x0k/ps2-spy/internal/storage/sqlite"
 	trackingmanager "github.com/x0k/ps2-spy/internal/tracking_manager"
 )
@@ -192,7 +196,7 @@ func startBot(s *Setup, cfg *config.BotConfig, storage *sqlite.Storage) {
 	startInContext(s, characterLoader)
 	channelsLoader := trackingchannels.New(storage)
 	trackingManager := trackingmanager.New(characterLoader, channelsLoader)
-	settingsLoader := subscriptionsettings.New(storage)
+	subSettingsLoader := subscriptionsettingsloader.New(storage)
 	// bot
 	botConfig := &bot.BotConfig{
 		DiscordToken:           cfg.DiscordToken,
@@ -203,12 +207,19 @@ func startBot(s *Setup, cfg *config.BotConfig, storage *sqlite.Storage) {
 			worldPopLoader,
 			alertsLoader,
 		),
-		Handlers: bot.NewHandlers(
+		CommandHandlers: bot.NewCommandHandlers(
 			popLoader,
 			worldPopLoader,
 			alertsLoader,
 			worldAlertsLoader,
-			settingsLoader,
+			subSettingsLoader,
+			characterNames.NewCensusLoader(censusClient),
+		),
+		SubmitHandlers: bot.NewSubmitHandlers(
+			characterIds.NewCensusLoader(censusClient),
+			subscriptionsettings.New(storage, subSettingsLoader, platforms.PC),
+			subscriptionsettings.New(storage, subSettingsLoader, platforms.PS4_EU),
+			subscriptionsettings.New(storage, subSettingsLoader, platforms.PS4_US),
 		),
 		EventsPublisher:    eventsPublisher,
 		PlayerLoginHandler: login.New(characterLoader),

@@ -9,19 +9,25 @@ import (
 )
 
 type SubscriptionSettingsSaver struct {
-	platform string
-	storage  *sqlite.Storage
-	loader   loaders.KeyedLoader[[2]string, meta.SubscriptionSettings]
+	platform       string
+	storage        *sqlite.Storage
+	settingsLoader loaders.KeyedLoader[[2]string, meta.SubscriptionSettings]
 }
 
-func New(storage *sqlite.Storage) *SubscriptionSettingsSaver {
+func New(
+	storage *sqlite.Storage,
+	settingsLoader loaders.KeyedLoader[[2]string, meta.SubscriptionSettings],
+	platform string,
+) *SubscriptionSettingsSaver {
 	return &SubscriptionSettingsSaver{
-		storage: storage,
+		storage:        storage,
+		platform:       platform,
+		settingsLoader: settingsLoader,
 	}
 }
 
 func (s *SubscriptionSettingsSaver) Save(ctx context.Context, channelId string, settings meta.SubscriptionSettings) error {
-	old, err := s.loader.Load(ctx, [2]string{channelId, s.platform})
+	old, err := s.settingsLoader.Load(ctx, [2]string{channelId, s.platform})
 	if err != nil {
 		return err
 	}

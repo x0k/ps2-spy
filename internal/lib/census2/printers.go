@@ -145,6 +145,10 @@ type List[T optionalPrinter] struct {
 	separator string
 }
 
+func NewList[T optionalPrinter](values []T, separator string) List[T] {
+	return List[T]{values: values, separator: separator}
+}
+
 func (list List[T]) isEmpty() bool {
 	return len(list.values) == 0
 }

@@ -13,11 +13,16 @@ import (
 )
 
 func New(
-	loader loaders.KeyedLoader[[2]string, meta.SubscriptionSettings],
+	settingsLoader loaders.KeyedLoader[[2]string, meta.SubscriptionSettings],
+	namesLoader loaders.QueriedLoader[[]string, []string],
 ) handlers.InteractionHandler {
 	return handlers.ShowModal(func(ctx context.Context, log *slog.Logger, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.InteractionResponseData, error) {
 		platform := i.ApplicationCommandData().Options[0].Name
-		settings, err := loader.Load(ctx, [2]string{i.ChannelID, platform})
+		settings, err := settingsLoader.Load(ctx, [2]string{i.ChannelID, platform})
+		if err != nil {
+			return nil, err
+		}
+		names, err := namesLoader.Load(ctx, settings.Characters)
 		if err != nil {
 			return nil, err
 		}
@@ -47,7 +52,7 @@ func New(
 							Label:       "Which characters do you want to track?",
 							Placeholder: "Enter the character names separated by comma",
 							Style:       discordgo.TextInputParagraph,
-							Value:       strings.Join(settings.Characters, ", "),
+							Value:       strings.Join(names, ", "),
 						},
 					},
 				},

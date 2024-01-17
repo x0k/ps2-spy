@@ -25,7 +25,8 @@ type BotConfig struct {
 	CommandHandlerTimeout  time.Duration
 	Ps2EventHandlerTimeout time.Duration
 	Commands               []*discordgo.ApplicationCommand
-	Handlers               map[string]handlers.InteractionHandler
+	CommandHandlers        map[string]handlers.InteractionHandler
+	SubmitHandlers         map[string]handlers.InteractionHandler
 	PlayerLoginHandler     handlers.Ps2EventHandler[ps2events.PlayerLogin]
 	TrackingManager        handlers.TrackingManager
 	EventsPublisher        *ps2events.Publisher
@@ -59,7 +60,7 @@ func New(
 		switch i.Type {
 		case discordgo.InteractionApplicationCommand:
 			l.Debug("command received", slog.String("command", i.ApplicationCommandData().Name))
-			if handler, ok := cfg.Handlers[i.ApplicationCommandData().Name]; ok {
+			if handler, ok := cfg.CommandHandlers[i.ApplicationCommandData().Name]; ok {
 				go handler.Run(ctx, l, cfg.CommandHandlerTimeout, s, i)
 			} else {
 				l.Warn("unknown command")
@@ -67,7 +68,13 @@ func New(
 		case discordgo.InteractionMessageComponent:
 			l.Debug("component invoked")
 		case discordgo.InteractionModalSubmit:
-			l.Debug("modal submitted")
+			data := i.ModalSubmitData()
+			l.Debug("modal submitted", slog.Any("data", data))
+			if handler, ok := cfg.SubmitHandlers[data.CustomID]; ok {
+				go handler.Run(ctx, l, cfg.CommandHandlerTimeout, s, i)
+			} else {
+				l.Warn("unknown modal")
+			}
 		}
 	})
 	eventHandlersConfig := &handlers.Ps2EventHandlerConfig{
