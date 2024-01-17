@@ -18,8 +18,7 @@ type ExpiableValue[T any] struct {
 
 func NewExpiableValue[T any](ttl time.Duration) *ExpiableValue[T] {
 	return &ExpiableValue[T]{
-		ttl:    ttl,
-		ticker: time.NewTicker(ttl),
+		ttl: ttl,
 	}
 }
 
@@ -40,6 +39,7 @@ func (e *ExpiableValue[T]) Start(ctx context.Context, wg *sync.WaitGroup) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
+		e.ticker = time.NewTicker(e.ttl)
 		defer e.ticker.Stop()
 		for {
 			select {
