@@ -13,7 +13,6 @@ import (
 )
 
 type BatchLoader struct {
-	wg          sync.WaitGroup
 	log         *slog.Logger
 	cache       *expirable.LRU[string, ps2.Character]
 	loader      loaders.QueriedLoader[[]string, map[string]ps2.Character]
@@ -38,8 +37,8 @@ func NewBatch(
 	}
 }
 
-func (l *BatchLoader) batcher(ctx context.Context) {
-	defer l.wg.Done()
+func (l *BatchLoader) batcher(ctx context.Context, wg *sync.WaitGroup) {
+	defer wg.Done()
 	timer := time.NewTimer(l.batchRate)
 	defer timer.Stop()
 	var batch []string
@@ -73,8 +72,8 @@ func (l *BatchLoader) releaseAwaiters(batch []string, chars map[string]ps2.Chara
 	}
 }
 
-func (l *BatchLoader) worker(ctx context.Context) {
-	defer l.wg.Done()
+func (l *BatchLoader) worker(ctx context.Context, wg *sync.WaitGroup) {
+	defer wg.Done()
 	for {
 		select {
 		case <-ctx.Done():
@@ -90,6 +89,26 @@ func (l *BatchLoader) worker(ctx context.Context) {
 	}
 }
 
+func (l *BatchLoader) cleaner(ctx context.Context, wg *sync.WaitGroup) {
+	defer wg.Done()
+	<-ctx.Done()
+	l.log.Info("cleaning up")
+	l.awaitersMu.Lock()
+	defer l.awaitersMu.Unlock()
+	for _, c := range l.awaiters {
+		close(c)
+	}
+	clear(l.awaiters)
+}
+
+func (l *BatchLoader) Start(ctx context.Context, wg *sync.WaitGroup) {
+	l.log.Info("starting loader")
+	wg.Add(3)
+	go l.batcher(ctx, wg)
+	go l.worker(ctx, wg)
+	go l.cleaner(ctx, wg)
+}
+
 func (l *BatchLoader) load(charId string) chan ps2.Character {
 	l.awaitersMu.Lock()
 	defer l.awaitersMu.Unlock()
@@ -97,24 +116,6 @@ func (l *BatchLoader) load(charId string) chan ps2.Character {
 	l.awaiters[charId] = c
 	l.charId <- charId
 	return c
-}
-
-func (l *BatchLoader) Start(ctx context.Context) {
-	l.log.Info("starting loader")
-	l.wg.Add(2)
-	go l.batcher(ctx)
-	go l.worker(ctx)
-}
-
-func (l *BatchLoader) Stop() {
-	l.log.Info("stopping loader")
-	l.awaitersMu.Lock()
-	defer l.awaitersMu.Unlock()
-	for _, c := range l.awaiters {
-		close(c)
-	}
-	clear(l.awaiters)
-	l.wg.Wait()
 }
 
 func (l *BatchLoader) Load(ctx context.Context, charId string) (ps2.Character, error) {

@@ -19,8 +19,10 @@ const (
 	insertChannelCharacter
 	deleteChannelCharacter
 	selectChannelsByCharacter
-	selectOutfitsForPlatform
-	selectCharactersForPlatform
+	selectChannelOutfitsForPlatform
+	selectChannelCharactersForPlatform
+	selectAllOutfitsForPlatform
+	selectOutfitMembers
 	statementsCount
 )
 
@@ -105,8 +107,10 @@ func (s *Storage) Start(ctx context.Context) error {
 				   UNION
 				   SELECT channel_id FROM channel_to_outfit WHERE outfit_tag = lower(?)`,
 		},
-		{selectOutfitsForPlatform, "SELECT outfit_tag FROM channel_to_outfit WHERE channel_id = ? AND platform = ?"},
-		{selectCharactersForPlatform, "SELECT character_id FROM channel_to_character WHERE channel_id = ? AND platform = ?"},
+		{selectChannelOutfitsForPlatform, "SELECT outfit_tag FROM channel_to_outfit WHERE channel_id = ? AND platform = ?"},
+		{selectChannelCharactersForPlatform, "SELECT character_id FROM channel_to_character WHERE channel_id = ? AND platform = ?"},
+		{selectAllOutfitsForPlatform, "SELECT DISTINCT outfit_tag FROM channel_to_outfit WHERE platform = ?"},
+		{selectOutfitMembers, "SELECT character_id FROM outfit_members WHERE outfit_tag = lower(?)"},
 	}
 	for _, raw := range rawStatements {
 		stmt, err := s.db.Prepare(raw.stmt)
@@ -292,7 +296,7 @@ func (s *Storage) TrackingChannelIdsForCharacter(ctx context.Context, characterI
 
 func (s *Storage) TrackingOutfitsForPlatform(ctx context.Context, channelId, platform string) ([]string, error) {
 	const op = "storage.sqlite.TrackingOutfitsForPlatform"
-	rows, err := query[string](ctx, s, selectOutfitsForPlatform, channelId, platform)
+	rows, err := query[string](ctx, s, selectChannelOutfitsForPlatform, channelId, platform)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -301,7 +305,25 @@ func (s *Storage) TrackingOutfitsForPlatform(ctx context.Context, channelId, pla
 
 func (s *Storage) TrackingCharactersForPlatform(ctx context.Context, channelId, platform string) ([]string, error) {
 	const op = "storage.sqlite.TrackingCharactersForPlatform"
-	rows, err := query[string](ctx, s, selectCharactersForPlatform, channelId, platform)
+	rows, err := query[string](ctx, s, selectChannelCharactersForPlatform, channelId, platform)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	return rows, nil
+}
+
+func (s *Storage) AllTrackingOutfitsForPlatform(ctx context.Context, platform string) ([]string, error) {
+	const op = "storage.sqlite.AllTrackingOutfitsForPlatform"
+	rows, err := query[string](ctx, s, selectAllOutfitsForPlatform, platform)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	return rows, nil
+}
+
+func (s *Storage) OutfitMembers(ctx context.Context, outfitTag string) ([]string, error) {
+	const op = "storage.sqlite.OutfitMembers"
+	rows, err := query[string](ctx, s, selectOutfitMembers, outfitTag)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}

@@ -2,6 +2,7 @@ package world_alerts_loader
 
 import (
 	"context"
+	"sync"
 
 	"github.com/x0k/ps2-spy/internal/loaders"
 	"github.com/x0k/ps2-spy/internal/loaders/alerts_loader"
@@ -18,12 +19,8 @@ func NewMulti(
 	return &MultiLoader{loader}
 }
 
-func (l *MultiLoader) Start(ctx context.Context) {
-	l.loader.Start(ctx)
-}
-
-func (l *MultiLoader) Stop() {
-	l.loader.Stop()
+func (l *MultiLoader) Start(ctx context.Context, wg *sync.WaitGroup) {
+	l.loader.Start(ctx, wg)
 }
 
 func (l *MultiLoader) Loaders() []string {

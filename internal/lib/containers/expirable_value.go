@@ -8,12 +8,12 @@ import (
 )
 
 type ExpiableValue[T any] struct {
-	mu     sync.RWMutex
-	actual atomic.Bool
-	val    T
-	ttl    time.Duration
-	ticker *time.Ticker
-	done   chan struct{}
+	mu      sync.RWMutex
+	actual  atomic.Bool
+	val     T
+	ttl     time.Duration
+	ticker  *time.Ticker
+	started atomic.Bool
 }
 
 func NewExpiableValue[T any](ttl time.Duration) *ExpiableValue[T] {
@@ -33,41 +33,23 @@ func (e *ExpiableValue[T]) ResetExpiration() {
 	e.ticker.Reset(e.ttl)
 }
 
-func (e *ExpiableValue[T]) isStarted() bool {
-	if e.done == nil {
-		return false
-	}
-	select {
-	case <-e.done:
-		return false
-	default:
-		return true
-	}
-}
-
-func (e *ExpiableValue[T]) StartExpiration(ctx context.Context) {
-	if e.isStarted() {
+func (e *ExpiableValue[T]) Start(ctx context.Context, wg *sync.WaitGroup) {
+	if e.started.Swap(true) {
 		return
 	}
-	e.done = make(chan struct{})
-	defer e.ticker.Stop()
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-e.ticker.C:
-			e.MarkAsExpired()
-		case <-e.done:
-			return
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		defer e.ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-e.ticker.C:
+				e.MarkAsExpired()
+			}
 		}
-	}
-}
-
-func (e *ExpiableValue[T]) StopExpiration() {
-	if !e.isStarted() {
-		return
-	}
-	close(e.done)
+	}()
 }
 
 func (e *ExpiableValue[T]) Read() (T, bool) {

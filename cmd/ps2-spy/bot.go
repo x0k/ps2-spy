@@ -39,20 +39,6 @@ import (
 	"github.com/x0k/ps2-spy/internal/tracking_manager"
 )
 
-type starter interface {
-	Start(ctx context.Context)
-	Stop()
-}
-
-func startInContext(s *setup, starter starter) {
-	starter.Start(s.ctx)
-	s.wg.Add(1)
-	context.AfterFunc(s.ctx, func() {
-		defer s.wg.Done()
-		starter.Stop()
-	})
-}
-
 type setup struct {
 	log *slog.Logger
 	ctx context.Context
@@ -75,17 +61,17 @@ func startBot(s *setup, cfg *config.Config) error {
 	}
 	// loaders
 	honuClient := honu.NewClient("https://wt.honu.pw", httpClient)
-	startInContext(s, honuClient)
+	honuClient.Start(s.ctx, s.wg)
 	fisuClient := fisu.NewClient("https://ps2.fisu.pw", httpClient)
-	startInContext(s, fisuClient)
+	fisuClient.Start(s.ctx, s.wg)
 	voidWellClient := voidwell.NewClient("https://api.voidwell.com", httpClient)
-	startInContext(s, voidWellClient)
+	voidWellClient.Start(s.ctx, s.wg)
 	populationClient := population.NewClient("https://agg.ps2.live", httpClient)
-	startInContext(s, populationClient)
+	populationClient.Start(s.ctx, s.wg)
 	saerroClient := saerro.NewClient("https://saerro.ps2.live", httpClient)
-	startInContext(s, saerroClient)
+	saerroClient.Start(s.ctx, s.wg)
 	ps2alertsClient := ps2alerts.NewClient("https://api.ps2alerts.com", httpClient)
-	startInContext(s, ps2alertsClient)
+	ps2alertsClient.Start(s.ctx, s.wg)
 	censusClient := census2.NewClient("https://census.daybreakgames.com", cfg.CensusServiceId, httpClient)
 	sanctuaryClient := census2.NewClient("https://census.lithafalcon.cc", cfg.CensusServiceId, httpClient)
 	// multi loaders
@@ -100,7 +86,7 @@ func startBot(s *setup, cfg *config.Config) error {
 		},
 		[]string{"honu", "ps2live", "saerro", "fisu", "sanctuary", "voidwell"},
 	)
-	startInContext(s, popLoader)
+	popLoader.Start(s.ctx, s.wg)
 	worldPopLoader := world_population_loader.NewMulti(
 		map[string]loaders.KeyedLoader[ps2.WorldId, loaders.Loaded[ps2.DetailedWorldPopulation]]{
 			"honu":     world_population_loader.NewHonu(honuClient),
@@ -109,7 +95,7 @@ func startBot(s *setup, cfg *config.Config) error {
 		},
 		[]string{"honu", "saerro", "voidwell"},
 	)
-	startInContext(s, worldPopLoader)
+	worldPopLoader.Start(s.ctx, s.wg)
 	alertsLoader := alerts_loader.NewMulti(
 		map[string]loaders.Loader[loaders.Loaded[ps2.Alerts]]{
 			"ps2alerts": alerts_loader.NewPS2Alerts(ps2alertsClient),
@@ -119,13 +105,13 @@ func startBot(s *setup, cfg *config.Config) error {
 		},
 		[]string{"ps2alerts", "honu", "census", "voidwell"},
 	)
-	startInContext(s, alertsLoader)
+	alertsLoader.Start(s.ctx, s.wg)
 	worldAlertsLoader := world_alerts_loader.NewMulti(alertsLoader)
-	startInContext(s, worldAlertsLoader)
-	characterLoader := character_loader.NewBatch(s.log, characters_loader.NewCensus(censusClient))
-	startInContext(s, characterLoader)
+	worldAlertsLoader.Start(s.ctx, s.wg)
+	batchedCharacterLoader := character_loader.NewBatch(s.log, characters_loader.NewCensus(censusClient))
+	batchedCharacterLoader.Start(s.ctx, s.wg)
 	channelsLoader := tracking_channels_loader.New(storage)
-	trackingManager := tracking_manager.New(characterLoader, channelsLoader)
+	trackingManager := tracking_manager.New(batchedCharacterLoader, channelsLoader)
 	subSettingsLoader := subscription_settings_loader.New(storage)
 	characterNamesLoader := character_names_loader.NewCensus(censusClient)
 	outfitTagsLoader := outfit_tags_loader.NewCensus(censusClient)
@@ -157,7 +143,7 @@ func startBot(s *setup, cfg *config.Config) error {
 			subscription_settings_saver.New(storage, subSettingsLoader, platforms.PS4_US),
 		),
 		EventsPublisher:    eventsPublisher,
-		PlayerLoginHandler: login.New(characterLoader),
+		PlayerLoginHandler: login.New(batchedCharacterLoader),
 		TrackingManager:    trackingManager,
 	}
 	s.wg.Add(1)

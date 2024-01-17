@@ -3,6 +3,7 @@ package alerts_loader
 import (
 	"context"
 	"maps"
+	"sync"
 	"time"
 
 	"github.com/x0k/ps2-spy/internal/lib/containers"
@@ -37,12 +38,8 @@ func NewMulti(
 	}
 }
 
-func (l *MultiLoader) Start(ctx context.Context) {
-	l.fallbackLoader.Start(ctx)
-}
-
-func (l *MultiLoader) Stop() {
-	l.fallbackLoader.Stop()
+func (l *MultiLoader) Start(ctx context.Context, wg *sync.WaitGroup) {
+	l.fallbackLoader.Start(ctx, wg)
 }
 
 func (l *MultiLoader) Loaders() []string {

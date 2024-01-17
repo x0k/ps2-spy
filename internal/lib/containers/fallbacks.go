@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"sync"
 	"time"
 )
 
@@ -26,12 +27,8 @@ func NewFallbacks[T any](name string, entities map[string]T, priority []string, 
 	}
 }
 
-func (f *Fallbacks[T]) Start(ctx context.Context) {
-	go f.lastSuccessfulEntity.StartExpiration(ctx)
-}
-
-func (f *Fallbacks[T]) Stop() {
-	f.lastSuccessfulEntity.StopExpiration()
+func (f *Fallbacks[T]) Start(ctx context.Context, wg *sync.WaitGroup) {
+	f.lastSuccessfulEntity.Start(ctx, wg)
 }
 
 func (f *Fallbacks[T]) Exec(executor func(T) error) error {

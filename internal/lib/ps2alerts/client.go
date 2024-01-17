@@ -3,6 +3,7 @@ package ps2alerts
 import (
 	"context"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/x0k/ps2-spy/internal/lib/containers"
@@ -25,12 +26,8 @@ func NewClient(endpoint string, httpClient *http.Client) *Client {
 	}
 }
 
-func (c *Client) Start(ctx context.Context) {
-	go c.alerts.StartExpiration(ctx)
-}
-
-func (c *Client) Stop() {
-	c.alerts.StopExpiration()
+func (c *Client) Start(ctx context.Context, wg *sync.WaitGroup) {
+	c.alerts.Start(ctx, wg)
 }
 
 func (c *Client) Endpoint() string {
