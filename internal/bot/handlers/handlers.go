@@ -10,11 +10,26 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/x0k/ps2-spy/internal/lib/contextx"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
+	"github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
 
 const (
-	CHANNEL_SETUP_MODAL = "channel_setup"
+	CHANNEL_SETUP_PC_MODAL     = "channel_setup_pc"
+	CHANNEL_SETUP_PS4_EU_MODAL = "channel_setup_ps4_eu"
+	CHANNEL_SETUP_PS4_US_MODAL = "channel_setup_ps4_us"
 )
+
+var PlatformModals = map[string]string{
+	platforms.PC:     CHANNEL_SETUP_PC_MODAL,
+	platforms.PS4_EU: CHANNEL_SETUP_PS4_EU_MODAL,
+	platforms.PS4_US: CHANNEL_SETUP_PS4_US_MODAL,
+}
+
+var ModalsTitles = map[string]string{
+	CHANNEL_SETUP_PC_MODAL:     "Subscription Settings (PC)",
+	CHANNEL_SETUP_PS4_EU_MODAL: "Subscription Settings (PS4 EU)",
+	CHANNEL_SETUP_PS4_US_MODAL: "Subscription Settings (PS4 US)",
+}
 
 type InteractionHandler func(ctx context.Context, log *slog.Logger, s *discordgo.Session, i *discordgo.InteractionCreate) error
 
@@ -42,6 +57,26 @@ func DeferredResponse(handle func(ctx context.Context, log *slog.Logger, s *disc
 	return func(ctx context.Context, log *slog.Logger, s *discordgo.Session, i *discordgo.InteractionCreate) error {
 		err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
+		})
+		if err != nil {
+			return err
+		}
+		data, err := handle(ctx, log, s, i)
+		if err != nil {
+			return err
+		}
+		_, err = s.InteractionResponseEdit(i.Interaction, data)
+		return err
+	}
+}
+
+func DeferredEphemeralResponse(handle func(ctx context.Context, log *slog.Logger, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.WebhookEdit, error)) InteractionHandler {
+	return func(ctx context.Context, log *slog.Logger, s *discordgo.Session, i *discordgo.InteractionCreate) error {
+		err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Flags: discordgo.MessageFlagsEphemeral,
+			},
 		})
 		if err != nil {
 			return err

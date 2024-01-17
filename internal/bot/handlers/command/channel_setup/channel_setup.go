@@ -2,21 +2,18 @@ package channelsetup
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/x0k/ps2-spy/internal/bot/handlers"
 	"github.com/x0k/ps2-spy/internal/loaders"
+	"github.com/x0k/ps2-spy/internal/meta"
 )
 
-type SubscriptionSettings struct {
-	Outfits    []string
-	Characters []string
-}
-
 func New(
-	loader loaders.KeyedLoader[[2]string, SubscriptionSettings],
+	loader loaders.KeyedLoader[[2]string, meta.SubscriptionSettings],
 ) handlers.InteractionHandler {
 	return handlers.ShowModal(func(ctx context.Context, log *slog.Logger, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.InteractionResponseData, error) {
 		platform := i.ApplicationCommandData().Options[0].Name
@@ -24,9 +21,13 @@ func New(
 		if err != nil {
 			return nil, err
 		}
+		customId, ok := handlers.PlatformModals[platform]
+		if !ok {
+			return nil, fmt.Errorf("unknown platform: %q", platform)
+		}
 		return &discordgo.InteractionResponseData{
-			CustomID: handlers.CHANNEL_SETUP_MODAL,
-			Title:    "Channel Setup",
+			CustomID: customId,
+			Title:    handlers.ModalsTitles[customId],
 			Components: []discordgo.MessageComponent{
 				discordgo.ActionsRow{
 					Components: []discordgo.MessageComponent{

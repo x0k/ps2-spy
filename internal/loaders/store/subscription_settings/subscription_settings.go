@@ -3,7 +3,7 @@ package subscriptionsettings
 import (
 	"context"
 
-	channelsetup "github.com/x0k/ps2-spy/internal/bot/handlers/command/channel_setup"
+	"github.com/x0k/ps2-spy/internal/meta"
 	"github.com/x0k/ps2-spy/internal/storage/sqlite"
 )
 
@@ -17,16 +17,16 @@ func New(storage *sqlite.Storage) *SubscriptionSettingsLoader {
 	}
 }
 
-func (l *SubscriptionSettingsLoader) Load(ctx context.Context, key [2]string) (channelsetup.SubscriptionSettings, error) {
+func (l *SubscriptionSettingsLoader) Load(ctx context.Context, key [2]string) (meta.SubscriptionSettings, error) {
 	outfits, err := l.storage.TrackingOutfitsForPlatform(ctx, key[0], key[1])
 	if err != nil {
-		return channelsetup.SubscriptionSettings{}, err
+		return meta.SubscriptionSettings{}, err
 	}
 	characters, err := l.storage.TrackingCharactersForPlatform(ctx, key[0], key[1])
 	if err != nil {
-		return channelsetup.SubscriptionSettings{}, err
+		return meta.SubscriptionSettings{}, err
 	}
-	return channelsetup.SubscriptionSettings{
+	return meta.SubscriptionSettings{
 		Outfits:    outfits,
 		Characters: characters,
 	}, nil
