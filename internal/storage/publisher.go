@@ -14,6 +14,15 @@ type Publisher struct {
 	handlers   map[string][]eventHandler
 }
 
+func NewPublisher(log *slog.Logger) *Publisher {
+	return &Publisher{
+		log: log.With(
+			slog.String("component", "storage.publisher"),
+		),
+		handlers: map[string][]eventHandler{},
+	}
+}
+
 func (p *Publisher) removeHandler(eventType string, h eventHandler) {
 	p.handlersMu.Lock()
 	defer p.handlersMu.Unlock()

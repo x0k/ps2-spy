@@ -1,8 +1,8 @@
 #!/bin/bash -e
 
 run:
-    BOT_DISCORD_TOKEN=$(cat ~/Sync/ps2-spy/test-token) \
-    BOT_CENSUS_SERVICE_ID=$(cat ~/Sync/ps2-spy/test-service) \
+    DISCORD_TOKEN=$(cat ~/Sync/ps2-spy/test-token) \
+    CENSUS_SERVICE_ID=$(cat ~/Sync/ps2-spy/test-service) \
       go run cmd/ps2-spy/*.go --config config/local.yml
 
 all:

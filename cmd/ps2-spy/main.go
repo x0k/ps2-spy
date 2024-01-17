@@ -21,26 +21,19 @@ func init() {
 	flag.Parse()
 }
 
-type Setup struct {
-	log *slog.Logger
-	ctx context.Context
-	wg  *sync.WaitGroup
-}
-
 func main() {
 	cfg := config.MustLoad(config_path)
 	log := mustSetupLogger(&cfg.Logger)
 	log.Info("starting...", slog.String("log_level", cfg.Logger.Level))
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	s := &Setup{
+	s := &setup{
 		log: log,
 		ctx: ctx,
 		wg:  &sync.WaitGroup{},
 	}
 
-	storage := mustSetupStorage(s, &cfg.Storage)
-	startBot(s, &cfg.Bot, storage)
+	startBot(s, cfg)
 
 	log.Info("Press CTRL-C to exit.")
 	stop := make(chan os.Signal, 1)

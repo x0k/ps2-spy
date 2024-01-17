@@ -2,23 +2,27 @@ package main
 
 import (
 	"context"
-	"os"
+	"fmt"
 
 	"github.com/x0k/ps2-spy/internal/config"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
+	"github.com/x0k/ps2-spy/internal/storage"
 	"github.com/x0k/ps2-spy/internal/storage/sqlite"
 )
 
-func mustSetupStorage(s *Setup, cfg *config.StorageConfig) *sqlite.Storage {
-	storage, err := sqlite.New(s.ctx, s.log, cfg.Path)
+func startStorage(
+	s *setup,
+	cfg config.StorageConfig,
+	publisher *storage.Publisher,
+) (*sqlite.Storage, error) {
+	const op = "startStorage"
+	storage, err := sqlite.New(s.ctx, s.log, cfg.Path, publisher)
 	if err != nil {
-		s.log.Error("cannot open storage", sl.Err(err))
-		os.Exit(1)
+		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 	err = storage.Start(s.ctx)
 	if err != nil {
-		s.log.Error("cannot start storage", sl.Err(err))
-		os.Exit(1)
+		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 	s.wg.Add(1)
 	context.AfterFunc(s.ctx, func() {
@@ -27,5 +31,5 @@ func mustSetupStorage(s *Setup, cfg *config.StorageConfig) *sqlite.Storage {
 			s.log.Error("cannot close storage", sl.Err(err))
 		}
 	})
-	return storage
+	return storage, nil
 }

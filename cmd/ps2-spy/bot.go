@@ -2,19 +2,16 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
-	"os"
+	"sync"
 	"time"
 
 	"github.com/x0k/ps2-spy/internal/bot"
 	"github.com/x0k/ps2-spy/internal/bot/handlers/event/login"
 	"github.com/x0k/ps2-spy/internal/config"
 	"github.com/x0k/ps2-spy/internal/lib/census2"
-	"github.com/x0k/ps2-spy/internal/lib/census2/streaming"
-	ps2commands "github.com/x0k/ps2-spy/internal/lib/census2/streaming/commands"
-	ps2events "github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
-	ps2messages "github.com/x0k/ps2-spy/internal/lib/census2/streaming/messages"
 	"github.com/x0k/ps2-spy/internal/lib/fisu"
 	"github.com/x0k/ps2-spy/internal/lib/honu"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
@@ -40,97 +37,16 @@ import (
 	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/ps2/platforms"
 	"github.com/x0k/ps2-spy/internal/savers/subscription_settings_saver"
-	"github.com/x0k/ps2-spy/internal/storage/sqlite"
+	"github.com/x0k/ps2-spy/internal/storage"
 	"github.com/x0k/ps2-spy/internal/tracking_manager"
 )
-
-func startEventsClient(s *Setup, cfg *config.BotConfig, env string, settings ps2commands.SubscriptionSettings) *streaming.Client {
-	client := streaming.NewClient(
-		s.log,
-		"wss://push.planetside2.com/streaming",
-		env,
-		cfg.CensusServiceId,
-	)
-	s.wg.Add(1)
-	go func() {
-		defer s.wg.Done()
-		log := s.log.With(
-			slog.String("component", "events_client_starter"),
-			slog.String("platform", env),
-		)
-		retry.RetryWhileWithRecover(retry.Retryable{
-			Try: func() error {
-				err := client.Connect(s.ctx)
-				if err != nil {
-					log.Error("failed to connect to websocket", sl.Err(err))
-					return err
-				}
-				defer func() {
-					if err := client.Close(); err != nil {
-						log.Error("failed to close websocket", sl.Err(err))
-					}
-				}()
-				return client.Subscribe(s.ctx, settings)
-			},
-			While: retry.ContextIsNotCanceled,
-			BeforeSleep: func(d time.Duration) {
-				log.Debug("retry to connect", slog.Duration("after", d))
-			},
-		})
-	}()
-	return client
-}
-
-func mustSetupEventsPublisher(s *Setup, cfg *config.BotConfig) *ps2events.Publisher {
-	eventsPublisher := ps2events.NewPublisher(s.log)
-	msgPublisher := ps2messages.NewPublisher(s.log)
-	serviceMsg := make(chan ps2messages.ServiceMessage[map[string]any])
-	serviceMsgUnSub, err := msgPublisher.AddHandler(serviceMsg)
-	if err != nil {
-		s.log.Error("failed to add message handler", sl.Err(err))
-		os.Exit(1)
-	}
-	s.wg.Add(1)
-	go func() {
-		defer s.wg.Done()
-		defer serviceMsgUnSub()
-		for {
-			select {
-			case <-s.ctx.Done():
-				return
-			case msg := <-serviceMsg:
-				eventsPublisher.Publish(msg.Payload)
-			}
-		}
-	}()
-	pc := startEventsClient(s, cfg, streaming.Ps2_env, ps2commands.SubscriptionSettings{
-		Worlds: []string{"1", "10", "13", "17", "19", "40"},
-		EventNames: []string{
-			ps2events.PlayerLoginEventName,
-			ps2events.PlayerLogoutEventName,
-		},
-	})
-	s.wg.Add(1)
-	go func() {
-		defer s.wg.Done()
-		for {
-			select {
-			case <-s.ctx.Done():
-				return
-			case msg := <-pc.Msg:
-				msgPublisher.Publish(msg)
-			}
-		}
-	}()
-	return eventsPublisher
-}
 
 type starter interface {
 	Start(ctx context.Context)
 	Stop()
 }
 
-func startInContext(s *Setup, starter starter) {
+func startInContext(s *setup, starter starter) {
 	starter.Start(s.ctx)
 	s.wg.Add(1)
 	context.AfterFunc(s.ctx, func() {
@@ -139,8 +55,23 @@ func startInContext(s *Setup, starter starter) {
 	})
 }
 
-func startBot(s *Setup, cfg *config.BotConfig, storage *sqlite.Storage) {
-	eventsPublisher := mustSetupEventsPublisher(s, cfg)
+type setup struct {
+	log *slog.Logger
+	ctx context.Context
+	wg  *sync.WaitGroup
+}
+
+func startBot(s *setup, cfg *config.Config) error {
+	const op = "startBot"
+	storageEventsPublisher := storage.NewPublisher(s.log)
+	storage, err := startStorage(s, cfg.Storage, storageEventsPublisher)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+	eventsPublisher, err := startPs2EventsPublisher(s, cfg)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
 	httpClient := &http.Client{
 		Timeout: cfg.HttpClientTimeout,
 	}
@@ -254,4 +185,5 @@ func startBot(s *Setup, cfg *config.BotConfig, storage *sqlite.Storage) {
 			},
 		})
 	}()
+	return nil
 }
