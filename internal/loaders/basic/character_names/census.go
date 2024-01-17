@@ -1,4 +1,4 @@
-package characterNames
+package character_names
 
 import (
 	"context"

@@ -1,4 +1,4 @@
-package worldpopulation
+package world_population_loader
 
 import (
 	"context"

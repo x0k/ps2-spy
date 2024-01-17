@@ -1,4 +1,4 @@
-package trackingmanager
+package tracking_manager
 
 import (
 	"context"
@@ -13,10 +13,6 @@ import (
 )
 
 var ErrUnknownEvent = fmt.Errorf("unknown event")
-
-type Store interface {
-	TrackingChannelIdsForCharacter(ctx context.Context, char ps2.Character) ([]string, error)
-}
 
 type TrackingManager struct {
 	charactersFilter *bloom.BloomFilter

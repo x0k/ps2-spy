@@ -1,4 +1,4 @@
-package trackingchannels
+package tracking_channels_loader
 
 import (
 	"context"

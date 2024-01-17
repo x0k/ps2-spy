@@ -1,4 +1,4 @@
-package outfitTags
+package outfit_tags
 
 import (
 	"context"

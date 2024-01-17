@@ -25,23 +25,23 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/voidwell"
 	"github.com/x0k/ps2-spy/internal/loaders"
 	"github.com/x0k/ps2-spy/internal/loaders/basic/alerts"
-	characterIds "github.com/x0k/ps2-spy/internal/loaders/basic/character_ids"
-	characterNames "github.com/x0k/ps2-spy/internal/loaders/basic/character_names"
+	"github.com/x0k/ps2-spy/internal/loaders/basic/character_ids_loader"
+	"github.com/x0k/ps2-spy/internal/loaders/basic/character_names"
 	"github.com/x0k/ps2-spy/internal/loaders/basic/characters"
-	outfitTags "github.com/x0k/ps2-spy/internal/loaders/basic/outfit_tags"
+	"github.com/x0k/ps2-spy/internal/loaders/basic/outfit_tags"
 	"github.com/x0k/ps2-spy/internal/loaders/basic/world"
 	"github.com/x0k/ps2-spy/internal/loaders/basic/worlds"
 	"github.com/x0k/ps2-spy/internal/loaders/batch/character"
-	alertsMultiLoader "github.com/x0k/ps2-spy/internal/loaders/multi/alerts"
-	popMultiLoader "github.com/x0k/ps2-spy/internal/loaders/multi/population"
-	worldPopMultiLoader "github.com/x0k/ps2-spy/internal/loaders/multi/world_population"
-	subscriptionsettingsloader "github.com/x0k/ps2-spy/internal/loaders/store/subscription_settings"
-	trackingchannels "github.com/x0k/ps2-spy/internal/loaders/store/tracking_channels"
+	"github.com/x0k/ps2-spy/internal/loaders/multi/alerts_loader"
+	"github.com/x0k/ps2-spy/internal/loaders/multi/population_loader"
+	"github.com/x0k/ps2-spy/internal/loaders/multi/world_population_loader"
+	"github.com/x0k/ps2-spy/internal/loaders/store/subscription_settings_loader"
+	"github.com/x0k/ps2-spy/internal/loaders/store/tracking_channels_loader"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/ps2/platforms"
-	subscriptionsettings "github.com/x0k/ps2-spy/internal/savers/subscription_settings"
+	"github.com/x0k/ps2-spy/internal/savers/subscription_settings_saver"
 	"github.com/x0k/ps2-spy/internal/storage/sqlite"
-	trackingmanager "github.com/x0k/ps2-spy/internal/tracking_manager"
+	"github.com/x0k/ps2-spy/internal/tracking_manager"
 )
 
 func startEventsClient(s *Setup, cfg *config.BotConfig, env string, settings ps2commands.SubscriptionSettings) *streaming.Client {
@@ -160,7 +160,7 @@ func startBot(s *Setup, cfg *config.BotConfig, storage *sqlite.Storage) {
 	censusClient := census2.NewClient("https://census.daybreakgames.com", cfg.CensusServiceId, httpClient)
 	sanctuaryClient := census2.NewClient("https://census.lithafalcon.cc", cfg.CensusServiceId, httpClient)
 	// multi loaders
-	popLoader := popMultiLoader.New(
+	popLoader := population_loader.New(
 		map[string]loaders.Loader[loaders.Loaded[ps2.WorldsPopulation]]{
 			"honu":      worlds.NewHonuLoader(honuClient),
 			"ps2live":   worlds.NewPS2LiveLoader(populationClient),
@@ -172,7 +172,7 @@ func startBot(s *Setup, cfg *config.BotConfig, storage *sqlite.Storage) {
 		[]string{"honu", "ps2live", "saerro", "fisu", "sanctuary", "voidwell"},
 	)
 	startInContext(s, popLoader)
-	worldPopLoader := worldPopMultiLoader.New(
+	worldPopLoader := world_population_loader.New(
 		map[string]loaders.KeyedLoader[ps2.WorldId, loaders.Loaded[ps2.DetailedWorldPopulation]]{
 			"honu":     world.NewHonuLoader(honuClient),
 			"saerro":   world.NewSaerroLoader(saerroClient),
@@ -181,7 +181,7 @@ func startBot(s *Setup, cfg *config.BotConfig, storage *sqlite.Storage) {
 		[]string{"honu", "saerro", "voidwell"},
 	)
 	startInContext(s, worldPopLoader)
-	alertsLoader := alertsMultiLoader.New(
+	alertsLoader := alerts_loader.New(
 		map[string]loaders.Loader[loaders.Loaded[ps2.Alerts]]{
 			"ps2alerts": alerts.NewPS2AlertsLoader(ps2alertsClient),
 			"honu":      alerts.NewHonuLoader(honuClient),
@@ -191,15 +191,15 @@ func startBot(s *Setup, cfg *config.BotConfig, storage *sqlite.Storage) {
 		[]string{"ps2alerts", "honu", "census", "voidwell"},
 	)
 	startInContext(s, alertsLoader)
-	worldAlertsLoader := alertsMultiLoader.NewWorldAlertsLoader(alertsLoader)
+	worldAlertsLoader := alerts_loader.NewWorldAlertsLoader(alertsLoader)
 	startInContext(s, worldAlertsLoader)
 	characterLoader := character.New(s.log, characters.NewCensusLoader(censusClient))
 	startInContext(s, characterLoader)
-	channelsLoader := trackingchannels.New(storage)
-	trackingManager := trackingmanager.New(characterLoader, channelsLoader)
-	subSettingsLoader := subscriptionsettingsloader.New(storage)
-	characterNamesLoader := characterNames.NewCensusLoader(censusClient)
-	outfitTagsLoader := outfitTags.NewCensusLoader(censusClient)
+	channelsLoader := tracking_channels_loader.New(storage)
+	trackingManager := tracking_manager.New(characterLoader, channelsLoader)
+	subSettingsLoader := subscription_settings_loader.New(storage)
+	characterNamesLoader := character_names.NewCensusLoader(censusClient)
+	outfitTagsLoader := outfit_tags.NewCensusLoader(censusClient)
 	// bot
 	botConfig := &bot.BotConfig{
 		DiscordToken:           cfg.DiscordToken,
@@ -220,12 +220,12 @@ func startBot(s *Setup, cfg *config.BotConfig, storage *sqlite.Storage) {
 			outfitTagsLoader,
 		),
 		SubmitHandlers: bot.NewSubmitHandlers(
-			characterIds.NewCensusLoader(censusClient),
+			character_ids_loader.NewCensusLoader(censusClient),
 			characterNamesLoader,
 			outfitTagsLoader,
-			subscriptionsettings.New(storage, subSettingsLoader, platforms.PC),
-			subscriptionsettings.New(storage, subSettingsLoader, platforms.PS4_EU),
-			subscriptionsettings.New(storage, subSettingsLoader, platforms.PS4_US),
+			subscription_settings_saver.New(storage, subSettingsLoader, platforms.PC),
+			subscription_settings_saver.New(storage, subSettingsLoader, platforms.PS4_EU),
+			subscription_settings_saver.New(storage, subSettingsLoader, platforms.PS4_US),
 		),
 		EventsPublisher:    eventsPublisher,
 		PlayerLoginHandler: login.New(characterLoader),

@@ -1,4 +1,4 @@
-package characterIds
+package character_ids_loader
 
 import (
 	"context"

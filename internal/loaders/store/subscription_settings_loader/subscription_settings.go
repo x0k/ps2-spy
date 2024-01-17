@@ -1,4 +1,4 @@
-package subscriptionsettings
+package subscription_settings_loader
 
 import (
 	"context"
