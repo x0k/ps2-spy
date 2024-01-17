@@ -1,5 +1,7 @@
 package ps2messages
 
+import "maps"
+
 type messageHandler interface {
 	Type() string
 	Handle(msg any)
@@ -37,7 +39,10 @@ func (h serviceMessageHandler) Type() string {
 
 func (h serviceMessageHandler) Handle(msg any) {
 	if t, ok := msg.(*ServiceMessage[map[string]any]); ok {
-		h <- *t
+		h <- ServiceMessage[map[string]any]{
+			MessageBase: t.MessageBase,
+			Payload:     maps.Clone(t.Payload),
+		}
 	}
 }
 
