@@ -312,8 +312,8 @@ func (s *Storage) TrackingCharactersForPlatform(ctx context.Context, channelId, 
 	return rows, nil
 }
 
-func (s *Storage) AllTrackingOutfitsForPlatform(ctx context.Context, platform string) ([]string, error) {
-	const op = "storage.sqlite.AllTrackingOutfitsForPlatform"
+func (s *Storage) AllTrackableOutfitsForPlatform(ctx context.Context, platform string) ([]string, error) {
+	const op = "storage.sqlite.AllTrackableOutfitsForPlatform"
 	rows, err := query[string](ctx, s, selectAllOutfitsForPlatform, platform)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
