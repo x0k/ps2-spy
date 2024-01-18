@@ -2,6 +2,7 @@ package world_population_loader
 
 import (
 	"context"
+	"log/slog"
 	"maps"
 	"sync"
 	"time"
@@ -19,12 +20,13 @@ type MultiLoader struct {
 }
 
 func NewMulti(
+	log *slog.Logger,
 	loadersMap map[string]loaders.KeyedLoader[ps2.WorldId, loaders.Loaded[ps2.DetailedWorldPopulation]],
 	priority []string,
 ) *MultiLoader {
 	loadersWithDefault := maps.Clone(loadersMap)
 	fallbackLoader := loaders.NewKeyedFallbackLoader(
-		"World",
+		log.With(slog.String("component", "MultiLoader.WorldsPopulation")),
 		loadersMap,
 		priority,
 	)

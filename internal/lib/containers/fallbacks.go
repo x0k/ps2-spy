@@ -3,24 +3,25 @@ package containers
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"sync"
 	"time"
+
+	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 )
 
 var ErrAllFallbacksFailed = fmt.Errorf("all fallbacks failed")
 
 type Fallbacks[T any] struct {
-	// TODO: Replace with proper logger
-	name                 string
+	log                  *slog.Logger
 	entities             map[string]T
 	priority             []string
 	lastSuccessfulEntity *ExpiableValue[string]
 }
 
-func NewFallbacks[T any](name string, entities map[string]T, priority []string, ttl time.Duration) *Fallbacks[T] {
+func NewFallbacks[T any](log *slog.Logger, entities map[string]T, priority []string, ttl time.Duration) *Fallbacks[T] {
 	return &Fallbacks[T]{
-		name:                 name,
+		log:                  log,
 		entities:             entities,
 		priority:             priority,
 		lastSuccessfulEntity: NewExpiableValue[string](ttl),
@@ -39,26 +40,26 @@ func (f *Fallbacks[T]) Exec(executor func(T) error) error {
 			if err == nil {
 				return nil
 			}
-			log.Printf("[%s] Last successful entity %q failed: %q", f.name, name, err)
+			f.log.Debug("last successful fallback failed", slog.String("fallback", name), sl.Err(err))
 		} else {
-			log.Printf("[%s] Last successful entity %q not found", f.name, name)
+			f.log.Warn("last successful fallback not found", slog.String("fallback", name))
 		}
 	}
 	for _, name := range f.priority {
 		entity, ok := f.entities[name]
 		if !ok {
-			log.Printf("[%s] Fallback entity %q not found", f.name, name)
+			f.log.Warn("fallback not found", slog.String("fallback", name))
 			continue
 		}
 		err := executor(entity)
 		if err != nil {
-			log.Printf("[%s] Fallback entity %q failed: %q", f.name, name, err)
+			f.log.Debug("fallback failed", slog.String("fallback", name), sl.Err(err))
 			continue
 		}
 		f.lastSuccessfulEntity.Write(name)
 		return nil
 	}
-	return fmt.Errorf("%s: %w", f.name, ErrAllFallbacksFailed)
+	return ErrAllFallbacksFailed
 }
 
 func ExecFallback[T any, R any](fallbacks *Fallbacks[T], executor func(T) (R, error)) (R, error) {

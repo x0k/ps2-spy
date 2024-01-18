@@ -2,6 +2,7 @@ package alerts_loader
 
 import (
 	"context"
+	"log/slog"
 	"maps"
 	"sync"
 	"time"
@@ -19,12 +20,13 @@ type MultiLoader struct {
 }
 
 func NewMulti(
+	log *slog.Logger,
 	loadersMap map[string]loaders.Loader[loaders.Loaded[ps2.Alerts]],
 	priority []string,
 ) *MultiLoader {
 	loadersWithDefault := maps.Clone(loadersMap)
 	fallbackLoader := loaders.NewFallbackLoader[loaders.Loaded[ps2.Alerts]](
-		"Alerts",
+		log.With(slog.String("component", "MultiLoader.Alerts")),
 		loadersMap,
 		priority,
 	)

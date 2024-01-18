@@ -84,6 +84,7 @@ func startBot(s *setup, cfg *config.Config) error {
 	sanctuaryClient := census2.NewClient("https://census.lithafalcon.cc", cfg.CensusServiceId, httpClient)
 	// multi loaders
 	popLoader := population_loader.NewMulti(
+		s.log,
 		map[string]loaders.Loader[loaders.Loaded[ps2.WorldsPopulation]]{
 			"honu":      population_loader.NewHonu(honuClient),
 			"ps2live":   population_loader.NewPS2Live(populationClient),
@@ -96,6 +97,7 @@ func startBot(s *setup, cfg *config.Config) error {
 	)
 	popLoader.Start(s.ctx, s.wg)
 	worldPopLoader := world_population_loader.NewMulti(
+		s.log,
 		map[string]loaders.KeyedLoader[ps2.WorldId, loaders.Loaded[ps2.DetailedWorldPopulation]]{
 			"honu":     world_population_loader.NewHonu(honuClient),
 			"saerro":   world_population_loader.NewSaerro(saerroClient),
@@ -105,6 +107,7 @@ func startBot(s *setup, cfg *config.Config) error {
 	)
 	worldPopLoader.Start(s.ctx, s.wg)
 	alertsLoader := alerts_loader.NewMulti(
+		s.log,
 		map[string]loaders.Loader[loaders.Loaded[ps2.Alerts]]{
 			"ps2alerts": alerts_loader.NewPS2Alerts(ps2alertsClient),
 			"honu":      alerts_loader.NewHonu(honuClient),

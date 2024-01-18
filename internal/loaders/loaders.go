@@ -3,6 +3,7 @@ package loaders
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"sync"
 	"time"
 
@@ -39,9 +40,9 @@ type FallbackLoader[T any] struct {
 	fallbacks *containers.Fallbacks[Loader[T]]
 }
 
-func NewFallbackLoader[T any](name string, loaders map[string]Loader[T], priority []string) *FallbackLoader[T] {
+func NewFallbackLoader[T any](log *slog.Logger, loaders map[string]Loader[T], priority []string) *FallbackLoader[T] {
 	return &FallbackLoader[T]{
-		fallbacks: containers.NewFallbacks(name, loaders, priority, time.Hour),
+		fallbacks: containers.NewFallbacks(log, loaders, priority, time.Hour),
 	}
 }
 
@@ -60,12 +61,12 @@ type KeyedFallbackLoader[K comparable, T any] struct {
 }
 
 func NewKeyedFallbackLoader[K comparable, T any](
-	name string,
+	log *slog.Logger,
 	loaders map[string]KeyedLoader[K, T],
 	priority []string,
 ) *KeyedFallbackLoader[K, T] {
 	return &KeyedFallbackLoader[K, T]{
-		fallbacks: containers.NewFallbacks(name, loaders, priority, time.Hour),
+		fallbacks: containers.NewFallbacks(log, loaders, priority, time.Hour),
 	}
 }
 
