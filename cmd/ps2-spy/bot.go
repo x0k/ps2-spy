@@ -25,7 +25,9 @@ import (
 	"github.com/x0k/ps2-spy/internal/loaders/character_ids_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/character_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/character_names_loader"
+	"github.com/x0k/ps2-spy/internal/loaders/character_tracking_channels_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/characters_loader"
+	"github.com/x0k/ps2-spy/internal/loaders/event_tracking_channels_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/outfit_member_ids_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/outfit_sync_at_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/outfit_tags_loader"
@@ -34,7 +36,6 @@ import (
 	"github.com/x0k/ps2-spy/internal/loaders/subscription_settings_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/trackable_character_ids_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/trackable_outfits_loader"
-	"github.com/x0k/ps2-spy/internal/loaders/tracking_channels_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/world_alerts_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/world_population_loader"
 	"github.com/x0k/ps2-spy/internal/outfit_members_synchronizer"
@@ -118,13 +119,13 @@ func startBot(s *setup, cfg *config.Config) error {
 	charactersLoader := characters_loader.NewCensus(censusClient)
 	pcBatchedCharacterLoader := character_loader.NewBatch(s.log, charactersLoader, time.Minute)
 	pcBatchedCharacterLoader.Start(s.ctx, s.wg)
-	channelsLoader := tracking_channels_loader.New(sqlStorage)
+	characterTrackingChannelsLoader := character_tracking_channels_loader.New(sqlStorage)
 	pcTrackableCharacterIdsLoader := trackable_character_ids_loader.NewStorage(sqlStorage, platforms.PC)
 	pcOutfitTrackersCountLoader := outfit_trackers_count_loader.NewStorage(sqlStorage, platforms.PC)
 	pcTrackingManager := tracking_manager.New(
 		s.log,
 		pcBatchedCharacterLoader,
-		channelsLoader,
+		characterTrackingChannelsLoader,
 		pcTrackableCharacterIdsLoader,
 		pcOutfitTrackersCountLoader,
 	)
@@ -255,9 +256,9 @@ func startBot(s *setup, cfg *config.Config) error {
 			subscription_settings_saver.New(sqlStorage, subSettingsLoader, platforms.PS4_EU),
 			subscription_settings_saver.New(sqlStorage, subSettingsLoader, platforms.PS4_US),
 		),
-		EventsPublisher:    eventsPublisher,
-		PlayerLoginHandler: login.New(pcBatchedCharacterLoader),
-		TrackingManager:    pcTrackingManager,
+		EventsPublisher:             eventsPublisher,
+		PlayerLoginHandler:          login.New(pcBatchedCharacterLoader),
+		EventTrackingChannelsLoader: event_tracking_channels_loader.New(pcTrackingManager),
 	}
 	s.wg.Add(1)
 	go func() {

@@ -11,6 +11,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/bot/handlers"
 	ps2events "github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
+	"github.com/x0k/ps2-spy/internal/loaders"
 )
 
 type Bot struct {
@@ -21,15 +22,15 @@ type Bot struct {
 }
 
 type BotConfig struct {
-	DiscordToken           string
-	CommandHandlerTimeout  time.Duration
-	Ps2EventHandlerTimeout time.Duration
-	Commands               []*discordgo.ApplicationCommand
-	CommandHandlers        map[string]handlers.InteractionHandler
-	SubmitHandlers         map[string]handlers.InteractionHandler
-	PlayerLoginHandler     handlers.Ps2EventHandler[ps2events.PlayerLogin]
-	TrackingManager        handlers.TrackingManager
-	EventsPublisher        *ps2events.Publisher
+	DiscordToken                string
+	CommandHandlerTimeout       time.Duration
+	Ps2EventHandlerTimeout      time.Duration
+	Commands                    []*discordgo.ApplicationCommand
+	CommandHandlers             map[string]handlers.InteractionHandler
+	SubmitHandlers              map[string]handlers.InteractionHandler
+	PlayerLoginHandler          handlers.Ps2EventHandler[ps2events.PlayerLogin]
+	EventTrackingChannelsLoader loaders.QueriedLoader[any, []string]
+	EventsPublisher             *ps2events.Publisher
 }
 
 func New(
@@ -78,9 +79,9 @@ func New(
 		}
 	})
 	eventHandlersConfig := &handlers.Ps2EventHandlerConfig{
-		Session:         session,
-		Timeout:         cfg.Ps2EventHandlerTimeout,
-		TrackingManager: cfg.TrackingManager,
+		Session:                     session,
+		Timeout:                     cfg.Ps2EventHandlerTimeout,
+		EventTrackingChannelsLoader: cfg.EventTrackingChannelsLoader,
 	}
 	wg := &sync.WaitGroup{}
 	if cfg.PlayerLoginHandler != nil {

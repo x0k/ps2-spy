@@ -10,6 +10,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/x0k/ps2-spy/internal/lib/contextx"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
+	"github.com/x0k/ps2-spy/internal/loaders"
 	"github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
 
@@ -108,10 +109,9 @@ type TrackingManager interface {
 }
 
 type Ps2EventHandlerConfig struct {
-	Session *discordgo.Session
-	Timeout time.Duration
-	// TODO: Replace with loader
-	TrackingManager TrackingManager
+	Session                     *discordgo.Session
+	Timeout                     time.Duration
+	EventTrackingChannelsLoader loaders.QueriedLoader[any, []string]
 }
 
 type Ps2EventHandler[E any] func(ctx context.Context, log *slog.Logger, channelIds []string, cfg *Ps2EventHandlerConfig, event E) error
@@ -123,7 +123,7 @@ func (handler Ps2EventHandler[E]) Run(ctx context.Context, log *slog.Logger, cfg
 	defer cancel()
 	err := contextx.Await(ctx, func() error {
 		// log.Debug("check for tracking channels for", slog.Any("event", event))
-		channels, err := cfg.TrackingManager.ChannelIds(ctx, event)
+		channels, err := cfg.EventTrackingChannelsLoader.Load(ctx, event)
 		if err != nil {
 			return err
 		}
