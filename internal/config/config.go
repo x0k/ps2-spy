@@ -34,7 +34,7 @@ type Config struct {
 	Logger                 LoggerConfig  `yaml:"logger"`
 	Storage                StorageConfig `yaml:"storage"`
 	CommandHandlerTimeout  time.Duration `yaml:"command_handler_timeout" env:"COMMAND_HANDLER_TIMEOUT" env-default:"20s"`
-	Ps2EventHandlerTimeout time.Duration `yaml:"ps2_event_handler_timeout" env:"PS2_EVENT_HANDLER_TIMEOUT" env-default:"2m"`
+	Ps2EventHandlerTimeout time.Duration `yaml:"ps2_event_handler_timeout" env:"PS2_EVENT_HANDLER_TIMEOUT" env-default:"5m"`
 	DiscordToken           string        `yaml:"token" env:"DISCORD_TOKEN" env-required:"true"`
 	HttpClientTimeout      time.Duration `yaml:"http_client_timeout" env:"HTTP_CLIENT_TIMEOUT" env-default:"8s"`
 	CensusServiceId        string        `yaml:"census_service_id" env:"CENSUS_SERVICE_ID" env-required:"true"`

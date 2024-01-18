@@ -34,8 +34,8 @@ var ModalsTitles = map[string]string{
 type InteractionHandler func(ctx context.Context, log *slog.Logger, s *discordgo.Session, i *discordgo.InteractionCreate) error
 
 func (handler InteractionHandler) Run(ctx context.Context, log *slog.Logger, timeout time.Duration, s *discordgo.Session, i *discordgo.InteractionCreate) {
-	// log.Debug("handling", slog.Duration("timeout", timeout))
-	// t := time.Now()
+	log.Debug("handling", slog.Duration("timeout", timeout))
+	t := time.Now()
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	err := contextx.Await(ctx, func() error {
@@ -50,7 +50,7 @@ func (handler InteractionHandler) Run(ctx context.Context, log *slog.Logger, tim
 	if err != nil {
 		log.Error("error handling", sl.Err(err))
 	}
-	// log.Debug("handled", slog.Duration("duration", time.Since(t)))
+	log.Debug("handled", slog.Duration("duration", time.Since(t)))
 }
 
 func DeferredResponse(handle func(ctx context.Context, log *slog.Logger, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.WebhookEdit, error)) InteractionHandler {
@@ -122,6 +122,7 @@ func (handler Ps2EventHandler[E]) Run(ctx context.Context, log *slog.Logger, cfg
 	ctx, cancel := context.WithTimeout(ctx, cfg.Timeout)
 	defer cancel()
 	err := contextx.Await(ctx, func() error {
+		// log.Debug("check for tracking channels for", slog.Any("event", event))
 		channels, err := cfg.TrackingManager.ChannelIds(ctx, event)
 		if err != nil {
 			return err
@@ -129,6 +130,7 @@ func (handler Ps2EventHandler[E]) Run(ctx context.Context, log *slog.Logger, cfg
 		if len(channels) == 0 {
 			return nil
 		}
+		log.Debug("handling", slog.Any("event", event), slog.Int("channels", len(channels)))
 		return handler(ctx, log, channels, cfg, event)
 	})
 	if err != nil {
@@ -147,12 +149,12 @@ func SimpleMessage[E any](handle func(ctx context.Context, cfg *Ps2EventHandlerC
 		for _, channel := range channelIds {
 			_, err = cfg.Session.ChannelMessageSend(channel, msg)
 			if err != nil {
-				log.Error("error sending login message", slog.String("channel", channel), sl.Err(err))
+				log.Error("error sending message", slog.String("channel", channel), sl.Err(err))
 				errors = append(errors, err.Error())
 			}
 		}
 		if len(errors) > 0 {
-			return fmt.Errorf("error sending login message: %s", strings.Join(errors, ", "))
+			return fmt.Errorf("error sending message: %s", strings.Join(errors, ", "))
 		}
 		return nil
 	}

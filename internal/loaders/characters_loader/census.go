@@ -3,6 +3,7 @@ package characters_loader
 import (
 	"context"
 	"strconv"
+	"sync"
 
 	"github.com/x0k/ps2-spy/internal/lib/census2"
 	collections "github.com/x0k/ps2-spy/internal/lib/census2/collections/ps2"
@@ -11,23 +12,33 @@ import (
 )
 
 type CensusLoader struct {
-	client *census2.Client
+	client  *census2.Client
+	operand census2.Ptr[census2.List[census2.Str]]
+	queryMu sync.Mutex
+	query   *census2.Query
 }
 
 func NewCensus(client *census2.Client) *CensusLoader {
+	operand := census2.NewPtr(census2.StrList())
 	return &CensusLoader{
-		client: client,
+		client:  client,
+		operand: operand,
+		query: census2.NewQuery(census2.GetQuery, census2.Ps2_v2_NS, collections.Character).
+			Where(census2.Cond("character_id").Equals(operand)).
+			Resolve("outfit", "world"),
 	}
 }
 
-var CharacterIdOperand = census2.NewPtr(census2.StrList())
-var CharacterQuery = census2.NewQuery(census2.GetQuery, census2.Ps2_v2_NS, collections.Character).
-	Where(census2.Cond("character_id").Equals(CharacterIdOperand)).
-	Resolve("outfit", "world")
+func (l *CensusLoader) toUrl(charIds []string) string {
+	l.queryMu.Lock()
+	defer l.queryMu.Unlock()
+	l.operand.Set(census2.StrList(charIds...))
+	return l.client.ToURL(l.query)
+}
 
 func (l *CensusLoader) Load(ctx context.Context, charIds []string) (map[string]ps2.Character, error) {
-	CharacterIdOperand.Set(census2.StrList(charIds...))
-	chars, err := census2.ExecuteAndDecode[collections.CharacterItem](ctx, l.client, CharacterQuery)
+	url := l.toUrl(charIds)
+	chars, err := census2.ExecutePreparedAndDecode[collections.CharacterItem](ctx, l.client, collections.Character, url)
 	if err != nil {
 		return nil, err
 	}
