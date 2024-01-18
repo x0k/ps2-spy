@@ -19,5 +19,5 @@ func NewStorage(storage *sqlite.Storage, platform string) *StoreLoader {
 }
 
 func (s *StoreLoader) Load(ctx context.Context) ([]string, error) {
-	return s.storage.AllTrackableCharactersForPlatform(ctx, s.platform)
+	return s.storage.AllTrackableCharactersWithDuplicationsForPlatform(ctx, s.platform)
 }

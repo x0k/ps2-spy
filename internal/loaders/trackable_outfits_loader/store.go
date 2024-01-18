@@ -19,5 +19,5 @@ func NewStorage(storage *sqlite.Storage, platform string) *StoreLoader {
 }
 
 func (l *StoreLoader) Load(ctx context.Context) ([]string, error) {
-	return l.storage.AllTrackableOutfitsForPlatform(ctx, l.platform)
+	return l.storage.AllUniqueTrackableOutfitsForPlatform(ctx, l.platform)
 }

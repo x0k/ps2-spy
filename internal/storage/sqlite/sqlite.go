@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
-	"sync"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -24,11 +23,11 @@ const (
 	deleteOutfitCharacter
 	upsertOutfitSynchronization
 	selectOutfitSynchronization
-	selectChannelsByCharacter
+	selectTrackingChannelsForCharacter
 	selectChannelOutfitsForPlatform
 	selectChannelCharactersForPlatform
-	selectAllCharactersForPlatform
-	selectAllOutfitsForPlatform
+	selectAllTrackableCharactersWithDuplicationForPlatform
+	selectAllUniqueTrackableOutfitsForPlatform
 	selectOutfitMembers
 	countOutfitTrackingChannels
 	statementsCount
@@ -40,12 +39,14 @@ type Storage struct {
 	log        *slog.Logger
 	db         *sql.DB
 	statements [statementsCount]*sql.Stmt
-	txMu       sync.Mutex
 	tx         *sql.Tx
 	publisher  storage.AbstractPublisher
 }
 
 func (s *Storage) migrate(ctx context.Context) error {
+
+	// TODO: Normalize schema by extracting (platform, outfit_tag) into separate table
+	//       Maybe also need to extract (platform, character_id)
 
 	_, err := s.db.ExecContext(ctx, `
 CREATE TABLE IF NOT EXISTS outfit_to_character (
@@ -127,7 +128,7 @@ func (s *Storage) Start(ctx context.Context) error {
 		{upsertOutfitSynchronization, "INSERT INTO outfit_synchronization VALUES (?, lower(?), ?) ON CONFLICT(platform, outfit_tag) DO UPDATE SET synchronized_at = EXCLUDED.synchronized_at"},
 		{selectOutfitSynchronization, "SELECT synchronized_at FROM outfit_synchronization WHERE platform = ? AND outfit_tag = lower(?)"},
 		{
-			name: selectChannelsByCharacter,
+			name: selectTrackingChannelsForCharacter,
 			stmt: `SELECT channel_id FROM channel_to_character WHERE platform = ? AND character_id = ?
 				   UNION
 				   SELECT channel_id FROM channel_to_outfit WHERE platform = ? AND outfit_tag = lower(?)`,
@@ -135,7 +136,7 @@ func (s *Storage) Start(ctx context.Context) error {
 		{selectChannelOutfitsForPlatform, "SELECT outfit_tag FROM channel_to_outfit WHERE channel_id = ? AND platform = ?"},
 		{selectChannelCharactersForPlatform, "SELECT character_id FROM channel_to_character WHERE channel_id = ? AND platform = ?"},
 		{
-			name: selectAllCharactersForPlatform,
+			name: selectAllTrackableCharactersWithDuplicationForPlatform,
 			stmt: `SELECT character_id FROM channel_to_character WHERE platform = ?
 				   UNION ALL
 				   SELECT character_id
@@ -143,8 +144,7 @@ func (s *Storage) Start(ctx context.Context) error {
 				   JOIN outfit_to_character ON channel_to_outfit.outfit_tag = outfit_to_character.outfit_tag AND channel_to_outfit.platform = outfit_to_character.platform
 				   WHERE channel_to_outfit.platform = ?`,
 		},
-		// TODO: Select only tracking outfits
-		{selectAllOutfitsForPlatform, "SELECT DISTINCT outfit_tag FROM channel_to_outfit WHERE platform = ?"},
+		{selectAllUniqueTrackableOutfitsForPlatform, "SELECT DISTINCT outfit_tag FROM channel_to_outfit WHERE platform = ?"},
 		{selectOutfitMembers, "SELECT character_id FROM outfit_to_character WHERE platform = ? AND outfit_tag = lower(?)"},
 		{countOutfitTrackingChannels, "SELECT COUNT(*) FROM channel_to_outfit WHERE platform = ? AND outfit_tag = lower(?)"},
 	}
@@ -376,7 +376,7 @@ func (s *Storage) OutfitSynchronizedAt(ctx context.Context, platform, outfitTag 
 func (s *Storage) TrackingChannelIdsForCharacter(ctx context.Context, platform, characterId, outfitTag string) ([]string, error) {
 	const op = "storage.sqlite.TrackingChannelIdsForCharacter"
 	s.log.Debug("TrackingChannelIdsForCharacter", slog.String("platform", platform), slog.String("characterId", characterId), slog.String("outfitTag", outfitTag))
-	rows, err := query[string](ctx, s, selectChannelsByCharacter, platform, characterId, platform, outfitTag)
+	rows, err := query[string](ctx, s, selectTrackingChannelsForCharacter, platform, characterId, platform, outfitTag)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -403,20 +403,20 @@ func (s *Storage) TrackingCharactersForPlatform(ctx context.Context, channelId, 
 	return rows, nil
 }
 
-func (s *Storage) AllTrackableCharactersForPlatform(ctx context.Context, platform string) ([]string, error) {
+func (s *Storage) AllTrackableCharactersWithDuplicationsForPlatform(ctx context.Context, platform string) ([]string, error) {
 	const op = "storage.sqlite.AllTrackableCharactersForPlatform"
 	s.log.Debug("AllTrackableCharactersForPlatform", slog.String("platform", platform))
-	rows, err := query[string](ctx, s, selectAllCharactersForPlatform, platform, platform)
+	rows, err := query[string](ctx, s, selectAllTrackableCharactersWithDuplicationForPlatform, platform, platform)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 	return rows, nil
 }
 
-func (s *Storage) AllTrackableOutfitsForPlatform(ctx context.Context, platform string) ([]string, error) {
+func (s *Storage) AllUniqueTrackableOutfitsForPlatform(ctx context.Context, platform string) ([]string, error) {
 	const op = "storage.sqlite.AllTrackableOutfitsForPlatform"
 	s.log.Debug("AllTrackableOutfitsForPlatform", slog.String("platform", platform))
-	rows, err := query[string](ctx, s, selectAllOutfitsForPlatform, platform)
+	rows, err := query[string](ctx, s, selectAllUniqueTrackableOutfitsForPlatform, platform)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
