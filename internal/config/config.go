@@ -9,8 +9,9 @@ import (
 )
 
 const (
-	TextHandler = "text"
-	JSONHandler = "json"
+	TextHandler   = "text"
+	JSONHandler   = "json"
+	PrettyHandler = "pretty"
 )
 
 const (

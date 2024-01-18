@@ -52,5 +52,11 @@ func RetryWhileWithRecover(rt Retryable) error {
 }
 
 func ContextIsNotCanceled(err error, _ int) bool {
-	return !errors.Is(err, context.Canceled)
+	return err != nil && !errors.Is(err, context.Canceled)
+}
+
+func ContextIsNotCanceledAndMaxRetriesNotExceeded(maxRetries int) func(err error, retryCount int) bool {
+	return func(err error, retryCount int) bool {
+		return err != nil && !errors.Is(err, context.Canceled) && retryCount < maxRetries
+	}
 }

@@ -34,8 +34,8 @@ var ModalsTitles = map[string]string{
 type InteractionHandler func(ctx context.Context, log *slog.Logger, s *discordgo.Session, i *discordgo.InteractionCreate) error
 
 func (handler InteractionHandler) Run(ctx context.Context, log *slog.Logger, timeout time.Duration, s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Debug("handling", slog.Duration("timeout", timeout))
-	t := time.Now()
+	// log.Debug("handling", slog.Duration("timeout", timeout))
+	// t := time.Now()
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	err := contextx.Await(ctx, func() error {
@@ -50,7 +50,7 @@ func (handler InteractionHandler) Run(ctx context.Context, log *slog.Logger, tim
 	if err != nil {
 		log.Error("error handling", sl.Err(err))
 	}
-	log.Debug("handled", slog.Duration("duration", time.Since(t)))
+	// log.Debug("handled", slog.Duration("duration", time.Since(t)))
 }
 
 func DeferredResponse(handle func(ctx context.Context, log *slog.Logger, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.WebhookEdit, error)) InteractionHandler {
@@ -117,8 +117,8 @@ type Ps2EventHandlerConfig struct {
 type Ps2EventHandler[E any] func(ctx context.Context, log *slog.Logger, channelIds []string, cfg *Ps2EventHandlerConfig, event E) error
 
 func (handler Ps2EventHandler[E]) Run(ctx context.Context, log *slog.Logger, cfg *Ps2EventHandlerConfig, event E) {
-	log.Debug("handling", slog.Duration("timeout", cfg.Timeout))
-	t := time.Now()
+	// log.Debug("handling", slog.Duration("timeout", cfg.Timeout))
+	// t := time.Now()
 	ctx, cancel := context.WithTimeout(ctx, cfg.Timeout)
 	defer cancel()
 	err := contextx.Await(ctx, func() error {
@@ -134,7 +134,7 @@ func (handler Ps2EventHandler[E]) Run(ctx context.Context, log *slog.Logger, cfg
 	if err != nil {
 		log.Error("error handling", sl.Err(err))
 	}
-	log.Debug("handled", slog.Duration("duration", time.Since(t)))
+	// log.Debug("handled", slog.Duration("duration", time.Since(t)))
 }
 
 func SimpleMessage[E any](handle func(ctx context.Context, cfg *Ps2EventHandlerConfig, event E) (string, error)) Ps2EventHandler[E] {

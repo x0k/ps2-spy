@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/x0k/ps2-spy/internal/config"
+	"github.com/x0k/ps2-spy/internal/lib/logger/handlers/slogpretty"
 )
 
 func mustSetupLogger(cfg *config.LoggerConfig) *slog.Logger {
@@ -31,6 +32,11 @@ func mustSetupLogger(cfg *config.LoggerConfig) *slog.Logger {
 		handler = slog.NewTextHandler(os.Stdout, options)
 	case config.JSONHandler:
 		handler = slog.NewJSONHandler(os.Stdout, options)
+	case config.PrettyHandler:
+		otps := &slogpretty.PrettyHandlerOptions{
+			SlogOpts: options,
+		}
+		handler = otps.NewPrettyHandler(os.Stdout)
 	default:
 		log.Fatalf("Unknown handler type: %s, expect %q or %q", cfg.HandlerType, config.TextHandler, config.JSONHandler)
 	}

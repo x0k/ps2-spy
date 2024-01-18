@@ -27,6 +27,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/loaders/character_names_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/characters_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/outfit_member_ids_loader"
+	"github.com/x0k/ps2-spy/internal/loaders/outfit_sync_at_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/outfit_tags_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/outfit_trackers_count_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/population_loader"
@@ -194,9 +195,11 @@ func startBot(s *setup, cfg *config.Config) error {
 		sqlStorage,
 		platforms.PC,
 	)
+	pcOutfitSyncAtLoader := outfit_sync_at_loader.NewStorage(sqlStorage, platforms.PC)
 	pcOutfitMembersSynchronizer := outfit_members_synchronizer.New(
 		s.log,
 		pcTrackableOutfitsLoader,
+		pcOutfitSyncAtLoader,
 		outfitMembersLoader,
 		pcOutfitMembersSaver,
 		time.Hour*24,
@@ -219,7 +222,6 @@ func startBot(s *setup, cfg *config.Config) error {
 				if saved.Platform != platforms.PC {
 					continue
 				}
-				// TODO: This should not trigger sync if outfit is already synced
 				pcOutfitMembersSynchronizer.SyncOutfit(s.ctx, s.wg, saved.OutfitId)
 			}
 		}

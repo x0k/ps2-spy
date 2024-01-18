@@ -2,6 +2,7 @@ package outfit_members_saver
 
 import (
 	"context"
+	"time"
 
 	"github.com/x0k/ps2-spy/internal/lib/diff"
 	"github.com/x0k/ps2-spy/internal/storage/sqlite"
@@ -19,29 +20,31 @@ func New(storage *sqlite.Storage, platform string) *OutfitMembersSaver {
 	}
 }
 
-func (s *OutfitMembersSaver) Save(ctx context.Context, outfit string, members []string) error {
-	old, err := s.storage.OutfitMembers(ctx, s.platform, outfit)
+func (s *OutfitMembersSaver) Save(ctx context.Context, outfitTag string, members []string) error {
+	old, err := s.storage.OutfitMembers(ctx, s.platform, outfitTag)
 	if err != nil {
 		return err
 	}
 	membersDiff := diff.SlicesDiff(old, members)
-	if len(membersDiff.ToAdd)+len(membersDiff.ToDel) == 0 {
-		return nil
+	diffSize := len(membersDiff.ToAdd) + len(membersDiff.ToDel)
+	if diffSize == 0 {
+		return s.storage.SaveOutfitSynchronizedAt(ctx, s.platform, outfitTag, time.Now())
 	}
-	storage, err := s.storage.Begin(ctx, len(membersDiff.ToAdd)+len(membersDiff.ToDel))
+	err = s.storage.Begin(ctx, diffSize, func(tx *sqlite.Storage) error {
+		for _, member := range membersDiff.ToAdd {
+			if err := tx.SaveOutfitMember(ctx, s.platform, outfitTag, member); err != nil {
+				return err
+			}
+		}
+		for _, member := range membersDiff.ToDel {
+			if err := tx.DeleteOutfitMember(ctx, s.platform, outfitTag, member); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 	if err != nil {
 		return err
 	}
-	defer storage.Rollback()
-	for _, member := range membersDiff.ToAdd {
-		if err := storage.SaveOutfitMember(ctx, s.platform, outfit, member); err != nil {
-			return err
-		}
-	}
-	for _, member := range membersDiff.ToDel {
-		if err := storage.DeleteOutfitMember(ctx, s.platform, outfit, member); err != nil {
-			return err
-		}
-	}
-	return storage.Commit()
+	return s.storage.SaveOutfitSynchronizedAt(ctx, s.platform, outfitTag, time.Now())
 }

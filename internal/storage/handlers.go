@@ -77,6 +77,18 @@ func (h outfitMemberDeletedHandler) Handle(e any) {
 	}
 }
 
+type outfitSynchronizedHandler chan<- OutfitSynchronized
+
+func (h outfitSynchronizedHandler) Type() string {
+	return OutfitSynchronizedType
+}
+
+func (h outfitSynchronizedHandler) Handle(e any) {
+	if t, ok := e.(OutfitSynchronized); ok {
+		h <- t
+	}
+}
+
 func handlerForInterface(handler any) eventHandler {
 	switch v := handler.(type) {
 	case chan ChannelOutfitSaved:
@@ -101,6 +113,12 @@ func handlerForInterface(handler any) eventHandler {
 		return outfitMemberSavedHandler(v)
 	case chan OutfitMemberDeleted:
 		return outfitMemberDeletedHandler(v)
+	case chan<- OutfitMemberDeleted:
+		return outfitMemberDeletedHandler(v)
+	case chan OutfitSynchronized:
+		return outfitSynchronizedHandler(v)
+	case chan<- OutfitSynchronized:
+		return outfitSynchronizedHandler(v)
 	}
 	return nil
 }

@@ -1,5 +1,7 @@
 package storage
 
+import "time"
+
 const (
 	ChannelOutfitSavedType      = "channel_outfit_saved"
 	ChannelOutfitDeletedType    = "channel_outfit_deleted"
@@ -7,6 +9,7 @@ const (
 	ChannelCharacterDeletedType = "channel_character_deleted"
 	OutfitMemberSavedType       = "outfit_member_saved"
 	OutfitMemberDeletedType     = "outfit_member_deleted"
+	OutfitSynchronizedType      = "outfit_synchronized"
 )
 
 type Event interface {
@@ -71,4 +74,14 @@ type OutfitMemberDeleted struct {
 
 func (e OutfitMemberDeleted) Type() string {
 	return OutfitMemberDeletedType
+}
+
+type OutfitSynchronized struct {
+	Platform       string
+	OutfitTag      string
+	SynchronizedAt time.Time
+}
+
+func (e OutfitSynchronized) Type() string {
+	return OutfitSynchronizedType
 }
