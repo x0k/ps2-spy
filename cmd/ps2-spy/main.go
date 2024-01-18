@@ -33,7 +33,7 @@ func main() {
 		wg:  &sync.WaitGroup{},
 	}
 
-	startBot(s, cfg)
+	start(s, cfg)
 
 	log.Info("Press CTRL-C to exit.")
 	stop := make(chan os.Signal, 1)
