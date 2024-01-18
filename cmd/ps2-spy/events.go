@@ -35,11 +35,7 @@ func startEventsClient(s *setup, cfg *config.Config, env string, settings ps2com
 					log.Error("failed to connect to websocket", sl.Err(err))
 					return err
 				}
-				defer func() {
-					if err := client.Close(); err != nil {
-						log.Error("failed to close websocket", sl.Err(err))
-					}
-				}()
+				defer client.Close()
 				return client.Subscribe(s.ctx, settings)
 			},
 			While: retry.ContextIsNotCanceled,
