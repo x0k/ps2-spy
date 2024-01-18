@@ -7,6 +7,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/census2"
 	collections "github.com/x0k/ps2-spy/internal/lib/census2/collections/ps2"
 	"github.com/x0k/ps2-spy/internal/ps2"
+	"github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
 
 type CensusLoader struct {
@@ -42,6 +43,7 @@ func (l *CensusLoader) Load(ctx context.Context, charIds []string) (map[string]p
 			Name:      char.Name.First,
 			OutfitTag: char.Outfit.Alias,
 			WorldId:   ps2.WorldId(wId),
+			Platform:  platforms.PC,
 		}
 	}
 	return m, nil

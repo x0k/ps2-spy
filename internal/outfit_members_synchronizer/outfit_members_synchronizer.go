@@ -62,7 +62,7 @@ func (s *OutfitMembersSynchronizer) SyncOutfit(ctx context.Context, wg *sync.Wai
 
 func (s *OutfitMembersSynchronizer) sync(ctx context.Context, wg *sync.WaitGroup) {
 	outfits, err := s.outfitsLoader.Load(ctx)
-	s.log.Debug("synchronizing", slog.Int("outfits", len(outfits)))
+	s.log.Info("synchronizing", slog.Int("outfits", len(outfits)))
 	if err != nil {
 		s.log.Error("failed to load trackable outfits", sl.Err(err))
 		return

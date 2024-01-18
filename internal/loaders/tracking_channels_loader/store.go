@@ -18,5 +18,5 @@ func New(store *sqlite.Storage) *TrackingChannelsLoader {
 }
 
 func (l *TrackingChannelsLoader) Load(ctx context.Context, char ps2.Character) ([]string, error) {
-	return l.store.TrackingChannelIdsForCharacter(ctx, char.Id, char.OutfitTag)
+	return l.store.TrackingChannelIdsForCharacter(ctx, char.Platform, char.Id, char.OutfitTag)
 }

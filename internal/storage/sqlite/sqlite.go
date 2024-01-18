@@ -23,8 +23,10 @@ const (
 	selectChannelsByCharacter
 	selectChannelOutfitsForPlatform
 	selectChannelCharactersForPlatform
+	selectAllCharactersForPlatform
 	selectAllOutfitsForPlatform
 	selectOutfitMembers
+	countOutfitTrackingChannels
 	statementsCount
 )
 
@@ -109,14 +111,25 @@ func (s *Storage) Start(ctx context.Context) error {
 		{deleteOutfitCharacter, "DELETE FROM outfit_to_character WHERE platform = ? AND outfit_tag = lower(?) AND character_id = ?"},
 		{
 			name: selectChannelsByCharacter,
-			stmt: `SELECT channel_id FROM channel_to_character WHERE character_id = ?
+			stmt: `SELECT channel_id FROM channel_to_character WHERE platform = ? AND character_id = ?
 				   UNION
-				   SELECT channel_id FROM channel_to_outfit WHERE outfit_tag = lower(?)`,
+				   SELECT channel_id FROM channel_to_outfit WHERE platform = ? AND outfit_tag = lower(?)`,
 		},
 		{selectChannelOutfitsForPlatform, "SELECT outfit_tag FROM channel_to_outfit WHERE channel_id = ? AND platform = ?"},
 		{selectChannelCharactersForPlatform, "SELECT character_id FROM channel_to_character WHERE channel_id = ? AND platform = ?"},
+		{
+			name: selectAllCharactersForPlatform,
+			stmt: `SELECT character_id FROM channel_to_character WHERE platform = ?
+				   UNION ALL
+				   SELECT character_id
+				   FROM channel_to_outfit
+				   JOIN outfit_to_character ON channel_to_outfit.outfit_tag = outfit_to_character.outfit_tag AND channel_to_outfit.platform = outfit_to_character.platform
+				   WHERE channel_to_outfit.platform = ?`,
+		},
+		// TODO: Select only tracking outfits
 		{selectAllOutfitsForPlatform, "SELECT DISTINCT outfit_tag FROM channel_to_outfit WHERE platform = ?"},
 		{selectOutfitMembers, "SELECT character_id FROM outfit_to_character WHERE platform = ? AND outfit_tag = lower(?)"},
+		{countOutfitTrackingChannels, "SELECT COUNT(*) FROM channel_to_outfit WHERE platform = ? AND outfit_tag = lower(?)"},
 	}
 	for _, raw := range rawStatements {
 		stmt, err := s.db.Prepare(raw.stmt)
@@ -320,9 +333,9 @@ func (s *Storage) DeleteOutfitMember(ctx context.Context, platform, outfitTag, c
 	return nil
 }
 
-func (s *Storage) TrackingChannelIdsForCharacter(ctx context.Context, characterId, outfitTag string) ([]string, error) {
+func (s *Storage) TrackingChannelIdsForCharacter(ctx context.Context, platform, characterId, outfitTag string) ([]string, error) {
 	const op = "storage.sqlite.TrackingChannelIdsForCharacter"
-	rows, err := query[string](ctx, s, selectChannelsByCharacter, characterId, outfitTag)
+	rows, err := query[string](ctx, s, selectChannelsByCharacter, platform, characterId, platform, outfitTag)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -347,6 +360,15 @@ func (s *Storage) TrackingCharactersForPlatform(ctx context.Context, channelId, 
 	return rows, nil
 }
 
+func (s *Storage) AllTrackableCharactersForPlatform(ctx context.Context, platform string) ([]string, error) {
+	const op = "storage.sqlite.AllTrackableCharactersForPlatform"
+	rows, err := query[string](ctx, s, selectAllCharactersForPlatform, platform)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	return rows, nil
+}
+
 func (s *Storage) AllTrackableOutfitsForPlatform(ctx context.Context, platform string) ([]string, error) {
 	const op = "storage.sqlite.AllTrackableOutfitsForPlatform"
 	rows, err := query[string](ctx, s, selectAllOutfitsForPlatform, platform)
@@ -363,4 +385,14 @@ func (s *Storage) OutfitMembers(ctx context.Context, platform, outfitTag string)
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 	return rows, nil
+}
+
+func (s *Storage) CountOutfitTrackingChannels(ctx context.Context, platform, outfitTag string) (int, error) {
+	const op = "storage.sqlite.CountOutfitTrackingChannels"
+	var count int
+	err := s.queryRow(ctx, &count, countOutfitTrackingChannels, platform, outfitTag)
+	if err != nil {
+		return 0, fmt.Errorf("%s: %w", op, err)
+	}
+	return count, nil
 }

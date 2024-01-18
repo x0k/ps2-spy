@@ -90,6 +90,7 @@ type Character struct {
 	Name      string
 	OutfitTag string
 	WorldId   WorldId
+	Platform  string
 }
 
 var ErrWorldNotFound = fmt.Errorf("world not found")

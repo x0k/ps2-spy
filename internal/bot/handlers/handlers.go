@@ -108,8 +108,9 @@ type TrackingManager interface {
 }
 
 type Ps2EventHandlerConfig struct {
-	Session         *discordgo.Session
-	Timeout         time.Duration
+	Session *discordgo.Session
+	Timeout time.Duration
+	// TODO: Replace with loader
 	TrackingManager TrackingManager
 }
 

@@ -28,8 +28,10 @@ import (
 	"github.com/x0k/ps2-spy/internal/loaders/characters_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/outfit_member_ids_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/outfit_tags_loader"
+	"github.com/x0k/ps2-spy/internal/loaders/outfit_trackers_count_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/population_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/subscription_settings_loader"
+	"github.com/x0k/ps2-spy/internal/loaders/trackable_character_ids_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/trackable_outfits_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/tracking_channels_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/world_alerts_loader"
@@ -52,7 +54,7 @@ type setup struct {
 func startBot(s *setup, cfg *config.Config) error {
 	const op = "startBot"
 	storageEventsPublisher := storage.NewPublisher(s.log)
-	storage, err := startStorage(s, cfg.Storage, storageEventsPublisher)
+	sqlStorage, err := startStorage(s, cfg.Storage, storageEventsPublisher)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
@@ -112,20 +114,84 @@ func startBot(s *setup, cfg *config.Config) error {
 	alertsLoader.Start(s.ctx, s.wg)
 	worldAlertsLoader := world_alerts_loader.NewMulti(alertsLoader)
 	worldAlertsLoader.Start(s.ctx, s.wg)
-	batchedCharacterLoader := character_loader.NewBatch(s.log, characters_loader.NewCensus(censusClient))
-	batchedCharacterLoader.Start(s.ctx, s.wg)
-	channelsLoader := tracking_channels_loader.New(storage)
-	trackingManager := tracking_manager.New(batchedCharacterLoader, channelsLoader)
-	subSettingsLoader := subscription_settings_loader.New(storage)
+	pcBatchedCharacterLoader := character_loader.NewBatch(s.log, characters_loader.NewCensus(censusClient))
+	pcBatchedCharacterLoader.Start(s.ctx, s.wg)
+	channelsLoader := tracking_channels_loader.New(sqlStorage)
+	pcTrackableCharacterIdsLoader := trackable_character_ids_loader.NewStorage(sqlStorage, platforms.PC)
+	pcOutfitTrackersCountLoader := outfit_trackers_count_loader.NewStorage(sqlStorage, platforms.PC)
+	pcTrackingManager := tracking_manager.New(
+		s.log,
+		pcBatchedCharacterLoader,
+		channelsLoader,
+		pcTrackableCharacterIdsLoader,
+		pcOutfitTrackersCountLoader,
+	)
+	pcTrackingManager.Start(s.ctx, s.wg)
+	channelCharacterSaved := make(chan storage.ChannelCharacterSaved)
+	charSavedUnSub, err := storageEventsPublisher.AddHandler(channelCharacterSaved)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+	channelCharacterDeleted := make(chan storage.ChannelCharacterDeleted)
+	charDeletedUnSub, err := storageEventsPublisher.AddHandler(channelCharacterDeleted)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+	outfitMemberSaved := make(chan storage.OutfitMemberSaved)
+	outfitMemberSavedUnSub, err := storageEventsPublisher.AddHandler(outfitMemberSaved)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+	outfitMemberDeleted := make(chan storage.OutfitMemberDeleted)
+	outfitMemberDeletedUnSub, err := storageEventsPublisher.AddHandler(outfitMemberDeleted)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+	s.wg.Add(1)
+	go func() {
+		defer s.wg.Done()
+		defer charSavedUnSub()
+		defer charDeletedUnSub()
+		defer outfitMemberSavedUnSub()
+		defer outfitMemberDeletedUnSub()
+		for {
+			select {
+			case <-s.ctx.Done():
+				return
+			case saved := <-channelCharacterSaved:
+				if saved.Platform != platforms.PC {
+					continue
+				}
+				pcTrackingManager.TrackCharacter(saved.CharacterId)
+			case deleted := <-channelCharacterDeleted:
+				if deleted.Platform != platforms.PC {
+					continue
+				}
+				pcTrackingManager.UntrackCharacter(deleted.CharacterId)
+			case saved := <-outfitMemberSaved:
+				if saved.Platform != platforms.PC {
+					continue
+				}
+				pcTrackingManager.TrackOutfitMember(s.ctx, saved.CharacterId, saved.OutfitTag)
+			case deleted := <-outfitMemberDeleted:
+				if deleted.Platform != platforms.PC {
+					continue
+				}
+				pcTrackingManager.UntrackOutfitMember(s.ctx, deleted.CharacterId, deleted.OutfitTag)
+			}
+		}
+	}()
+
+	subSettingsLoader := subscription_settings_loader.New(sqlStorage)
 	characterNamesLoader := character_names_loader.NewCensus(censusClient)
 	outfitTagsLoader := outfit_tags_loader.NewCensus(censusClient)
 	pcTrackableOutfitsLoader := trackable_outfits_loader.NewStorage(
-		storage,
+		sqlStorage,
 		platforms.PC,
 	)
 	outfitMembersLoader := outfit_member_ids_loader.NewCensus(censusClient)
 	pcOutfitMembersSaver := outfit_members_saver.New(
-		storage,
+		sqlStorage,
 		platforms.PC,
 	)
 	pcOutfitMembersSynchronizer := outfit_members_synchronizer.New(
@@ -136,6 +202,29 @@ func startBot(s *setup, cfg *config.Config) error {
 		time.Hour*24,
 	)
 	pcOutfitMembersSynchronizer.Start(s.ctx, s.wg)
+	channelOutfitSaved := make(chan storage.ChannelOutfitSaved)
+	outfitSavedUnSub, err := storageEventsPublisher.AddHandler(channelOutfitSaved)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+	s.wg.Add(1)
+	go func() {
+		defer s.wg.Done()
+		defer outfitSavedUnSub()
+		for {
+			select {
+			case <-s.ctx.Done():
+				return
+			case saved := <-channelOutfitSaved:
+				if saved.Platform != platforms.PC {
+					continue
+				}
+				// TODO: This should not trigger sync if outfit is already synced
+				pcOutfitMembersSynchronizer.SyncOutfit(s.ctx, s.wg, saved.OutfitId)
+			}
+		}
+	}()
+
 	// bot
 	botConfig := &bot.BotConfig{
 		DiscordToken:           cfg.DiscordToken,
@@ -159,13 +248,13 @@ func startBot(s *setup, cfg *config.Config) error {
 			character_ids_loader.NewCensus(censusClient),
 			characterNamesLoader,
 			outfitTagsLoader,
-			subscription_settings_saver.New(storage, subSettingsLoader, platforms.PC),
-			subscription_settings_saver.New(storage, subSettingsLoader, platforms.PS4_EU),
-			subscription_settings_saver.New(storage, subSettingsLoader, platforms.PS4_US),
+			subscription_settings_saver.New(sqlStorage, subSettingsLoader, platforms.PC),
+			subscription_settings_saver.New(sqlStorage, subSettingsLoader, platforms.PS4_EU),
+			subscription_settings_saver.New(sqlStorage, subSettingsLoader, platforms.PS4_US),
 		),
 		EventsPublisher:    eventsPublisher,
-		PlayerLoginHandler: login.New(batchedCharacterLoader),
-		TrackingManager:    trackingManager,
+		PlayerLoginHandler: login.New(pcBatchedCharacterLoader),
+		TrackingManager:    pcTrackingManager,
 	}
 	s.wg.Add(1)
 	go func() {
