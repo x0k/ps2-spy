@@ -9,7 +9,6 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/census2"
 	collections "github.com/x0k/ps2-spy/internal/lib/census2/collections/ps2"
 	"github.com/x0k/ps2-spy/internal/loaders"
-	"github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
 
 type CensusLoader struct {
@@ -19,17 +18,13 @@ type CensusLoader struct {
 	operand census2.Ptr[census2.Str]
 }
 
-func NewCensus(client *census2.Client, platform string) (*CensusLoader, error) {
+func NewCensus(client *census2.Client, namespace string) *CensusLoader {
 	const op = "loaders.outfit_member_ids_loader.NewCensus"
 	operand := census2.NewPtr(census2.Str(""))
-	ns, err := platforms.PlatformNamespace(platform)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
-	}
 	return &CensusLoader{
 		client:  client,
 		operand: operand,
-		query: census2.NewQuery(census2.GetQuery, ns, collections.Outfit).
+		query: census2.NewQuery(census2.GetQuery, namespace, collections.Outfit).
 			Where(census2.Cond("alias_lower").Equals(operand)).
 			Show("outfit_id").
 			WithJoin(
@@ -38,7 +33,7 @@ func NewCensus(client *census2.Client, platform string) (*CensusLoader, error) {
 					InjectAt("outfit_members").
 					IsList(true),
 			),
-	}, nil
+	}
 }
 
 func (l *CensusLoader) toUrl(outfitTag string) string {

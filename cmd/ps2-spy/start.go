@@ -26,10 +26,8 @@ import (
 	"github.com/x0k/ps2-spy/internal/loaders/characters_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/event_tracking_channels_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/outfit_tags_loader"
-	"github.com/x0k/ps2-spy/internal/loaders/outfit_trackers_count_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/population_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/subscription_settings_loader"
-	"github.com/x0k/ps2-spy/internal/loaders/trackable_character_ids_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/world_alerts_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/world_population_loader"
 	"github.com/x0k/ps2-spy/internal/ps2"
@@ -107,26 +105,54 @@ func start(ctx context.Context, cfg *config.Config) error {
 	alertsLoader.Start(ctx, wg)
 	worldAlertsLoader := world_alerts_loader.NewMulti(alertsLoader)
 	worldAlertsLoader.Start(ctx, wg)
-	charactersLoader := characters_loader.NewCensus(censusClient)
-	pcBatchedCharacterLoader := character_loader.NewBatch(charactersLoader, time.Minute)
+
+	pcCharactersLoader := characters_loader.NewCensus(censusClient, census2.Ps2_v2_NS)
+	pcBatchedCharacterLoader := character_loader.NewBatch(pcCharactersLoader, time.Minute)
 	pcBatchedCharacterLoader.Start(ctx, wg)
+
+	ps4euCharactersLoader := characters_loader.NewCensus(censusClient, census2.Ps2ps4eu_v2_NS)
+	ps4euBatchedCharacterLoader := character_loader.NewBatch(ps4euCharactersLoader, time.Minute)
+	ps4euBatchedCharacterLoader.Start(ctx, wg)
+
+	ps4usCharactersLoader := characters_loader.NewCensus(censusClient, census2.Ps2ps4us_v2_NS)
+	ps4usBatchedCharacterLoader := character_loader.NewBatch(ps4usCharactersLoader, time.Minute)
+	ps4usBatchedCharacterLoader.Start(ctx, wg)
+
 	characterTrackingChannelsLoader := character_tracking_channels_loader.New(sqlStorage)
-	pcTrackableCharacterIdsLoader := trackable_character_ids_loader.NewStorage(sqlStorage, platforms.PC)
-	pcOutfitTrackersCountLoader := outfit_trackers_count_loader.NewStorage(sqlStorage, platforms.PC)
-	pcTrackingManager := tracking_manager.New(
+	pcTrackingManager := newTrackingManager(
+		sqlStorage,
 		pcBatchedCharacterLoader,
 		characterTrackingChannelsLoader,
-		pcTrackableCharacterIdsLoader,
-		pcOutfitTrackersCountLoader,
+		platforms.PC,
 	)
-	err = startTrackingManager(ctx, pcTrackingManager, storageEventsPublisher)
+	ps4euTrackingManager := newTrackingManager(
+		sqlStorage,
+		ps4euBatchedCharacterLoader,
+		characterTrackingChannelsLoader,
+		platforms.PS4_EU,
+	)
+	ps4usTrackingManager := newTrackingManager(
+		sqlStorage,
+		ps4usBatchedCharacterLoader,
+		characterTrackingChannelsLoader,
+		platforms.PS4_US,
+	)
+	err = startTrackingManager(
+		ctx,
+		map[string]*tracking_manager.TrackingManager{
+			platforms.PC:     pcTrackingManager,
+			platforms.PS4_EU: ps4euTrackingManager,
+			platforms.PS4_US: ps4usTrackingManager,
+		},
+		storageEventsPublisher,
+	)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
 	subSettingsLoader := subscription_settings_loader.New(sqlStorage)
-	characterNamesLoader := character_names_loader.NewCensus(censusClient)
-	outfitTagsLoader := outfit_tags_loader.NewCensus(censusClient)
+	pcCharacterNamesLoader := character_names_loader.NewCensus(censusClient, census2.Ps2_v2_NS)
+	pcOutfitTagsLoader := outfit_tags_loader.NewCensus(censusClient, census2.Ps2_v2_NS)
 	err = startOutfitMembersSynchronizer(
 		ctx,
 		sqlStorage,
@@ -153,13 +179,13 @@ func start(ctx context.Context, cfg *config.Config) error {
 			alertsLoader,
 			worldAlertsLoader,
 			subSettingsLoader,
-			characterNamesLoader,
-			outfitTagsLoader,
+			pcCharacterNamesLoader,
+			pcOutfitTagsLoader,
 		),
 		SubmitHandlers: bot.NewSubmitHandlers(
 			character_ids_loader.NewCensus(censusClient),
-			characterNamesLoader,
-			outfitTagsLoader,
+			pcCharacterNamesLoader,
+			pcOutfitTagsLoader,
 			subscription_settings_saver.New(sqlStorage, subSettingsLoader, platforms.PC),
 			subscription_settings_saver.New(sqlStorage, subSettingsLoader, platforms.PS4_EU),
 			subscription_settings_saver.New(sqlStorage, subSettingsLoader, platforms.PS4_US),

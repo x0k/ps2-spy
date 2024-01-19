@@ -16,12 +16,12 @@ type CensusLoader struct {
 	operand census2.Ptr[census2.List[census2.Str]]
 }
 
-func NewCensus(client *census2.Client) *CensusLoader {
+func NewCensus(client *census2.Client, ns string) *CensusLoader {
 	operand := census2.NewPtr(census2.StrList())
 	return &CensusLoader{
 		client:  client,
 		operand: operand,
-		query: census2.NewQuery(census2.GetQuery, census2.Ps2_v2_NS, collections.Outfit).
+		query: census2.NewQuery(census2.GetQuery, ns, collections.Outfit).
 			Where(census2.Cond("alias_lower").Equals(operand)).Show("alias"),
 	}
 }

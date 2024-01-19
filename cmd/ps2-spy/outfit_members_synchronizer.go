@@ -23,12 +23,14 @@ func newOutfitMembersSynchronizer(
 	censusClient *census2.Client,
 	platform string,
 ) (*outfit_members_synchronizer.OutfitMembersSynchronizer, error) {
+	const op = "newOutfitMembersSynchronizer"
 	trackableOutfitsLoader := trackable_outfits_loader.NewStorage(storage, platform)
 	outfitSyncAtLoader := outfit_sync_at_loader.NewStorage(storage, platform)
-	outfitMembersLoader, err := outfit_member_ids_loader.NewCensus(censusClient, platform)
+	ns, err := platforms.PlatformNamespace(platform)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%s: %w", op, err)
 	}
+	outfitMembersLoader := outfit_member_ids_loader.NewCensus(censusClient, ns)
 	outfitMembersSaver := outfit_members_saver.New(storage, platform)
 	return outfit_members_synchronizer.New(
 		trackableOutfitsLoader,
