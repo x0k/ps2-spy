@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/x0k/ps2-spy/internal/infra"
@@ -16,26 +17,36 @@ import (
 )
 
 type CensusLoader struct {
-	client *census2.Client
+	client   *census2.Client
+	pcUrl    string
+	ps4euUrl string
+	ps4usUrl string
 }
 
 func NewCensus(client *census2.Client) *CensusLoader {
 	return &CensusLoader{
 		client: client,
+		pcUrl: client.ToURL(census2.NewQueryMustBeValid(census2.GetQuery, census2.Ps2_v2_NS, collections.WorldEvent).
+			Where(census2.Cond("type").Equals(census2.Str("METAGAME"))).
+			Where(census2.Cond("world_id").Equals(census2.Str("1,10,13,17,19,24,40"))).
+			SetLimit(210)),
+		ps4euUrl: client.ToURL(census2.NewQueryMustBeValid(census2.GetQuery, census2.Ps2ps4eu_v2_NS, collections.WorldEvent).
+			Where(census2.Cond("type").Equals(census2.Str("METAGAME"))).
+			Where(census2.Cond("world_id").Equals(census2.Str("2000"))).
+			SetLimit(30)),
+		ps4usUrl: client.ToURL(census2.NewQueryMustBeValid(census2.GetQuery, census2.Ps2ps4us_v2_NS, collections.WorldEvent).
+			Where(census2.Cond("type").Equals(census2.Str("METAGAME"))).
+			Where(census2.Cond("world_id").Equals(census2.Str("1000"))).
+			SetLimit(30)),
 	}
 }
 
-var PcWorldEventsQuery = census2.NewQueryMustBeValid(census2.GetQuery, census2.Ps2_v2_NS, collections.WorldEvent).
-	Where(census2.Cond("type").Equals(census2.Str("METAGAME"))).
-	Where(census2.Cond("world_id").Equals(census2.Str("1,10,13,17,19,24,40,1000,2000"))).
-	SetLimit(100)
-
-func (l *CensusLoader) Load(ctx context.Context) (loaders.Loaded[ps2.Alerts], error) {
-	const op = "loaders.alerts_loader.CensusLoader.Load"
+func (l *CensusLoader) load(ctx context.Context, url string) (ps2.Alerts, error) {
+	const op = "loaders.alerts_loader.CensusLoader.load"
 	log := infra.OpLogger(ctx, op).With(slog.String("census_endpoint", l.client.Endpoint()))
-	events, err := census2.ExecuteAndDecode[collections.WorldEventItem](ctx, l.client, PcWorldEventsQuery)
+	events, err := census2.ExecutePreparedAndDecode[collections.WorldEventItem](ctx, l.client, collections.WorldEvent, url)
 	if err != nil {
-		return loaders.Loaded[ps2.Alerts]{}, err
+		return ps2.Alerts{}, err
 	}
 	actualEvents := make(map[string]collections.WorldEventItem, len(events))
 	for i := len(events) - 1; i >= 0; i-- {
@@ -106,5 +117,29 @@ func (l *CensusLoader) Load(ctx context.Context) (loaders.Loaded[ps2.Alerts], er
 		}
 		alerts = append(alerts, alert)
 	}
+	return alerts, nil
+}
+
+func (l *CensusLoader) Load(ctx context.Context) (loaders.Loaded[ps2.Alerts], error) {
+	errors := make([]string, 0, 3)
+	pcAlerts, err := l.load(ctx, l.pcUrl)
+	if err != nil {
+		errors = append(errors, err.Error())
+	}
+	ps4euAlerts, err := l.load(ctx, l.ps4euUrl)
+	if err != nil {
+		errors = append(errors, err.Error())
+	}
+	ps4usAlerts, err := l.load(ctx, l.ps4usUrl)
+	if err != nil {
+		errors = append(errors, err.Error())
+	}
+	if len(errors) > 0 {
+		return loaders.Loaded[ps2.Alerts]{}, fmt.Errorf("failed to load alerts: %s", strings.Join(errors, ", "))
+	}
+	alerts := make(ps2.Alerts, 0, len(pcAlerts)+len(ps4euAlerts)+len(ps4usAlerts))
+	alerts = append(alerts, pcAlerts...)
+	alerts = append(alerts, ps4euAlerts...)
+	alerts = append(alerts, ps4usAlerts...)
 	return loaders.LoadedNow(l.client.Endpoint(), alerts), nil
 }
