@@ -10,10 +10,10 @@ import (
 	"github.com/x0k/ps2-spy/internal/infra"
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming"
 	ps2commands "github.com/x0k/ps2-spy/internal/lib/census2/streaming/commands"
-	ps2events "github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
 	ps2messages "github.com/x0k/ps2-spy/internal/lib/census2/streaming/messages"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/lib/retry"
+	"github.com/x0k/ps2-spy/internal/publisher"
 )
 
 func startStreamingClient(
@@ -50,7 +50,7 @@ func startPs2EventsPublisher(
 	ctx context.Context,
 	cfg *config.Config,
 	event chan map[string]any,
-	eventsPublisher *ps2events.Publisher,
+	eventsPublisher publisher.Abstract[map[string]any],
 ) error {
 	const op = "startPs2EventsPublisher"
 	log := infra.OpLogger(ctx, op)

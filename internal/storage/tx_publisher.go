@@ -1,28 +1,40 @@
 package storage
 
-type AbstractPublisher interface {
-	Publish(event Event)
-}
+import (
+	"fmt"
+	"strings"
+
+	"github.com/x0k/ps2-spy/internal/publisher"
+)
 
 type TxPublisher struct {
-	publisher AbstractPublisher
-	buffer    []Event
+	pub    publisher.Abstract[Event]
+	buffer []Event
 }
 
-func NewTxPublisher(publisher AbstractPublisher, estimatedEventsCount int) *TxPublisher {
+func NewTxPublisher(pub publisher.Abstract[Event], estimatedEventsCount int) *TxPublisher {
 	return &TxPublisher{
-		publisher: publisher,
-		buffer:    make([]Event, 0, estimatedEventsCount),
+		pub:    pub,
+		buffer: make([]Event, 0, estimatedEventsCount),
 	}
 }
 
-func (b *TxPublisher) Publish(event Event) {
+func (b *TxPublisher) Publish(event Event) error {
 	b.buffer = append(b.buffer, event)
+	return nil
 }
 
-func (b *TxPublisher) Commit() {
+func (b *TxPublisher) Commit() error {
+	errors := make([]string, 0, len(b.buffer))
 	for _, event := range b.buffer {
-		b.publisher.Publish(event)
+		err := b.pub.Publish(event)
+		if err != nil {
+			errors = append(errors, err.Error())
+		}
 	}
 	b.buffer = nil
+	if len(errors) > 0 {
+		return fmt.Errorf("failed to publish events: %s", strings.Join(errors, ", "))
+	}
+	return nil
 }

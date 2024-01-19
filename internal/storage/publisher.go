@@ -46,10 +46,11 @@ func (p *Publisher) AddHandler(h any) (func(), error) {
 	return p.addHandler(handler), nil
 }
 
-func (p *Publisher) Publish(event Event) {
+func (p *Publisher) Publish(event Event) error {
 	p.handlersMu.RLock()
 	defer p.handlersMu.RUnlock()
 	for _, h := range p.handlers[event.Type()] {
 		h.Handle(event)
 	}
+	return nil
 }

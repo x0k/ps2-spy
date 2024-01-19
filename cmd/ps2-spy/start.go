@@ -39,6 +39,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/loaders/world_population_loader"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/ps2/platforms"
+	"github.com/x0k/ps2-spy/internal/relogin_event_omitter"
 	"github.com/x0k/ps2-spy/internal/savers/subscription_settings_saver"
 	"github.com/x0k/ps2-spy/internal/storage"
 	"github.com/x0k/ps2-spy/internal/tracking_manager"
@@ -67,7 +68,9 @@ func start(ctx context.Context, cfg *config.Config) error {
 		},
 	})
 	pcEventsPublisher := ps2events.NewPublisher()
-	err = startPs2EventsPublisher(ctx, cfg, pcStreamingClient.Msg, pcEventsPublisher)
+	pcReLoginOmitter := relogin_event_omitter.New(pcEventsPublisher)
+	pcReLoginOmitter.Start(ctx)
+	err = startPs2EventsPublisher(ctx, cfg, pcStreamingClient.Msg, pcReLoginOmitter)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
@@ -86,7 +89,9 @@ func start(ctx context.Context, cfg *config.Config) error {
 		},
 	})
 	ps4euEventsPublisher := ps2events.NewPublisher()
-	err = startPs2EventsPublisher(ctx, cfg, ps4euStreamingClient.Msg, ps4euEventsPublisher)
+	ps4euReLoginOmitter := relogin_event_omitter.New(ps4euEventsPublisher)
+	ps4euReLoginOmitter.Start(ctx)
+	err = startPs2EventsPublisher(ctx, cfg, ps4euStreamingClient.Msg, ps4euReLoginOmitter)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
@@ -105,7 +110,9 @@ func start(ctx context.Context, cfg *config.Config) error {
 		},
 	})
 	ps4usEventsPublisher := ps2events.NewPublisher()
-	err = startPs2EventsPublisher(ctx, cfg, ps4usStreamingClient.Msg, ps4usEventsPublisher)
+	ps4usReLoginOmitter := relogin_event_omitter.New(ps4usEventsPublisher)
+	ps4usReLoginOmitter.Start(ctx)
+	err = startPs2EventsPublisher(ctx, cfg, ps4usStreamingClient.Msg, ps4usReLoginOmitter)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}

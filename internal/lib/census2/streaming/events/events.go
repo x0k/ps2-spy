@@ -92,6 +92,8 @@ type PlayerFacilityDefend struct {
 	ZoneID         string `json:"zone_id" mapstructure:"zone_id"`
 }
 
+const CharacterIdField = "character_id"
+
 type PlayerLogin struct {
 	core.EventBase `mapstructure:",squash"`
 	CharacterID    string `json:"character_id" mapstructure:"character_id"`

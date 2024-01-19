@@ -43,25 +43,25 @@ func startEventHandlersForPlatform(
 	platform string,
 ) error {
 	const op = "bot.startEventHandlersForPlatform"
-	pcEventTrackingChannelsLoader, ok := cfg.EventTrackingChannelsLoaders[platform]
+	eventTrackingChannelsLoader, ok := cfg.EventTrackingChannelsLoaders[platform]
 	if !ok {
-		return fmt.Errorf("%s get event tracking channels loader: %w", platforms.PC, ErrEventsPublisherNotFound)
+		return fmt.Errorf("%s get event tracking channels loader: %w", platform, ErrEventsPublisherNotFound)
 	}
-	pcEventsPublisher, ok := cfg.EventsPublishers[platforms.PC]
+	eventsPublisher, ok := cfg.EventsPublishers[platform]
 	if !ok {
-		return fmt.Errorf("%s get events publisher: %w", platforms.PC, ErrEventsPublisherNotFound)
+		return fmt.Errorf("%s get events publisher: %w", platform, ErrEventsPublisherNotFound)
 	}
-	pcPlayerLoginHandler, ok := cfg.PlayerLoginHandlers[platforms.PC]
+	playerLoginHandler, ok := cfg.PlayerLoginHandlers[platform]
 	if !ok {
-		return fmt.Errorf("%s get player login handler: %w", platforms.PC, ErrEventHandlerNotFound)
+		return fmt.Errorf("%s get player login handler: %w", platform, ErrEventHandlerNotFound)
 	}
 	eventHandlersConfig := &handlers.Ps2EventHandlerConfig{
 		Session:                     session,
 		Timeout:                     cfg.Ps2EventHandlerTimeout,
-		EventTrackingChannelsLoader: pcEventTrackingChannelsLoader,
+		EventTrackingChannelsLoader: eventTrackingChannelsLoader,
 	}
 	playerLogin := make(chan ps2events.PlayerLogin)
-	playerLoginUnSub, err := pcEventsPublisher.AddHandler(playerLogin)
+	playerLoginUnSub, err := eventsPublisher.AddHandler(playerLogin)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
@@ -75,7 +75,7 @@ func startEventHandlersForPlatform(
 			case <-ctx.Done():
 				return
 			case pl := <-playerLogin:
-				go pcPlayerLoginHandler.Run(
+				go playerLoginHandler.Run(
 					ctx,
 					eventHandlersConfig,
 					pl,

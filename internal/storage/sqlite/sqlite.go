@@ -12,6 +12,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/x0k/ps2-spy/internal/infra"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
+	"github.com/x0k/ps2-spy/internal/publisher"
 	"github.com/x0k/ps2-spy/internal/storage"
 )
 
@@ -40,7 +41,7 @@ type Storage struct {
 	db         *sql.DB
 	statements [statementsCount]*sql.Stmt
 	tx         *sql.Tx
-	publisher  storage.AbstractPublisher
+	pub        publisher.Abstract[storage.Event]
 }
 
 func (s *Storage) migrate(ctx context.Context) error {
@@ -94,7 +95,7 @@ CREATE TABLE IF NOT EXISTS channel_to_character (
 func New(
 	ctx context.Context,
 	storagePath string,
-	publisher storage.AbstractPublisher,
+	pub publisher.Abstract[storage.Event],
 ) (*Storage, error) {
 	const op = "storage.sqlite.New"
 	db, err := sql.Open("sqlite3", storagePath)
@@ -103,8 +104,8 @@ func New(
 	}
 	// db.SetMaxOpenConns(1)
 	return &Storage{
-		db:        db,
-		publisher: publisher,
+		db:  db,
+		pub: pub,
 	}, nil
 }
 
@@ -185,11 +186,11 @@ func (s *Storage) Begin(
 	if err != nil {
 		return err
 	}
-	txPublisher := storage.NewTxPublisher(s.publisher, expectedEventsCount)
+	txPublisher := storage.NewTxPublisher(s.pub, expectedEventsCount)
 	tmp := &Storage{
 		db:         s.db,
 		statements: s.statements,
-		publisher:  txPublisher,
+		pub:        txPublisher,
 		tx:         tx,
 	}
 	err = run(tmp)
@@ -203,8 +204,7 @@ func (s *Storage) Begin(
 	if err != nil {
 		return err
 	}
-	txPublisher.Commit()
-	return nil
+	return txPublisher.Commit()
 }
 
 func (s *Storage) stmt(ctx context.Context, st int) *sql.Stmt {
@@ -253,7 +253,7 @@ func query[T any](ctx context.Context, s *Storage, statement int, args ...any) (
 }
 
 func (s *Storage) publish(event storage.Event) {
-	s.publisher.Publish(event)
+	s.pub.Publish(event)
 }
 
 func (s *Storage) SaveChannelOutfit(ctx context.Context, channelId, platform, outfitID string) error {
