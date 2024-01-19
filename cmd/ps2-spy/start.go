@@ -25,20 +25,15 @@ import (
 	"github.com/x0k/ps2-spy/internal/loaders/character_tracking_channels_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/characters_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/event_tracking_channels_loader"
-	"github.com/x0k/ps2-spy/internal/loaders/outfit_member_ids_loader"
-	"github.com/x0k/ps2-spy/internal/loaders/outfit_sync_at_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/outfit_tags_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/outfit_trackers_count_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/population_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/subscription_settings_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/trackable_character_ids_loader"
-	"github.com/x0k/ps2-spy/internal/loaders/trackable_outfits_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/world_alerts_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/world_population_loader"
-	"github.com/x0k/ps2-spy/internal/outfit_members_synchronizer"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/ps2/platforms"
-	"github.com/x0k/ps2-spy/internal/savers/outfit_members_saver"
 	"github.com/x0k/ps2-spy/internal/savers/subscription_settings_saver"
 	"github.com/x0k/ps2-spy/internal/storage"
 	"github.com/x0k/ps2-spy/internal/tracking_manager"
@@ -132,24 +127,12 @@ func start(ctx context.Context, cfg *config.Config) error {
 	subSettingsLoader := subscription_settings_loader.New(sqlStorage)
 	characterNamesLoader := character_names_loader.NewCensus(censusClient)
 	outfitTagsLoader := outfit_tags_loader.NewCensus(censusClient)
-	pcTrackableOutfitsLoader := trackable_outfits_loader.NewStorage(
+	err = startOutfitMembersSynchronizer(
+		ctx,
 		sqlStorage,
-		platforms.PC,
+		censusClient,
+		storageEventsPublisher,
 	)
-	outfitMembersLoader := outfit_member_ids_loader.NewCensus(censusClient)
-	pcOutfitMembersSaver := outfit_members_saver.New(
-		sqlStorage,
-		platforms.PC,
-	)
-	pcOutfitSyncAtLoader := outfit_sync_at_loader.NewStorage(sqlStorage, platforms.PC)
-	pcOutfitMembersSynchronizer := outfit_members_synchronizer.New(
-		pcTrackableOutfitsLoader,
-		pcOutfitSyncAtLoader,
-		outfitMembersLoader,
-		pcOutfitMembersSaver,
-		time.Hour*24,
-	)
-	err = startOutfitMembersSynchronizer(ctx, pcOutfitMembersSynchronizer, storageEventsPublisher)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
