@@ -2,7 +2,6 @@ package channel_setup_submit_handler
 
 import (
 	"context"
-	"log/slog"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/x0k/ps2-spy/internal/bot/handlers"
@@ -22,7 +21,7 @@ func New(
 	outfitTagsLoader loaders.QueriedLoader[[]string, []string],
 	saver Saver,
 ) handlers.InteractionHandler {
-	return handlers.DeferredEphemeralResponse(func(ctx context.Context, log *slog.Logger, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.WebhookEdit, error) {
+	return handlers.DeferredEphemeralResponse(func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.WebhookEdit, error) {
 		data := i.ModalSubmitData()
 		var err error
 		var outfitsTags []string

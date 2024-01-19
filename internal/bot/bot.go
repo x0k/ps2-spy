@@ -132,7 +132,7 @@ func New(
 		case discordgo.InteractionApplicationCommand:
 			l.Debug("command received", slog.String("command", i.ApplicationCommandData().Name))
 			if handler, ok := cfg.CommandHandlers[i.ApplicationCommandData().Name]; ok {
-				go handler.Run(ctx, l, cfg.CommandHandlerTimeout, s, i)
+				go handler.Run(ctx, cfg.CommandHandlerTimeout, s, i)
 			} else {
 				l.Warn("unknown command")
 			}
@@ -142,7 +142,7 @@ func New(
 			data := i.ModalSubmitData()
 			l.Debug("modal submitted", slog.Any("data", data))
 			if handler, ok := cfg.SubmitHandlers[data.CustomID]; ok {
-				go handler.Run(ctx, l, cfg.CommandHandlerTimeout, s, i)
+				go handler.Run(ctx, cfg.CommandHandlerTimeout, s, i)
 			} else {
 				l.Warn("unknown modal")
 			}

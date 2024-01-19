@@ -33,15 +33,16 @@ var ModalsTitles = map[string]string{
 	CHANNEL_SETUP_PS4_US_MODAL: "Subscription Settings (PS4 US)",
 }
 
-type InteractionHandler func(ctx context.Context, log *slog.Logger, s *discordgo.Session, i *discordgo.InteractionCreate) error
+type InteractionHandler func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) error
 
-func (handler InteractionHandler) Run(ctx context.Context, log *slog.Logger, timeout time.Duration, s *discordgo.Session, i *discordgo.InteractionCreate) {
-	log.Debug("handling", slog.Duration("timeout", timeout))
+func (handler InteractionHandler) Run(ctx context.Context, timeout time.Duration, s *discordgo.Session, i *discordgo.InteractionCreate) {
+	const op = "bot.handlers.InteractionHandler.Run"
+	log := infra.OpLogger(ctx, op)
 	t := time.Now()
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	err := contextx.Await(ctx, func() error {
-		err := handler(ctx, log, s, i)
+		err := handler(ctx, s, i)
 		if err != nil {
 			s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
 				Content: err.Error(),
@@ -55,25 +56,8 @@ func (handler InteractionHandler) Run(ctx context.Context, log *slog.Logger, tim
 	log.Debug("handled", slog.Duration("duration", time.Since(t)))
 }
 
-func DeferredResponse(handle func(ctx context.Context, log *slog.Logger, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.WebhookEdit, error)) InteractionHandler {
-	return func(ctx context.Context, log *slog.Logger, s *discordgo.Session, i *discordgo.InteractionCreate) error {
-		err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
-		})
-		if err != nil {
-			return err
-		}
-		data, err := handle(ctx, log, s, i)
-		if err != nil {
-			return err
-		}
-		_, err = s.InteractionResponseEdit(i.Interaction, data)
-		return err
-	}
-}
-
-func DeferredEphemeralResponse(handle func(ctx context.Context, log *slog.Logger, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.WebhookEdit, error)) InteractionHandler {
-	return func(ctx context.Context, log *slog.Logger, s *discordgo.Session, i *discordgo.InteractionCreate) error {
+func DeferredEphemeralResponse(handle func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.WebhookEdit, error)) InteractionHandler {
+	return func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) error {
 		err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
@@ -83,7 +67,7 @@ func DeferredEphemeralResponse(handle func(ctx context.Context, log *slog.Logger
 		if err != nil {
 			return err
 		}
-		data, err := handle(ctx, log, s, i)
+		data, err := handle(ctx, s, i)
 		if err != nil {
 			return err
 		}
@@ -92,9 +76,9 @@ func DeferredEphemeralResponse(handle func(ctx context.Context, log *slog.Logger
 	}
 }
 
-func ShowModal(handle func(ctx context.Context, log *slog.Logger, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.InteractionResponseData, error)) InteractionHandler {
-	return func(ctx context.Context, log *slog.Logger, s *discordgo.Session, i *discordgo.InteractionCreate) error {
-		data, err := handle(ctx, log, s, i)
+func ShowModal(handle func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.InteractionResponseData, error)) InteractionHandler {
+	return func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) error {
+		data, err := handle(ctx, s, i)
 		if err != nil {
 			return err
 		}

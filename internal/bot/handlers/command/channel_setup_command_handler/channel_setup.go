@@ -3,7 +3,6 @@ package channel_setup_command_handler
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -22,7 +21,8 @@ func New(
 	namesLoader loaders.QueriedLoader[PlatformQuery, []string],
 	outfitTagsLoader loaders.QueriedLoader[PlatformQuery, []string],
 ) handlers.InteractionHandler {
-	return handlers.ShowModal(func(ctx context.Context, log *slog.Logger, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.InteractionResponseData, error) {
+	return handlers.ShowModal(func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.InteractionResponseData, error) {
+		const op = "bot.handlers.command.channel_setup_command_handler"
 		platform := i.ApplicationCommandData().Options[0].Name
 		settings, err := settingsLoader.Load(ctx, [2]string{i.ChannelID, platform})
 		if err != nil {

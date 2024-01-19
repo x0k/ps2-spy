@@ -1,4 +1,4 @@
-package serverpopulation
+package server_population_command_handler
 
 import (
 	"context"
@@ -8,20 +8,17 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/x0k/ps2-spy/internal/bot/handlers"
 	"github.com/x0k/ps2-spy/internal/bot/render"
+	"github.com/x0k/ps2-spy/internal/infra"
 	"github.com/x0k/ps2-spy/internal/loaders"
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
-type WorldPopulationProvider interface {
-	PopulationByWorldId(ctx context.Context, worldId ps2.WorldId, provider string) (loaders.Loaded[ps2.DetailedWorldPopulation], error)
-}
-
 func New(
 	worldPopLoader loaders.QueriedLoader[loaders.MultiLoaderQuery[ps2.WorldId], loaders.Loaded[ps2.DetailedWorldPopulation]],
 ) handlers.InteractionHandler {
-	return handlers.DeferredResponse(func(ctx context.Context, log *slog.Logger, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.WebhookEdit, error) {
-		const op = "handlers.server_population"
-		log = log.With(slog.String("op", op))
+	return handlers.DeferredEphemeralResponse(func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.WebhookEdit, error) {
+		const op = "bot.handlers.command.server_population_command_handler"
+		log := infra.OpLogger(ctx, op)
 		opts := i.ApplicationCommandData().Options
 		server := opts[0].IntValue()
 		var provider string

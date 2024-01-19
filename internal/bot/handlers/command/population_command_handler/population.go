@@ -1,4 +1,4 @@
-package population
+package population_command_handler
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/x0k/ps2-spy/internal/bot/handlers"
 	"github.com/x0k/ps2-spy/internal/bot/render"
+	"github.com/x0k/ps2-spy/internal/infra"
 	"github.com/x0k/ps2-spy/internal/loaders"
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
@@ -15,9 +16,9 @@ import (
 func New(
 	popLoader loaders.KeyedLoader[string, loaders.Loaded[ps2.WorldsPopulation]],
 ) handlers.InteractionHandler {
-	return handlers.DeferredResponse(func(ctx context.Context, log *slog.Logger, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.WebhookEdit, error) {
-		const op = "handlers.population"
-		log = log.With(slog.String("op", op))
+	return handlers.DeferredEphemeralResponse(func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.WebhookEdit, error) {
+		const op = "bot.handlers.command.population_command_handler"
+		log := infra.OpLogger(ctx, op)
 		opts := i.ApplicationCommandData().Options
 		var provider string
 		if len(opts) > 0 {
