@@ -32,6 +32,7 @@ type BotConfig struct {
 	CommandHandlers              map[string]handlers.InteractionHandler
 	SubmitHandlers               map[string]handlers.InteractionHandler
 	PlayerLoginHandlers          map[string]handlers.Ps2EventHandler[ps2events.PlayerLogin]
+	PlayerLogoutHandlers         map[string]handlers.Ps2EventHandler[ps2events.PlayerLogout]
 	EventTrackingChannelsLoaders map[string]loaders.QueriedLoader[any, []string]
 	EventsPublishers             map[string]*ps2events.Publisher
 }
@@ -55,6 +56,10 @@ func startEventHandlersForPlatform(
 	if !ok {
 		return fmt.Errorf("%s get player login handler: %w", platform, ErrEventHandlerNotFound)
 	}
+	playerLogoutHandler, ok := cfg.PlayerLogoutHandlers[platform]
+	if !ok {
+		return fmt.Errorf("%s get player logout handler: %w", platform, ErrEventHandlerNotFound)
+	}
 	eventHandlersConfig := &handlers.Ps2EventHandlerConfig{
 		Session:                     session,
 		Timeout:                     cfg.Ps2EventHandlerTimeout,
@@ -65,17 +70,29 @@ func startEventHandlersForPlatform(
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
+	playerLogout := make(chan ps2events.PlayerLogout)
+	playerLogoutUnSub, err := eventsPublisher.AddHandler(playerLogout)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
 	wg := infra.Wg(ctx)
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		defer playerLoginUnSub()
+		defer playerLogoutUnSub()
 		for {
 			select {
 			case <-ctx.Done():
 				return
 			case pl := <-playerLogin:
 				go playerLoginHandler.Run(
+					ctx,
+					eventHandlersConfig,
+					pl,
+				)
+			case pl := <-playerLogout:
+				go playerLogoutHandler.Run(
 					ctx,
 					eventHandlersConfig,
 					pl,

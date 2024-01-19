@@ -19,6 +19,10 @@ func Logger(ctx context.Context) *slog.Logger {
 	return ctx.Value(LoggerKey).(*slog.Logger)
 }
 
+func WithOp(log *slog.Logger, op string) *slog.Logger {
+	return log.With(slog.String("op", op))
+}
+
 func OpLogger(ctx context.Context, op string) *slog.Logger {
-	return Logger(ctx).With(slog.String("op", op))
+	return WithOp(Logger(ctx), op)
 }

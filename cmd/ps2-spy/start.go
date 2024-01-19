@@ -8,7 +8,8 @@ import (
 
 	"github.com/x0k/ps2-spy/internal/bot"
 	"github.com/x0k/ps2-spy/internal/bot/handlers"
-	"github.com/x0k/ps2-spy/internal/bot/handlers/event/login"
+	"github.com/x0k/ps2-spy/internal/bot/handlers/event/login_event_handler"
+	"github.com/x0k/ps2-spy/internal/bot/handlers/event/logout_event_handler"
 	"github.com/x0k/ps2-spy/internal/bot/handlers/submit/channel_setup_submit_handler"
 	"github.com/x0k/ps2-spy/internal/config"
 	"github.com/x0k/ps2-spy/internal/infra"
@@ -273,9 +274,14 @@ func start(ctx context.Context, cfg *config.Config) error {
 			),
 		},
 		PlayerLoginHandlers: map[string]handlers.Ps2EventHandler[ps2events.PlayerLogin]{
-			platforms.PC:     login.New(pcBatchedCharacterLoader),
-			platforms.PS4_EU: login.New(ps4euBatchedCharacterLoader),
-			platforms.PS4_US: login.New(ps4usBatchedCharacterLoader),
+			platforms.PC:     login_event_handler.New(pcBatchedCharacterLoader),
+			platforms.PS4_EU: login_event_handler.New(ps4euBatchedCharacterLoader),
+			platforms.PS4_US: login_event_handler.New(ps4usBatchedCharacterLoader),
+		},
+		PlayerLogoutHandlers: map[string]handlers.Ps2EventHandler[ps2events.PlayerLogout]{
+			platforms.PC:     logout_event_handler.New(pcBatchedCharacterLoader),
+			platforms.PS4_EU: logout_event_handler.New(ps4euBatchedCharacterLoader),
+			platforms.PS4_US: logout_event_handler.New(ps4usBatchedCharacterLoader),
 		},
 		EventsPublishers: map[string]*ps2events.Publisher{
 			platforms.PC:     pcEventsPublisher,

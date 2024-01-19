@@ -8,24 +8,21 @@ import (
 	"github.com/x0k/ps2-spy/internal/infra"
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/core"
 	ps2events "github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
+	"github.com/x0k/ps2-spy/internal/publisher"
 )
 
-type AbstractPublisher interface {
-	Publish(event map[string]any) error
-}
-
 type ReLoginOmitter struct {
-	publisher         AbstractPublisher
+	pub               publisher.Abstract[map[string]any]
 	batchMu           sync.Mutex
 	logoutEventsBatch map[string]map[string]any
 	batchInterval     time.Duration
 }
 
-func New(publisher AbstractPublisher) *ReLoginOmitter {
+func New(pub publisher.Abstract[map[string]any]) *ReLoginOmitter {
 	return &ReLoginOmitter{
-		publisher:         publisher,
+		pub:               pub,
 		logoutEventsBatch: make(map[string]map[string]any, 100),
-		batchInterval:     time.Minute * 5,
+		batchInterval:     time.Minute * 3,
 	}
 }
 
@@ -59,16 +56,18 @@ func (r *ReLoginOmitter) shouldPublishLoginEvent(event map[string]any) bool {
 	return true
 }
 
-func (r *ReLoginOmitter) publishLogOutEvents() {
+func (r *ReLoginOmitter) flushLogOutEvents() {
 	r.batchMu.Lock()
 	defer r.batchMu.Unlock()
 	for _, event := range r.logoutEventsBatch {
-		r.publisher.Publish(event)
+		r.pub.Publish(event)
 	}
 	r.logoutEventsBatch = make(map[string]map[string]any, len(r.logoutEventsBatch))
 }
 
 func (r *ReLoginOmitter) worker(ctx context.Context, wg *sync.WaitGroup) {
+	const op = "relogin_event_ommiter.ReLoginOmitter.worker"
+	log := infra.OpLogger(ctx, op)
 	defer wg.Done()
 	ticker := time.NewTicker(r.batchInterval)
 	defer ticker.Stop()
@@ -77,12 +76,15 @@ func (r *ReLoginOmitter) worker(ctx context.Context, wg *sync.WaitGroup) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			r.publishLogOutEvents()
+			log.Debug("flush logout events")
+			r.flushLogOutEvents()
 		}
 	}
 }
 
 func (r *ReLoginOmitter) Start(ctx context.Context) {
+	const op = "relogin_event_ommiter.ReLoginOmitter.Start"
+	infra.OpLogger(ctx, op).Info("starting")
 	wg := infra.Wg(ctx)
 	wg.Add(1)
 	go r.worker(ctx, wg)
@@ -96,5 +98,5 @@ func (r *ReLoginOmitter) Publish(event map[string]any) error {
 	if isLoginEvent(event) && !r.shouldPublishLoginEvent(event) {
 		return nil
 	}
-	return r.publisher.Publish(event)
+	return r.pub.Publish(event)
 }

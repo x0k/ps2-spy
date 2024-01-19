@@ -65,23 +65,30 @@ func (tm *TrackingManager) characterTrackersCount(charId string) int {
 	return tm.charactersFilter[charId]
 }
 
+func (tm *TrackingManager) channelIdsForCharacter(ctx context.Context, characterId string) ([]string, error) {
+	const op = "tracking_manager.TrackingManager.channelIdsForCharacter"
+	log := infra.OpLogger(ctx, op)
+	trackersCount := tm.characterTrackersCount(characterId)
+	if trackersCount <= 0 {
+		if trackersCount < 0 {
+			log.Warn("invalid character trackers count", slog.String("char_id", characterId))
+		}
+		return nil, nil
+	}
+	char, err := tm.characterLoader.Load(ctx, characterId)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	return tm.trackingChannelsLoader.Load(ctx, char)
+}
+
 func (tm *TrackingManager) ChannelIds(ctx context.Context, event any) ([]string, error) {
 	const op = "TrackingManager.ChannelIds"
-	log := infra.OpLogger(ctx, op)
 	switch e := event.(type) {
 	case ps2events.PlayerLogin:
-		trackersCount := tm.characterTrackersCount(e.CharacterID)
-		if trackersCount <= 0 {
-			if trackersCount < 0 {
-				log.Warn("invalid character trackers count", slog.String("char_id", e.CharacterID))
-			}
-			return nil, nil
-		}
-		char, err := tm.characterLoader.Load(ctx, e.CharacterID)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", op, err)
-		}
-		return tm.trackingChannelsLoader.Load(ctx, char)
+		return tm.channelIdsForCharacter(ctx, e.CharacterID)
+	case ps2events.PlayerLogout:
+		return tm.channelIdsForCharacter(ctx, e.CharacterID)
 	}
 	return nil, fmt.Errorf("%s: %w", op, ErrUnknownEvent)
 }
