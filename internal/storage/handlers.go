@@ -12,9 +12,7 @@ func (h channelOutfitSavedHandler) Type() string {
 }
 
 func (h channelOutfitSavedHandler) Handle(e any) {
-	if t, ok := e.(ChannelOutfitSaved); ok {
-		h <- t
-	}
+	h <- e.(ChannelOutfitSaved)
 }
 
 type channelOutfitDeletedHandler chan<- ChannelOutfitDeleted
@@ -24,9 +22,7 @@ func (h channelOutfitDeletedHandler) Type() string {
 }
 
 func (h channelOutfitDeletedHandler) Handle(e any) {
-	if t, ok := e.(ChannelOutfitDeleted); ok {
-		h <- t
-	}
+	h <- e.(ChannelOutfitDeleted)
 }
 
 type channelCharacterSavedHandler chan<- ChannelCharacterSaved
@@ -36,9 +32,7 @@ func (h channelCharacterSavedHandler) Type() string {
 }
 
 func (h channelCharacterSavedHandler) Handle(e any) {
-	if t, ok := e.(ChannelCharacterSaved); ok {
-		h <- t
-	}
+	h <- e.(ChannelCharacterSaved)
 }
 
 type channelCharacterDeletedHandler chan<- ChannelCharacterDeleted
@@ -48,9 +42,7 @@ func (h channelCharacterDeletedHandler) Type() string {
 }
 
 func (h channelCharacterDeletedHandler) Handle(e any) {
-	if t, ok := e.(ChannelCharacterDeleted); ok {
-		h <- t
-	}
+	h <- e.(ChannelCharacterDeleted)
 }
 
 type outfitMemberSavedHandler chan<- OutfitMemberSaved
@@ -60,9 +52,7 @@ func (h outfitMemberSavedHandler) Type() string {
 }
 
 func (h outfitMemberSavedHandler) Handle(e any) {
-	if t, ok := e.(OutfitMemberSaved); ok {
-		h <- t
-	}
+	h <- e.(OutfitMemberSaved)
 }
 
 type outfitMemberDeletedHandler chan<- OutfitMemberDeleted
@@ -72,9 +62,7 @@ func (h outfitMemberDeletedHandler) Type() string {
 }
 
 func (h outfitMemberDeletedHandler) Handle(e any) {
-	if t, ok := e.(OutfitMemberDeleted); ok {
-		h <- t
-	}
+	h <- e.(OutfitMemberDeleted)
 }
 
 type outfitSynchronizedHandler chan<- OutfitSynchronized
@@ -84,9 +72,7 @@ func (h outfitSynchronizedHandler) Type() string {
 }
 
 func (h outfitSynchronizedHandler) Handle(e any) {
-	if t, ok := e.(OutfitSynchronized); ok {
-		h <- t
-	}
+	h <- e.(OutfitSynchronized)
 }
 
 func handlerForInterface(handler any) eventHandler {

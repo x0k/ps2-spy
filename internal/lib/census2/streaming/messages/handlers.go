@@ -14,9 +14,7 @@ func (h serviceStateChangedHandler) Type() string {
 }
 
 func (h serviceStateChangedHandler) Handle(msg any) {
-	if t, ok := msg.(*ServiceStateChanged); ok {
-		h <- *t
-	}
+	h <- *(msg.(*ServiceStateChanged))
 }
 
 type heartbeatHandler chan<- Heartbeat
@@ -26,9 +24,7 @@ func (h heartbeatHandler) Type() string {
 }
 
 func (h heartbeatHandler) Handle(msg any) {
-	if t, ok := msg.(*Heartbeat); ok {
-		h <- *t
-	}
+	h <- *(msg.(*Heartbeat))
 }
 
 type serviceMessageHandler chan<- ServiceMessage[map[string]any]
@@ -38,11 +34,10 @@ func (h serviceMessageHandler) Type() string {
 }
 
 func (h serviceMessageHandler) Handle(msg any) {
-	if t, ok := msg.(*ServiceMessage[map[string]any]); ok {
-		h <- ServiceMessage[map[string]any]{
-			MessageBase: t.MessageBase,
-			Payload:     maps.Clone(t.Payload),
-		}
+	t := msg.(*ServiceMessage[map[string]any])
+	h <- ServiceMessage[map[string]any]{
+		MessageBase: t.MessageBase,
+		Payload:     maps.Clone(t.Payload),
 	}
 }
 
@@ -53,9 +48,7 @@ func (h subscriptionSettingsHandler) Type() string {
 }
 
 func (h subscriptionSettingsHandler) Handle(msg any) {
-	if t, ok := msg.(*SubscriptionSettings); ok {
-		h <- *t
-	}
+	h <- *(msg.(*SubscriptionSettings))
 }
 
 func handlerForInterface(handler any) messageHandler {

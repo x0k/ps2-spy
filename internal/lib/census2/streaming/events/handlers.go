@@ -12,9 +12,7 @@ func (h achievementEarnedHandler) Type() string {
 }
 
 func (h achievementEarnedHandler) Handle(e any) {
-	if t, ok := e.(*AchievementEarned); ok {
-		h <- *t
-	}
+	h <- *(e.(*AchievementEarned))
 }
 
 type battleRankUpHandler chan<- BattleRankUp
@@ -24,9 +22,7 @@ func (h battleRankUpHandler) Type() string {
 }
 
 func (h battleRankUpHandler) Handle(e any) {
-	if t, ok := e.(*BattleRankUp); ok {
-		h <- *t
-	}
+	h <- *(e.(*BattleRankUp))
 }
 
 type deathHandler chan<- Death
@@ -36,9 +32,7 @@ func (h deathHandler) Type() string {
 }
 
 func (h deathHandler) Handle(e any) {
-	if t, ok := e.(*Death); ok {
-		h <- *t
-	}
+	h <- *(e.(*Death))
 }
 
 type gainExperienceHandler chan<- GainExperience
@@ -48,9 +42,7 @@ func (h gainExperienceHandler) Type() string {
 }
 
 func (h gainExperienceHandler) Handle(e any) {
-	if t, ok := e.(*GainExperience); ok {
-		h <- *t
-	}
+	h <- *(e.(*GainExperience))
 }
 
 type itemAddedHandler chan<- ItemAdded
@@ -60,9 +52,7 @@ func (h itemAddedHandler) Type() string {
 }
 
 func (h itemAddedHandler) Handle(e any) {
-	if t, ok := e.(*ItemAdded); ok {
-		h <- *t
-	}
+	h <- *(e.(*ItemAdded))
 }
 
 type playerFacilityCaptureHandler chan<- PlayerFacilityCapture
@@ -72,9 +62,7 @@ func (h playerFacilityCaptureHandler) Type() string {
 }
 
 func (h playerFacilityCaptureHandler) Handle(e any) {
-	if t, ok := e.(*PlayerFacilityCapture); ok {
-		h <- *t
-	}
+	h <- *(e.(*PlayerFacilityCapture))
 }
 
 type playerFacilityDefendHandler chan<- PlayerFacilityDefend
@@ -84,9 +72,7 @@ func (h playerFacilityDefendHandler) Type() string {
 }
 
 func (h playerFacilityDefendHandler) Handle(e any) {
-	if t, ok := e.(*PlayerFacilityDefend); ok {
-		h <- *t
-	}
+	h <- *(e.(*PlayerFacilityDefend))
 }
 
 type playerLoginHandler chan<- PlayerLogin
@@ -96,9 +82,7 @@ func (h playerLoginHandler) Type() string {
 }
 
 func (h playerLoginHandler) Handle(e any) {
-	if t, ok := e.(*PlayerLogin); ok {
-		h <- *t
-	}
+	h <- *(e.(*PlayerLogin))
 }
 
 type playerLogoutHandler chan<- PlayerLogout
@@ -108,9 +92,7 @@ func (h playerLogoutHandler) Type() string {
 }
 
 func (h playerLogoutHandler) Handle(e any) {
-	if t, ok := e.(*PlayerLogout); ok {
-		h <- *t
-	}
+	h <- *(e.(*PlayerLogout))
 }
 
 type skillAddedHandler chan<- SkillAdded
@@ -120,9 +102,7 @@ func (h skillAddedHandler) Type() string {
 }
 
 func (h skillAddedHandler) Handle(e any) {
-	if t, ok := e.(*SkillAdded); ok {
-		h <- *t
-	}
+	h <- *(e.(*SkillAdded))
 }
 
 type vehicleDestroyHandler chan<- VehicleDestroy
@@ -132,9 +112,7 @@ func (h vehicleDestroyHandler) Type() string {
 }
 
 func (h vehicleDestroyHandler) Handle(e any) {
-	if t, ok := e.(*VehicleDestroy); ok {
-		h <- *t
-	}
+	h <- *(e.(*VehicleDestroy))
 }
 
 type continentLockHandler chan<- ContinentLock
@@ -144,9 +122,7 @@ func (h continentLockHandler) Type() string {
 }
 
 func (h continentLockHandler) Handle(e any) {
-	if t, ok := e.(*ContinentLock); ok {
-		h <- *t
-	}
+	h <- *(e.(*ContinentLock))
 }
 
 type facilityControlHandler chan<- FacilityControl
@@ -156,9 +132,7 @@ func (h facilityControlHandler) Type() string {
 }
 
 func (h facilityControlHandler) Handle(e any) {
-	if t, ok := e.(*FacilityControl); ok {
-		h <- *t
-	}
+	h <- *(e.(*FacilityControl))
 }
 
 type metagameEventHandler chan<- MetagameEvent
@@ -168,9 +142,7 @@ func (h metagameEventHandler) Type() string {
 }
 
 func (h metagameEventHandler) Handle(e any) {
-	if t, ok := e.(*MetagameEvent); ok {
-		h <- *t
-	}
+	h <- *(e.(*MetagameEvent))
 }
 
 func handlerForInterface(handler any) eventHandler {
