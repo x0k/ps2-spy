@@ -3,7 +3,7 @@ package bot
 import (
 	"github.com/x0k/ps2-spy/internal/bot/handlers"
 	"github.com/x0k/ps2-spy/internal/bot/handlers/command/alerts"
-	channelsetup "github.com/x0k/ps2-spy/internal/bot/handlers/command/channel_setup"
+	"github.com/x0k/ps2-spy/internal/bot/handlers/command/channel_setup_command_handler"
 	"github.com/x0k/ps2-spy/internal/bot/handlers/command/population"
 	serverpopulation "github.com/x0k/ps2-spy/internal/bot/handlers/command/server_population"
 	"github.com/x0k/ps2-spy/internal/loaders"
@@ -17,8 +17,8 @@ func NewCommandHandlers(
 	alertsLoader loaders.KeyedLoader[string, loaders.Loaded[ps2.Alerts]],
 	worldAlertsLoader loaders.QueriedLoader[loaders.MultiLoaderQuery[ps2.WorldId], loaders.Loaded[ps2.Alerts]],
 	settingsLoader loaders.KeyedLoader[[2]string, meta.SubscriptionSettings],
-	charNamesLoader loaders.QueriedLoader[[]string, []string],
-	outfitTagsLoader loaders.QueriedLoader[[]string, []string],
+	charNamesLoader loaders.QueriedLoader[channel_setup_command_handler.PlatformQuery, []string],
+	outfitTagsLoader loaders.QueriedLoader[channel_setup_command_handler.PlatformQuery, []string],
 ) map[string]handlers.InteractionHandler {
 	return map[string]handlers.InteractionHandler{
 		"population":        population.New(popLoader),
@@ -27,6 +27,6 @@ func NewCommandHandlers(
 			alertsLoader,
 			worldAlertsLoader,
 		),
-		"setup": channelsetup.New(settingsLoader, charNamesLoader, outfitTagsLoader),
+		"setup": channel_setup_command_handler.New(settingsLoader, charNamesLoader, outfitTagsLoader),
 	}
 }

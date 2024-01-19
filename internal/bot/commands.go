@@ -93,6 +93,16 @@ func NewCommands(
 					Name:        platforms.PC,
 					Description: "Subscription settings for the PC platform",
 				},
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        platforms.PS4_EU,
+					Description: "Subscription settings for the PS4 EU platform",
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        platforms.PS4_US,
+					Description: "Subscription settings for the PS4 US platform",
+				},
 			},
 		},
 	}

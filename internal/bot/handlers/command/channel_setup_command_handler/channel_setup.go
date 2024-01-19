@@ -1,4 +1,4 @@
-package channelsetup
+package channel_setup_command_handler
 
 import (
 	"context"
@@ -12,10 +12,15 @@ import (
 	"github.com/x0k/ps2-spy/internal/meta"
 )
 
+type PlatformQuery struct {
+	Platform string
+	Items    []string
+}
+
 func New(
 	settingsLoader loaders.KeyedLoader[[2]string, meta.SubscriptionSettings],
-	namesLoader loaders.QueriedLoader[[]string, []string],
-	outfitTagsLoader loaders.QueriedLoader[[]string, []string],
+	namesLoader loaders.QueriedLoader[PlatformQuery, []string],
+	outfitTagsLoader loaders.QueriedLoader[PlatformQuery, []string],
 ) handlers.InteractionHandler {
 	return handlers.ShowModal(func(ctx context.Context, log *slog.Logger, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.InteractionResponseData, error) {
 		platform := i.ApplicationCommandData().Options[0].Name
@@ -23,11 +28,17 @@ func New(
 		if err != nil {
 			return nil, err
 		}
-		tags, err := outfitTagsLoader.Load(ctx, settings.Outfits)
+		tags, err := outfitTagsLoader.Load(ctx, PlatformQuery{
+			Platform: platform,
+			Items:    settings.Outfits,
+		})
 		if err != nil {
 			return nil, err
 		}
-		names, err := namesLoader.Load(ctx, settings.Characters)
+		names, err := namesLoader.Load(ctx, PlatformQuery{
+			Platform: platform,
+			Items:    settings.Characters,
+		})
 		if err != nil {
 			return nil, err
 		}

@@ -1,4 +1,4 @@
-package channelsetup
+package channel_setup_submit_handler
 
 import (
 	"context"

@@ -13,6 +13,12 @@ const PC = "pc"
 const PS4_EU = "ps4eu"
 const PS4_US = "ps4us"
 
+type PlatformItems[T any] struct {
+	Pc    T
+	Ps4eu T
+	Ps4us T
+}
+
 var Platforms = []string{PC, PS4_EU, PS4_US}
 
 var PlatformNamespaces = map[string]string{

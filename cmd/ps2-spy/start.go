@@ -9,6 +9,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/bot"
 	"github.com/x0k/ps2-spy/internal/bot/handlers"
 	"github.com/x0k/ps2-spy/internal/bot/handlers/event/login"
+	"github.com/x0k/ps2-spy/internal/bot/handlers/submit/channel_setup_submit_handler"
 	"github.com/x0k/ps2-spy/internal/config"
 	"github.com/x0k/ps2-spy/internal/infra"
 	"github.com/x0k/ps2-spy/internal/lib/census2"
@@ -30,6 +31,8 @@ import (
 	"github.com/x0k/ps2-spy/internal/loaders/characters_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/event_tracking_channels_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/outfit_tags_loader"
+	"github.com/x0k/ps2-spy/internal/loaders/platform_character_names_loader"
+	"github.com/x0k/ps2-spy/internal/loaders/platform_outfit_tags_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/population_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/subscription_settings_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/world_alerts_loader"
@@ -209,8 +212,7 @@ func start(ctx context.Context, cfg *config.Config) error {
 	}
 
 	subSettingsLoader := subscription_settings_loader.New(sqlStorage)
-	pcCharacterNamesLoader := character_names_loader.NewCensus(censusClient, census2.Ps2_v2_NS)
-	pcOutfitTagsLoader := outfit_tags_loader.NewCensus(censusClient, census2.Ps2_v2_NS)
+	// TODO: remove loader
 	err = startOutfitMembersSynchronizer(
 		ctx,
 		sqlStorage,
@@ -220,6 +222,9 @@ func start(ctx context.Context, cfg *config.Config) error {
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
+
+	platformCharacterNamesLoader := platform_character_names_loader.NewCensus(censusClient)
+	platformOutfitTagsLoader := platform_outfit_tags_loader.NewCensus(censusClient)
 
 	// bot
 	botConfig := &bot.BotConfig{
@@ -237,17 +242,29 @@ func start(ctx context.Context, cfg *config.Config) error {
 			alertsLoader,
 			worldAlertsLoader,
 			subSettingsLoader,
-			pcCharacterNamesLoader,
-			pcOutfitTagsLoader,
+			platformCharacterNamesLoader,
+			platformOutfitTagsLoader,
 		),
-		SubmitHandlers: bot.NewSubmitHandlers(
-			character_ids_loader.NewCensus(censusClient),
-			pcCharacterNamesLoader,
-			pcOutfitTagsLoader,
-			subscription_settings_saver.New(sqlStorage, subSettingsLoader, platforms.PC),
-			subscription_settings_saver.New(sqlStorage, subSettingsLoader, platforms.PS4_EU),
-			subscription_settings_saver.New(sqlStorage, subSettingsLoader, platforms.PS4_US),
-		),
+		SubmitHandlers: map[string]handlers.InteractionHandler{
+			handlers.CHANNEL_SETUP_PC_MODAL: channel_setup_submit_handler.New(
+				character_ids_loader.NewCensus(censusClient, census2.Ps2_v2_NS),
+				character_names_loader.NewCensus(censusClient, census2.Ps2_v2_NS),
+				outfit_tags_loader.NewCensus(censusClient, census2.Ps2_v2_NS),
+				subscription_settings_saver.New(sqlStorage, subSettingsLoader, platforms.PC),
+			),
+			handlers.CHANNEL_SETUP_PS4_EU_MODAL: channel_setup_submit_handler.New(
+				character_ids_loader.NewCensus(censusClient, census2.Ps2ps4eu_v2_NS),
+				character_names_loader.NewCensus(censusClient, census2.Ps2ps4eu_v2_NS),
+				outfit_tags_loader.NewCensus(censusClient, census2.Ps2ps4eu_v2_NS),
+				subscription_settings_saver.New(sqlStorage, subSettingsLoader, platforms.PS4_EU),
+			),
+			handlers.CHANNEL_SETUP_PS4_US_MODAL: channel_setup_submit_handler.New(
+				character_ids_loader.NewCensus(censusClient, census2.Ps2ps4us_v2_NS),
+				character_names_loader.NewCensus(censusClient, census2.Ps2ps4us_v2_NS),
+				outfit_tags_loader.NewCensus(censusClient, census2.Ps2ps4us_v2_NS),
+				subscription_settings_saver.New(sqlStorage, subSettingsLoader, platforms.PS4_US),
+			),
+		},
 		PlayerLoginHandlers: map[string]handlers.Ps2EventHandler[ps2events.PlayerLogin]{
 			platforms.PC:     login.New(pcBatchedCharacterLoader),
 			platforms.PS4_EU: login.New(ps4euBatchedCharacterLoader),
