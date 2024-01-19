@@ -10,6 +10,7 @@ import (
 	"syscall"
 
 	"github.com/x0k/ps2-spy/internal/config"
+	"github.com/x0k/ps2-spy/internal/infra"
 )
 
 var (
@@ -22,18 +23,19 @@ func init() {
 }
 
 func main() {
+	ctx := context.Background()
 	cfg := config.MustLoad(config_path)
+
 	log := mustSetupLogger(&cfg.Logger)
 	log.Info("starting...", slog.String("log_level", cfg.Logger.Level))
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	s := &setup{
-		log: log,
-		ctx: ctx,
-		wg:  &sync.WaitGroup{},
-	}
+	ctx = context.WithValue(ctx, infra.LoggerKey, log)
 
-	start(s, cfg)
+	wg := &sync.WaitGroup{}
+	ctx = context.WithValue(ctx, infra.WgKey, wg)
+
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	start(ctx, cfg)
 
 	log.Info("Press CTRL-C to exit.")
 	stop := make(chan os.Signal, 1)
@@ -42,5 +44,5 @@ func main() {
 
 	log.Info("gracefully shutting down.")
 	cancel()
-	s.wg.Wait()
+	wg.Wait()
 }

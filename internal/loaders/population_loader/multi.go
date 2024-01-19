@@ -26,7 +26,7 @@ func NewMulti(
 ) *MultiLoader {
 	loadersWithDefault := maps.Clone(loadersMap)
 	fallbackLoader := loaders.NewFallbackLoader(
-		log.With(slog.String("component", "MultiLoader.WorldsPopulation")),
+		log.With(slog.String("component", "loaders.population_loader.MultiLoader.fallbackLoader")),
 		loadersMap,
 		priority,
 	)

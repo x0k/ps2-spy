@@ -2,19 +2,17 @@ package ps2messages
 
 import (
 	"fmt"
-	"log/slog"
 	"sync"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/core"
-	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 )
 
 var ErrUnknownMessageType = fmt.Errorf("unknown message type")
 var ErrUnknownMessageHandler = fmt.Errorf("unknown message handler")
+var ErrUnsupportedMessageService = fmt.Errorf("unsupported message service")
 
 type Publisher struct {
-	log                      *slog.Logger
 	msgBaseBuff              core.MessageBase
 	handlersMu               sync.RWMutex
 	handlers                 map[string][]messageHandler
@@ -22,11 +20,8 @@ type Publisher struct {
 	buffers                  map[string]any
 }
 
-func NewPublisher(log *slog.Logger) *Publisher {
+func NewPublisher() *Publisher {
 	return &Publisher{
-		log: log.With(
-			slog.String("component", "census2.streaming.messages.Publisher"),
-		),
 		handlers:                 map[string][]messageHandler{},
 		subscriptionSettingsBuff: &SubscriptionSettings{},
 		buffers: map[string]any{
@@ -73,41 +68,34 @@ func (p *Publisher) publish(msgType string, msg any) {
 	}
 }
 
-func (p *Publisher) Publish(msg map[string]any) {
-	var err error
-	defer func() {
-		if err != nil {
-			p.log.Warn("failed to publish message", slog.Any("msg", msg), sl.Err(err))
-		}
-	}()
+func (p *Publisher) Publish(msg map[string]any) error {
 	// Subscription
 	if s, ok := msg[SubscriptionSignatureField]; ok {
-		err = mapstructure.Decode(s, p.subscriptionSettingsBuff)
+		err := mapstructure.Decode(s, p.subscriptionSettingsBuff)
 		if err != nil {
-			return
+			return fmt.Errorf("%q decoding: %w", SubscriptionSignatureField, err)
 		}
 		p.publish(SubscriptionSignatureField, p.subscriptionSettingsBuff)
-		return
+		return nil
 	}
 	// Ignore help message
 	if _, ok := msg[HelpSignatureField]; ok {
-		return
+		return nil
 	}
-	err = core.AsMessageBase(msg, &p.msgBaseBuff)
+	err := core.AsMessageBase(msg, &p.msgBaseBuff)
 	if err != nil {
-		return
+		return err
 	}
 	if p.msgBaseBuff.Service != core.EventService {
-		p.log.Warn("non event message is dropped", slog.Any("msg", msg))
-		return
+		return fmt.Errorf("%s: %w", p.msgBaseBuff.Service, ErrUnsupportedMessageService)
 	}
 	if buff, ok := p.buffers[p.msgBaseBuff.Type]; ok {
 		err = mapstructure.Decode(msg, buff)
 		if err != nil {
-			return
+			return fmt.Errorf("%q decoding: %w", p.msgBaseBuff.Type, err)
 		}
 		p.publish(p.msgBaseBuff.Type, buff)
-		return
+		return nil
 	}
-	err = fmt.Errorf("%s: %w", p.msgBaseBuff.Type, ErrUnknownMessageType)
+	return fmt.Errorf("%s: %w", p.msgBaseBuff.Type, ErrUnknownMessageType)
 }

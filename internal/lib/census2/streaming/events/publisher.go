@@ -2,29 +2,23 @@ package ps2events
 
 import (
 	"fmt"
-	"log/slog"
 	"sync"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/core"
-	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 )
 
 var ErrEventNameNotFound = fmt.Errorf("event name not found")
 var ErrUnknownEventName = fmt.Errorf("unknown event name")
 
 type Publisher struct {
-	log        *slog.Logger
 	handlersMu sync.RWMutex
 	handlers   map[string][]eventHandler
 	buffers    map[string]any
 }
 
-func NewPublisher(log *slog.Logger) *Publisher {
+func NewPublisher() *Publisher {
 	return &Publisher{
-		log: log.With(
-			slog.String("component", "census2.streaming.events.Publisher"),
-		),
 		handlers: map[string][]eventHandler{},
 		buffers: map[string]any{
 			AchievementEarnedEventName:     &AchievementEarned{},
@@ -81,25 +75,18 @@ func (p *Publisher) publish(eventType string, msg any) {
 	}
 }
 
-func (p *Publisher) Publish(event map[string]any) {
-	var err error
-	defer func() {
-		if err != nil {
-			p.log.Warn("failed to publish event", slog.Any("event", event), sl.Err(err))
-		}
-	}()
+func (p *Publisher) Publish(event map[string]any) error {
 	name, ok := event[core.EventNameField].(string)
 	if !ok {
-		err = ErrEventNameNotFound
-		return
+		return ErrEventNameNotFound
 	}
 	if buff, ok := p.buffers[name]; ok {
-		err = mapstructure.Decode(event, buff)
+		err := mapstructure.Decode(event, buff)
 		if err != nil {
-			return
+			return fmt.Errorf("%q decoding: %w", name, err)
 		}
 		p.publish(name, buff)
-		return
+		return nil
 	}
-	err = fmt.Errorf("%s: %w", name, ErrUnknownEventName)
+	return fmt.Errorf("%s: %w", name, ErrUnknownEventName)
 }

@@ -3,14 +3,13 @@ package main
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"net/http"
-	"sync"
 	"time"
 
 	"github.com/x0k/ps2-spy/internal/bot"
 	"github.com/x0k/ps2-spy/internal/bot/handlers/event/login"
 	"github.com/x0k/ps2-spy/internal/config"
+	"github.com/x0k/ps2-spy/internal/infra"
 	"github.com/x0k/ps2-spy/internal/lib/census2"
 	"github.com/x0k/ps2-spy/internal/lib/fisu"
 	"github.com/x0k/ps2-spy/internal/lib/honu"
@@ -45,20 +44,14 @@ import (
 	"github.com/x0k/ps2-spy/internal/tracking_manager"
 )
 
-type setup struct {
-	log *slog.Logger
-	ctx context.Context
-	wg  *sync.WaitGroup
-}
-
-func start(s *setup, cfg *config.Config) error {
-	const op = "startBot"
-	storageEventsPublisher := storage.NewPublisher(s.log)
-	sqlStorage, err := startStorage(s, cfg.Storage, storageEventsPublisher)
+func start(ctx context.Context, cfg *config.Config) error {
+	const op = "start"
+	storageEventsPublisher := storage.NewPublisher()
+	sqlStorage, err := startStorage(ctx, cfg.Storage, storageEventsPublisher)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
-	eventsPublisher, err := startPs2EventsPublisher(s, cfg)
+	eventsPublisher, err := startPs2EventsPublisher(ctx, cfg)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
@@ -66,23 +59,25 @@ func start(s *setup, cfg *config.Config) error {
 		Timeout: cfg.HttpClientTimeout,
 	}
 	// loaders
+	wg := infra.Wg(ctx)
 	honuClient := honu.NewClient("https://wt.honu.pw", httpClient)
-	honuClient.Start(s.ctx, s.wg)
+	honuClient.Start(ctx, wg)
 	fisuClient := fisu.NewClient("https://ps2.fisu.pw", httpClient)
-	fisuClient.Start(s.ctx, s.wg)
+	fisuClient.Start(ctx, wg)
 	voidWellClient := voidwell.NewClient("https://api.voidwell.com", httpClient)
-	voidWellClient.Start(s.ctx, s.wg)
+	voidWellClient.Start(ctx, wg)
 	populationClient := population.NewClient("https://agg.ps2.live", httpClient)
-	populationClient.Start(s.ctx, s.wg)
+	populationClient.Start(ctx, wg)
 	saerroClient := saerro.NewClient("https://saerro.ps2.live", httpClient)
-	saerroClient.Start(s.ctx, s.wg)
+	saerroClient.Start(ctx, wg)
 	ps2alertsClient := ps2alerts.NewClient("https://api.ps2alerts.com", httpClient)
-	ps2alertsClient.Start(s.ctx, s.wg)
+	ps2alertsClient.Start(ctx, wg)
 	censusClient := census2.NewClient("https://census.daybreakgames.com", cfg.CensusServiceId, httpClient)
 	sanctuaryClient := census2.NewClient("https://census.lithafalcon.cc", cfg.CensusServiceId, httpClient)
 	// multi loaders
+	log := infra.OpLogger(ctx, op)
 	popLoader := population_loader.NewMulti(
-		s.log,
+		log,
 		map[string]loaders.Loader[loaders.Loaded[ps2.WorldsPopulation]]{
 			"honu":      population_loader.NewHonu(honuClient),
 			"ps2live":   population_loader.NewPS2Live(populationClient),
@@ -93,9 +88,9 @@ func start(s *setup, cfg *config.Config) error {
 		},
 		[]string{"honu", "ps2live", "saerro", "fisu", "sanctuary", "voidwell"},
 	)
-	popLoader.Start(s.ctx, s.wg)
+	popLoader.Start(ctx, wg)
 	worldPopLoader := world_population_loader.NewMulti(
-		s.log,
+		log,
 		map[string]loaders.KeyedLoader[ps2.WorldId, loaders.Loaded[ps2.DetailedWorldPopulation]]{
 			"honu":     world_population_loader.NewHonu(honuClient),
 			"saerro":   world_population_loader.NewSaerro(saerroClient),
@@ -103,9 +98,9 @@ func start(s *setup, cfg *config.Config) error {
 		},
 		[]string{"honu", "saerro", "voidwell"},
 	)
-	worldPopLoader.Start(s.ctx, s.wg)
+	worldPopLoader.Start(ctx, wg)
 	alertsLoader := alerts_loader.NewMulti(
-		s.log,
+		log,
 		map[string]loaders.Loader[loaders.Loaded[ps2.Alerts]]{
 			"ps2alerts": alerts_loader.NewPS2Alerts(ps2alertsClient),
 			"honu":      alerts_loader.NewHonu(honuClient),
@@ -114,23 +109,22 @@ func start(s *setup, cfg *config.Config) error {
 		},
 		[]string{"ps2alerts", "honu", "census", "voidwell"},
 	)
-	alertsLoader.Start(s.ctx, s.wg)
+	alertsLoader.Start(ctx, wg)
 	worldAlertsLoader := world_alerts_loader.NewMulti(alertsLoader)
-	worldAlertsLoader.Start(s.ctx, s.wg)
+	worldAlertsLoader.Start(ctx, wg)
 	charactersLoader := characters_loader.NewCensus(censusClient)
-	pcBatchedCharacterLoader := character_loader.NewBatch(s.log, charactersLoader, time.Minute)
-	pcBatchedCharacterLoader.Start(s.ctx, s.wg)
+	pcBatchedCharacterLoader := character_loader.NewBatch(charactersLoader, time.Minute)
+	pcBatchedCharacterLoader.Start(ctx, wg)
 	characterTrackingChannelsLoader := character_tracking_channels_loader.New(sqlStorage)
 	pcTrackableCharacterIdsLoader := trackable_character_ids_loader.NewStorage(sqlStorage, platforms.PC)
 	pcOutfitTrackersCountLoader := outfit_trackers_count_loader.NewStorage(sqlStorage, platforms.PC)
 	pcTrackingManager := tracking_manager.New(
-		s.log,
 		pcBatchedCharacterLoader,
 		characterTrackingChannelsLoader,
 		pcTrackableCharacterIdsLoader,
 		pcOutfitTrackersCountLoader,
 	)
-	err = startTrackingManager(s, pcTrackingManager, storageEventsPublisher)
+	err = startTrackingManager(ctx, pcTrackingManager, storageEventsPublisher)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
@@ -149,14 +143,13 @@ func start(s *setup, cfg *config.Config) error {
 	)
 	pcOutfitSyncAtLoader := outfit_sync_at_loader.NewStorage(sqlStorage, platforms.PC)
 	pcOutfitMembersSynchronizer := outfit_members_synchronizer.New(
-		s.log,
 		pcTrackableOutfitsLoader,
 		pcOutfitSyncAtLoader,
 		outfitMembersLoader,
 		pcOutfitMembersSaver,
 		time.Hour*24,
 	)
-	err = startOutfitMembersSynchronizer(s, pcOutfitMembersSynchronizer, storageEventsPublisher)
+	err = startOutfitMembersSynchronizer(ctx, pcOutfitMembersSynchronizer, storageEventsPublisher)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
@@ -192,5 +185,5 @@ func start(s *setup, cfg *config.Config) error {
 		PlayerLoginHandler:          login.New(pcBatchedCharacterLoader),
 		EventTrackingChannelsLoader: event_tracking_channels_loader.New(pcTrackingManager),
 	}
-	return startBot(s, botConfig)
+	return startBot(ctx, botConfig)
 }

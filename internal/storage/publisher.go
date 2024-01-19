@@ -2,23 +2,18 @@ package storage
 
 import (
 	"errors"
-	"log/slog"
 	"sync"
 )
 
 var ErrUnknownEvent = errors.New("unknown event")
 
 type Publisher struct {
-	log        *slog.Logger
 	handlersMu sync.RWMutex
 	handlers   map[string][]eventHandler
 }
 
-func NewPublisher(log *slog.Logger) *Publisher {
+func NewPublisher() *Publisher {
 	return &Publisher{
-		log: log.With(
-			slog.String("component", "storage.publisher"),
-		),
 		handlers: map[string][]eventHandler{},
 	}
 }

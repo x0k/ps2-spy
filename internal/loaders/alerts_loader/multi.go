@@ -26,7 +26,7 @@ func NewMulti(
 ) *MultiLoader {
 	loadersWithDefault := maps.Clone(loadersMap)
 	fallbackLoader := loaders.NewFallbackLoader[loaders.Loaded[ps2.Alerts]](
-		log.With(slog.String("component", "MultiLoader.Alerts")),
+		log.With(slog.String("component", "loaders.alerts_loader.MultiLoader.fallbackLoader")),
 		loadersMap,
 		priority,
 	)

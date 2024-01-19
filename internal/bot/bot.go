@@ -9,6 +9,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/x0k/ps2-spy/internal/bot/handlers"
+	"github.com/x0k/ps2-spy/internal/infra"
 	ps2events "github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/loaders"
@@ -16,7 +17,6 @@ import (
 
 type Bot struct {
 	wg                 *sync.WaitGroup
-	log                *slog.Logger
 	session            *discordgo.Session
 	registeredCommands []*discordgo.ApplicationCommand
 }
@@ -35,10 +35,10 @@ type BotConfig struct {
 
 func New(
 	ctx context.Context,
-	log *slog.Logger,
 	cfg *BotConfig,
 ) (*Bot, error) {
-	log = log.With(slog.String("component", "bot"))
+	const op = "bot.Bot.New"
+	log := infra.OpLogger(ctx, op)
 	session, err := discordgo.New("Bot " + cfg.DiscordToken)
 	if err != nil {
 		return nil, fmt.Errorf("error creating Discord session: %w", err)
@@ -128,18 +128,19 @@ func New(
 	}
 	return &Bot{
 		wg:                 wg,
-		log:                log,
 		session:            session,
 		registeredCommands: registeredCommands,
 	}, nil
 }
 
-func (b *Bot) Stop() error {
-	b.log.Info("stopping bot")
+func (b *Bot) Stop(ctx context.Context) error {
+	const op = "bot.Bot.Stop"
+	log := infra.OpLogger(ctx, op)
+	log.Info("stopping bot")
 	for _, v := range b.registeredCommands {
 		err := b.session.ApplicationCommandDelete(b.session.State.User.ID, "", v.ID)
 		if err != nil {
-			b.log.Error("cannot delete command", slog.String("command", v.Name), sl.Err(err))
+			log.Error("cannot delete command", slog.String("command", v.Name), sl.Err(err))
 		}
 	}
 	return b.session.Close()

@@ -176,6 +176,10 @@ func (q *Query) Collection() string {
 	return q.collection
 }
 
+func (q *Query) SetNamespace(ns string) {
+	q.namespace = ns
+}
+
 func (q *Query) Where(term queryCondition) *Query {
 	term.conditions.separator = queryFieldsSeparator
 	q.terms.values = append(q.terms.values, term)

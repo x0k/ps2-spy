@@ -70,8 +70,8 @@ func (c *Client) fillConnectionStateChangedBuffer(msg map[string]any) error {
 }
 
 func (c *Client) Connect(ctx context.Context) error {
-	c.log.Info("connecting to websocket")
 	const op = "census2.streaming.Client.Connect"
+	c.log.Info("connecting to websocket")
 	conn, _, err := websocket.Dial(ctx, c.endpoint+fmt.Sprintf("?environment=%s&service-id=s:%s", c.env, c.serviceId), nil)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)

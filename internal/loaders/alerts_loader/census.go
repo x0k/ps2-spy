@@ -3,12 +3,14 @@ package alerts_loader
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"strconv"
 	"time"
 
+	"github.com/x0k/ps2-spy/internal/infra"
 	"github.com/x0k/ps2-spy/internal/lib/census2"
 	collections "github.com/x0k/ps2-spy/internal/lib/census2/collections/ps2"
+	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/loaders"
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
@@ -23,13 +25,15 @@ func NewCensus(client *census2.Client) *CensusLoader {
 	}
 }
 
-var WorldEventsQuery = census2.NewQueryMustBeValid(census2.GetQuery, census2.Ps2_v2_NS, collections.WorldEvent).
+var PcWorldEventsQuery = census2.NewQueryMustBeValid(census2.GetQuery, census2.Ps2_v2_NS, collections.WorldEvent).
 	Where(census2.Cond("type").Equals(census2.Str("METAGAME"))).
 	Where(census2.Cond("world_id").Equals(census2.Str("1,10,13,17,19,24,40,1000,2000"))).
 	SetLimit(100)
 
 func (l *CensusLoader) Load(ctx context.Context) (loaders.Loaded[ps2.Alerts], error) {
-	events, err := census2.ExecuteAndDecode[collections.WorldEventItem](ctx, l.client, WorldEventsQuery)
+	const op = "loaders.alerts_loader.CensusLoader.Load"
+	log := infra.OpLogger(ctx, op).With(slog.String("census_endpoint", l.client.Endpoint()))
+	events, err := census2.ExecuteAndDecode[collections.WorldEventItem](ctx, l.client, PcWorldEventsQuery)
 	if err != nil {
 		return loaders.Loaded[ps2.Alerts]{}, err
 	}
@@ -46,7 +50,7 @@ func (l *CensusLoader) Load(ctx context.Context) (loaders.Loaded[ps2.Alerts], er
 	for _, e := range actualEvents {
 		eventId, err := strconv.Atoi(e.MetagameEventId)
 		if err != nil {
-			log.Printf("[%s] Failed to parse event id %q: %q", l.client.Endpoint(), e.MetagameEventId, err)
+			log.Error("failed to parse event id", slog.String("event_id", e.MetagameEventId), sl.Err(err))
 			continue
 		}
 		alertInfo, ok := ps2.AlertsMap[eventId]
@@ -58,24 +62,24 @@ func (l *CensusLoader) Load(ctx context.Context) (loaders.Loaded[ps2.Alerts], er
 		}
 		worldId, err := strconv.Atoi(e.WorldId)
 		if err != nil {
-			log.Printf("[%s] Failed to parse world id %q: %q", l.client.Endpoint(), e.WorldId, err)
+			log.Error("failed to parse world id", slog.String("world_id", e.WorldId), sl.Err(err))
 			continue
 		}
 		zoneId, err := strconv.Atoi(e.ZoneId)
 		if err != nil {
-			log.Printf("[%s] Failed to parse zone id %q: %q", l.client.Endpoint(), e.ZoneId, err)
+			log.Error("failed to parse zone id", slog.String("zone_id", e.ZoneId), sl.Err(err))
 			continue
 		}
 		timesamp, err := strconv.ParseInt(e.Timestamp, 10, 64)
 		if err != nil {
-			log.Printf("[%s] Failed to parse timestamp %q: %q", l.client.Endpoint(), e.Timestamp, err)
+			log.Error("failed to parse timestamp", slog.String("timestamp", e.Timestamp), sl.Err(err))
 			continue
 		}
 		var duration time.Duration
 		if eventInfo, ok := ps2.MetagameEventsMap[eventId]; ok {
 			d, err := strconv.Atoi(eventInfo.DurationMinutes)
 			if err != nil {
-				log.Printf("[%s] Failed to parse duration %q: %q", l.client.Endpoint(), eventInfo.DurationMinutes, err)
+				log.Error("failed to parse duration", slog.String("duration", eventInfo.DurationMinutes), sl.Err(err))
 			} else {
 				duration = time.Duration(d) * time.Minute
 			}
