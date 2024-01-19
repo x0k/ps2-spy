@@ -1,4 +1,26 @@
 #!/bin/bash -e
 
 run:
-    go run cmd/ps2-spy/main.go -t $(cat ~/Sync/ps2-spy/test-token)
+    DISCORD_TOKEN=$(cat ~/Sync/ps2-spy/test-token) \
+    CENSUS_SERVICE_ID=$(cat ~/Sync/ps2-spy/test-service) \
+      go run cmd/ps2-spy/*.go --config config/local.yml
+
+all:
+
+test:
+    go test ./...
+
+o:
+    go run tools/explorer/*.go --resource outfit --query $1 --output tmp
+
+os:
+    go run tools/explorer/*.go --resource outfits --query $1 --output tmp
+
+c:
+    go run tools/explorer/*.go --resource character --query $1 --output tmp
+
+cs:
+    go run tools/explorer/*.go --resource characters --query $1 --output tmp
+
+ms:
+    go run tools/explorer/*.go --resource members --query $1 --output tmp

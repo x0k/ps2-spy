@@ -3,6 +3,7 @@ package saerro
 import (
 	"context"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/x0k/ps2-spy/internal/lib/containers"
@@ -31,12 +32,8 @@ func (c *Client) Endpoint() string {
 	return c.endpoint
 }
 
-func (c *Client) Start() {
-	go c.allWorldsPopulation.StartExpiration()
-}
-
-func (c *Client) Stop() {
-	c.allWorldsPopulation.StopExpiration()
+func (c *Client) Start(ctx context.Context, wg *sync.WaitGroup) {
+	c.allWorldsPopulation.Start(ctx, wg)
 }
 
 const allWorldsPopulationQuery = graphqlUrl + "?query={allWorlds{id,name,zones{all{id,name,population{total,nc,vs,tr,ns}}}}}"

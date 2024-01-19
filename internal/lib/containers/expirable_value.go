@@ -1,25 +1,24 @@
 package containers
 
 import (
+	"context"
 	"sync"
 	"sync/atomic"
 	"time"
 )
 
 type ExpiableValue[T any] struct {
-	mu     sync.RWMutex
-	actual atomic.Bool
-	val    T
-	ttl    time.Duration
-	ticker *time.Ticker
-	done   chan struct{}
+	mu      sync.RWMutex
+	actual  atomic.Bool
+	val     T
+	ttl     time.Duration
+	ticker  *time.Ticker
+	started atomic.Bool
 }
 
 func NewExpiableValue[T any](ttl time.Duration) *ExpiableValue[T] {
 	return &ExpiableValue[T]{
-		ttl:    ttl,
-		ticker: time.NewTicker(ttl),
-		done:   make(chan struct{}),
+		ttl: ttl,
 	}
 }
 
@@ -33,20 +32,24 @@ func (e *ExpiableValue[T]) ResetExpiration() {
 	e.ticker.Reset(e.ttl)
 }
 
-func (e *ExpiableValue[T]) StartExpiration() {
-	defer e.ticker.Stop()
-	for {
-		select {
-		case <-e.ticker.C:
-			e.MarkAsExpired()
-		case <-e.done:
-			return
-		}
+func (e *ExpiableValue[T]) Start(ctx context.Context, wg *sync.WaitGroup) {
+	if e.started.Swap(true) {
+		return
 	}
-}
-
-func (e *ExpiableValue[T]) StopExpiration() {
-	close(e.done)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		e.ticker = time.NewTicker(e.ttl)
+		defer e.ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-e.ticker.C:
+				e.MarkAsExpired()
+			}
+		}
+	}()
 }
 
 func (e *ExpiableValue[T]) Read() (T, bool) {

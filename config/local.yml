@@ -1,0 +1,5 @@
+storage:
+  path: "./storage/storage.db"
+logger:
+  level: debug
+  handler_type: pretty

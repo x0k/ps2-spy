@@ -30,6 +30,11 @@ func NewQueriedLoadableValue[Q any, K comparable, T any](
 	}
 }
 
+func (v *QueriedLoadableValue[Q, K, T]) Cached(query Q) (T, bool) {
+	key := v.mapper(query)
+	return v.cache.Get(key)
+}
+
 func (v *QueriedLoadableValue[Q, K, T]) Load(ctx context.Context, query Q) (T, error) {
 	key := v.mapper(query)
 	cached, ok := v.cache.Get(key)

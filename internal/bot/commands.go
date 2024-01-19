@@ -2,7 +2,9 @@ package bot
 
 import (
 	"github.com/bwmarrin/discordgo"
+	"github.com/x0k/ps2-spy/internal/loaders/multi_loaders"
 	"github.com/x0k/ps2-spy/internal/ps2"
+	"github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
 
 func serverNames() []*discordgo.ApplicationCommandOptionChoice {
@@ -27,7 +29,11 @@ func providerChoices(providers []string) []*discordgo.ApplicationCommandOptionCh
 	return choices
 }
 
-func makeCommands(service *ps2.Service) []*discordgo.ApplicationCommand {
+func NewCommands(
+	popMultiLoader multi_loaders.MultiLoader,
+	worldPopMultiLoader multi_loaders.MultiLoader,
+	alertsMultiLoader multi_loaders.MultiLoader,
+) []*discordgo.ApplicationCommand {
 	return []*discordgo.ApplicationCommand{
 		{
 			Name:        "population",
@@ -37,7 +43,7 @@ func makeCommands(service *ps2.Service) []*discordgo.ApplicationCommand {
 					Type:        discordgo.ApplicationCommandOptionString,
 					Name:        "provider",
 					Description: "Provider name",
-					Choices:     providerChoices(service.PopulationLoaders()),
+					Choices:     providerChoices(popMultiLoader.Loaders()),
 				},
 			},
 		},
@@ -56,7 +62,7 @@ func makeCommands(service *ps2.Service) []*discordgo.ApplicationCommand {
 					Type:        discordgo.ApplicationCommandOptionString,
 					Name:        "provider",
 					Description: "Provider name",
-					Choices:     providerChoices(service.PopulationByWorldIdProviders()),
+					Choices:     providerChoices(worldPopMultiLoader.Loaders()),
 				},
 			},
 		},
@@ -74,7 +80,28 @@ func makeCommands(service *ps2.Service) []*discordgo.ApplicationCommand {
 					Type:        discordgo.ApplicationCommandOptionString,
 					Name:        "provider",
 					Description: "Provider name",
-					Choices:     providerChoices(service.AlertsLoaders()),
+					Choices:     providerChoices(alertsMultiLoader.Loaders()),
+				},
+			},
+		},
+		{
+			Name:        "setup",
+			Description: "Manage subscription settings for this channel",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        platforms.PC,
+					Description: "Subscription settings for the PC platform",
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        platforms.PS4_EU,
+					Description: "Subscription settings for the PS4 EU platform",
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        platforms.PS4_US,
+					Description: "Subscription settings for the PS4 US platform",
 				},
 			},
 		},

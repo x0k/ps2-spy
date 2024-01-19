@@ -1,46 +1,153 @@
 package bot
 
 import (
+	"context"
 	"fmt"
-	"log"
+	"log/slog"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/x0k/ps2-spy/internal/ps2"
+	"github.com/x0k/ps2-spy/internal/bot/handlers"
+	"github.com/x0k/ps2-spy/internal/infra"
+	ps2events "github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
+	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
+	"github.com/x0k/ps2-spy/internal/loaders"
+	"github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
+
+var ErrEventTrackingChannelsLoaderNotFound = fmt.Errorf("event tracking channels loader not found")
+var ErrEventsPublisherNotFound = fmt.Errorf("events publisher not found")
+var ErrEventHandlerNotFound = fmt.Errorf("event handler not found")
 
 type Bot struct {
 	session            *discordgo.Session
 	registeredCommands []*discordgo.ApplicationCommand
 }
 
-func NewBot(discordToken string, service *ps2.Service) (*Bot, error) {
-	session, err := discordgo.New("Bot " + discordToken)
+type BotConfig struct {
+	DiscordToken                 string
+	CommandHandlerTimeout        time.Duration
+	Ps2EventHandlerTimeout       time.Duration
+	Commands                     []*discordgo.ApplicationCommand
+	CommandHandlers              map[string]handlers.InteractionHandler
+	SubmitHandlers               map[string]handlers.InteractionHandler
+	PlayerLoginHandlers          map[string]handlers.Ps2EventHandler[ps2events.PlayerLogin]
+	EventTrackingChannelsLoaders map[string]loaders.QueriedLoader[any, []string]
+	EventsPublishers             map[string]*ps2events.Publisher
+}
+
+func startEventHandlersForPlatform(
+	ctx context.Context,
+	session *discordgo.Session,
+	cfg *BotConfig,
+	platform string,
+) error {
+	const op = "bot.startEventHandlersForPlatform"
+	pcEventTrackingChannelsLoader, ok := cfg.EventTrackingChannelsLoaders[platform]
+	if !ok {
+		return fmt.Errorf("%s get event tracking channels loader: %w", platforms.PC, ErrEventsPublisherNotFound)
+	}
+	pcEventsPublisher, ok := cfg.EventsPublishers[platforms.PC]
+	if !ok {
+		return fmt.Errorf("%s get events publisher: %w", platforms.PC, ErrEventsPublisherNotFound)
+	}
+	pcPlayerLoginHandler, ok := cfg.PlayerLoginHandlers[platforms.PC]
+	if !ok {
+		return fmt.Errorf("%s get player login handler: %w", platforms.PC, ErrEventHandlerNotFound)
+	}
+	eventHandlersConfig := &handlers.Ps2EventHandlerConfig{
+		Session:                     session,
+		Timeout:                     cfg.Ps2EventHandlerTimeout,
+		EventTrackingChannelsLoader: pcEventTrackingChannelsLoader,
+	}
+	playerLogin := make(chan ps2events.PlayerLogin)
+	playerLoginUnSub, err := pcEventsPublisher.AddHandler(playerLogin)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+	wg := infra.Wg(ctx)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		defer playerLoginUnSub()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case pl := <-playerLogin:
+				go pcPlayerLoginHandler.Run(
+					ctx,
+					eventHandlersConfig,
+					pl,
+				)
+			}
+		}
+	}()
+	return nil
+}
+
+func New(
+	ctx context.Context,
+	cfg *BotConfig,
+) (*Bot, error) {
+	const op = "bot.Bot.New"
+	log := infra.OpLogger(ctx, op)
+	session, err := discordgo.New("Bot " + cfg.DiscordToken)
 	if err != nil {
 		return nil, fmt.Errorf("error creating Discord session: %w", err)
 	}
 	session.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {
-		log.Printf("Logged in as: %v#%v", s.State.User.Username, s.State.User.Discriminator)
-		log.Printf("Running on %d servers", len(s.State.Guilds))
+		log.Info("logged in as", slog.String("username", s.State.User.Username), slog.String("discriminator", s.State.User.Discriminator))
+		log.Info("running on", slog.Int("server_count", len(s.State.Guilds)))
 	})
-	commands := makeCommands(service)
-	handlers := makeHandlers(service)
 	session.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-		if handler, ok := handlers[i.ApplicationCommandData().Name]; ok {
-			go run(handler, s, i)
+		var userId string
+		if i.Member != nil {
+			userId = i.Member.User.ID
 		} else {
-			log.Printf("Unknown command %q", i.ApplicationCommandData().Name)
+			userId = i.User.ID
+		}
+		l := log.With(
+			slog.String("guild_id", i.GuildID),
+			slog.String("user_id", userId),
+		)
+		switch i.Type {
+		case discordgo.InteractionApplicationCommand:
+			l.Debug("command received", slog.String("command", i.ApplicationCommandData().Name))
+			if handler, ok := cfg.CommandHandlers[i.ApplicationCommandData().Name]; ok {
+				go handler.Run(ctx, l, cfg.CommandHandlerTimeout, s, i)
+			} else {
+				l.Warn("unknown command")
+			}
+		case discordgo.InteractionMessageComponent:
+			l.Debug("component invoked")
+		case discordgo.InteractionModalSubmit:
+			data := i.ModalSubmitData()
+			l.Debug("modal submitted", slog.Any("data", data))
+			if handler, ok := cfg.SubmitHandlers[data.CustomID]; ok {
+				go handler.Run(ctx, l, cfg.CommandHandlerTimeout, s, i)
+			} else {
+				l.Warn("unknown modal")
+			}
 		}
 	})
+
+	for _, p := range platforms.Platforms {
+		err = startEventHandlersForPlatform(ctx, session, cfg, p)
+		if err != nil {
+			return nil, fmt.Errorf("%s start event handlers for %q: %w", op, p, err)
+		}
+	}
 	err = session.Open()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%s session open: %w", op, err)
 	}
-	log.Println("Adding commands...")
-	registeredCommands := make([]*discordgo.ApplicationCommand, 0, len(commands))
-	for _, v := range commands {
+	log.Info("adding commands")
+	registeredCommands := make([]*discordgo.ApplicationCommand, 0, len(cfg.Commands))
+	for _, v := range cfg.Commands {
 		cmd, err := session.ApplicationCommandCreate(session.State.User.ID, "", v)
 		if err != nil {
-			log.Printf("cannot create %q command: %q", v.Name, err)
+			log.Error("cannot create command", slog.String("command", v.Name), sl.Err(err))
 		} else {
 			registeredCommands = append(registeredCommands, cmd)
 		}
@@ -51,11 +158,14 @@ func NewBot(discordToken string, service *ps2.Service) (*Bot, error) {
 	}, nil
 }
 
-func (b *Bot) Stop() error {
+func (b *Bot) Stop(ctx context.Context) error {
+	const op = "bot.Bot.Stop"
+	log := infra.OpLogger(ctx, op)
+	log.Info("stopping bot")
 	for _, v := range b.registeredCommands {
 		err := b.session.ApplicationCommandDelete(b.session.State.User.ID, "", v.ID)
 		if err != nil {
-			log.Printf("Cannot delete %q command: %q", v.Name, err)
+			log.Error("cannot delete command", slog.String("command", v.Name), sl.Err(err))
 		}
 	}
 	return b.session.Close()

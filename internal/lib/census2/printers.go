@@ -18,6 +18,26 @@ type optionalPrinter interface {
 	optional
 }
 
+type Ptr[V optionalPrinter] struct {
+	value *V
+}
+
+func NewPtr[V optionalPrinter](p V) Ptr[V] {
+	return Ptr[V]{value: &p}
+}
+
+func (p Ptr[V]) isEmpty() bool {
+	return p.value == nil || (*p.value).isEmpty()
+}
+
+func (p Ptr[V]) print(writer io.StringWriter) {
+	(*p.value).print(writer)
+}
+
+func (p Ptr[V]) Set(v V) {
+	*p.value = v
+}
+
 type Bool bool
 
 func (b Bool) isEmpty() bool {
@@ -123,6 +143,10 @@ func (f Field[T]) print(writer io.StringWriter) {
 type List[T optionalPrinter] struct {
 	values    []T
 	separator string
+}
+
+func NewList[T optionalPrinter](values []T, separator string) List[T] {
+	return List[T]{values: values, separator: separator}
 }
 
 func (list List[T]) isEmpty() bool {

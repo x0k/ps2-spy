@@ -2,6 +2,7 @@ package containers
 
 import (
 	"context"
+	"sync"
 	"time"
 )
 
@@ -21,12 +22,12 @@ func NewLoadableValue[T any](loader valueLoader[T], ttl time.Duration) *Loadable
 	}
 }
 
-func (v *LoadableValue[T]) StartExpiration() {
-	v.value.StartExpiration()
+func (v *LoadableValue[T]) Start(ctx context.Context, wg *sync.WaitGroup) {
+	v.value.Start(ctx, wg)
 }
 
-func (v *LoadableValue[T]) StopExpiration() {
-	v.value.StopExpiration()
+func (v *LoadableValue[T]) Cached() (T, bool) {
+	return v.value.Read()
 }
 
 func (v *LoadableValue[T]) Load(ctx context.Context) (T, error) {

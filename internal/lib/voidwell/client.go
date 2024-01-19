@@ -3,6 +3,7 @@ package voidwell
 import (
 	"context"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/x0k/ps2-spy/internal/lib/containers"
@@ -25,12 +26,8 @@ func NewClient(voidwellEndpoint string, httpClient *http.Client) *Client {
 	}
 }
 
-func (c *Client) Start() {
-	go c.worlds.StartExpiration()
-}
-
-func (c *Client) Stop() {
-	c.worlds.StopExpiration()
+func (c *Client) Start(ctx context.Context, wg *sync.WaitGroup) {
+	c.worlds.Start(ctx, wg)
 }
 
 func (c *Client) Endpoint() string { return c.voidwellEndpoint }

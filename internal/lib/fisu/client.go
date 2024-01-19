@@ -3,6 +3,7 @@ package fisu
 import (
 	"context"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/x0k/ps2-spy/internal/lib/containers"
@@ -25,12 +26,8 @@ func NewClient(fisuEndpoint string, httpClient *http.Client) *Client {
 	}
 }
 
-func (c *Client) Start() {
-	go c.worldsPopulation.StartExpiration()
-}
-
-func (c *Client) Stop() {
-	c.worldsPopulation.StopExpiration()
+func (c *Client) Start(ctx context.Context, wg *sync.WaitGroup) {
+	c.worldsPopulation.Start(ctx, wg)
 }
 
 func (c *Client) Endpoint() string {
