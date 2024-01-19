@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"sync"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -13,24 +12,78 @@ import (
 	ps2events "github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/loaders"
+	"github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
 
+var ErrEventTrackingChannelsLoaderNotFound = fmt.Errorf("event tracking channels loader not found")
+var ErrEventsPublisherNotFound = fmt.Errorf("events publisher not found")
+var ErrEventHandlerNotFound = fmt.Errorf("event handler not found")
+
 type Bot struct {
-	wg                 *sync.WaitGroup
 	session            *discordgo.Session
 	registeredCommands []*discordgo.ApplicationCommand
 }
 
 type BotConfig struct {
-	DiscordToken                string
-	CommandHandlerTimeout       time.Duration
-	Ps2EventHandlerTimeout      time.Duration
-	Commands                    []*discordgo.ApplicationCommand
-	CommandHandlers             map[string]handlers.InteractionHandler
-	SubmitHandlers              map[string]handlers.InteractionHandler
-	PlayerLoginHandler          handlers.Ps2EventHandler[ps2events.PlayerLogin]
-	EventTrackingChannelsLoader loaders.QueriedLoader[any, []string]
-	EventsPublisher             *ps2events.Publisher
+	DiscordToken                 string
+	CommandHandlerTimeout        time.Duration
+	Ps2EventHandlerTimeout       time.Duration
+	Commands                     []*discordgo.ApplicationCommand
+	CommandHandlers              map[string]handlers.InteractionHandler
+	SubmitHandlers               map[string]handlers.InteractionHandler
+	PlayerLoginHandlers          map[string]handlers.Ps2EventHandler[ps2events.PlayerLogin]
+	EventTrackingChannelsLoaders map[string]loaders.QueriedLoader[any, []string]
+	EventsPublishers             map[string]*ps2events.Publisher
+}
+
+func startEventHandlersForPlatform(
+	ctx context.Context,
+	session *discordgo.Session,
+	cfg *BotConfig,
+	platform string,
+) error {
+	const op = "bot.startEventHandlersForPlatform"
+	pcEventTrackingChannelsLoader, ok := cfg.EventTrackingChannelsLoaders[platform]
+	if !ok {
+		return fmt.Errorf("%s get event tracking channels loader: %w", platforms.PC, ErrEventsPublisherNotFound)
+	}
+	pcEventsPublisher, ok := cfg.EventsPublishers[platforms.PC]
+	if !ok {
+		return fmt.Errorf("%s get events publisher: %w", platforms.PC, ErrEventsPublisherNotFound)
+	}
+	pcPlayerLoginHandler, ok := cfg.PlayerLoginHandlers[platforms.PC]
+	if !ok {
+		return fmt.Errorf("%s get player login handler: %w", platforms.PC, ErrEventHandlerNotFound)
+	}
+	eventHandlersConfig := &handlers.Ps2EventHandlerConfig{
+		Session:                     session,
+		Timeout:                     cfg.Ps2EventHandlerTimeout,
+		EventTrackingChannelsLoader: pcEventTrackingChannelsLoader,
+	}
+	playerLogin := make(chan ps2events.PlayerLogin)
+	playerLoginUnSub, err := pcEventsPublisher.AddHandler(playerLogin)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+	wg := infra.Wg(ctx)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		defer playerLoginUnSub()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case pl := <-playerLogin:
+				go pcPlayerLoginHandler.Run(
+					ctx,
+					eventHandlersConfig,
+					pl,
+				)
+			}
+		}
+	}()
+	return nil
 }
 
 func New(
@@ -78,43 +131,16 @@ func New(
 			}
 		}
 	})
-	eventHandlersConfig := &handlers.Ps2EventHandlerConfig{
-		Session:                     session,
-		Timeout:                     cfg.Ps2EventHandlerTimeout,
-		EventTrackingChannelsLoader: cfg.EventTrackingChannelsLoader,
-	}
-	wg := &sync.WaitGroup{}
-	if cfg.PlayerLoginHandler != nil {
-		playerLogin := make(chan ps2events.PlayerLogin)
-		playerLoginUnSub, err := cfg.EventsPublisher.AddHandler(playerLogin)
-		if err != nil {
-			return nil, err
-		}
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			defer playerLoginUnSub()
-			for {
-				select {
-				case <-ctx.Done():
-					return
-				case pl := <-playerLogin:
-					go cfg.PlayerLoginHandler.Run(
-						ctx,
-						log.With(slog.Any("event", pl)),
-						eventHandlersConfig,
-						pl,
-					)
-				}
-			}
-		}()
-	} else {
-		log.Warn("no player login handler")
-	}
 
+	for _, p := range platforms.Platforms {
+		err = startEventHandlersForPlatform(ctx, session, cfg, p)
+		if err != nil {
+			return nil, fmt.Errorf("%s start event handlers for %q: %w", op, p, err)
+		}
+	}
 	err = session.Open()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%s session open: %w", op, err)
 	}
 	log.Info("adding commands")
 	registeredCommands := make([]*discordgo.ApplicationCommand, 0, len(cfg.Commands))
@@ -127,7 +153,6 @@ func New(
 		}
 	}
 	return &Bot{
-		wg:                 wg,
 		session:            session,
 		registeredCommands: registeredCommands,
 	}, nil

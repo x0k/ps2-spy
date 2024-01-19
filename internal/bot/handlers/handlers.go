@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/x0k/ps2-spy/internal/infra"
 	"github.com/x0k/ps2-spy/internal/lib/contextx"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/loaders"
@@ -114,9 +115,11 @@ type Ps2EventHandlerConfig struct {
 	EventTrackingChannelsLoader loaders.QueriedLoader[any, []string]
 }
 
-type Ps2EventHandler[E any] func(ctx context.Context, log *slog.Logger, channelIds []string, cfg *Ps2EventHandlerConfig, event E) error
+type Ps2EventHandler[E any] func(ctx context.Context, channelIds []string, cfg *Ps2EventHandlerConfig, event E) error
 
-func (handler Ps2EventHandler[E]) Run(ctx context.Context, log *slog.Logger, cfg *Ps2EventHandlerConfig, event E) {
+func (handler Ps2EventHandler[E]) Run(ctx context.Context, cfg *Ps2EventHandlerConfig, event E) {
+	const op = "bot.handlers.Ps2EventHandler.Run"
+	log := infra.OpLogger(ctx, op)
 	// log.Debug("handling", slog.Duration("timeout", cfg.Timeout))
 	// t := time.Now()
 	ctx, cancel := context.WithTimeout(ctx, cfg.Timeout)
@@ -130,8 +133,8 @@ func (handler Ps2EventHandler[E]) Run(ctx context.Context, log *slog.Logger, cfg
 		if len(channels) == 0 {
 			return nil
 		}
-		log.Debug("handling", slog.Any("event", event), slog.Int("channels", len(channels)))
-		return handler(ctx, log, channels, cfg, event)
+		log.Debug("handling", slog.Any("event", event), slog.Int("channels_count", len(channels)))
+		return handler(ctx, channels, cfg, event)
 	})
 	if err != nil {
 		log.Error("error handling", sl.Err(err))
@@ -140,7 +143,9 @@ func (handler Ps2EventHandler[E]) Run(ctx context.Context, log *slog.Logger, cfg
 }
 
 func SimpleMessage[E any](handle func(ctx context.Context, cfg *Ps2EventHandlerConfig, event E) (string, error)) Ps2EventHandler[E] {
-	return func(ctx context.Context, log *slog.Logger, channelIds []string, cfg *Ps2EventHandlerConfig, event E) error {
+	return func(ctx context.Context, channelIds []string, cfg *Ps2EventHandlerConfig, event E) error {
+		const op = "bot.handlers.SimpleMessage"
+		log := infra.OpLogger(ctx, op)
 		msg, err := handle(ctx, cfg, event)
 		if err != nil {
 			return err

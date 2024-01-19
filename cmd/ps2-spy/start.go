@@ -7,10 +7,14 @@ import (
 	"time"
 
 	"github.com/x0k/ps2-spy/internal/bot"
+	"github.com/x0k/ps2-spy/internal/bot/handlers"
 	"github.com/x0k/ps2-spy/internal/bot/handlers/event/login"
 	"github.com/x0k/ps2-spy/internal/config"
 	"github.com/x0k/ps2-spy/internal/infra"
 	"github.com/x0k/ps2-spy/internal/lib/census2"
+	"github.com/x0k/ps2-spy/internal/lib/census2/streaming"
+	ps2commands "github.com/x0k/ps2-spy/internal/lib/census2/streaming/commands"
+	ps2events "github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
 	"github.com/x0k/ps2-spy/internal/lib/fisu"
 	"github.com/x0k/ps2-spy/internal/lib/honu"
 	"github.com/x0k/ps2-spy/internal/lib/ps2alerts"
@@ -39,15 +43,70 @@ import (
 
 func start(ctx context.Context, cfg *config.Config) error {
 	const op = "start"
+	log := infra.OpLogger(ctx, op)
 	storageEventsPublisher := storage.NewPublisher()
 	sqlStorage, err := startStorage(ctx, cfg.Storage, storageEventsPublisher)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
-	eventsPublisher, err := startPs2EventsPublisher(ctx, cfg)
+
+	pcStreamingClient := streaming.NewClient(
+		log,
+		"wss://push.planetside2.com/streaming",
+		streaming.Ps2_env,
+		cfg.CensusServiceId,
+	)
+	startStreamingClient(ctx, cfg, pcStreamingClient, ps2commands.SubscriptionSettings{
+		Worlds: []string{"1", "10", "13", "17", "19", "40"},
+		EventNames: []string{
+			ps2events.PlayerLoginEventName,
+			ps2events.PlayerLogoutEventName,
+		},
+	})
+	pcEventsPublisher := ps2events.NewPublisher()
+	err = startPs2EventsPublisher(ctx, cfg, pcStreamingClient.Msg, pcEventsPublisher)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
+
+	ps4euStreamingClient := streaming.NewClient(
+		log,
+		"wss://push.planetside2.com/streaming",
+		streaming.Ps2ps4eu_env,
+		cfg.CensusServiceId,
+	)
+	startStreamingClient(ctx, cfg, ps4euStreamingClient, ps2commands.SubscriptionSettings{
+		Worlds: []string{"2000"},
+		EventNames: []string{
+			ps2events.PlayerLoginEventName,
+			ps2events.PlayerLogoutEventName,
+		},
+	})
+	ps4euEventsPublisher := ps2events.NewPublisher()
+	err = startPs2EventsPublisher(ctx, cfg, ps4euStreamingClient.Msg, ps4euEventsPublisher)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	ps4usStreamingClient := streaming.NewClient(
+		log,
+		"wss://push.planetside2.com/streaming",
+		streaming.Ps2ps4us_env,
+		cfg.CensusServiceId,
+	)
+	startStreamingClient(ctx, cfg, ps4usStreamingClient, ps2commands.SubscriptionSettings{
+		Worlds: []string{"1000"},
+		EventNames: []string{
+			ps2events.PlayerLoginEventName,
+			ps2events.PlayerLogoutEventName,
+		},
+	})
+	ps4usEventsPublisher := ps2events.NewPublisher()
+	err = startPs2EventsPublisher(ctx, cfg, ps4usStreamingClient.Msg, ps4usEventsPublisher)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
 	httpClient := &http.Client{
 		Timeout: cfg.HttpClientTimeout,
 	}
@@ -68,7 +127,6 @@ func start(ctx context.Context, cfg *config.Config) error {
 	censusClient := census2.NewClient("https://census.daybreakgames.com", cfg.CensusServiceId, httpClient)
 	sanctuaryClient := census2.NewClient("https://census.lithafalcon.cc", cfg.CensusServiceId, httpClient)
 	// multi loaders
-	log := infra.OpLogger(ctx, op)
 	popLoader := population_loader.NewMulti(
 		log,
 		map[string]loaders.Loader[loaders.Loaded[ps2.WorldsPopulation]]{
@@ -190,9 +248,21 @@ func start(ctx context.Context, cfg *config.Config) error {
 			subscription_settings_saver.New(sqlStorage, subSettingsLoader, platforms.PS4_EU),
 			subscription_settings_saver.New(sqlStorage, subSettingsLoader, platforms.PS4_US),
 		),
-		EventsPublisher:             eventsPublisher,
-		PlayerLoginHandler:          login.New(pcBatchedCharacterLoader),
-		EventTrackingChannelsLoader: event_tracking_channels_loader.New(pcTrackingManager),
+		PlayerLoginHandlers: map[string]handlers.Ps2EventHandler[ps2events.PlayerLogin]{
+			platforms.PC:     login.New(pcBatchedCharacterLoader),
+			platforms.PS4_EU: login.New(ps4euBatchedCharacterLoader),
+			platforms.PS4_US: login.New(ps4usBatchedCharacterLoader),
+		},
+		EventsPublishers: map[string]*ps2events.Publisher{
+			platforms.PC:     pcEventsPublisher,
+			platforms.PS4_EU: ps4euEventsPublisher,
+			platforms.PS4_US: ps4usEventsPublisher,
+		},
+		EventTrackingChannelsLoaders: map[string]loaders.QueriedLoader[any, []string]{
+			platforms.PC:     event_tracking_channels_loader.New(pcTrackingManager),
+			platforms.PS4_EU: event_tracking_channels_loader.New(ps4euTrackingManager),
+			platforms.PS4_US: event_tracking_channels_loader.New(ps4usTrackingManager),
+		},
 	}
 	return startBot(ctx, botConfig)
 }

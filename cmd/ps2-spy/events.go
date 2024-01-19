@@ -16,15 +16,14 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/retry"
 )
 
-func startEventsClient(ctx context.Context, cfg *config.Config, env string, settings ps2commands.SubscriptionSettings) *streaming.Client {
-	const op = "startEventsClient"
-	log := infra.OpLogger(ctx, op).With(slog.String("env", env))
-	client := streaming.NewClient(
-		log,
-		"wss://push.planetside2.com/streaming",
-		env,
-		cfg.CensusServiceId,
-	)
+func startStreamingClient(
+	ctx context.Context,
+	cfg *config.Config,
+	client *streaming.Client,
+	settings ps2commands.SubscriptionSettings,
+) {
+	const op = "startStreamingClient"
+	log := infra.OpLogger(ctx, op).With(slog.String("env", client.Environment()))
 	wg := infra.Wg(ctx)
 	wg.Add(1)
 	go func() {
@@ -45,18 +44,21 @@ func startEventsClient(ctx context.Context, cfg *config.Config, env string, sett
 			},
 		})
 	}()
-	return client
 }
 
-func startPs2EventsPublisher(ctx context.Context, cfg *config.Config) (*ps2events.Publisher, error) {
+func startPs2EventsPublisher(
+	ctx context.Context,
+	cfg *config.Config,
+	event chan map[string]any,
+	eventsPublisher *ps2events.Publisher,
+) error {
 	const op = "startPs2EventsPublisher"
 	log := infra.OpLogger(ctx, op)
-	eventsPublisher := ps2events.NewPublisher()
 	msgPublisher := ps2messages.NewPublisher()
 	serviceMsg := make(chan ps2messages.ServiceMessage[map[string]any])
 	serviceMsgUnSub, err := msgPublisher.AddHandler(serviceMsg)
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
+		return fmt.Errorf("%s: %w", op, err)
 	}
 	wg := infra.Wg(ctx)
 	wg.Add(1)
@@ -75,13 +77,6 @@ func startPs2EventsPublisher(ctx context.Context, cfg *config.Config) (*ps2event
 			}
 		}
 	}()
-	pcEventsClient := startEventsClient(ctx, cfg, streaming.Ps2_env, ps2commands.SubscriptionSettings{
-		Worlds: []string{"1", "10", "13", "17", "19", "40"},
-		EventNames: []string{
-			ps2events.PlayerLoginEventName,
-			ps2events.PlayerLogoutEventName,
-		},
-	})
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -89,7 +84,7 @@ func startPs2EventsPublisher(ctx context.Context, cfg *config.Config) (*ps2event
 			select {
 			case <-ctx.Done():
 				return
-			case msg := <-pcEventsClient.Msg:
+			case msg := <-event:
 				err := msgPublisher.Publish(msg)
 				if err != nil {
 					log.Error("failed to publish message", slog.Any("message", msg), sl.Err(err))
@@ -97,5 +92,5 @@ func startPs2EventsPublisher(ctx context.Context, cfg *config.Config) (*ps2event
 			}
 		}
 	}()
-	return eventsPublisher, nil
+	return nil
 }

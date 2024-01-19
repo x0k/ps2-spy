@@ -54,6 +54,10 @@ func NewClient(log *slog.Logger, endpoint string, env string, serviceId string) 
 	}
 }
 
+func (c *Client) Environment() string {
+	return c.env
+}
+
 func (c *Client) fillConnectionStateChangedBuffer(msg map[string]any) error {
 	err := core.AsMessageBase(msg, &c.msgBuffer)
 	if err != nil {
