@@ -25,6 +25,7 @@ type TrackingManager struct {
 	characterLoader                 loaders.KeyedLoader[string, ps2.Character]
 	characterTrackingChannelsLoader loaders.KeyedLoader[ps2.Character, []string]
 	trackableCharactersLoader       loaders.Loader[[]string]
+	outfitMembersLoader             loaders.KeyedLoader[string, []string]
 	outfitTrackingChannelsLoader    loaders.KeyedLoader[string, []string]
 	trackableOutfitsLoader          loaders.Loader[[]string]
 	rebuildFiltersInterval          time.Duration
@@ -34,6 +35,7 @@ func New(
 	charLoader loaders.KeyedLoader[string, ps2.Character],
 	characterTrackingChannelsLoader loaders.KeyedLoader[ps2.Character, []string],
 	trackableCharactersLoader loaders.Loader[[]string],
+	outfitMembersLoader loaders.KeyedLoader[string, []string],
 	outfitTrackingChannelsLoader loaders.KeyedLoader[string, []string],
 	trackableOutfitsLoader loaders.Loader[[]string],
 ) *TrackingManager {
@@ -43,6 +45,7 @@ func New(
 		characterLoader:                 charLoader,
 		characterTrackingChannelsLoader: characterTrackingChannelsLoader,
 		trackableCharactersLoader:       trackableCharactersLoader,
+		outfitMembersLoader:             outfitMembersLoader,
 		outfitTrackingChannelsLoader:    outfitTrackingChannelsLoader,
 		trackableOutfitsLoader:          trackableOutfitsLoader,
 		rebuildFiltersInterval:          time.Hour * 12,
@@ -60,6 +63,15 @@ func (tm *TrackingManager) rebuildCharactersFilter(ctx context.Context, wg *sync
 	}
 	tm.charactersFilterMu.Lock()
 	defer tm.charactersFilterMu.Unlock()
+	oldSize := len(tm.charactersFilter)
+	newSize := len(chars)
+	if oldSize != newSize {
+		log.Info(
+			"fixing inconsistent characters filter",
+			slog.Int("old_size", oldSize),
+			slog.Int("new_size", newSize),
+		)
+	}
 	tm.charactersFilter = make(map[string]int, len(chars))
 	for _, char := range chars {
 		tm.charactersFilter[char]++
@@ -77,6 +89,15 @@ func (tm *TrackingManager) rebuildOutfitsFilter(ctx context.Context, wg *sync.Wa
 	}
 	tm.outfitsFilterMu.Lock()
 	defer tm.outfitsFilterMu.Unlock()
+	oldSize := len(tm.outfitsFilter)
+	newSize := len(outfits)
+	if oldSize != newSize {
+		log.Info(
+			"fixing inconsistent outfits filter",
+			slog.Int("old_size", oldSize),
+			slog.Int("new_size", newSize),
+		)
+	}
 	tm.outfitsFilter = make(map[string]int, len(outfits))
 	for _, outfit := range outfits {
 		tm.outfitsFilter[outfit]++
@@ -129,7 +150,7 @@ func (tm *TrackingManager) channelIdsForCharacter(ctx context.Context, character
 	}
 	char, err := tm.characterLoader.Load(ctx, characterId)
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
+		return nil, fmt.Errorf("%s load character %s: %w", op, characterId, err)
 	}
 	return tm.characterTrackingChannelsLoader.Load(ctx, char)
 }
@@ -166,44 +187,64 @@ func (tm *TrackingManager) ChannelIds(ctx context.Context, event any) ([]string,
 	return nil, fmt.Errorf("%s: %w", op, ErrUnknownEvent)
 }
 
-func (tm *TrackingManager) TrackCharacter(charId string) {
+func (tm *TrackingManager) considerCharacter(charId string, delta int) {
 	tm.charactersFilterMu.Lock()
 	defer tm.charactersFilterMu.Unlock()
-	tm.charactersFilter[charId]++
+	tm.charactersFilter[charId] += delta
+}
+
+func (tm *TrackingManager) TrackCharacter(charId string) {
+	tm.considerCharacter(charId, 1)
 }
 
 func (tm *TrackingManager) UntrackCharacter(charId string) {
-	tm.charactersFilterMu.Lock()
-	defer tm.charactersFilterMu.Unlock()
-	tm.charactersFilter[charId]--
+	tm.considerCharacter(charId, -1)
 }
 
 func (tm *TrackingManager) TrackOutfitMember(charId string, outfitTag string) {
 	const op = "tracking_manager.TrackingManager.TrackOutfitMember"
 	count := tm.outfitTrackersCount(outfitTag)
-	tm.charactersFilterMu.Lock()
-	defer tm.charactersFilterMu.Unlock()
-	tm.charactersFilter[charId] += count
+	tm.considerCharacter(charId, count)
 }
 
 func (tm *TrackingManager) UntrackOutfitMember(charId string, outfitTag string) {
 	const op = "tracking_manager.TrackingManager.UntrackOutfitMember"
 	count := tm.outfitTrackersCount(outfitTag)
+	tm.considerCharacter(charId, -count)
+}
+
+func (tm *TrackingManager) considerOutfit(outfitTag string, delta int) {
+	tm.outfitsFilterMu.Lock()
+	defer tm.outfitsFilterMu.Unlock()
+	tm.outfitsFilter[outfitTag] += delta
+}
+
+func (tm *TrackingManager) considerOutfitMembers(members []string, delta int) {
 	tm.charactersFilterMu.Lock()
 	defer tm.charactersFilterMu.Unlock()
-	tm.charactersFilter[charId] -= count
+	for _, member := range members {
+		tm.charactersFilter[member] += delta
+	}
 }
 
-func (tm *TrackingManager) TrackOutfit(outfitTag string) {
+func (tm *TrackingManager) TrackOutfit(ctx context.Context, outfitTag string) error {
 	const op = "tracking_manager.TrackingManager.TrackOutfit"
-	tm.outfitsFilterMu.Lock()
-	defer tm.outfitsFilterMu.Unlock()
-	tm.outfitsFilter[outfitTag]++
+	tm.considerOutfit(outfitTag, 1)
+	members, err := tm.outfitMembersLoader.Load(ctx, outfitTag)
+	if err != nil {
+		return fmt.Errorf("%s load members of %q: %w", op, outfitTag, err)
+	}
+	tm.considerOutfitMembers(members, 1)
+	return nil
 }
 
-func (tm *TrackingManager) UntrackOutfit(outfitTag string) {
+func (tm *TrackingManager) UntrackOutfit(ctx context.Context, outfitTag string) error {
 	const op = "tracking_manager.TrackingManager.UntrackOutfit"
-	tm.outfitsFilterMu.Lock()
-	defer tm.outfitsFilterMu.Unlock()
-	tm.outfitsFilter[outfitTag]--
+	tm.considerOutfit(outfitTag, -1)
+	members, err := tm.outfitMembersLoader.Load(ctx, outfitTag)
+	if err != nil {
+		return fmt.Errorf("%s load members of %q: %w", op, outfitTag, err)
+	}
+	tm.considerOutfitMembers(members, -1)
+	return nil
 }

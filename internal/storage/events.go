@@ -15,7 +15,7 @@ const (
 type ChannelOutfitSaved struct {
 	ChannelId string
 	Platform  string
-	OutfitId  string
+	OutfitTag string
 }
 
 func (e ChannelOutfitSaved) Type() string {
@@ -25,7 +25,7 @@ func (e ChannelOutfitSaved) Type() string {
 type ChannelOutfitDeleted struct {
 	ChannelId string
 	Platform  string
-	OutfitId  string
+	OutfitTag string
 }
 
 func (e ChannelOutfitDeleted) Type() string {

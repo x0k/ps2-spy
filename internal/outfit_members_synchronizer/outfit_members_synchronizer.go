@@ -56,7 +56,7 @@ func (s *OutfitMembersSynchronizer) saveMembers(ctx context.Context, wg *sync.Wa
 
 func (s *OutfitMembersSynchronizer) SyncOutfit(ctx context.Context, wg *sync.WaitGroup, outfitTag string) {
 	const op = "outfit_members_synchronizer.OutfitMembersSynchronizer.SyncOutfit"
-	log := infra.OpLogger(ctx, op).With(slog.String("outfit", outfitTag))
+	log := infra.Logger(ctx).With(infra.Op(op), slog.String("outfit", outfitTag))
 	retry.RetryWhileWithRecover(retry.Retryable{
 		Try: func() error {
 			syncAt, err := s.outfitSyncAtLoader.Load(ctx, outfitTag)

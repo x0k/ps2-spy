@@ -6,7 +6,9 @@ import (
 	"log/slog"
 
 	"github.com/x0k/ps2-spy/internal/infra"
+	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/loaders"
+	"github.com/x0k/ps2-spy/internal/loaders/outfit_member_ids_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/outfit_tracking_channels_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/trackable_character_ids_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/trackable_outfits_with_duplication_loader"
@@ -26,12 +28,14 @@ func newTrackingManager(
 	trackableCharactersLoader := trackable_character_ids_loader.NewStorage(storage, platform)
 	// TODO: remove loader
 	// outfitTrackersCountLoader := outfit_trackers_count_loader.NewStorage(storage, platform)
+	outfitMembersLoader := outfit_member_ids_loader.NewStorage(storage, platform)
 	outfitTrackingChannelsLoader := outfit_tracking_channels_loader.NewStorage(storage, platform)
 	trackableOutfitsLoader := trackable_outfits_with_duplication_loader.NewStorage(storage, platform)
 	return tracking_manager.New(
 		characterLoader,
 		characterTrackingChannelsLoader,
 		trackableCharactersLoader,
+		outfitMembersLoader,
 		outfitTrackingChannelsLoader,
 		trackableOutfitsLoader,
 	)
@@ -125,14 +129,30 @@ func startTrackingManager(
 					log.Warn("unknown platform", slog.String("platform", e.Platform))
 					continue
 				}
-				tm.TrackOutfit(e.OutfitId)
+				err := tm.TrackOutfit(ctx, e.OutfitTag)
+				if err != nil {
+					log.Error(
+						"failed to track outfit",
+						slog.String("platform", e.Platform),
+						slog.String("outfit_tag", e.OutfitTag),
+						sl.Err(err),
+					)
+				}
 			case e := <-channelOutfitDeleted:
 				tm, ok := tms[e.Platform]
 				if !ok {
 					log.Warn("unknown platform", slog.String("platform", e.Platform))
 					continue
 				}
-				tm.UntrackOutfit(e.OutfitId)
+				err := tm.UntrackOutfit(ctx, e.OutfitTag)
+				if err != nil {
+					log.Error(
+						"failed to untrack outfit",
+						slog.String("platform", e.Platform),
+						slog.String("outfit_tag", e.OutfitTag),
+						sl.Err(err),
+					)
+				}
 			}
 		}
 	}()

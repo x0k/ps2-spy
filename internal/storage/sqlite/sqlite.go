@@ -260,62 +260,62 @@ func (s *Storage) publish(event publisher.Event) {
 	s.pub.Publish(event)
 }
 
-func (s *Storage) SaveChannelOutfit(ctx context.Context, channelId, platform, outfitID string) error {
+func (s *Storage) SaveChannelOutfit(ctx context.Context, channelId, platform, outfitTag string) error {
 	const op = "storage.sqlite.SaveChannelOutfit"
-	infra.OpLogger(ctx, op).Debug("params", slog.String("channelId", channelId), slog.String("platform", platform), slog.String("outfitID", outfitID))
-	err := s.exec(ctx, insertChannelOutfit, channelId, platform, outfitID)
+	infra.OpLogger(ctx, op).Debug("params", slog.String("channelId", channelId), slog.String("platform", platform), slog.String("outfitID", outfitTag))
+	err := s.exec(ctx, insertChannelOutfit, channelId, platform, outfitTag)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 	s.publish(storage.ChannelOutfitSaved{
 		ChannelId: channelId,
 		Platform:  platform,
-		OutfitId:  outfitID,
+		OutfitTag: outfitTag,
 	})
 	return nil
 }
 
-func (s *Storage) DeleteChannelOutfit(ctx context.Context, channelId, platform, outfitID string) error {
+func (s *Storage) DeleteChannelOutfit(ctx context.Context, channelId, platform, outfitTag string) error {
 	const op = "storage.sqlite.DeleteChannelOutfit"
-	infra.OpLogger(ctx, op).Debug("params", slog.String("channelId", channelId), slog.String("platform", platform), slog.String("outfitID", outfitID))
-	err := s.exec(ctx, deleteChannelOutfit, channelId, platform, outfitID)
+	infra.OpLogger(ctx, op).Debug("params", slog.String("channelId", channelId), slog.String("platform", platform), slog.String("outfitID", outfitTag))
+	err := s.exec(ctx, deleteChannelOutfit, channelId, platform, outfitTag)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 	s.publish(storage.ChannelOutfitDeleted{
 		ChannelId: channelId,
 		Platform:  platform,
-		OutfitId:  outfitID,
+		OutfitTag: outfitTag,
 	})
 	return nil
 }
 
-func (s *Storage) SaveChannelCharacter(ctx context.Context, channelId, platform, characterID string) error {
+func (s *Storage) SaveChannelCharacter(ctx context.Context, channelId, platform, characterId string) error {
 	const op = "storage.sqlite.SaveChannelCharacter"
-	infra.OpLogger(ctx, op).Debug("params", slog.String("channelId", channelId), slog.String("platform", platform), slog.String("characterID", characterID))
-	err := s.exec(ctx, insertChannelCharacter, channelId, platform, characterID)
+	infra.OpLogger(ctx, op).Debug("params", slog.String("channelId", channelId), slog.String("platform", platform), slog.String("characterID", characterId))
+	err := s.exec(ctx, insertChannelCharacter, channelId, platform, characterId)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 	s.publish(storage.ChannelCharacterSaved{
 		ChannelId:   channelId,
 		Platform:    platform,
-		CharacterId: characterID,
+		CharacterId: characterId,
 	})
 	return nil
 }
 
-func (s *Storage) DeleteChannelCharacter(ctx context.Context, channelId, platform, characterID string) error {
+func (s *Storage) DeleteChannelCharacter(ctx context.Context, channelId, platform, characterId string) error {
 	const op = "storage.sqlite.DeleteChannelCharacter"
-	infra.OpLogger(ctx, op).Debug("params", slog.String("channelId", channelId), slog.String("platform", platform), slog.String("characterID", characterID))
-	err := s.exec(ctx, deleteChannelCharacter, channelId, platform, characterID)
+	infra.OpLogger(ctx, op).Debug("params", slog.String("channelId", channelId), slog.String("platform", platform), slog.String("characterID", characterId))
+	err := s.exec(ctx, deleteChannelCharacter, channelId, platform, characterId)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 	s.publish(storage.ChannelCharacterDeleted{
 		ChannelId:   channelId,
 		Platform:    platform,
-		CharacterId: characterID,
+		CharacterId: characterId,
 	})
 	return nil
 }
