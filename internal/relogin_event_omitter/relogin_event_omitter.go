@@ -2,6 +2,7 @@ package relogin_event_omitter
 
 import (
 	"context"
+	"log/slog"
 	"sync"
 	"time"
 
@@ -56,9 +57,10 @@ func (r *ReLoginOmitter) shouldPublishLoginEvent(event map[string]any) bool {
 	return true
 }
 
-func (r *ReLoginOmitter) flushLogOutEvents() {
+func (r *ReLoginOmitter) flushLogOutEvents(log *slog.Logger) {
 	r.batchMu.Lock()
 	defer r.batchMu.Unlock()
+	log.Debug("flush logout events", slog.Any("events_count", len(r.logoutEventsBatch)))
 	for _, event := range r.logoutEventsBatch {
 		r.pub.Publish(event)
 	}
@@ -76,8 +78,7 @@ func (r *ReLoginOmitter) worker(ctx context.Context, wg *sync.WaitGroup) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			log.Debug("flush logout events")
-			r.flushLogOutEvents()
+			r.flushLogOutEvents(log)
 		}
 	}
 }

@@ -1,0 +1,54 @@
+package outfit_members_update_event_handler
+
+import (
+	"context"
+	"fmt"
+	"log/slog"
+
+	"github.com/x0k/ps2-spy/internal/bot/handlers"
+	"github.com/x0k/ps2-spy/internal/bot/render"
+	"github.com/x0k/ps2-spy/internal/infra"
+	"github.com/x0k/ps2-spy/internal/lib/diff"
+	"github.com/x0k/ps2-spy/internal/loaders"
+	"github.com/x0k/ps2-spy/internal/ps2"
+	"github.com/x0k/ps2-spy/internal/savers/outfit_members_saver"
+)
+
+func New(
+	charsLoader loaders.QueriedLoader[[]string, map[string]ps2.Character],
+) handlers.Ps2EventHandler[outfit_members_saver.OutfitMembersUpdate] {
+	return handlers.SimpleMessage[outfit_members_saver.OutfitMembersUpdate](func(
+		ctx context.Context,
+		cfg *handlers.Ps2EventHandlerConfig,
+		event outfit_members_saver.OutfitMembersUpdate,
+	) (string, error) {
+		const op = "bot.handlers.events.outfit_members_update_event_handler"
+		log := infra.OpLogger(ctx, op)
+		characters, err := charsLoader.Load(ctx, append(event.Members.ToAdd, event.Members.ToDel...))
+		if err != nil {
+			return "", fmt.Errorf("%s error getting characters: %w", op, err)
+		}
+		toAdd := make([]ps2.Character, 0, len(event.Members.ToAdd))
+		for _, id := range event.Members.ToAdd {
+			char, ok := characters[id]
+			if !ok {
+				log.Warn("character not found", slog.String("character_id", id))
+				continue
+			}
+			toAdd = append(toAdd, char)
+		}
+		toDell := make([]ps2.Character, 0, len(event.Members.ToDel))
+		for _, id := range event.Members.ToDel {
+			char, ok := characters[id]
+			if !ok {
+				log.Warn("character not found", slog.String("character_id", id))
+				continue
+			}
+			toDell = append(toDell, char)
+		}
+		return render.RenderOutfitMembersUpdate(event.OutfitTag, diff.Diff[ps2.Character]{
+			ToAdd: toAdd,
+			ToDel: toDell,
+		}), nil
+	})
+}

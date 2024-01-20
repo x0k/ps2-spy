@@ -26,9 +26,11 @@ const (
 	upsertOutfitSynchronization
 	selectOutfitSynchronization
 	selectTrackingChannelsForCharacter
+	selectTrackingChannelsForOutfit
 	selectChannelOutfitsForPlatform
 	selectChannelCharactersForPlatform
 	selectAllTrackableCharactersWithDuplicationForPlatform
+	selectAllTrackableOutfitsWithDuplicationForPlatform
 	selectAllUniqueTrackableOutfitsForPlatform
 	selectOutfitMembers
 	countOutfitTrackingChannels
@@ -41,7 +43,7 @@ type Storage struct {
 	db         *sql.DB
 	statements [statementsCount]*sql.Stmt
 	tx         *sql.Tx
-	pub        publisher.Abstract[storage.Event]
+	pub        publisher.Abstract[publisher.Event]
 }
 
 func (s *Storage) migrate(ctx context.Context) error {
@@ -95,7 +97,7 @@ CREATE TABLE IF NOT EXISTS channel_to_character (
 func New(
 	ctx context.Context,
 	storagePath string,
-	pub publisher.Abstract[storage.Event],
+	pub publisher.Abstract[publisher.Event],
 ) (*Storage, error) {
 	const op = "storage.sqlite.New"
 	db, err := sql.Open("sqlite3", storagePath)
@@ -132,6 +134,7 @@ func (s *Storage) Start(ctx context.Context) error {
 				   UNION
 				   SELECT channel_id FROM channel_to_outfit WHERE platform = ? AND outfit_tag = lower(?)`,
 		},
+		{selectTrackingChannelsForOutfit, "SELECT channel_id FROM channel_to_outfit WHERE platform = ? AND outfit_tag = lower(?)"},
 		{selectChannelOutfitsForPlatform, "SELECT outfit_tag FROM channel_to_outfit WHERE channel_id = ? AND platform = ?"},
 		{selectChannelCharactersForPlatform, "SELECT character_id FROM channel_to_character WHERE channel_id = ? AND platform = ?"},
 		{
@@ -143,6 +146,7 @@ func (s *Storage) Start(ctx context.Context) error {
 				   JOIN outfit_to_character ON channel_to_outfit.outfit_tag = outfit_to_character.outfit_tag AND channel_to_outfit.platform = outfit_to_character.platform
 				   WHERE channel_to_outfit.platform = ?`,
 		},
+		{selectAllTrackableOutfitsWithDuplicationForPlatform, "SELECT outfit_tag FROM channel_to_outfit WHERE platform = ?"},
 		{selectAllUniqueTrackableOutfitsForPlatform, "SELECT DISTINCT outfit_tag FROM channel_to_outfit WHERE platform = ?"},
 		{selectOutfitMembers, "SELECT character_id FROM outfit_to_character WHERE platform = ? AND outfit_tag = lower(?)"},
 		{countOutfitTrackingChannels, "SELECT COUNT(*) FROM channel_to_outfit WHERE platform = ? AND outfit_tag = lower(?)"},
@@ -252,7 +256,7 @@ func query[T any](ctx context.Context, s *Storage, statement int, args ...any) (
 	return results, rows.Err()
 }
 
-func (s *Storage) publish(event storage.Event) {
+func (s *Storage) publish(event publisher.Event) {
 	s.pub.Publish(event)
 }
 
@@ -382,6 +386,16 @@ func (s *Storage) TrackingChannelIdsForCharacter(ctx context.Context, platform, 
 	return rows, nil
 }
 
+func (s *Storage) TrackingChannelsIdsForOutfit(ctx context.Context, platform, outfitTag string) ([]string, error) {
+	const op = "storage.sqlite.TrackingChannelsIdsForOutfit"
+	infra.OpLogger(ctx, op).Debug("params", slog.String("platform", platform), slog.String("outfitTag", outfitTag))
+	rows, err := query[string](ctx, s, selectTrackingChannelsForOutfit, platform, outfitTag)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	return rows, nil
+}
+
 func (s *Storage) TrackingOutfitsForPlatform(ctx context.Context, channelId, platform string) ([]string, error) {
 	const op = "storage.sqlite.TrackingOutfitsForPlatform"
 	infra.OpLogger(ctx, op).Debug("params", slog.String("channelId", channelId), slog.String("platform", platform))
@@ -412,8 +426,18 @@ func (s *Storage) AllTrackableCharactersWithDuplicationsForPlatform(ctx context.
 	return rows, nil
 }
 
+func (s *Storage) AllTrackableOutfitsWithDuplicationsForPlatform(ctx context.Context, platform string) ([]string, error) {
+	const op = "storage.sqlite.AllTrackableOutfitsWithDuplicationsForPlatform"
+	infra.OpLogger(ctx, op).Debug("params", slog.String("platform", platform))
+	rows, err := query[string](ctx, s, selectAllTrackableOutfitsWithDuplicationForPlatform, platform)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	return rows, nil
+}
+
 func (s *Storage) AllUniqueTrackableOutfitsForPlatform(ctx context.Context, platform string) ([]string, error) {
-	const op = "storage.sqlite.AllTrackableOutfitsForPlatform"
+	const op = "storage.sqlite.AllUniqueTrackableOutfitsForPlatform"
 	infra.OpLogger(ctx, op).Debug("params", slog.String("platform", platform))
 	rows, err := query[string](ctx, s, selectAllUniqueTrackableOutfitsForPlatform, platform)
 	if err != nil {

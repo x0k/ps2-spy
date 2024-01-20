@@ -12,10 +12,6 @@ const (
 	OutfitSynchronizedType      = "outfit_synchronized"
 )
 
-type Event interface {
-	Type() string
-}
-
 type ChannelOutfitSaved struct {
 	ChannelId string
 	Platform  string

@@ -13,6 +13,8 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/loaders"
 	"github.com/x0k/ps2-spy/internal/ps2/platforms"
+	"github.com/x0k/ps2-spy/internal/publisher"
+	"github.com/x0k/ps2-spy/internal/savers/outfit_members_saver"
 )
 
 var ErrEventTrackingChannelsLoaderNotFound = fmt.Errorf("event tracking channels loader not found")
@@ -34,7 +36,9 @@ type BotConfig struct {
 	PlayerLoginHandlers          map[string]handlers.Ps2EventHandler[ps2events.PlayerLogin]
 	PlayerLogoutHandlers         map[string]handlers.Ps2EventHandler[ps2events.PlayerLogout]
 	EventTrackingChannelsLoaders map[string]loaders.QueriedLoader[any, []string]
-	EventsPublishers             map[string]*ps2events.Publisher
+	Ps2EventsPublishers          map[string]*ps2events.Publisher
+	OutfitMembersUpdateHandlers  map[string]handlers.Ps2EventHandler[outfit_members_saver.OutfitMembersUpdate]
+	OutfitMembersSaverPublishers map[string]*publisher.Publisher
 }
 
 func startEventHandlersForPlatform(
@@ -48,7 +52,7 @@ func startEventHandlersForPlatform(
 	if !ok {
 		return fmt.Errorf("%s get event tracking channels loader: %w", platform, ErrEventsPublisherNotFound)
 	}
-	eventsPublisher, ok := cfg.EventsPublishers[platform]
+	eventsPublisher, ok := cfg.Ps2EventsPublishers[platform]
 	if !ok {
 		return fmt.Errorf("%s get events publisher: %w", platform, ErrEventsPublisherNotFound)
 	}
@@ -59,6 +63,14 @@ func startEventHandlersForPlatform(
 	playerLogoutHandler, ok := cfg.PlayerLogoutHandlers[platform]
 	if !ok {
 		return fmt.Errorf("%s get player logout handler: %w", platform, ErrEventHandlerNotFound)
+	}
+	outfitMembersUpdateHandler, ok := cfg.OutfitMembersUpdateHandlers[platform]
+	if !ok {
+		return fmt.Errorf("%s get outfit member join handler: %w", platform, ErrEventHandlerNotFound)
+	}
+	outfitMembersSaverPublisher, ok := cfg.OutfitMembersSaverPublishers[platform]
+	if !ok {
+		return fmt.Errorf("%s get outfit members saver publisher: %w", platform, ErrEventHandlerNotFound)
 	}
 	eventHandlersConfig := &handlers.Ps2EventHandlerConfig{
 		Session:                     session,
@@ -75,28 +87,28 @@ func startEventHandlersForPlatform(
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
+	outfitMembersUpdate := make(chan outfit_members_saver.OutfitMembersUpdate)
+	outfitMembersUpdateUnSub, err := outfitMembersSaverPublisher.AddHandler(outfitMembersUpdate)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
 	wg := infra.Wg(ctx)
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		defer playerLoginUnSub()
 		defer playerLogoutUnSub()
+		defer outfitMembersUpdateUnSub()
 		for {
 			select {
 			case <-ctx.Done():
 				return
-			case pl := <-playerLogin:
-				go playerLoginHandler.Run(
-					ctx,
-					eventHandlersConfig,
-					pl,
-				)
-			case pl := <-playerLogout:
-				go playerLogoutHandler.Run(
-					ctx,
-					eventHandlersConfig,
-					pl,
-				)
+			case e := <-playerLogin:
+				go playerLoginHandler.Run(ctx, eventHandlersConfig, e)
+			case e := <-playerLogout:
+				go playerLogoutHandler.Run(ctx, eventHandlersConfig, e)
+			case e := <-outfitMembersUpdate:
+				go outfitMembersUpdateHandler.Run(ctx, eventHandlersConfig, e)
 			}
 		}
 	}()

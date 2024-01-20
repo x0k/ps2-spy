@@ -19,7 +19,7 @@ func New(
 		cfg *handlers.Ps2EventHandlerConfig,
 		event ps2events.PlayerLogout,
 	) (string, error) {
-		const op = "bot.handlers.events.logout_event_handler.New"
+		const op = "bot.handlers.events.logout_event_handler"
 		character, err := charLoader.Load(ctx, event.CharacterID)
 		if err != nil {
 			return "", fmt.Errorf("%s error getting character: %w", op, err)

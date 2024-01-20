@@ -1,9 +1,6 @@
 package storage
 
-type eventHandler interface {
-	Type() string
-	Handle(e any)
-}
+import "github.com/x0k/ps2-spy/internal/publisher"
 
 type channelOutfitSavedHandler chan<- ChannelOutfitSaved
 
@@ -11,7 +8,7 @@ func (h channelOutfitSavedHandler) Type() string {
 	return ChannelOutfitSavedType
 }
 
-func (h channelOutfitSavedHandler) Handle(e any) {
+func (h channelOutfitSavedHandler) Handle(e publisher.Event) {
 	h <- e.(ChannelOutfitSaved)
 }
 
@@ -21,7 +18,7 @@ func (h channelOutfitDeletedHandler) Type() string {
 	return ChannelOutfitDeletedType
 }
 
-func (h channelOutfitDeletedHandler) Handle(e any) {
+func (h channelOutfitDeletedHandler) Handle(e publisher.Event) {
 	h <- e.(ChannelOutfitDeleted)
 }
 
@@ -31,7 +28,7 @@ func (h channelCharacterSavedHandler) Type() string {
 	return ChannelCharacterSavedType
 }
 
-func (h channelCharacterSavedHandler) Handle(e any) {
+func (h channelCharacterSavedHandler) Handle(e publisher.Event) {
 	h <- e.(ChannelCharacterSaved)
 }
 
@@ -41,7 +38,7 @@ func (h channelCharacterDeletedHandler) Type() string {
 	return ChannelCharacterDeletedType
 }
 
-func (h channelCharacterDeletedHandler) Handle(e any) {
+func (h channelCharacterDeletedHandler) Handle(e publisher.Event) {
 	h <- e.(ChannelCharacterDeleted)
 }
 
@@ -51,7 +48,7 @@ func (h outfitMemberSavedHandler) Type() string {
 	return OutfitMemberSavedType
 }
 
-func (h outfitMemberSavedHandler) Handle(e any) {
+func (h outfitMemberSavedHandler) Handle(e publisher.Event) {
 	h <- e.(OutfitMemberSaved)
 }
 
@@ -61,7 +58,7 @@ func (h outfitMemberDeletedHandler) Type() string {
 	return OutfitMemberDeletedType
 }
 
-func (h outfitMemberDeletedHandler) Handle(e any) {
+func (h outfitMemberDeletedHandler) Handle(e publisher.Event) {
 	h <- e.(OutfitMemberDeleted)
 }
 
@@ -71,11 +68,11 @@ func (h outfitSynchronizedHandler) Type() string {
 	return OutfitSynchronizedType
 }
 
-func (h outfitSynchronizedHandler) Handle(e any) {
+func (h outfitSynchronizedHandler) Handle(e publisher.Event) {
 	h <- e.(OutfitSynchronized)
 }
 
-func handlerForInterface(handler any) eventHandler {
+func CastHandler(handler any) publisher.Handler {
 	switch v := handler.(type) {
 	case chan ChannelOutfitSaved:
 		return channelOutfitSavedHandler(v)

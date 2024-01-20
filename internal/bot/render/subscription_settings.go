@@ -8,7 +8,7 @@ import (
 
 func RenderSubscriptionsSettingsUpdate(newSettings meta.SubscriptionSettings) string {
 	builder := strings.Builder{}
-	builder.WriteString("Settings are updated.\n\n**Outfits**\n")
+	builder.WriteString("Settings are updated.\n\n**Outfits:**\n")
 	outfits := newSettings.Outfits
 	if len(outfits) == 0 {
 		builder.WriteString("No outfits")

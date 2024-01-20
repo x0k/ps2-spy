@@ -10,6 +10,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/bot/handlers"
 	"github.com/x0k/ps2-spy/internal/bot/handlers/event/login_event_handler"
 	"github.com/x0k/ps2-spy/internal/bot/handlers/event/logout_event_handler"
+	"github.com/x0k/ps2-spy/internal/bot/handlers/event/outfit_members_update_event_handler"
 	"github.com/x0k/ps2-spy/internal/bot/handlers/submit/channel_setup_submit_handler"
 	"github.com/x0k/ps2-spy/internal/config"
 	"github.com/x0k/ps2-spy/internal/infra"
@@ -40,7 +41,9 @@ import (
 	"github.com/x0k/ps2-spy/internal/loaders/world_population_loader"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/ps2/platforms"
+	"github.com/x0k/ps2-spy/internal/publisher"
 	"github.com/x0k/ps2-spy/internal/relogin_event_omitter"
+	"github.com/x0k/ps2-spy/internal/savers/outfit_members_saver"
 	"github.com/x0k/ps2-spy/internal/savers/subscription_settings_saver"
 	"github.com/x0k/ps2-spy/internal/storage"
 	"github.com/x0k/ps2-spy/internal/tracking_manager"
@@ -49,7 +52,7 @@ import (
 func start(ctx context.Context, cfg *config.Config) error {
 	const op = "start"
 	log := infra.OpLogger(ctx, op)
-	storageEventsPublisher := storage.NewPublisher()
+	storageEventsPublisher := publisher.New(storage.CastHandler)
 	sqlStorage, err := startStorage(ctx, cfg.Storage, storageEventsPublisher)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
@@ -219,13 +222,19 @@ func start(ctx context.Context, cfg *config.Config) error {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
-	subSettingsLoader := subscription_settings_loader.New(sqlStorage)
-	// TODO: remove loader
-	err = startOutfitMembersSynchronizer(
+	pcOutfitMembersSaverPublisher := publisher.New(outfit_members_saver.CastHandler)
+	ps4euOutfitMembersSaverPublisher := publisher.New(outfit_members_saver.CastHandler)
+	ps4usOutfitMembersSaverPublisher := publisher.New(outfit_members_saver.CastHandler)
+	err = startOutfitMembersSynchronizers(
 		ctx,
 		sqlStorage,
 		censusClient,
 		storageEventsPublisher,
+		map[string]publisher.Abstract[publisher.Event]{
+			platforms.PC:     pcOutfitMembersSaverPublisher,
+			platforms.PS4_EU: ps4euOutfitMembersSaverPublisher,
+			platforms.PS4_US: ps4usOutfitMembersSaverPublisher,
+		},
 	)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
@@ -233,6 +242,7 @@ func start(ctx context.Context, cfg *config.Config) error {
 
 	platformCharacterNamesLoader := platform_character_names_loader.NewCensus(censusClient)
 	platformOutfitTagsLoader := platform_outfit_tags_loader.NewCensus(censusClient)
+	subSettingsLoader := subscription_settings_loader.New(sqlStorage)
 
 	// bot
 	botConfig := &bot.BotConfig{
@@ -283,7 +293,7 @@ func start(ctx context.Context, cfg *config.Config) error {
 			platforms.PS4_EU: logout_event_handler.New(ps4euBatchedCharacterLoader),
 			platforms.PS4_US: logout_event_handler.New(ps4usBatchedCharacterLoader),
 		},
-		EventsPublishers: map[string]*ps2events.Publisher{
+		Ps2EventsPublishers: map[string]*ps2events.Publisher{
 			platforms.PC:     pcEventsPublisher,
 			platforms.PS4_EU: ps4euEventsPublisher,
 			platforms.PS4_US: ps4usEventsPublisher,
@@ -292,6 +302,16 @@ func start(ctx context.Context, cfg *config.Config) error {
 			platforms.PC:     event_tracking_channels_loader.New(pcTrackingManager),
 			platforms.PS4_EU: event_tracking_channels_loader.New(ps4euTrackingManager),
 			platforms.PS4_US: event_tracking_channels_loader.New(ps4usTrackingManager),
+		},
+		OutfitMembersUpdateHandlers: map[string]handlers.Ps2EventHandler[outfit_members_saver.OutfitMembersUpdate]{
+			platforms.PC:     outfit_members_update_event_handler.New(pcCharactersLoader),
+			platforms.PS4_EU: outfit_members_update_event_handler.New(ps4euCharactersLoader),
+			platforms.PS4_US: outfit_members_update_event_handler.New(ps4usCharactersLoader),
+		},
+		OutfitMembersSaverPublishers: map[string]*publisher.Publisher{
+			platforms.PC:     pcOutfitMembersSaverPublisher,
+			platforms.PS4_EU: ps4euOutfitMembersSaverPublisher,
+			platforms.PS4_US: ps4usOutfitMembersSaverPublisher,
 		},
 	}
 	return startBot(ctx, botConfig)

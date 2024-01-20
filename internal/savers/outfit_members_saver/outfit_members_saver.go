@@ -5,17 +5,20 @@ import (
 	"time"
 
 	"github.com/x0k/ps2-spy/internal/lib/diff"
+	"github.com/x0k/ps2-spy/internal/publisher"
 	"github.com/x0k/ps2-spy/internal/storage/sqlite"
 )
 
 type OutfitMembersSaver struct {
 	storage  *sqlite.Storage
+	pub      publisher.Abstract[publisher.Event]
 	platform string
 }
 
-func New(storage *sqlite.Storage, platform string) *OutfitMembersSaver {
+func New(storage *sqlite.Storage, pub publisher.Abstract[publisher.Event], platform string) *OutfitMembersSaver {
 	return &OutfitMembersSaver{
 		storage:  storage,
+		pub:      pub,
 		platform: platform,
 	}
 }
@@ -45,6 +48,17 @@ func (s *OutfitMembersSaver) Save(ctx context.Context, outfitTag string, members
 	})
 	if err != nil {
 		return err
+	}
+	if len(old) == 0 {
+		s.pub.Publish(OutfitMembersInit{
+			OutfitTag: outfitTag,
+			Members:   members,
+		})
+	} else {
+		s.pub.Publish(OutfitMembersUpdate{
+			OutfitTag: outfitTag,
+			Members:   membersDiff,
+		})
 	}
 	return s.storage.SaveOutfitSynchronizedAt(ctx, s.platform, outfitTag, time.Now())
 }

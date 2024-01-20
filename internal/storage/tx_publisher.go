@@ -8,18 +8,18 @@ import (
 )
 
 type TxPublisher struct {
-	pub    publisher.Abstract[Event]
-	buffer []Event
+	pub    publisher.Abstract[publisher.Event]
+	buffer []publisher.Event
 }
 
-func NewTxPublisher(pub publisher.Abstract[Event], estimatedEventsCount int) *TxPublisher {
+func NewTxPublisher(pub publisher.Abstract[publisher.Event], estimatedEventsCount int) *TxPublisher {
 	return &TxPublisher{
 		pub:    pub,
-		buffer: make([]Event, 0, estimatedEventsCount),
+		buffer: make([]publisher.Event, 0, estimatedEventsCount),
 	}
 }
 
-func (b *TxPublisher) Publish(event Event) error {
+func (b *TxPublisher) Publish(event publisher.Event) error {
 	b.buffer = append(b.buffer, event)
 	return nil
 }
