@@ -1,6 +1,9 @@
 # Start from a small base image
 FROM golang:1.21.5-alpine3.19 as builder
 
+# Install build dependencies
+RUN apk add --no-cache build-base
+
 # Set the working directory
 WORKDIR /app
 
@@ -14,7 +17,7 @@ RUN go mod download
 COPY . .
 
 # Build the Go application
-RUN go build -o app ./cmd/ps2-spy/
+RUN CGO_ENABLED=1 go build -o app ./cmd/ps2-spy/
 
 # Create a minimal runtime image
 FROM alpine:3.19.0

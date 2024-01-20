@@ -2,10 +2,18 @@
 
 run:
     DISCORD_TOKEN=$(cat ~/Sync/ps2-spy/test-token) \
-    CENSUS_SERVICE_ID=$(cat ~/Sync/ps2-spy/test-service) \
+      CENSUS_SERVICE_ID=$(cat ~/Sync/ps2-spy/test-service) \
       go run cmd/ps2-spy/*.go --config config/local.yml
 
 all:
+
+build:
+    CGO_ENABLED=1 go build -o bin/app cmd/ps2-spy/*.go
+
+app:
+    DISCORD_TOKEN=$(cat ~/Sync/ps2-spy/test-token) \
+      CENSUS_SERVICE_ID=$(cat ~/Sync/ps2-spy/test-service) \
+      .bin/app --config config/local.yml
 
 test:
     go test ./...
