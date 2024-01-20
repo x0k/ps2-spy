@@ -134,6 +134,9 @@ func SimpleMessage[E any](handle func(ctx context.Context, cfg *Ps2EventHandlerC
 		if err != nil {
 			return err
 		}
+		if msg == "" {
+			return nil
+		}
 		errors := make([]string, 0, len(channelIds))
 		for _, channel := range channelIds {
 			_, err = cfg.Session.ChannelMessageSend(channel, msg)
