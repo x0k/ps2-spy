@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"sync"
+	"time"
 
 	"github.com/x0k/ps2-spy/internal/infra"
 	ps2events "github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
@@ -26,6 +27,7 @@ type TrackingManager struct {
 	trackableCharactersLoader       loaders.Loader[[]string]
 	outfitTrackingChannelsLoader    loaders.KeyedLoader[string, []string]
 	trackableOutfitsLoader          loaders.Loader[[]string]
+	rebuildFiltersInterval          time.Duration
 }
 
 func New(
@@ -43,41 +45,70 @@ func New(
 		trackableCharactersLoader:       trackableCharactersLoader,
 		outfitTrackingChannelsLoader:    outfitTrackingChannelsLoader,
 		trackableOutfitsLoader:          trackableOutfitsLoader,
+		rebuildFiltersInterval:          time.Hour * 12,
+	}
+}
+
+func (tm *TrackingManager) rebuildCharactersFilter(ctx context.Context, wg *sync.WaitGroup) {
+	const op = "tracking_manager.TrackingManager.rebuildCharactersFilter"
+	log := infra.OpLogger(ctx, op)
+	defer wg.Done()
+	chars, err := tm.trackableCharactersLoader.Load(ctx)
+	if err != nil {
+		log.Error("failed to load trackable characters", sl.Err(err))
+		return
+	}
+	tm.charactersFilterMu.Lock()
+	defer tm.charactersFilterMu.Unlock()
+	tm.charactersFilter = make(map[string]int, len(chars))
+	for _, char := range chars {
+		tm.charactersFilter[char]++
+	}
+}
+
+func (tm *TrackingManager) rebuildOutfitsFilter(ctx context.Context, wg *sync.WaitGroup) {
+	const op = "tracking_manager.TrackingManager.rebuildOutfitsFilter"
+	log := infra.OpLogger(ctx, op)
+	defer wg.Done()
+	outfits, err := tm.trackableOutfitsLoader.Load(ctx)
+	if err != nil {
+		log.Error("failed to load trackable outfits", sl.Err(err))
+		return
+	}
+	tm.outfitsFilterMu.Lock()
+	defer tm.outfitsFilterMu.Unlock()
+	tm.outfitsFilter = make(map[string]int, len(outfits))
+	for _, outfit := range outfits {
+		tm.outfitsFilter[outfit]++
+	}
+}
+
+func (tm *TrackingManager) rebuildFilters(ctx context.Context, wg *sync.WaitGroup) {
+	const op = "tracking_manager.TrackingManager.rebuildFilters"
+	infra.OpLogger(ctx, op).Debug("rebuilding filters")
+	wg.Add(2)
+	go tm.rebuildCharactersFilter(ctx, wg)
+	go tm.rebuildOutfitsFilter(ctx, wg)
+}
+
+func (tm *TrackingManager) rebuildTicker(ctx context.Context, wg *sync.WaitGroup) {
+	defer wg.Done()
+	ticker := time.NewTicker(tm.rebuildFiltersInterval)
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			tm.rebuildFilters(ctx, wg)
+		}
 	}
 }
 
 func (tm *TrackingManager) Start(ctx context.Context, wg *sync.WaitGroup) {
 	const op = "tracking_manager.TrackingManager.Start"
-	log := infra.OpLogger(ctx, op)
-	wg.Add(2)
-	go func() {
-		defer wg.Done()
-		chars, err := tm.trackableCharactersLoader.Load(ctx)
-		if err != nil {
-			log.Error("failed to load trackable characters", sl.Err(err))
-			return
-		}
-		tm.charactersFilterMu.Lock()
-		defer tm.charactersFilterMu.Unlock()
-		tm.charactersFilter = make(map[string]int, len(chars))
-		for _, char := range chars {
-			tm.charactersFilter[char]++
-		}
-	}()
-	go func() {
-		defer wg.Done()
-		outfits, err := tm.trackableOutfitsLoader.Load(ctx)
-		if err != nil {
-			log.Error("failed to load trackable outfits", sl.Err(err))
-			return
-		}
-		tm.outfitsFilterMu.Lock()
-		defer tm.outfitsFilterMu.Unlock()
-		tm.outfitsFilter = make(map[string]int, len(outfits))
-		for _, outfit := range outfits {
-			tm.outfitsFilter[outfit]++
-		}
-	}()
+	tm.rebuildFilters(ctx, wg)
+	wg.Add(1)
+	go tm.rebuildTicker(ctx, wg)
 }
 
 func (tm *TrackingManager) characterTrackersCount(charId string) int {
