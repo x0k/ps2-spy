@@ -11,6 +11,7 @@ import (
 
 	"github.com/x0k/ps2-spy/internal/config"
 	"github.com/x0k/ps2-spy/internal/infra"
+	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 )
 
 var (
@@ -35,9 +36,15 @@ func main() {
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	start(ctx, cfg)
+	err := start(ctx, cfg)
+	if err != nil {
+		log.Error("unsuccess start, shutting down", sl.Err(err))
+		cancel()
+		wg.Wait()
+		os.Exit(1)
+	}
 
-	log.Info("Press CTRL-C to exit.")
+	log.Info("press CTRL-C to exit.")
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 	<-stop
