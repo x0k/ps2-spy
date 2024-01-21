@@ -69,6 +69,7 @@ func start(ctx context.Context, cfg *config.Config) error {
 		EventNames: []string{
 			ps2events.PlayerLoginEventName,
 			ps2events.PlayerLogoutEventName,
+			ps2events.FacilityControlEventName,
 		},
 	})
 	pcEventsPublisher := ps2events.NewPublisher()
@@ -90,6 +91,7 @@ func start(ctx context.Context, cfg *config.Config) error {
 		EventNames: []string{
 			ps2events.PlayerLoginEventName,
 			ps2events.PlayerLogoutEventName,
+			ps2events.FacilityControlEventName,
 		},
 	})
 	ps4euEventsPublisher := ps2events.NewPublisher()
@@ -111,6 +113,7 @@ func start(ctx context.Context, cfg *config.Config) error {
 		EventNames: []string{
 			ps2events.PlayerLoginEventName,
 			ps2events.PlayerLogoutEventName,
+			ps2events.FacilityControlEventName,
 		},
 	})
 	ps4usEventsPublisher := ps2events.NewPublisher()

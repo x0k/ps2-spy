@@ -35,6 +35,7 @@ type BotConfig struct {
 	SubmitHandlers               map[string]handlers.InteractionHandler
 	PlayerLoginHandlers          map[string]handlers.Ps2EventHandler[ps2events.PlayerLogin]
 	PlayerLogoutHandlers         map[string]handlers.Ps2EventHandler[ps2events.PlayerLogout]
+	FacilityControlHandlers      map[string]handlers.Ps2EventHandler[ps2events.FacilityControl]
 	EventTrackingChannelsLoaders map[string]loaders.QueriedLoader[any, []string]
 	Ps2EventsPublishers          map[string]*ps2events.Publisher
 	OutfitMembersUpdateHandlers  map[string]handlers.Ps2EventHandler[outfit_members_saver.OutfitMembersUpdate]
@@ -64,6 +65,10 @@ func startEventHandlersForPlatform(
 	if !ok {
 		return fmt.Errorf("%s get player logout handler: %w", platform, ErrEventHandlerNotFound)
 	}
+	facilityControlHandler, ok := cfg.FacilityControlHandlers[platform]
+	if !ok {
+		return fmt.Errorf("%s get facility control handler: %w", platform, ErrEventHandlerNotFound)
+	}
 	outfitMembersUpdateHandler, ok := cfg.OutfitMembersUpdateHandlers[platform]
 	if !ok {
 		return fmt.Errorf("%s get outfit member join handler: %w", platform, ErrEventHandlerNotFound)
@@ -87,6 +92,11 @@ func startEventHandlersForPlatform(
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
+	facilityControl := make(chan ps2events.FacilityControl)
+	facilityControlUnSub, err := eventsPublisher.AddHandler(facilityControl)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
 	outfitMembersUpdate := make(chan outfit_members_saver.OutfitMembersUpdate)
 	outfitMembersUpdateUnSub, err := outfitMembersSaverPublisher.AddHandler(outfitMembersUpdate)
 	if err != nil {
@@ -98,15 +108,19 @@ func startEventHandlersForPlatform(
 		defer wg.Done()
 		defer playerLoginUnSub()
 		defer playerLogoutUnSub()
+		defer facilityControlUnSub()
 		defer outfitMembersUpdateUnSub()
 		for {
 			select {
 			case <-ctx.Done():
 				return
 			case e := <-playerLogin:
+				// TODO: add handlers to wait group
 				go playerLoginHandler.Run(ctx, eventHandlersConfig, e)
 			case e := <-playerLogout:
 				go playerLogoutHandler.Run(ctx, eventHandlersConfig, e)
+			case e := <-facilityControl:
+				go facilityControlHandler.Run(ctx, eventHandlersConfig, e)
 			case e := <-outfitMembersUpdate:
 				go outfitMembersUpdateHandler.Run(ctx, eventHandlersConfig, e)
 			}

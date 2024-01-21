@@ -183,6 +183,8 @@ func (tm *TrackingManager) ChannelIds(ctx context.Context, event any) ([]string,
 		return tm.channelIdsForCharacter(ctx, e.CharacterID)
 	case outfit_members_saver.OutfitMembersUpdate:
 		return tm.channelIdsForOutfit(ctx, e.OutfitTag)
+	case ps2events.FacilityControl:
+		return tm.channelIdsForOutfit(ctx, e.OutfitID)
 	}
 	return nil, fmt.Errorf("%s: %w", op, ErrUnknownEvent)
 }
