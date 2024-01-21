@@ -52,8 +52,8 @@ func New(
 	}
 }
 
-func (tm *TrackingManager) rebuildCharactersFilter(ctx context.Context, wg *sync.WaitGroup) {
-	const op = "tracking_manager.TrackingManager.rebuildCharactersFilter"
+func (tm *TrackingManager) rebuildCharactersFilterTask(ctx context.Context, wg *sync.WaitGroup) {
+	const op = "tracking_manager.TrackingManager.rebuildCharactersFilterTask"
 	log := infra.OpLogger(ctx, op)
 	defer wg.Done()
 	chars, err := tm.trackableCharactersLoader.Load(ctx)
@@ -78,8 +78,8 @@ func (tm *TrackingManager) rebuildCharactersFilter(ctx context.Context, wg *sync
 	}
 }
 
-func (tm *TrackingManager) rebuildOutfitsFilter(ctx context.Context, wg *sync.WaitGroup) {
-	const op = "tracking_manager.TrackingManager.rebuildOutfitsFilter"
+func (tm *TrackingManager) rebuildOutfitsFilterTask(ctx context.Context, wg *sync.WaitGroup) {
+	const op = "tracking_manager.TrackingManager.rebuildOutfitsFilterTask"
 	log := infra.OpLogger(ctx, op)
 	defer wg.Done()
 	outfits, err := tm.trackableOutfitsLoader.Load(ctx)
@@ -104,15 +104,15 @@ func (tm *TrackingManager) rebuildOutfitsFilter(ctx context.Context, wg *sync.Wa
 	}
 }
 
-func (tm *TrackingManager) rebuildFilters(ctx context.Context, wg *sync.WaitGroup) {
-	const op = "tracking_manager.TrackingManager.rebuildFilters"
+func (tm *TrackingManager) goRebuildFiltersTasks(ctx context.Context, wg *sync.WaitGroup) {
+	const op = "tracking_manager.TrackingManager.goRebuildFiltersTasks"
 	infra.OpLogger(ctx, op).Debug("rebuilding filters")
 	wg.Add(2)
-	go tm.rebuildCharactersFilter(ctx, wg)
-	go tm.rebuildOutfitsFilter(ctx, wg)
+	go tm.rebuildCharactersFilterTask(ctx, wg)
+	go tm.rebuildOutfitsFilterTask(ctx, wg)
 }
 
-func (tm *TrackingManager) rebuildTicker(ctx context.Context, wg *sync.WaitGroup) {
+func (tm *TrackingManager) scheduleFiltersRebuildTasks(ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
 	ticker := time.NewTicker(tm.rebuildFiltersInterval)
 	for {
@@ -120,16 +120,16 @@ func (tm *TrackingManager) rebuildTicker(ctx context.Context, wg *sync.WaitGroup
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			tm.rebuildFilters(ctx, wg)
+			tm.goRebuildFiltersTasks(ctx, wg)
 		}
 	}
 }
 
 func (tm *TrackingManager) Start(ctx context.Context, wg *sync.WaitGroup) {
 	const op = "tracking_manager.TrackingManager.Start"
-	tm.rebuildFilters(ctx, wg)
+	tm.goRebuildFiltersTasks(ctx, wg)
 	wg.Add(1)
-	go tm.rebuildTicker(ctx, wg)
+	go tm.scheduleFiltersRebuildTasks(ctx, wg)
 }
 
 func (tm *TrackingManager) characterTrackersCount(charId string) int {

@@ -8,6 +8,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/x0k/ps2-spy/internal/bot/handlers"
+	"github.com/x0k/ps2-spy/internal/facilities_manager"
 	"github.com/x0k/ps2-spy/internal/infra"
 	ps2events "github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
@@ -33,13 +34,15 @@ type BotConfig struct {
 	Commands                     []*discordgo.ApplicationCommand
 	CommandHandlers              map[string]handlers.InteractionHandler
 	SubmitHandlers               map[string]handlers.InteractionHandler
+	Ps2EventsPublishers          map[string]*ps2events.Publisher
 	PlayerLoginHandlers          map[string]handlers.Ps2EventHandler[ps2events.PlayerLogin]
 	PlayerLogoutHandlers         map[string]handlers.Ps2EventHandler[ps2events.PlayerLogout]
 	FacilityControlHandlers      map[string]handlers.Ps2EventHandler[ps2events.FacilityControl]
 	EventTrackingChannelsLoaders map[string]loaders.QueriedLoader[any, []string]
-	Ps2EventsPublishers          map[string]*ps2events.Publisher
-	OutfitMembersUpdateHandlers  map[string]handlers.Ps2EventHandler[outfit_members_saver.OutfitMembersUpdate]
 	OutfitMembersSaverPublishers map[string]*publisher.Publisher
+	OutfitMembersUpdateHandlers  map[string]handlers.Ps2EventHandler[outfit_members_saver.OutfitMembersUpdate]
+	FacilitiesManagerPublishers  map[string]*publisher.Publisher
+	FacilityLossHandlers         map[string]handlers.Ps2EventHandler[facilities_manager.FacilityLoss]
 }
 
 func startEventHandlersForPlatform(
@@ -77,6 +80,14 @@ func startEventHandlersForPlatform(
 	if !ok {
 		return fmt.Errorf("%s get outfit members saver publisher: %w", platform, ErrEventHandlerNotFound)
 	}
+	facilitiesManagerPublisher, ok := cfg.FacilitiesManagerPublishers[platform]
+	if !ok {
+		return fmt.Errorf("%s get facilities manager publisher: %w", platform, ErrEventHandlerNotFound)
+	}
+	facilitiesLossHandler, ok := cfg.FacilityLossHandlers[platform]
+	if !ok {
+		return fmt.Errorf("%s get facility loss handler: %w", platform, ErrEventHandlerNotFound)
+	}
 	eventHandlersConfig := &handlers.Ps2EventHandlerConfig{
 		Session:                     session,
 		Timeout:                     cfg.Ps2EventHandlerTimeout,
@@ -102,6 +113,11 @@ func startEventHandlersForPlatform(
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
+	facilityLoss := make(chan facilities_manager.FacilityLoss)
+	facilityLossUnSub, err := facilitiesManagerPublisher.AddHandler(facilityLoss)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
 	wg := infra.Wg(ctx)
 	wg.Add(1)
 	go func() {
@@ -110,6 +126,7 @@ func startEventHandlersForPlatform(
 		defer playerLogoutUnSub()
 		defer facilityControlUnSub()
 		defer outfitMembersUpdateUnSub()
+		defer facilityLossUnSub()
 		for {
 			select {
 			case <-ctx.Done():
@@ -121,6 +138,8 @@ func startEventHandlersForPlatform(
 				go playerLogoutHandler.Run(ctx, eventHandlersConfig, e)
 			case e := <-facilityControl:
 				go facilityControlHandler.Run(ctx, eventHandlersConfig, e)
+			case e := <-facilityLoss:
+				go facilitiesLossHandler.Run(ctx, eventHandlersConfig, e)
 			case e := <-outfitMembersUpdate:
 				go outfitMembersUpdateHandler.Run(ctx, eventHandlersConfig, e)
 			}

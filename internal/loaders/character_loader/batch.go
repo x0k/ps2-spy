@@ -37,8 +37,8 @@ func NewBatch(
 	}
 }
 
-func (l *BatchLoader) batcher(ctx context.Context, wg *sync.WaitGroup) {
-	const op = "loaders.character_loader.batch.batcher"
+func (l *BatchLoader) flushBatchTask(ctx context.Context, wg *sync.WaitGroup) {
+	const op = "loaders.character_loader.batch.flushBatchTask"
 	log := infra.OpLogger(ctx, op)
 	defer wg.Done()
 	ticker := time.NewTicker(l.batchRate)
@@ -76,8 +76,8 @@ func (l *BatchLoader) releaseAwaiters(log *slog.Logger, batch []string, chars ma
 	}
 }
 
-func (l *BatchLoader) worker(ctx context.Context, wg *sync.WaitGroup) {
-	const op = "loaders.character_loader.batch.worker"
+func (l *BatchLoader) processBatchTask(ctx context.Context, wg *sync.WaitGroup) {
+	const op = "loaders.character_loader.batch.processBatchTask"
 	log := infra.OpLogger(ctx, op)
 	defer wg.Done()
 	for {
@@ -96,8 +96,8 @@ func (l *BatchLoader) worker(ctx context.Context, wg *sync.WaitGroup) {
 	}
 }
 
-func (l *BatchLoader) cleaner(ctx context.Context, wg *sync.WaitGroup) {
-	const op = "loaders.character_loader.batch.cleaner"
+func (l *BatchLoader) cleanupTask(ctx context.Context, wg *sync.WaitGroup) {
+	const op = "loaders.character_loader.batch.cleanupTask"
 	log := infra.OpLogger(ctx, op)
 	defer wg.Done()
 	<-ctx.Done()
@@ -114,9 +114,9 @@ func (l *BatchLoader) Start(ctx context.Context, wg *sync.WaitGroup) {
 	const op = "loaders.character_loader.batch.Start"
 	infra.OpLogger(ctx, op).Info("starting loader")
 	wg.Add(3)
-	go l.batcher(ctx, wg)
-	go l.worker(ctx, wg)
-	go l.cleaner(ctx, wg)
+	go l.flushBatchTask(ctx, wg)
+	go l.processBatchTask(ctx, wg)
+	go l.cleanupTask(ctx, wg)
 }
 
 func (l *BatchLoader) load(log *slog.Logger, charId string) chan ps2.Character {

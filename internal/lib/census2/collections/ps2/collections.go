@@ -2,7 +2,21 @@ package collections
 
 const WorldEvent = "world_event"
 
-type WorldEventItem struct {
+type FacilityWorldEventItem struct {
+	FacilityId   string `json:"facility_id" mapstructure:"facility_id"`
+	FactionOld   string `json:"faction_old" mapstructure:"faction_old"`
+	FactionNew   string `json:"faction_new" mapstructure:"faction_new"`
+	DurationHeld string `json:"duration_held" mapstructure:"duration_held"`
+	ObjectiveId  string `json:"objective_id" mapstructure:"objective_id"`
+	Timestamp    string `json:"timestamp" mapstructure:"timestamp"`
+	ZoneId       string `json:"zone_id" mapstructure:"zone_id"`
+	WorldId      string `json:"world_id" mapstructure:"world_id"`
+	EventType    string `json:"event_type" mapstructure:"event_type"`
+	TableType    string `json:"table_type" mapstructure:"table_type"`
+	OutfitId     string `json:"outfit_id" mapstructure:"outfit_id"`
+}
+
+type MetagameWorldEventItem struct {
 	MetagameEventId        string `json:"metagame_event_id" mapstructure:"metagame_event_id"`
 	MetagameEventState     string `json:"metagame_event_state" mapstructure:"metagame_event_state"`
 	FactionNC              string `json:"faction_nc" mapstructure:"faction_nc"`
@@ -67,8 +81,9 @@ type CharacterItem struct {
 	BattleRank    CharacterBattleRank  `json:"battle_rank" mapstructure:"battle_rank"`
 	DailyRibbon   CharacterDailyRibbon `json:"daily_ribbon" mapstructure:"daily_ribbon"`
 	// Resolvable
-	Outfit  OutfitItem `json:"outfit" mapstructure:"outfit"`
-	WorldId string     `json:"world_id" mapstructure:"world_id"`
+	Outfit OutfitItem `json:"outfit" mapstructure:"outfit"`
+	// Resolvable
+	WorldId string `json:"world_id" mapstructure:"world_id"`
 }
 
 const Outfit = "outfit"
@@ -84,7 +99,8 @@ type OutfitItem struct {
 	LeaderCharacterId string `json:"leader_character_id" mapstructure:"leader_character_id"`
 	MemberCount       string `json:"member_count" mapstructure:"member_count"`
 	// Resolvable
-	Members       []CharacterItem    `json:"members" mapstructure:"members"`
+	Members []CharacterItem `json:"members" mapstructure:"members"`
+	// Resolvable
 	OutfitMembers []OutfitMemberItem `json:"outfit_members" mapstructure:"outfit_members"`
 }
 
@@ -99,7 +115,41 @@ type OutfitMemberItem struct {
 	RankOrdinal     string `json:"rank_ordinal" mapstructure:"rank_ordinal"`
 }
 
+const MapRegion = "map_region"
+
+type MapRegionItem struct {
+	MapRegionId      string `json:"map_region_id" mapstructure:"map_region_id"`
+	ZoneId           string `json:"zone_id" mapstructure:"zone_id"`
+	FacilityId       string `json:"facility_id" mapstructure:"facility_id"`
+	FacilityName     string `json:"facility_name" mapstructure:"facility_name"`
+	FacilityTypeId   string `json:"facility_type_id" mapstructure:"facility_type_id"`
+	FacilityType     string `json:"facility_type" mapstructure:"facility_type"`
+	LocationX        string `json:"location_x" mapstructure:"location_x"`
+	LocationY        string `json:"location_y" mapstructure:"location_y"`
+	LocationZ        string `json:"location_z" mapstructure:"location_z"`
+	RewardAmount     string `json:"reward_amount" mapstructure:"reward_amount"`
+	RewardCurrencyId string `json:"reward_currency_id" mapstructure:"reward_currency_id"`
+}
+
 const Map = "map"
+
+type MapItemRowData struct {
+	RegionId  string `json:"RegionId" mapstructure:"RegionId"`
+	FactionId string `json:"FactionId" mapstructure:"FactionId"`
+	// Joinable
+	MapRegion MapRegionItem `json:"map_region" mapstructure:"map_region"`
+}
+
+type MapItem struct {
+	ZoneId  string `json:"ZoneId" mapstructure:"ZoneId"`
+	Regions struct {
+		IsList string `json:"IsList" mapstructure:"IsList"`
+		Row    []struct {
+			RowData MapItemRowData `json:"RowData" mapstructure:"RowData"`
+		} `json:"Row" mapstructure:"Row"`
+	} `json:"Regions" mapstructure:"Regions"`
+}
+
 const CharactersWorld = "characters_world"
 const CharactersOnlineStatus = "characters_online_status"
 const CharactersFriend = "characters_friend"

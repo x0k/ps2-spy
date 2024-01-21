@@ -125,12 +125,40 @@ func loadOutfitMembers(c *census2.Client, outfitTag string) (any, error) {
 	return outfits[0], nil
 }
 
+func loadWorldState(c *census2.Client, query string) (any, error) {
+	const op = "loadWorldState"
+	q := census2.NewQuery(census2.GetQuery, census2.Ps2_v2_NS, collections.Map).
+		Where(
+			census2.Cond("world_id").Equals(census2.Str(query)),
+			census2.Cond("zone_ids").Equals(census2.Str("2,4,6,8,14,344")),
+		).
+		WithJoin(
+			census2.Join(collections.MapRegion).
+				Show(
+					"zone_id",
+					"facility_id",
+					"facility_name",
+					"facility_type",
+				).
+				InjectAt("map_region").
+				On("Regions.Row.RowData.RegionId").
+				To("map_region_id"),
+		)
+	log.Printf("run query: %s", q.String())
+	events, err := c.Execute(context.Background(), q)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	return events, nil
+}
+
 var handlers = map[string]func(c *census2.Client, query string) (any, error){
 	"outfit":     loadOutfitInfo,
 	"outfits":    loadOutfits,
 	"character":  loadCharacterInfo,
 	"characters": loadCharacters,
 	"members":    loadOutfitMembers,
+	"world":      loadWorldState,
 }
 
 func main() {

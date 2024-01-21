@@ -44,11 +44,11 @@ func NewCensus(client *census2.Client) *CensusLoader {
 func (l *CensusLoader) load(ctx context.Context, url string) (ps2.Alerts, error) {
 	const op = "loaders.alerts_loader.CensusLoader.load"
 	log := infra.OpLogger(ctx, op).With(slog.String("census_endpoint", l.client.Endpoint()))
-	events, err := census2.ExecutePreparedAndDecode[collections.WorldEventItem](ctx, l.client, collections.WorldEvent, url)
+	events, err := census2.ExecutePreparedAndDecode[collections.MetagameWorldEventItem](ctx, l.client, collections.WorldEvent, url)
 	if err != nil {
 		return ps2.Alerts{}, err
 	}
-	actualEvents := make(map[string]collections.WorldEventItem, len(events))
+	actualEvents := make(map[string]collections.MetagameWorldEventItem, len(events))
 	for i := len(events) - 1; i >= 0; i-- {
 		e := events[i]
 		if e.MetagameEventStateName == "started" {

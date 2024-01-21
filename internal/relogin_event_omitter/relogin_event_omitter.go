@@ -67,8 +67,8 @@ func (r *ReLoginOmitter) flushLogOutEvents(log *slog.Logger) {
 	r.logoutEventsBatch = make(map[string]map[string]any, len(r.logoutEventsBatch))
 }
 
-func (r *ReLoginOmitter) worker(ctx context.Context, wg *sync.WaitGroup) {
-	const op = "relogin_event_ommiter.ReLoginOmitter.worker"
+func (r *ReLoginOmitter) flushTask(ctx context.Context, wg *sync.WaitGroup) {
+	const op = "relogin_event_ommiter.ReLoginOmitter.flushTask"
 	log := infra.OpLogger(ctx, op)
 	defer wg.Done()
 	ticker := time.NewTicker(r.batchInterval)
@@ -88,7 +88,7 @@ func (r *ReLoginOmitter) Start(ctx context.Context) {
 	infra.OpLogger(ctx, op).Info("starting")
 	wg := infra.Wg(ctx)
 	wg.Add(1)
-	go r.worker(ctx, wg)
+	go r.flushTask(ctx, wg)
 }
 
 func (r *ReLoginOmitter) Publish(event map[string]any) error {
