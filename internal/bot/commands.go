@@ -105,5 +105,9 @@ func NewCommands(
 				},
 			},
 		},
+		{
+			Name:        "about",
+			Description: "About this bot",
+		},
 	}
 }

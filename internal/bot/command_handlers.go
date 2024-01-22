@@ -2,6 +2,7 @@ package bot
 
 import (
 	"github.com/x0k/ps2-spy/internal/bot/handlers"
+	"github.com/x0k/ps2-spy/internal/bot/handlers/command/about_command_handler"
 	"github.com/x0k/ps2-spy/internal/bot/handlers/command/alerts_command_handler"
 	"github.com/x0k/ps2-spy/internal/bot/handlers/command/channel_setup_command_handler"
 	"github.com/x0k/ps2-spy/internal/bot/handlers/command/population_command_handler"
@@ -28,5 +29,6 @@ func NewCommandHandlers(
 			worldAlertsLoader,
 		),
 		"setup": channel_setup_command_handler.New(settingsLoader, charNamesLoader, outfitTagsLoader),
+		"about": about_command_handler.New(),
 	}
 }
