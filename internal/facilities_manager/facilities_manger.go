@@ -59,15 +59,24 @@ func (fm *FacilitiesManager) updateState(event ps2events.FacilityControl) string
 func (fm *FacilitiesManager) FacilityControl(ctx context.Context, event ps2events.FacilityControl) error {
 	const op = "facilities_manager.FacilitiesManager.FacilityControl"
 	log := infra.OpLogger(ctx, op)
+	// Defended base
+	if event.OldFactionID == event.NewFactionID {
+		return nil
+	}
 	oldOutfitId := fm.updateState(event)
-	if oldOutfitId != "" {
-		err := fm.publisher.Publish(FacilityLoss{
-			FacilityControl: event,
-			OldOutfitId:     oldOutfitId,
-		})
-		if err != nil {
-			log.Error("publishing loss event", sl.Err(err))
-		}
+	err := fm.publisher.Publish(FacilityControl{
+		FacilityControl: event,
+		OldOutfitId:     oldOutfitId,
+	})
+	if err != nil {
+		log.Error("publishing control event", sl.Err(err))
+	}
+	err = fm.publisher.Publish(FacilityLoss{
+		FacilityControl: event,
+		OldOutfitId:     oldOutfitId,
+	})
+	if err != nil {
+		log.Error("publishing loss event", sl.Err(err))
 	}
 	return nil
 }

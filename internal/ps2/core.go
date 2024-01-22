@@ -19,6 +19,15 @@ func ToZoneId(id string) (ZoneId, error) {
 
 type WorldId int
 
+func ToWorldId(id string) (WorldId, error) {
+	const op = "ps2.ToWorldId"
+	i, err := strconv.Atoi(id)
+	if err != nil {
+		return 0, fmt.Errorf("%s: %w", op, err)
+	}
+	return WorldId(i), nil
+}
+
 type StatsByFactions struct {
 	All   int
 	VS    int
@@ -101,6 +110,19 @@ type Character struct {
 	OutfitTag string
 	WorldId   WorldId
 	Platform  string
+}
+
+type Outfit struct {
+	Id   string
+	Name string
+	Tag  string
+}
+
+type Facility struct {
+	Id     string
+	Name   string
+	Type   string
+	ZoneId ZoneId
 }
 
 var ErrWorldNotFound = fmt.Errorf("world not found")

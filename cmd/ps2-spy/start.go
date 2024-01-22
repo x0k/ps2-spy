@@ -8,11 +8,14 @@ import (
 
 	"github.com/x0k/ps2-spy/internal/bot"
 	"github.com/x0k/ps2-spy/internal/bot/handlers"
+	"github.com/x0k/ps2-spy/internal/bot/handlers/event/facility_control_event_handler"
+	"github.com/x0k/ps2-spy/internal/bot/handlers/event/facility_loss_event_handler"
 	"github.com/x0k/ps2-spy/internal/bot/handlers/event/login_event_handler"
 	"github.com/x0k/ps2-spy/internal/bot/handlers/event/logout_event_handler"
 	"github.com/x0k/ps2-spy/internal/bot/handlers/event/outfit_members_update_event_handler"
 	"github.com/x0k/ps2-spy/internal/bot/handlers/submit/channel_setup_submit_handler"
 	"github.com/x0k/ps2-spy/internal/config"
+	"github.com/x0k/ps2-spy/internal/facilities_manager"
 	"github.com/x0k/ps2-spy/internal/infra"
 	"github.com/x0k/ps2-spy/internal/lib/census2"
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming"
@@ -32,6 +35,8 @@ import (
 	"github.com/x0k/ps2-spy/internal/loaders/character_tracking_channels_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/characters_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/event_tracking_channels_loader"
+	"github.com/x0k/ps2-spy/internal/loaders/facility_loader"
+	"github.com/x0k/ps2-spy/internal/loaders/outfit_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/outfit_tags_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/platform_character_names_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/platform_outfit_tags_loader"
@@ -72,8 +77,8 @@ func start(ctx context.Context, cfg *config.Config) error {
 			ps2events.FacilityControlEventName,
 		},
 	})
-	pcEventsPublisher := ps2events.NewPublisher()
-	pcReLoginOmitter := relogin_event_omitter.New(pcEventsPublisher)
+	pcPs2EventsPublisher := ps2events.NewPublisher()
+	pcReLoginOmitter := relogin_event_omitter.New(pcPs2EventsPublisher)
 	pcReLoginOmitter.Start(ctx)
 	err = startPs2EventsPublisher(ctx, cfg, pcStreamingClient.Msg, pcReLoginOmitter)
 	if err != nil {
@@ -94,8 +99,8 @@ func start(ctx context.Context, cfg *config.Config) error {
 			ps2events.FacilityControlEventName,
 		},
 	})
-	ps4euEventsPublisher := ps2events.NewPublisher()
-	ps4euReLoginOmitter := relogin_event_omitter.New(ps4euEventsPublisher)
+	ps4euPs2EventsPublisher := ps2events.NewPublisher()
+	ps4euReLoginOmitter := relogin_event_omitter.New(ps4euPs2EventsPublisher)
 	ps4euReLoginOmitter.Start(ctx)
 	err = startPs2EventsPublisher(ctx, cfg, ps4euStreamingClient.Msg, ps4euReLoginOmitter)
 	if err != nil {
@@ -116,8 +121,8 @@ func start(ctx context.Context, cfg *config.Config) error {
 			ps2events.FacilityControlEventName,
 		},
 	})
-	ps4usEventsPublisher := ps2events.NewPublisher()
-	ps4usReLoginOmitter := relogin_event_omitter.New(ps4usEventsPublisher)
+	ps4usPs2EventsPublisher := ps2events.NewPublisher()
+	ps4usReLoginOmitter := relogin_event_omitter.New(ps4usPs2EventsPublisher)
 	ps4usReLoginOmitter.Start(ctx)
 	err = startPs2EventsPublisher(ctx, cfg, ps4usStreamingClient.Msg, ps4usReLoginOmitter)
 	if err != nil {
@@ -196,18 +201,21 @@ func start(ctx context.Context, cfg *config.Config) error {
 	characterTrackingChannelsLoader := character_tracking_channels_loader.New(sqlStorage)
 	pcTrackingManager := newTrackingManager(
 		sqlStorage,
+		censusClient,
 		pcBatchedCharacterLoader,
 		characterTrackingChannelsLoader,
 		platforms.PC,
 	)
 	ps4euTrackingManager := newTrackingManager(
 		sqlStorage,
+		censusClient,
 		ps4euBatchedCharacterLoader,
 		characterTrackingChannelsLoader,
 		platforms.PS4_EU,
 	)
 	ps4usTrackingManager := newTrackingManager(
 		sqlStorage,
+		censusClient,
 		ps4usBatchedCharacterLoader,
 		characterTrackingChannelsLoader,
 		platforms.PS4_US,
@@ -246,6 +254,30 @@ func start(ctx context.Context, cfg *config.Config) error {
 	platformCharacterNamesLoader := platform_character_names_loader.NewCensus(censusClient)
 	platformOutfitTagsLoader := platform_outfit_tags_loader.NewCensus(censusClient)
 	subSettingsLoader := subscription_settings_loader.New(sqlStorage)
+
+	pcOutfitLoader := outfit_loader.NewCensus(censusClient, census2.Ps2_v2_NS)
+	ps4euOutfitLoader := outfit_loader.NewCensus(censusClient, census2.Ps2ps4eu_v2_NS)
+	ps4usOutfitLoader := outfit_loader.NewCensus(censusClient, census2.Ps2ps4us_v2_NS)
+
+	pcFacilityLoader := facility_loader.NewCensus(censusClient, census2.Ps2_v2_NS)
+	ps4euFacilityLoader := facility_loader.NewCensus(censusClient, census2.Ps2ps4eu_v2_NS)
+	ps4usFacilityLoader := facility_loader.NewCensus(censusClient, census2.Ps2ps4us_v2_NS)
+
+	pcFacilitiesManagerPublisher := publisher.New(facilities_manager.CastHandler)
+	startFacilitiesManager(ctx, pcPs2EventsPublisher, facilities_manager.New(
+		[]string{"1", "10", "13", "17", "19", "40"},
+		pcFacilitiesManagerPublisher,
+	))
+	ps4euFacilitiesManagerPublisher := publisher.New(facilities_manager.CastHandler)
+	startFacilitiesManager(ctx, ps4euPs2EventsPublisher, facilities_manager.New(
+		[]string{"2000"},
+		ps4euFacilitiesManagerPublisher,
+	))
+	ps4usFacilitiesManagerPublisher := publisher.New(facilities_manager.CastHandler)
+	startFacilitiesManager(ctx, ps4usPs2EventsPublisher, facilities_manager.New(
+		[]string{"1000"},
+		ps4usFacilitiesManagerPublisher,
+	))
 
 	// bot
 	botConfig := &bot.BotConfig{
@@ -286,6 +318,16 @@ func start(ctx context.Context, cfg *config.Config) error {
 				subscription_settings_saver.New(sqlStorage, subSettingsLoader, platforms.PS4_US),
 			),
 		},
+		EventTrackingChannelsLoaders: map[string]loaders.QueriedLoader[any, []string]{
+			platforms.PC:     event_tracking_channels_loader.New(pcTrackingManager),
+			platforms.PS4_EU: event_tracking_channels_loader.New(ps4euTrackingManager),
+			platforms.PS4_US: event_tracking_channels_loader.New(ps4usTrackingManager),
+		},
+		Ps2EventsPublishers: map[string]*ps2events.Publisher{
+			platforms.PC:     pcPs2EventsPublisher,
+			platforms.PS4_EU: ps4euPs2EventsPublisher,
+			platforms.PS4_US: ps4usPs2EventsPublisher,
+		},
 		PlayerLoginHandlers: map[string]handlers.Ps2EventHandler[ps2events.PlayerLogin]{
 			platforms.PC:     login_event_handler.New(pcBatchedCharacterLoader),
 			platforms.PS4_EU: login_event_handler.New(ps4euBatchedCharacterLoader),
@@ -296,25 +338,30 @@ func start(ctx context.Context, cfg *config.Config) error {
 			platforms.PS4_EU: logout_event_handler.New(ps4euBatchedCharacterLoader),
 			platforms.PS4_US: logout_event_handler.New(ps4usBatchedCharacterLoader),
 		},
-		Ps2EventsPublishers: map[string]*ps2events.Publisher{
-			platforms.PC:     pcEventsPublisher,
-			platforms.PS4_EU: ps4euEventsPublisher,
-			platforms.PS4_US: ps4usEventsPublisher,
-		},
-		EventTrackingChannelsLoaders: map[string]loaders.QueriedLoader[any, []string]{
-			platforms.PC:     event_tracking_channels_loader.New(pcTrackingManager),
-			platforms.PS4_EU: event_tracking_channels_loader.New(ps4euTrackingManager),
-			platforms.PS4_US: event_tracking_channels_loader.New(ps4usTrackingManager),
+		OutfitMembersSaverPublishers: map[string]*publisher.Publisher{
+			platforms.PC:     pcOutfitMembersSaverPublisher,
+			platforms.PS4_EU: ps4euOutfitMembersSaverPublisher,
+			platforms.PS4_US: ps4usOutfitMembersSaverPublisher,
 		},
 		OutfitMembersUpdateHandlers: map[string]handlers.Ps2EventHandler[outfit_members_saver.OutfitMembersUpdate]{
 			platforms.PC:     outfit_members_update_event_handler.New(pcCharactersLoader),
 			platforms.PS4_EU: outfit_members_update_event_handler.New(ps4euCharactersLoader),
 			platforms.PS4_US: outfit_members_update_event_handler.New(ps4usCharactersLoader),
 		},
-		OutfitMembersSaverPublishers: map[string]*publisher.Publisher{
-			platforms.PC:     pcOutfitMembersSaverPublisher,
-			platforms.PS4_EU: ps4euOutfitMembersSaverPublisher,
-			platforms.PS4_US: ps4usOutfitMembersSaverPublisher,
+		FacilitiesManagerPublishers: map[string]*publisher.Publisher{
+			platforms.PC:     pcFacilitiesManagerPublisher,
+			platforms.PS4_EU: ps4euFacilitiesManagerPublisher,
+			platforms.PS4_US: ps4usFacilitiesManagerPublisher,
+		},
+		FacilityControlHandlers: map[string]handlers.Ps2EventHandler[facilities_manager.FacilityControl]{
+			platforms.PC:     facility_control_event_handler.New(pcOutfitLoader, pcFacilityLoader),
+			platforms.PS4_EU: facility_control_event_handler.New(ps4euOutfitLoader, ps4euFacilityLoader),
+			platforms.PS4_US: facility_control_event_handler.New(ps4usOutfitLoader, ps4usFacilityLoader),
+		},
+		FacilityLossHandlers: map[string]handlers.Ps2EventHandler[facilities_manager.FacilityLoss]{
+			platforms.PC:     facility_loss_event_handler.New(pcOutfitLoader, pcFacilityLoader),
+			platforms.PS4_EU: facility_loss_event_handler.New(ps4euOutfitLoader, ps4euFacilityLoader),
+			platforms.PS4_US: facility_loss_event_handler.New(ps4usOutfitLoader, ps4usFacilityLoader),
 		},
 	}
 	return startBot(ctx, botConfig)

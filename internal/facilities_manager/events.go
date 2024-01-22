@@ -3,8 +3,18 @@ package facilities_manager
 import ps2events "github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
 
 const (
-	FacilityLossType = "facility_loss"
+	FacilityControlType = "facility_control"
+	FacilityLossType    = "facility_loss"
 )
+
+type FacilityControl struct {
+	ps2events.FacilityControl
+	OldOutfitId string
+}
+
+func (e FacilityControl) Type() string {
+	return FacilityControlType
+}
 
 type FacilityLoss struct {
 	ps2events.FacilityControl
