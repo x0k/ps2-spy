@@ -30,3 +30,6 @@ cs:
 
 ms:
     go run tools/explorer/*.go --resource members --query $1 --output tmp
+
+ws:
+    go run tools/explorer/*.go --resource world --query $1 --output tmp

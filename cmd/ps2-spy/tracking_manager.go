@@ -6,13 +6,16 @@ import (
 	"log/slog"
 
 	"github.com/x0k/ps2-spy/internal/infra"
+	"github.com/x0k/ps2-spy/internal/lib/census2"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/loaders"
 	"github.com/x0k/ps2-spy/internal/loaders/outfit_member_ids_loader"
+	"github.com/x0k/ps2-spy/internal/loaders/outfit_tag_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/outfit_tracking_channels_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/trackable_character_ids_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/trackable_outfits_with_duplication_loader"
 	"github.com/x0k/ps2-spy/internal/ps2"
+	"github.com/x0k/ps2-spy/internal/ps2/platforms"
 	"github.com/x0k/ps2-spy/internal/publisher"
 	"github.com/x0k/ps2-spy/internal/storage"
 	"github.com/x0k/ps2-spy/internal/storage/sqlite"
@@ -21,6 +24,7 @@ import (
 
 func newTrackingManager(
 	storage *sqlite.Storage,
+	censusClient *census2.Client,
 	characterLoader loaders.KeyedLoader[string, ps2.Character],
 	characterTrackingChannelsLoader loaders.KeyedLoader[ps2.Character, []string],
 	platform string,
@@ -29,6 +33,13 @@ func newTrackingManager(
 	// TODO: remove loader
 	// outfitTrackersCountLoader := outfit_trackers_count_loader.NewStorage(storage, platform)
 	outfitMembersLoader := outfit_member_ids_loader.NewStorage(storage, platform)
+	ns, err := platforms.PlatformNamespace(platform)
+	if err != nil {
+		// TODO: handle error outside
+		panic(err)
+	}
+	// TODO: storage loader
+	outfitTagLoader := outfit_tag_loader.NewCensus(censusClient, ns)
 	outfitTrackingChannelsLoader := outfit_tracking_channels_loader.NewStorage(storage, platform)
 	trackableOutfitsLoader := trackable_outfits_with_duplication_loader.NewStorage(storage, platform)
 	return tracking_manager.New(
@@ -36,6 +47,7 @@ func newTrackingManager(
 		characterTrackingChannelsLoader,
 		trackableCharactersLoader,
 		outfitMembersLoader,
+		outfitTagLoader,
 		outfitTrackingChannelsLoader,
 		trackableOutfitsLoader,
 	)

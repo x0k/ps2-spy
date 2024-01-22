@@ -115,9 +115,11 @@ func (j queryJoin) Hide(fields ...string) queryJoin {
 	return j
 }
 
-func (j queryJoin) Where(term queryCondition) queryJoin {
-	term.conditions.separator = joinSubElementsSeparator
-	j.terms.value.values = append(j.terms.value.values, term)
+func (j queryJoin) Where(terms ...queryCondition) queryJoin {
+	for i := range terms {
+		terms[i].conditions.separator = joinSubElementsSeparator
+	}
+	j.terms.value.values = append(j.terms.value.values, terms...)
 	return j
 }
 

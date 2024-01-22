@@ -31,6 +31,7 @@ func RetryWhileWithRecover(rt Retryable) error {
 	for shouldRetry {
 		startTime := time.Now()
 		err := rt.Try()
+		// TODO: unite err and retryCount into struct
 		shouldRetry = rt.While(err, retryCount)
 		if shouldRetry {
 			if time.Since(startTime) > retryInterval {

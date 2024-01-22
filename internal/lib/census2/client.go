@@ -12,6 +12,8 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/httpx"
 )
 
+var ErrFailedToDecode = fmt.Errorf("failed to decode")
+
 type Client struct {
 	httpClient     *http.Client
 	censusEndpoint string
@@ -46,6 +48,7 @@ func (c *Client) ToURL(q *Query) string {
 }
 
 func (c *Client) ExecutePrepared(ctx context.Context, collection, url string) ([]any, error) {
+	const op = "census2.client.Client.ExecutePrepared"
 	if cached, ok := c.cache.Get(url); ok {
 		return cached, nil
 	}
@@ -53,8 +56,10 @@ func (c *Client) ExecutePrepared(ctx context.Context, collection, url string) ([
 	if err != nil {
 		return nil, err
 	}
-	propertyIndex := fmt.Sprintf("%s_list", collection)
-	data := content[propertyIndex].([]any)
+	data, ok := content[collection+"_list"].([]any)
+	if !ok {
+		return nil, fmt.Errorf("%s decoding %v: %w", op, content, ErrFailedToDecode)
+	}
 	c.cache.Add(url, data)
 	return data, nil
 }

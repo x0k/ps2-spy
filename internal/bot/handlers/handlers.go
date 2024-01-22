@@ -121,7 +121,7 @@ func (handler Ps2EventHandler[E]) Run(ctx context.Context, cfg *Ps2EventHandlerC
 		return handler(ctx, channels, cfg, event)
 	})
 	if err != nil {
-		log.Error("error handling", sl.Err(err))
+		log.Error("error handling", slog.Any("event", event), sl.Err(err))
 	}
 	// log.Debug("handled", slog.Duration("duration", time.Since(t)))
 }
@@ -134,12 +134,38 @@ func SimpleMessage[E any](handle func(ctx context.Context, cfg *Ps2EventHandlerC
 		if err != nil {
 			return err
 		}
+		if msg == "" {
+			return nil
+		}
 		errors := make([]string, 0, len(channelIds))
-		for _, channel := range channelIds {
-			_, err = cfg.Session.ChannelMessageSend(channel, msg)
-			if err != nil {
-				log.Error("error sending message", slog.String("channel", channel), sl.Err(err))
-				errors = append(errors, err.Error())
+		for len(msg) > 0 {
+			toSend := msg
+			if len(toSend) > 4000 {
+				toSend = toSend[:4000]
+				lastLineBreak := strings.LastIndexByte(toSend, '\n')
+				if lastLineBreak > 0 {
+					toSend = toSend[:lastLineBreak]
+					msg = msg[lastLineBreak+1:]
+				} else {
+					lastSpace := strings.LastIndexByte(toSend, ' ')
+					if lastSpace > 0 {
+						toSend = toSend[:lastSpace]
+						msg = msg[lastSpace+1:]
+					} else {
+						const truncation = "... (truncated)"
+						toSend = msg[:4000-len(truncation)] + truncation
+						msg = msg[4000-len(truncation):]
+					}
+				}
+			} else {
+				msg = ""
+			}
+			for _, channel := range channelIds {
+				_, err = cfg.Session.ChannelMessageSend(channel, toSend)
+				if err != nil {
+					log.Error("error sending message", slog.String("channel", channel), sl.Err(err))
+					errors = append(errors, err.Error())
+				}
 			}
 		}
 		if len(errors) > 0 {

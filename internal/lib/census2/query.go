@@ -180,9 +180,11 @@ func (q *Query) SetNamespace(ns string) {
 	q.namespace = ns
 }
 
-func (q *Query) Where(term queryCondition) *Query {
-	term.conditions.separator = queryFieldsSeparator
-	q.terms.values = append(q.terms.values, term)
+func (q *Query) Where(terms ...queryCondition) *Query {
+	for i := range terms {
+		terms[i].conditions.separator = queryFieldsSeparator
+	}
+	q.terms.values = append(q.terms.values, terms...)
 	return q
 }
 

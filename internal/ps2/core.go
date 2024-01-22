@@ -2,12 +2,31 @@ package ps2
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 )
 
 type ZoneId int
 
+func ToZoneId(id string) (ZoneId, error) {
+	const op = "ps2.ToZoneId"
+	i, err := strconv.Atoi(id)
+	if err != nil {
+		return 0, fmt.Errorf("%s: %w", op, err)
+	}
+	return ZoneId(i), nil
+}
+
 type WorldId int
+
+func ToWorldId(id string) (WorldId, error) {
+	const op = "ps2.ToWorldId"
+	i, err := strconv.Atoi(id)
+	if err != nil {
+		return 0, fmt.Errorf("%s: %w", op, err)
+	}
+	return WorldId(i), nil
+}
 
 type StatsByFactions struct {
 	All   int
@@ -93,6 +112,19 @@ type Character struct {
 	Platform  string
 }
 
+type Outfit struct {
+	Id   string
+	Name string
+	Tag  string
+}
+
+type Facility struct {
+	Id     string
+	Name   string
+	Type   string
+	ZoneId ZoneId
+}
+
 var ErrWorldNotFound = fmt.Errorf("world not found")
 var ZoneNames = map[ZoneId]string{
 	2:   "Indar",
@@ -100,7 +132,13 @@ var ZoneNames = map[ZoneId]string{
 	6:   "Amerish",
 	8:   "Esamir",
 	344: "Oshur",
-	14:  "Koltyr",
+}
+var ZoneFacilitiesCount = map[ZoneId]int{
+	2:   89,
+	4:   88,
+	6:   81,
+	8:   51,
+	344: 75,
 }
 var WorldNames = map[WorldId]string{
 	1:    "Connery",
