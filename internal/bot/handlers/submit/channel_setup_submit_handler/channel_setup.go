@@ -18,19 +18,20 @@ type Saver interface {
 func New(
 	characterIdsLoader loaders.QueriedLoader[[]string, []string],
 	characterNamesLoader loaders.QueriedLoader[[]string, []string],
+	outfitIdsLoader loaders.QueriedLoader[[]string, []string],
 	outfitTagsLoader loaders.QueriedLoader[[]string, []string],
 	saver Saver,
 ) handlers.InteractionHandler {
 	return handlers.DeferredEphemeralResponse(func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.WebhookEdit, error) {
 		data := i.ModalSubmitData()
 		var err error
-		var outfitsTags []string
+		var outfitsIds []string
 		outfitTagsFromInput := stringsx.SplitAndTrim(
 			data.Components[0].(*discordgo.ActionsRow).Components[0].(*discordgo.TextInput).Value,
 			",",
 		)
 		if outfitTagsFromInput[0] != "" {
-			outfitsTags, err = outfitTagsLoader.Load(ctx, outfitTagsFromInput)
+			outfitsIds, err = outfitIdsLoader.Load(ctx, outfitTagsFromInput)
 			if err != nil {
 				return nil, err
 			}
@@ -50,10 +51,14 @@ func New(
 			ctx,
 			i.ChannelID,
 			meta.SubscriptionSettings{
-				Outfits:    outfitsTags,
+				Outfits:    outfitsIds,
 				Characters: charIds,
 			},
 		)
+		if err != nil {
+			return nil, err
+		}
+		outfitTags, err := outfitTagsLoader.Load(ctx, outfitsIds)
 		if err != nil {
 			return nil, err
 		}
@@ -62,7 +67,7 @@ func New(
 			return nil, err
 		}
 		content := render.RenderSubscriptionsSettingsUpdate(meta.SubscriptionSettings{
-			Outfits:    outfitsTags,
+			Outfits:    outfitTags,
 			Characters: charNames,
 		})
 		return &discordgo.WebhookEdit{

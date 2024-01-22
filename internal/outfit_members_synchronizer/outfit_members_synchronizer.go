@@ -45,21 +45,21 @@ func New(
 	}
 }
 
-func (s *OutfitMembersSynchronizer) saveMembers(ctx context.Context, wg *sync.WaitGroup, outfitTag string, members []string) {
+func (s *OutfitMembersSynchronizer) saveMembers(ctx context.Context, wg *sync.WaitGroup, outfitId string, members []string) {
 	const op = "outfit_members_synchronizer.OutfitMembersSynchronizer.saveMembers"
-	log := infra.OpLogger(ctx, op).With(slog.String("outfit", outfitTag), slog.Int("members_count", len(members)))
+	log := infra.OpLogger(ctx, op).With(slog.String("outfitId", outfitId), slog.Int("members_count", len(members)))
 	defer wg.Done()
-	if err := s.membersSaver.Save(ctx, outfitTag, members); err != nil {
+	if err := s.membersSaver.Save(ctx, outfitId, members); err != nil {
 		log.Error("failed to save members", sl.Err(err))
 	}
 }
 
-func (s *OutfitMembersSynchronizer) SyncOutfit(ctx context.Context, wg *sync.WaitGroup, outfitTag string) {
+func (s *OutfitMembersSynchronizer) SyncOutfit(ctx context.Context, wg *sync.WaitGroup, outfitId string) {
 	const op = "outfit_members_synchronizer.OutfitMembersSynchronizer.SyncOutfit"
-	log := infra.Logger(ctx).With(infra.Op(op), slog.String("outfit", outfitTag))
+	log := infra.Logger(ctx).With(infra.Op(op), slog.String("outfitId", outfitId))
 	retry.RetryWhileWithRecover(retry.Retryable{
 		Try: func() error {
-			syncAt, err := s.outfitSyncAtLoader.Load(ctx, outfitTag)
+			syncAt, err := s.outfitSyncAtLoader.Load(ctx, outfitId)
 			isNotFound := errors.Is(err, loaders.ErrNotFound)
 			if err != nil && !isNotFound {
 				log.Error("failed to load last sync time", sl.Err(err))
@@ -69,14 +69,14 @@ func (s *OutfitMembersSynchronizer) SyncOutfit(ctx context.Context, wg *sync.Wai
 				log.Debug("skipping sync")
 				return nil
 			}
-			members, err := s.censusMembersLoader.Load(ctx, outfitTag)
+			members, err := s.censusMembersLoader.Load(ctx, outfitId)
 			log.Debug("synchronizing", slog.Int("members", len(members)))
 			if err != nil {
 				log.Error("failed to load members from census", sl.Err(err))
 				return err
 			}
 			wg.Add(1)
-			go s.saveMembers(ctx, wg, outfitTag, members)
+			go s.saveMembers(ctx, wg, outfitId, members)
 			return nil
 		},
 		While: retry.ContextIsNotCanceledAndMaxRetriesNotExceeded(3),

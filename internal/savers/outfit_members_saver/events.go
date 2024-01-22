@@ -8,8 +8,8 @@ const (
 )
 
 type OutfitMembersInit struct {
-	OutfitTag string
-	Members   []string
+	OutfitId string
+	Members  []string
 }
 
 func (e OutfitMembersInit) Type() string {
@@ -17,8 +17,8 @@ func (e OutfitMembersInit) Type() string {
 }
 
 type OutfitMembersUpdate struct {
-	OutfitTag string
-	Members   diff.Diff[string]
+	OutfitId string
+	Members  diff.Diff[string]
 }
 
 func (e OutfitMembersUpdate) Type() string {

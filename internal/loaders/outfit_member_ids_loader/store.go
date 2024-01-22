@@ -18,6 +18,6 @@ func NewStorage(storage *sqlite.Storage, platform string) *StoreLoader {
 	}
 }
 
-func (l *StoreLoader) Load(ctx context.Context, outfitTag string) ([]string, error) {
-	return l.storage.OutfitMembers(ctx, l.platform, outfitTag)
+func (l *StoreLoader) Load(ctx context.Context, outfitId string) ([]string, error) {
+	return l.storage.OutfitMembers(ctx, l.platform, outfitId)
 }

@@ -123,7 +123,7 @@ func startOutfitMembersSynchronizers(
 					log.Warn("platform not found", slog.String("platform", saved.Platform))
 					continue
 				}
-				os.SyncOutfit(ctx, wg, saved.OutfitTag)
+				os.SyncOutfit(ctx, wg, saved.OutfitId)
 			}
 		}
 	}()

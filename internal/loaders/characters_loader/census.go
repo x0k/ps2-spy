@@ -52,7 +52,7 @@ func (l *CensusLoader) Load(ctx context.Context, charIds []string) (map[string]p
 			Id:        char.CharacterId,
 			FactionId: char.FactionId,
 			Name:      char.Name.First,
-			OutfitTag: char.Outfit.Alias,
+			OutfitId:  char.Outfit.Alias,
 			WorldId:   ps2.WorldId(wId),
 			Platform:  platforms.PC,
 		}

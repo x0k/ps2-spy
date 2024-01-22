@@ -36,23 +36,23 @@ func (s *SubscriptionSettingsSaver) Save(ctx context.Context, channelId string, 
 		ctx,
 		len(diff.Outfits.ToAdd)+len(diff.Outfits.ToDel)+len(diff.Characters.ToAdd)+len(diff.Characters.ToDel),
 		func(tx *sqlite.Storage) error {
-			for _, outfit := range diff.Outfits.ToDel {
-				if err := tx.DeleteChannelOutfit(ctx, channelId, s.platform, outfit); err != nil {
+			for _, outfitId := range diff.Outfits.ToDel {
+				if err := tx.DeleteChannelOutfit(ctx, channelId, s.platform, outfitId); err != nil {
 					return err
 				}
 			}
-			for _, outfit := range diff.Outfits.ToAdd {
-				if err := tx.SaveChannelOutfit(ctx, channelId, s.platform, outfit); err != nil {
+			for _, outfitId := range diff.Outfits.ToAdd {
+				if err := tx.SaveChannelOutfit(ctx, channelId, s.platform, outfitId); err != nil {
 					return err
 				}
 			}
-			for _, character := range diff.Characters.ToDel {
-				if err := tx.DeleteChannelCharacter(ctx, channelId, s.platform, character); err != nil {
+			for _, characterId := range diff.Characters.ToDel {
+				if err := tx.DeleteChannelCharacter(ctx, channelId, s.platform, characterId); err != nil {
 					return err
 				}
 			}
-			for _, character := range diff.Characters.ToAdd {
-				if err := tx.SaveChannelCharacter(ctx, channelId, s.platform, character); err != nil {
+			for _, characterId := range diff.Characters.ToAdd {
+				if err := tx.SaveChannelCharacter(ctx, channelId, s.platform, characterId); err != nil {
 					return err
 				}
 			}

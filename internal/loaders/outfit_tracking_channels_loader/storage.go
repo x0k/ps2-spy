@@ -18,6 +18,6 @@ func NewStorage(storage *sqlite.Storage, platform string) *StorageLoader {
 	}
 }
 
-func (s *StorageLoader) Load(ctx context.Context, outfitTag string) ([]string, error) {
-	return s.storage.TrackingChannelsIdsForOutfit(ctx, s.platform, outfitTag)
+func (s *StorageLoader) Load(ctx context.Context, outfitId string) ([]string, error) {
+	return s.storage.TrackingChannelsIdsForOutfit(ctx, s.platform, outfitId)
 }

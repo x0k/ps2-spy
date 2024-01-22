@@ -1,6 +1,11 @@
 package storage
 
-import "time"
+import (
+	"time"
+
+	"github.com/x0k/ps2-spy/internal/ps2"
+	"github.com/x0k/ps2-spy/internal/ps2/platforms"
+)
 
 const (
 	ChannelOutfitSavedType      = "channel_outfit_saved"
@@ -14,8 +19,8 @@ const (
 
 type ChannelOutfitSaved struct {
 	ChannelId string
-	Platform  string
-	OutfitTag string
+	Platform  platforms.Platform
+	OutfitId  ps2.OutfitId
 }
 
 func (e ChannelOutfitSaved) Type() string {
@@ -24,8 +29,8 @@ func (e ChannelOutfitSaved) Type() string {
 
 type ChannelOutfitDeleted struct {
 	ChannelId string
-	Platform  string
-	OutfitTag string
+	Platform  platforms.Platform
+	OutfitId  ps2.OutfitId
 }
 
 func (e ChannelOutfitDeleted) Type() string {
@@ -34,8 +39,8 @@ func (e ChannelOutfitDeleted) Type() string {
 
 type ChannelCharacterSaved struct {
 	ChannelId   string
-	Platform    string
-	CharacterId string
+	Platform    platforms.Platform
+	CharacterId ps2.CharacterId
 }
 
 func (e ChannelCharacterSaved) Type() string {
@@ -44,8 +49,8 @@ func (e ChannelCharacterSaved) Type() string {
 
 type ChannelCharacterDeleted struct {
 	ChannelId   string
-	Platform    string
-	CharacterId string
+	Platform    platforms.Platform
+	CharacterId ps2.CharacterId
 }
 
 func (e ChannelCharacterDeleted) Type() string {
@@ -53,9 +58,9 @@ func (e ChannelCharacterDeleted) Type() string {
 }
 
 type OutfitMemberSaved struct {
-	Platform    string
-	OutfitTag   string
-	CharacterId string
+	Platform    platforms.Platform
+	OutfitId    ps2.OutfitId
+	CharacterId ps2.CharacterId
 }
 
 func (e OutfitMemberSaved) Type() string {
@@ -63,9 +68,9 @@ func (e OutfitMemberSaved) Type() string {
 }
 
 type OutfitMemberDeleted struct {
-	Platform    string
-	OutfitTag   string
-	CharacterId string
+	Platform    platforms.Platform
+	OutfitId    ps2.OutfitId
+	CharacterId ps2.CharacterId
 }
 
 func (e OutfitMemberDeleted) Type() string {
@@ -73,8 +78,8 @@ func (e OutfitMemberDeleted) Type() string {
 }
 
 type OutfitSynchronized struct {
-	Platform       string
-	OutfitTag      string
+	Platform       platforms.Platform
+	OutfitId       ps2.OutfitId
 	SynchronizedAt time.Time
 }
 

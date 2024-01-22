@@ -46,7 +46,7 @@ func New(
 			}
 			toDell = append(toDell, char)
 		}
-		return render.RenderOutfitMembersUpdate(event.OutfitTag, diff.Diff[ps2.Character]{
+		return render.RenderOutfitMembersUpdate(event.OutfitId, diff.Diff[ps2.Character]{
 			ToAdd: toAdd,
 			ToDel: toDell,
 		}), nil

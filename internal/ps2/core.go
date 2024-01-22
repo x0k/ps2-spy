@@ -103,23 +103,29 @@ type Alert struct {
 
 type Alerts []Alert
 
+type CharacterId string
+
 type Character struct {
-	Id        string
+	Id        CharacterId
 	FactionId string
 	Name      string
-	OutfitTag string
+	OutfitId  string
 	WorldId   WorldId
 	Platform  string
 }
 
+type OutfitId string
+
 type Outfit struct {
-	Id   string
+	Id   OutfitId
 	Name string
 	Tag  string
 }
 
+type FacilityId string
+
 type Facility struct {
-	Id     string
+	Id     FacilityId
 	Name   string
 	Type   string
 	ZoneId ZoneId
