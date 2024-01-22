@@ -9,6 +9,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/stringsx"
 	"github.com/x0k/ps2-spy/internal/loaders"
 	"github.com/x0k/ps2-spy/internal/meta"
+	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
 type Saver interface {
@@ -16,33 +17,33 @@ type Saver interface {
 }
 
 func New(
-	characterIdsLoader loaders.QueriedLoader[[]string, []string],
-	characterNamesLoader loaders.QueriedLoader[[]string, []string],
-	outfitIdsLoader loaders.QueriedLoader[[]string, []string],
-	outfitTagsLoader loaders.QueriedLoader[[]string, []string],
+	charactersLoader loaders.QueriedLoader[[]string, []ps2.CharacterId],
+	characterNamesLoader loaders.QueriedLoader[[]ps2.CharacterId, []string],
+	outfitsLoader loaders.QueriedLoader[[]string, []ps2.OutfitId],
+	outfitTagsLoader loaders.QueriedLoader[[]ps2.OutfitId, []string],
 	saver Saver,
 ) handlers.InteractionHandler {
 	return handlers.DeferredEphemeralResponse(func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.WebhookEdit, error) {
 		data := i.ModalSubmitData()
 		var err error
-		var outfitsIds []string
+		var outfitsIds []ps2.OutfitId
 		outfitTagsFromInput := stringsx.SplitAndTrim(
 			data.Components[0].(*discordgo.ActionsRow).Components[0].(*discordgo.TextInput).Value,
 			",",
 		)
 		if outfitTagsFromInput[0] != "" {
-			outfitsIds, err = outfitIdsLoader.Load(ctx, outfitTagsFromInput)
+			outfitsIds, err = outfitsLoader.Load(ctx, outfitTagsFromInput)
 			if err != nil {
 				return nil, err
 			}
 		}
-		var charIds []string
+		var charIds []ps2.CharacterId
 		charNamesFromInput := stringsx.SplitAndTrim(
 			data.Components[1].(*discordgo.ActionsRow).Components[0].(*discordgo.TextInput).Value,
 			",",
 		)
 		if charNamesFromInput[0] != "" {
-			charIds, err = characterIdsLoader.Load(ctx, charNamesFromInput)
+			charIds, err = charactersLoader.Load(ctx, charNamesFromInput)
 			if err != nil {
 				return nil, err
 			}
@@ -66,7 +67,7 @@ func New(
 		if err != nil {
 			return nil, err
 		}
-		content := render.RenderSubscriptionsSettingsUpdate(meta.SubscriptionSettings{
+		content := render.RenderSubscriptionsSettingsUpdate(meta.TrackableEntities[[]string, []string]{
 			Outfits:    outfitTags,
 			Characters: charNames,
 		})

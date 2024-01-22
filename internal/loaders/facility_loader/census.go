@@ -28,16 +28,16 @@ func NewCensus(client *census2.Client, ns string) *CensusLoader {
 	}
 }
 
-func (l *CensusLoader) toUrl(facilityId string) string {
+func (l *CensusLoader) toUrl(facilityId ps2.FacilityId) string {
 	l.queryMu.Lock()
 	defer l.queryMu.Unlock()
 	l.operand.Set(census2.Str(facilityId))
 	return l.client.ToURL(l.query)
 }
 
-func (l *CensusLoader) Load(ctx context.Context, facilityId string) (ps2.Facility, error) {
+func (l *CensusLoader) Load(ctx context.Context, facilityId ps2.FacilityId) (ps2.Facility, error) {
 	url := l.toUrl(facilityId)
-	outfits, err := census2.ExecutePreparedAndDecode[collections.MapRegionItem](
+	regions, err := census2.ExecutePreparedAndDecode[collections.MapRegionItem](
 		ctx,
 		l.client,
 		collections.MapRegion,
@@ -46,17 +46,17 @@ func (l *CensusLoader) Load(ctx context.Context, facilityId string) (ps2.Facilit
 	if err != nil {
 		return ps2.Facility{}, err
 	}
-	if len(outfits) == 0 {
+	if len(regions) == 0 {
 		return ps2.Facility{}, loaders.ErrNotFound
 	}
-	zoneId, err := ps2.ToZoneId(outfits[0].ZoneId)
+	zoneId, err := ps2.ToZoneId(regions[0].ZoneId)
 	if err != nil {
 		return ps2.Facility{}, err
 	}
 	return ps2.Facility{
-		Id:     outfits[0].FacilityId,
-		Name:   outfits[0].FacilityName,
-		Type:   outfits[0].FacilityType,
+		Id:     ps2.FacilityId(regions[0].FacilityId),
+		Name:   regions[0].FacilityName,
+		Type:   regions[0].FacilityType,
 		ZoneId: zoneId,
 	}, nil
 }

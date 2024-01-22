@@ -15,7 +15,7 @@ import (
 type FacilitiesManager struct {
 	stateMu sync.Mutex
 	// worldId -> zoneId -> facilityId -> outfitId
-	state     map[string]map[string]map[string]string
+	state     map[string]map[string]map[string]ps2.OutfitId
 	publisher publisher.Abstract[publisher.Event]
 }
 
@@ -23,11 +23,11 @@ func New(
 	worldIds []string,
 	publisher publisher.Abstract[publisher.Event],
 ) *FacilitiesManager {
-	worlds := make(map[string]map[string]map[string]string, len(worldIds))
+	worlds := make(map[string]map[string]map[string]ps2.OutfitId, len(worldIds))
 	for _, worldId := range worldIds {
-		world := make(map[string]map[string]string, len(ps2.ZoneNames))
+		world := make(map[string]map[string]ps2.OutfitId, len(ps2.ZoneNames))
 		for zoneId := range ps2.ZoneNames {
-			world[strconv.Itoa(int(zoneId))] = make(map[string]string, ps2.ZoneFacilitiesCount[zoneId])
+			world[strconv.Itoa(int(zoneId))] = make(map[string]ps2.OutfitId, ps2.ZoneFacilitiesCount[zoneId])
 		}
 		worlds[worldId] = world
 	}
@@ -37,22 +37,23 @@ func New(
 	}
 }
 
-func (fm *FacilitiesManager) updateState(event ps2events.FacilityControl) string {
+func (fm *FacilitiesManager) updateState(event ps2events.FacilityControl) ps2.OutfitId {
 	fm.stateMu.Lock()
 	defer fm.stateMu.Unlock()
-	// This maps make should never happen, but just in case
 	world := fm.state[event.WorldID]
+	// This maps make should never happen, but just in case
 	if world == nil {
-		world = make(map[string]map[string]string)
+		world = make(map[string]map[string]ps2.OutfitId)
 		fm.state[event.WorldID] = world
 	}
 	zone := world[event.ZoneID]
+	// This maps make should never happen, but just in case
 	if zone == nil {
-		zone = make(map[string]string)
+		zone = make(map[string]ps2.OutfitId)
 		world[event.ZoneID] = zone
 	}
 	oldOutfitId := zone[event.FacilityID]
-	zone[event.FacilityID] = event.OutfitID
+	zone[event.FacilityID] = ps2.OutfitId(event.OutfitID)
 	return oldOutfitId
 }
 

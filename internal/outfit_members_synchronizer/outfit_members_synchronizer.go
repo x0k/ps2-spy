@@ -12,17 +12,18 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/lib/retry"
 	"github.com/x0k/ps2-spy/internal/loaders"
+	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
 type Saver interface {
-	Save(ctx context.Context, outfit string, members []string) error
+	Save(ctx context.Context, outfit ps2.OutfitId, members []ps2.CharacterId) error
 }
 
 type OutfitMembersSynchronizer struct {
 	// Loaders and saver are platform specific
-	censusMembersLoader    loaders.KeyedLoader[string, []string]
-	outfitSyncAtLoader     loaders.KeyedLoader[string, time.Time]
-	trackableOutfitsLoader loaders.Loader[[]string]
+	censusMembersLoader    loaders.KeyedLoader[ps2.OutfitId, []ps2.CharacterId]
+	outfitSyncAtLoader     loaders.KeyedLoader[ps2.OutfitId, time.Time]
+	trackableOutfitsLoader loaders.Loader[[]ps2.OutfitId]
 	membersSaver           Saver
 	refreshInterval        time.Duration
 	ticker                 *time.Ticker
@@ -30,9 +31,9 @@ type OutfitMembersSynchronizer struct {
 }
 
 func New(
-	trackableOutfitsLoader loaders.Loader[[]string],
-	outfitSyncAtLoader loaders.KeyedLoader[string, time.Time],
-	censusMembersLoader loaders.KeyedLoader[string, []string],
+	trackableOutfitsLoader loaders.Loader[[]ps2.OutfitId],
+	outfitSyncAtLoader loaders.KeyedLoader[ps2.OutfitId, time.Time],
+	censusMembersLoader loaders.KeyedLoader[ps2.OutfitId, []ps2.CharacterId],
 	membersSaver Saver,
 	refreshInterval time.Duration,
 ) *OutfitMembersSynchronizer {
@@ -45,18 +46,18 @@ func New(
 	}
 }
 
-func (s *OutfitMembersSynchronizer) saveMembers(ctx context.Context, wg *sync.WaitGroup, outfitId string, members []string) {
+func (s *OutfitMembersSynchronizer) saveMembers(ctx context.Context, wg *sync.WaitGroup, outfitId ps2.OutfitId, members []ps2.CharacterId) {
 	const op = "outfit_members_synchronizer.OutfitMembersSynchronizer.saveMembers"
-	log := infra.OpLogger(ctx, op).With(slog.String("outfitId", outfitId), slog.Int("members_count", len(members)))
+	log := infra.OpLogger(ctx, op).With(slog.String("outfitId", string(outfitId)), slog.Int("members_count", len(members)))
 	defer wg.Done()
 	if err := s.membersSaver.Save(ctx, outfitId, members); err != nil {
 		log.Error("failed to save members", sl.Err(err))
 	}
 }
 
-func (s *OutfitMembersSynchronizer) SyncOutfit(ctx context.Context, wg *sync.WaitGroup, outfitId string) {
+func (s *OutfitMembersSynchronizer) SyncOutfit(ctx context.Context, wg *sync.WaitGroup, outfitId ps2.OutfitId) {
 	const op = "outfit_members_synchronizer.OutfitMembersSynchronizer.SyncOutfit"
-	log := infra.Logger(ctx).With(infra.Op(op), slog.String("outfitId", outfitId))
+	log := infra.Logger(ctx).With(infra.Op(op), slog.String("outfitId", string(outfitId)))
 	retry.RetryWhileWithRecover(retry.Retryable{
 		Try: func() error {
 			syncAt, err := s.outfitSyncAtLoader.Load(ctx, outfitId)

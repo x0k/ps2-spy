@@ -6,6 +6,7 @@ import (
 
 	"github.com/x0k/ps2-spy/internal/lib/census2"
 	collections "github.com/x0k/ps2-spy/internal/lib/census2/collections/ps2"
+	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
 type CensusLoader struct {
@@ -25,18 +26,22 @@ func NewCensus(client *census2.Client, ns string) *CensusLoader {
 	}
 }
 
-func (l *CensusLoader) toURL(charIds []string) string {
+func (l *CensusLoader) toURL(charIds []census2.Str) string {
 	l.queryMu.Lock()
 	defer l.queryMu.Unlock()
-	l.operand.Set(census2.StrList(charIds...))
+	l.operand.Set(census2.NewList(charIds, ","))
 	return l.client.ToURL(l.query)
 }
 
-func (l *CensusLoader) Load(ctx context.Context, charIds []string) ([]string, error) {
+func (l *CensusLoader) Load(ctx context.Context, charIds []ps2.CharacterId) ([]string, error) {
 	if len(charIds) == 0 {
 		return nil, nil
 	}
-	url := l.toURL(charIds)
+	strCharIds := make([]census2.Str, len(charIds))
+	for i, charId := range charIds {
+		strCharIds[i] = census2.Str(charId)
+	}
+	url := l.toURL(strCharIds)
 	chars, err := census2.ExecutePreparedAndDecode[collections.CharacterItem](
 		ctx,
 		l.client,

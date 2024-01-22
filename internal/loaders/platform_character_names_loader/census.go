@@ -4,9 +4,10 @@ import (
 	"context"
 	"sync"
 
-	"github.com/x0k/ps2-spy/internal/bot/handlers/command/channel_setup_command_handler"
 	"github.com/x0k/ps2-spy/internal/lib/census2"
 	collections "github.com/x0k/ps2-spy/internal/lib/census2/collections/ps2"
+	"github.com/x0k/ps2-spy/internal/meta"
+	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
 
@@ -27,23 +28,24 @@ func NewCensus(client *census2.Client) *CensusLoader {
 	}
 }
 
-func (l *CensusLoader) toURL(ns string, charIds []string) string {
+func (l *CensusLoader) toURL(ns string, charIds []census2.Str) string {
 	l.queryMu.Lock()
 	defer l.queryMu.Unlock()
 	l.query.SetNamespace(ns)
-	l.operand.Set(census2.StrList(charIds...))
+	l.operand.Set(census2.NewList(charIds, ","))
 	return l.client.ToURL(l.query)
 }
 
-func (l *CensusLoader) Load(ctx context.Context, query channel_setup_command_handler.PlatformQuery) ([]string, error) {
+func (l *CensusLoader) Load(ctx context.Context, query meta.PlatformQuery[ps2.CharacterId]) ([]string, error) {
 	if len(query.Items) == 0 {
 		return nil, nil
 	}
-	ns, err := platforms.PlatformNamespace(query.Platform)
-	if err != nil {
-		return nil, err
+	ns := platforms.PlatformNamespace(query.Platform)
+	strCharIds := make([]census2.Str, len(query.Items))
+	for i, charId := range query.Items {
+		strCharIds[i] = census2.Str(string(charId))
 	}
-	url := l.toURL(ns, query.Items)
+	url := l.toURL(ns, strCharIds)
 	chars, err := census2.ExecutePreparedAndDecode[collections.CharacterItem](
 		ctx,
 		l.client,

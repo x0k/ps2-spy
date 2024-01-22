@@ -17,9 +17,9 @@ func NewCommandHandlers(
 	worldPopLoader loaders.QueriedLoader[loaders.MultiLoaderQuery[ps2.WorldId], loaders.Loaded[ps2.DetailedWorldPopulation]],
 	alertsLoader loaders.KeyedLoader[string, loaders.Loaded[ps2.Alerts]],
 	worldAlertsLoader loaders.QueriedLoader[loaders.MultiLoaderQuery[ps2.WorldId], loaders.Loaded[ps2.Alerts]],
-	settingsLoader loaders.KeyedLoader[[2]string, meta.SubscriptionSettings],
-	charNamesLoader loaders.QueriedLoader[channel_setup_command_handler.PlatformQuery, []string],
-	outfitTagsLoader loaders.QueriedLoader[channel_setup_command_handler.PlatformQuery, []string],
+	settingsLoader loaders.KeyedLoader[meta.SettingsQuery, meta.SubscriptionSettings],
+	charNamesLoader loaders.QueriedLoader[meta.PlatformQuery[ps2.CharacterId], []string],
+	outfitTagsLoader loaders.QueriedLoader[meta.PlatformQuery[ps2.OutfitId], []string],
 ) map[string]handlers.InteractionHandler {
 	return map[string]handlers.InteractionHandler{
 		"population":        population_command_handler.New(popLoader),

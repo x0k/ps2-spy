@@ -6,7 +6,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/meta"
 )
 
-func RenderSubscriptionsSettingsUpdate(newSettings meta.SubscriptionSettings) string {
+func RenderSubscriptionsSettingsUpdate(newSettings meta.TrackableEntities[[]string, []string]) string {
 	builder := strings.Builder{}
 	builder.WriteString("Settings are updated.\n\n**Outfits:**\n")
 	outfits := newSettings.Outfits

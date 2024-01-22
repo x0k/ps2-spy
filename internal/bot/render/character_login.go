@@ -8,10 +8,10 @@ import (
 )
 
 func RenderCharacterLogin(char ps2.Character) string {
-	if char.OutfitId != "" {
+	if char.OutfitTag != "" {
 		return fmt.Sprintf(
 			"[%s] %s (%s) is now on %s",
-			char.OutfitId,
+			char.OutfitTag,
 			char.Name,
 			factions.FactionNameById(char.FactionId),
 			ps2.WorldNameById(char.WorldId),

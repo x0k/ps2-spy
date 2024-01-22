@@ -8,10 +8,10 @@ import (
 )
 
 func RenderCharacterLogout(char ps2.Character) string {
-	if char.OutfitId != "" {
+	if char.OutfitTag != "" {
 		return fmt.Sprintf(
 			"[%s] %s (%s) is now offline",
-			char.OutfitId,
+			char.OutfitTag,
 			char.Name,
 			factions.FactionNameById(char.FactionId),
 		)

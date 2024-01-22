@@ -21,7 +21,7 @@ const (
 	CHANNEL_SETUP_PS4_US_MODAL = "channel_setup_ps4_us"
 )
 
-var PlatformModals = map[string]string{
+var PlatformModals = map[platforms.Platform]string{
 	platforms.PC:     CHANNEL_SETUP_PC_MODAL,
 	platforms.PS4_EU: CHANNEL_SETUP_PS4_EU_MODAL,
 	platforms.PS4_US: CHANNEL_SETUP_PS4_US_MODAL,
@@ -87,10 +87,6 @@ func ShowModal(handle func(ctx context.Context, s *discordgo.Session, i *discord
 			Data: data,
 		})
 	}
-}
-
-type TrackingManager interface {
-	ChannelIds(ctx context.Context, event any) ([]string, error)
 }
 
 type Ps2EventHandlerConfig struct {

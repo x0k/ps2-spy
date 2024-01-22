@@ -28,14 +28,14 @@ func NewCensus(client *census2.Client, ns string) *CensusLoader {
 	}
 }
 
-func (l *CensusLoader) toUrl(outfitId string) string {
+func (l *CensusLoader) toUrl(outfitId ps2.OutfitId) string {
 	l.queryMu.Lock()
 	defer l.queryMu.Unlock()
 	l.operand.Set(census2.Str(outfitId))
 	return l.client.ToURL(l.query)
 }
 
-func (l *CensusLoader) Load(ctx context.Context, outfitId string) (ps2.Outfit, error) {
+func (l *CensusLoader) Load(ctx context.Context, outfitId ps2.OutfitId) (ps2.Outfit, error) {
 	url := l.toUrl(outfitId)
 	outfits, err := census2.ExecutePreparedAndDecode[collections.OutfitItem](
 		ctx,
@@ -50,7 +50,7 @@ func (l *CensusLoader) Load(ctx context.Context, outfitId string) (ps2.Outfit, e
 		return ps2.Outfit{}, loaders.ErrNotFound
 	}
 	return ps2.Outfit{
-		Id:   outfits[0].OutfitId,
+		Id:   ps2.OutfitId(outfits[0].OutfitId),
 		Name: outfits[0].Name,
 		Tag:  outfits[0].Alias,
 	}, nil

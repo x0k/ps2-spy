@@ -13,6 +13,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/loaders/trackable_character_ids_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/trackable_outfits_with_duplication_loader"
 	"github.com/x0k/ps2-spy/internal/ps2"
+	"github.com/x0k/ps2-spy/internal/ps2/platforms"
 	"github.com/x0k/ps2-spy/internal/publisher"
 	"github.com/x0k/ps2-spy/internal/storage"
 	"github.com/x0k/ps2-spy/internal/storage/sqlite"
@@ -21,9 +22,9 @@ import (
 
 func newTrackingManager(
 	storage *sqlite.Storage,
-	characterLoader loaders.KeyedLoader[string, ps2.Character],
+	characterLoader loaders.KeyedLoader[ps2.CharacterId, ps2.Character],
 	characterTrackingChannelsLoader loaders.KeyedLoader[ps2.Character, []string],
-	platform string,
+	platform platforms.Platform,
 ) *tracking_manager.TrackingManager {
 	trackableCharactersLoader := trackable_character_ids_loader.NewStorage(storage, platform)
 	outfitMembersLoader := outfit_member_ids_loader.NewStorage(storage, platform)
@@ -41,7 +42,7 @@ func newTrackingManager(
 
 func startTrackingManager(
 	ctx context.Context,
-	tms map[string]*tracking_manager.TrackingManager,
+	tms map[platforms.Platform]*tracking_manager.TrackingManager,
 	publisher *publisher.Publisher,
 ) error {
 	const op = "startTrackingManager"
@@ -96,58 +97,58 @@ func startTrackingManager(
 			case e := <-channelCharacterSaved:
 				tm, ok := tms[e.Platform]
 				if !ok {
-					log.Warn("unknown platform: %s", slog.String("platform", e.Platform))
+					log.Warn("unknown platform: %s", slog.String("platform", string(e.Platform)))
 					continue
 				}
 				tm.TrackCharacter(e.CharacterId)
 			case e := <-channelCharacterDeleted:
 				tm, ok := tms[e.Platform]
 				if !ok {
-					log.Warn("unknown platform", slog.String("platform", e.Platform))
+					log.Warn("unknown platform", slog.String("platform", string(e.Platform)))
 					continue
 				}
 				tm.UntrackCharacter(e.CharacterId)
 			case e := <-outfitMemberSaved:
 				tm, ok := tms[e.Platform]
 				if !ok {
-					log.Warn("unknown platform", slog.String("platform", e.Platform))
+					log.Warn("unknown platform", slog.String("platform", string(e.Platform)))
 					continue
 				}
 				tm.TrackOutfitMember(e.CharacterId, e.OutfitId)
 			case e := <-outfitMemberDeleted:
 				tm, ok := tms[e.Platform]
 				if !ok {
-					log.Warn("unknown platform", slog.String("platform", e.Platform))
+					log.Warn("unknown platform", slog.String("platform", string(e.Platform)))
 					continue
 				}
 				tm.UntrackOutfitMember(e.CharacterId, e.OutfitId)
 			case e := <-channelOutfitSaved:
 				tm, ok := tms[e.Platform]
 				if !ok {
-					log.Warn("unknown platform", slog.String("platform", e.Platform))
+					log.Warn("unknown platform", slog.String("platform", string(e.Platform)))
 					continue
 				}
 				err := tm.TrackOutfit(ctx, e.OutfitId)
 				if err != nil {
 					log.Error(
 						"failed to track outfit",
-						slog.String("platform", e.Platform),
-						slog.String("outfitId", e.OutfitId),
+						slog.String("platform", string(e.Platform)),
+						slog.String("outfitId", string(e.OutfitId)),
 						sl.Err(err),
 					)
 				}
 			case e := <-channelOutfitDeleted:
 				tm, ok := tms[e.Platform]
 				if !ok {
-					log.Warn("unknown platform", slog.String("platform", e.Platform))
+					log.Warn("unknown platform", slog.String("platform", string(e.Platform)))
 					continue
 				}
 				err := tm.UntrackOutfit(ctx, e.OutfitId)
 				if err != nil {
 					log.Error(
 						"failed to untrack outfit",
-						slog.String("platform", e.Platform),
-						slog.String("outfitId", e.OutfitId),
+						slog.String("platform", string(e.Platform)),
+						slog.String("outfitId", string(e.OutfitId)),
 						sl.Err(err),
 					)
 				}
