@@ -30,13 +30,14 @@ type Bot struct {
 }
 
 type BotConfig struct {
-	DiscordToken                 string
-	RemoveCommands               bool
-	CommandHandlerTimeout        time.Duration
-	Ps2EventHandlerTimeout       time.Duration
-	Commands                     []*discordgo.ApplicationCommand
-	CommandHandlers              map[string]handlers.InteractionHandler
-	SubmitHandlers               map[string]handlers.InteractionHandler
+	DiscordToken           string
+	RemoveCommands         bool
+	CommandHandlerTimeout  time.Duration
+	Ps2EventHandlerTimeout time.Duration
+	Commands               []*discordgo.ApplicationCommand
+	CommandHandlers        map[string]handlers.InteractionHandler
+	SubmitHandlers         map[string]handlers.InteractionHandler
+	EventHandlers
 	EventTrackingChannelsLoaders map[platforms.Platform]loaders.QueriedLoader[any, []meta.ChannelId]
 	// Raw PS2 events
 	Ps2EventsPublishers  map[platforms.Platform]*publisher.Publisher
