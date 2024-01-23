@@ -2,56 +2,44 @@ package relogin_event_omitter
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"sync"
 	"time"
 
 	"github.com/x0k/ps2-spy/internal/infra"
-	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/core"
 	ps2events "github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
 	"github.com/x0k/ps2-spy/internal/lib/publisher"
 )
 
+var ErrConvertEvent = fmt.Errorf("failed to convert event")
+
 type ReLoginOmitter struct {
-	pub               publisher.Abstract[map[string]any]
+	pub               publisher.Abstract[publisher.Event]
 	batchMu           sync.Mutex
-	logoutEventsBatch map[string]map[string]any
+	logoutEventsBatch map[string]*ps2events.PlayerLogout
 	batchInterval     time.Duration
 }
 
-func New(pub publisher.Abstract[map[string]any]) *ReLoginOmitter {
+func New(pub publisher.Abstract[publisher.Event]) *ReLoginOmitter {
 	return &ReLoginOmitter{
 		pub:               pub,
-		logoutEventsBatch: make(map[string]map[string]any, 100),
+		logoutEventsBatch: make(map[string]*ps2events.PlayerLogout, 100),
 		batchInterval:     time.Minute * 3,
 	}
 }
 
-func isLoginEvent(event map[string]any) bool {
-	return event[core.EventNameField].(string) == ps2events.PlayerLoginEventName
-}
-
-func isLogoutEvent(event map[string]any) bool {
-	return event[core.EventNameField].(string) == ps2events.PlayerLogoutEventName
-}
-
-func characterId(event map[string]any) string {
-	return event[ps2events.CharacterIdField].(string)
-}
-
-func (r *ReLoginOmitter) addLogoutEvent(event map[string]any) {
-	characterId := characterId(event)
+func (r *ReLoginOmitter) addLogoutEvent(event *ps2events.PlayerLogout) {
 	r.batchMu.Lock()
 	defer r.batchMu.Unlock()
-	r.logoutEventsBatch[characterId] = event
+	r.logoutEventsBatch[event.CharacterID] = event
 }
 
-func (r *ReLoginOmitter) shouldPublishLoginEvent(event map[string]any) bool {
-	characterId := characterId(event)
+func (r *ReLoginOmitter) shouldPublishLoginEvent(event *ps2events.PlayerLogin) bool {
 	r.batchMu.Lock()
 	defer r.batchMu.Unlock()
-	if _, ok := r.logoutEventsBatch[characterId]; ok {
-		delete(r.logoutEventsBatch, characterId)
+	if _, ok := r.logoutEventsBatch[event.CharacterID]; ok {
+		delete(r.logoutEventsBatch, event.CharacterID)
 		return false
 	}
 	return true
@@ -64,7 +52,7 @@ func (r *ReLoginOmitter) flushLogOutEvents(log *slog.Logger) {
 	for _, event := range r.logoutEventsBatch {
 		r.pub.Publish(event)
 	}
-	r.logoutEventsBatch = make(map[string]map[string]any, len(r.logoutEventsBatch))
+	r.logoutEventsBatch = make(map[string]*ps2events.PlayerLogout, len(r.logoutEventsBatch))
 }
 
 func (r *ReLoginOmitter) flushTask(ctx context.Context, wg *sync.WaitGroup) {
@@ -91,13 +79,22 @@ func (r *ReLoginOmitter) Start(ctx context.Context) {
 	go r.flushTask(ctx, wg)
 }
 
-func (r *ReLoginOmitter) Publish(event map[string]any) error {
-	if isLogoutEvent(event) {
-		r.addLogoutEvent(event)
-		return nil
+func (r *ReLoginOmitter) Publish(event publisher.Event) error {
+	if event.Type() == ps2events.PlayerLogoutEventName {
+		if e, ok := event.(*ps2events.PlayerLogout); ok {
+			r.addLogoutEvent(e)
+			return nil
+		}
+		return ErrConvertEvent
 	}
-	if isLoginEvent(event) && !r.shouldPublishLoginEvent(event) {
-		return nil
+	if event.Type() == ps2events.PlayerLoginEventName {
+		if e, ok := event.(*ps2events.PlayerLogin); ok {
+			if !r.shouldPublishLoginEvent(e) {
+				return nil
+			}
+		} else {
+			return ErrConvertEvent
+		}
 	}
 	return r.pub.Publish(event)
 }

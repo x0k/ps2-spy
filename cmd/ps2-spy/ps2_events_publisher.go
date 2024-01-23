@@ -10,20 +10,32 @@ import (
 	"github.com/x0k/ps2-spy/internal/infra"
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming"
 	ps2commands "github.com/x0k/ps2-spy/internal/lib/census2/streaming/commands"
+	ps2events "github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
 	ps2messages "github.com/x0k/ps2-spy/internal/lib/census2/streaming/messages"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/lib/publisher"
 	"github.com/x0k/ps2-spy/internal/lib/retry"
+	"github.com/x0k/ps2-spy/internal/relogin_event_omitter"
 )
 
-func startStreamingClient(
+func startNewPs2EventsPublisher(
 	ctx context.Context,
 	cfg *config.Config,
-	client *streaming.Client,
+	env string,
 	settings ps2commands.SubscriptionSettings,
-) {
-	const op = "startStreamingClient"
-	log := infra.OpLogger(ctx, op).With(slog.String("env", client.Environment()))
+) (*publisher.Publisher, error) {
+	const op = "startNewPs2EventsPublisher"
+	log := infra.OpLogger(ctx, op)
+	// Handle messages
+	messagesPublisher := publisher.New(ps2messages.CastHandler)
+	rawMessagesPublisher := ps2messages.NewPublisher(messagesPublisher)
+	client := streaming.NewClient(
+		log,
+		"wss://push.planetside2.com/streaming",
+		env,
+		cfg.CensusServiceId,
+		rawMessagesPublisher,
+	)
 	wg := infra.Wg(ctx)
 	wg.Add(1)
 	go func() {
@@ -44,22 +56,16 @@ func startStreamingClient(
 			},
 		})
 	}()
-}
-
-func startPs2EventsPublisher(
-	ctx context.Context,
-	cfg *config.Config,
-	msgPublisher *publisher.Publisher,
-	eventsPublisher publisher.Abstract[map[string]any],
-) error {
-	const op = "startPs2EventsPublisher"
-	log := infra.OpLogger(ctx, op)
+	// Handle events
+	eventsPublisher := publisher.New(ps2events.CastHandler)
+	reLoginOmitter := relogin_event_omitter.New(eventsPublisher)
+	reLoginOmitter.Start(ctx)
+	rawEventsPublisher := ps2events.NewPublisher(reLoginOmitter)
 	serviceMsg := make(chan ps2messages.ServiceMessage[map[string]any])
-	serviceMsgUnSub, err := msgPublisher.AddHandler(serviceMsg)
+	serviceMsgUnSub, err := messagesPublisher.AddHandler(serviceMsg)
 	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
+		return nil, fmt.Errorf("%s: %w", op, err)
 	}
-	wg := infra.Wg(ctx)
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -69,11 +75,11 @@ func startPs2EventsPublisher(
 			case <-ctx.Done():
 				return
 			case msg := <-serviceMsg:
-				if err := eventsPublisher.Publish(msg.Payload); err != nil {
+				if err := rawEventsPublisher.Publish(msg.Payload); err != nil {
 					log.Error("failed to publish event", slog.Any("event", msg.Payload), sl.Err(err))
 				}
 			}
 		}
 	}()
-	return nil
+	return eventsPublisher, nil
 }
