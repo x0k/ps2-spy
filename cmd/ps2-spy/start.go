@@ -302,6 +302,7 @@ func start(ctx context.Context, cfg *config.Config) error {
 	// bot
 	botConfig := &bot.BotConfig{
 		DiscordToken:           cfg.DiscordToken,
+		RemoveCommands:         cfg.RemoveCommands,
 		CommandHandlerTimeout:  cfg.CommandHandlerTimeout,
 		Ps2EventHandlerTimeout: cfg.Ps2EventHandlerTimeout,
 		Commands: bot.NewCommands(

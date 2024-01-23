@@ -38,6 +38,7 @@ type Config struct {
 	DiscordToken           string        `yaml:"token" env:"DISCORD_TOKEN" env-required:"true"`
 	HttpClientTimeout      time.Duration `yaml:"http_client_timeout" env:"HTTP_CLIENT_TIMEOUT" env-default:"12s"`
 	CensusServiceId        string        `yaml:"census_service_id" env:"CENSUS_SERVICE_ID" env-required:"true"`
+	RemoveCommands         bool          `yaml:"remove_commands" env:"REMOVE_COMMANDS" env-default:"false"`
 }
 
 func MustLoad(configPath string) *Config {

@@ -25,11 +25,13 @@ var ErrEventHandlerNotFound = fmt.Errorf("event handler not found")
 
 type Bot struct {
 	session            *discordgo.Session
+	removeCommands     bool
 	registeredCommands []*discordgo.ApplicationCommand
 }
 
 type BotConfig struct {
 	DiscordToken                 string
+	RemoveCommands               bool
 	CommandHandlerTimeout        time.Duration
 	Ps2EventHandlerTimeout       time.Duration
 	Commands                     []*discordgo.ApplicationCommand
@@ -213,17 +215,13 @@ func New(
 		return nil, fmt.Errorf("%s session open: %w", op, err)
 	}
 	log.Info("adding commands")
-	registeredCommands := make([]*discordgo.ApplicationCommand, 0, len(cfg.Commands))
-	for _, v := range cfg.Commands {
-		cmd, err := session.ApplicationCommandCreate(session.State.User.ID, "", v)
-		if err != nil {
-			log.Error("cannot create command", slog.String("command", v.Name), sl.Err(err))
-		} else {
-			registeredCommands = append(registeredCommands, cmd)
-		}
+	registeredCommands, err := session.ApplicationCommandBulkOverwrite(session.State.User.ID, "", cfg.Commands)
+	if err != nil {
+		return nil, fmt.Errorf("%s registering commands: %w", op, err)
 	}
 	return &Bot{
 		session:            session,
+		removeCommands:     cfg.RemoveCommands,
 		registeredCommands: registeredCommands,
 	}, nil
 }
@@ -232,10 +230,11 @@ func (b *Bot) Stop(ctx context.Context) error {
 	const op = "bot.Bot.Stop"
 	log := infra.OpLogger(ctx, op)
 	log.Info("stopping bot")
-	for _, v := range b.registeredCommands {
-		err := b.session.ApplicationCommandDelete(b.session.State.User.ID, "", v.ID)
-		if err != nil {
-			log.Error("cannot delete command", slog.String("command", v.Name), sl.Err(err))
+	if b.removeCommands {
+		for _, v := range b.registeredCommands {
+			if err := b.session.ApplicationCommandDelete(b.session.State.User.ID, "", v.ID); err != nil {
+				log.Error("cannot delete command", slog.String("command", v.Name), sl.Err(err))
+			}
 		}
 	}
 	return b.session.Close()
