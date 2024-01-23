@@ -13,7 +13,7 @@ import (
 )
 
 type Saver interface {
-	Save(ctx context.Context, channelId string, settings meta.SubscriptionSettings) error
+	Save(ctx context.Context, channelId meta.ChannelId, settings meta.SubscriptionSettings) error
 }
 
 func New(
@@ -50,7 +50,7 @@ func New(
 		}
 		err = saver.Save(
 			ctx,
-			i.ChannelID,
+			meta.ChannelId(i.ChannelID),
 			meta.SubscriptionSettings{
 				Outfits:    outfitsIds,
 				Characters: charIds,

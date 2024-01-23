@@ -12,6 +12,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/x0k/ps2-spy/internal/infra"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
+	"github.com/x0k/ps2-spy/internal/meta"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/ps2/platforms"
 	"github.com/x0k/ps2-spy/internal/publisher"
@@ -260,11 +261,11 @@ func (s *Storage) publish(event publisher.Event) {
 	s.pub.Publish(event)
 }
 
-func (s *Storage) SaveChannelOutfit(ctx context.Context, channelId string, platform platforms.Platform, outfitId ps2.OutfitId) error {
+func (s *Storage) SaveChannelOutfit(ctx context.Context, channelId meta.ChannelId, platform platforms.Platform, outfitId ps2.OutfitId) error {
 	const op = "storage.sqlite.SaveChannelOutfit"
 	infra.OpLogger(ctx, op).Debug(
 		"params",
-		slog.String("channelId", channelId),
+		slog.String("channelId", string(channelId)),
 		slog.String("platform", string(platform)),
 		slog.String("outfitId", string(outfitId)),
 	)
@@ -280,11 +281,11 @@ func (s *Storage) SaveChannelOutfit(ctx context.Context, channelId string, platf
 	return nil
 }
 
-func (s *Storage) DeleteChannelOutfit(ctx context.Context, channelId string, platform platforms.Platform, outfitId ps2.OutfitId) error {
+func (s *Storage) DeleteChannelOutfit(ctx context.Context, channelId meta.ChannelId, platform platforms.Platform, outfitId ps2.OutfitId) error {
 	const op = "storage.sqlite.DeleteChannelOutfit"
 	infra.OpLogger(ctx, op).Debug(
 		"params",
-		slog.String("channelId", channelId),
+		slog.String("channelId", string(channelId)),
 		slog.String("platform", string(platform)),
 		slog.String("outfitId", string(outfitId)),
 	)
@@ -300,11 +301,11 @@ func (s *Storage) DeleteChannelOutfit(ctx context.Context, channelId string, pla
 	return nil
 }
 
-func (s *Storage) SaveChannelCharacter(ctx context.Context, channelId string, platform platforms.Platform, characterId ps2.CharacterId) error {
+func (s *Storage) SaveChannelCharacter(ctx context.Context, channelId meta.ChannelId, platform platforms.Platform, characterId ps2.CharacterId) error {
 	const op = "storage.sqlite.SaveChannelCharacter"
 	infra.OpLogger(ctx, op).Debug(
 		"params",
-		slog.String("channelId", channelId),
+		slog.String("channelId", string(channelId)),
 		slog.String("platform", string(platform)),
 		slog.String("characterID", string(characterId)),
 	)
@@ -320,11 +321,11 @@ func (s *Storage) SaveChannelCharacter(ctx context.Context, channelId string, pl
 	return nil
 }
 
-func (s *Storage) DeleteChannelCharacter(ctx context.Context, channelId string, platform platforms.Platform, characterId ps2.CharacterId) error {
+func (s *Storage) DeleteChannelCharacter(ctx context.Context, channelId meta.ChannelId, platform platforms.Platform, characterId ps2.CharacterId) error {
 	const op = "storage.sqlite.DeleteChannelCharacter"
 	infra.OpLogger(ctx, op).Debug(
 		"params",
-		slog.String("channelId", channelId),
+		slog.String("channelId", string(channelId)),
 		slog.String("platform", string(platform)),
 		slog.String("characterID", string(characterId)),
 	)
@@ -411,7 +412,7 @@ func (s *Storage) OutfitSynchronizedAt(ctx context.Context, platform platforms.P
 	return syncAt, nil
 }
 
-func (s *Storage) TrackingChannelIdsForCharacter(ctx context.Context, platform platforms.Platform, characterId ps2.CharacterId, outfitId ps2.OutfitId) ([]string, error) {
+func (s *Storage) TrackingChannelIdsForCharacter(ctx context.Context, platform platforms.Platform, characterId ps2.CharacterId, outfitId ps2.OutfitId) ([]meta.ChannelId, error) {
 	const op = "storage.sqlite.TrackingChannelIdsForCharacter"
 	infra.OpLogger(ctx, op).Debug(
 		"params",
@@ -419,26 +420,30 @@ func (s *Storage) TrackingChannelIdsForCharacter(ctx context.Context, platform p
 		slog.String("characterId", string(characterId)),
 		slog.String("outfitId", string(outfitId)),
 	)
-	rows, err := query[string](ctx, s, selectTrackingChannelsForCharacter, platform, characterId, platform, outfitId)
+	rows, err := query[meta.ChannelId](ctx, s, selectTrackingChannelsForCharacter, platform, characterId, platform, outfitId)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 	return rows, nil
 }
 
-func (s *Storage) TrackingChannelsIdsForOutfit(ctx context.Context, platform platforms.Platform, outfitId ps2.OutfitId) ([]string, error) {
+func (s *Storage) TrackingChannelsIdsForOutfit(ctx context.Context, platform platforms.Platform, outfitId ps2.OutfitId) ([]meta.ChannelId, error) {
 	const op = "storage.sqlite.TrackingChannelsIdsForOutfit"
 	infra.OpLogger(ctx, op).Debug("params", slog.String("platform", string(platform)), slog.String("outfitId", string(outfitId)))
-	rows, err := query[string](ctx, s, selectTrackingChannelsForOutfit, platform, outfitId)
+	rows, err := query[meta.ChannelId](ctx, s, selectTrackingChannelsForOutfit, platform, outfitId)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 	return rows, nil
 }
 
-func (s *Storage) TrackingOutfitsForPlatform(ctx context.Context, channelId string, platform platforms.Platform) ([]ps2.OutfitId, error) {
+func (s *Storage) TrackingOutfitsForPlatform(ctx context.Context, channelId meta.ChannelId, platform platforms.Platform) ([]ps2.OutfitId, error) {
 	const op = "storage.sqlite.TrackingOutfitsForPlatform"
-	infra.OpLogger(ctx, op).Debug("params", slog.String("channelId", channelId), slog.String("platform", string(platform)))
+	infra.OpLogger(ctx, op).Debug(
+		"params",
+		slog.String("channelId", string(channelId)),
+		slog.String("platform", string(platform)),
+	)
 	rows, err := query[ps2.OutfitId](ctx, s, selectChannelOutfitsForPlatform, channelId, platform)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
@@ -446,9 +451,13 @@ func (s *Storage) TrackingOutfitsForPlatform(ctx context.Context, channelId stri
 	return rows, nil
 }
 
-func (s *Storage) TrackingCharactersForPlatform(ctx context.Context, channelId string, platform platforms.Platform) ([]ps2.CharacterId, error) {
+func (s *Storage) TrackingCharactersForPlatform(ctx context.Context, channelId meta.ChannelId, platform platforms.Platform) ([]ps2.CharacterId, error) {
 	const op = "storage.sqlite.TrackingCharactersForPlatform"
-	infra.OpLogger(ctx, op).Debug("params", slog.String("channelId", channelId), slog.String("platform", string(platform)))
+	infra.OpLogger(ctx, op).Debug(
+		"params",
+		slog.String("channelId", string(channelId)),
+		slog.String("platform", string(platform)),
+	)
 	rows, err := query[ps2.CharacterId](ctx, s, selectChannelCharactersForPlatform, channelId, platform)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)

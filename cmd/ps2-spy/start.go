@@ -45,6 +45,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/loaders/subscription_settings_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/world_alerts_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/world_population_loader"
+	"github.com/x0k/ps2-spy/internal/meta"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/ps2/platforms"
 	"github.com/x0k/ps2-spy/internal/publisher"
@@ -319,7 +320,7 @@ func start(ctx context.Context, cfg *config.Config) error {
 				subscription_settings_saver.New(sqlStorage, subSettingsLoader, platforms.PS4_US),
 			),
 		},
-		EventTrackingChannelsLoaders: map[platforms.Platform]loaders.QueriedLoader[any, []string]{
+		EventTrackingChannelsLoaders: map[platforms.Platform]loaders.QueriedLoader[any, []meta.ChannelId]{
 			platforms.PC:     event_tracking_channels_loader.New(pcTrackingManager),
 			platforms.PS4_EU: event_tracking_channels_loader.New(ps4euTrackingManager),
 			platforms.PS4_US: event_tracking_channels_loader.New(ps4usTrackingManager),

@@ -6,6 +6,8 @@ import (
 	"github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
 
+type ChannelId string
+
 type TrackableEntities[O any, C any] struct {
 	Outfits    O
 	Characters C
@@ -24,7 +26,7 @@ func CalculateSubscriptionSettingsDiff(
 }
 
 type SettingsQuery struct {
-	ChannelId string
+	ChannelId ChannelId
 	Platform  platforms.Platform
 }
 

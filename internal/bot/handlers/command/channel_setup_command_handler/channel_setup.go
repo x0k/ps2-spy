@@ -22,7 +22,7 @@ func New(
 		const op = "bot.handlers.command.channel_setup_command_handler"
 		platform := platforms.Platform(i.ApplicationCommandData().Options[0].Name)
 		settings, err := settingsLoader.Load(ctx, meta.SettingsQuery{
-			ChannelId: i.ChannelID,
+			ChannelId: meta.ChannelId(i.ChannelID),
 			Platform:  platform,
 		})
 		if err != nil {

@@ -3,6 +3,7 @@ package event_tracking_channels_loader
 import (
 	"context"
 
+	"github.com/x0k/ps2-spy/internal/meta"
 	"github.com/x0k/ps2-spy/internal/tracking_manager"
 )
 
@@ -16,6 +17,6 @@ func New(trackingManager *tracking_manager.TrackingManager) *EventTrackingChanne
 	}
 }
 
-func (l *EventTrackingChannelsLoader) Load(ctx context.Context, event any) ([]string, error) {
+func (l *EventTrackingChannelsLoader) Load(ctx context.Context, event any) ([]meta.ChannelId, error) {
 	return l.trackingManager.ChannelIds(ctx, event)
 }

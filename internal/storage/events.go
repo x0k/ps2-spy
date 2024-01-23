@@ -3,6 +3,7 @@ package storage
 import (
 	"time"
 
+	"github.com/x0k/ps2-spy/internal/meta"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
@@ -18,7 +19,7 @@ const (
 )
 
 type ChannelOutfitSaved struct {
-	ChannelId string
+	ChannelId meta.ChannelId
 	Platform  platforms.Platform
 	OutfitId  ps2.OutfitId
 }
@@ -28,7 +29,7 @@ func (e ChannelOutfitSaved) Type() string {
 }
 
 type ChannelOutfitDeleted struct {
-	ChannelId string
+	ChannelId meta.ChannelId
 	Platform  platforms.Platform
 	OutfitId  ps2.OutfitId
 }
@@ -38,7 +39,7 @@ func (e ChannelOutfitDeleted) Type() string {
 }
 
 type ChannelCharacterSaved struct {
-	ChannelId   string
+	ChannelId   meta.ChannelId
 	Platform    platforms.Platform
 	CharacterId ps2.CharacterId
 }
@@ -48,7 +49,7 @@ func (e ChannelCharacterSaved) Type() string {
 }
 
 type ChannelCharacterDeleted struct {
-	ChannelId   string
+	ChannelId   meta.ChannelId
 	Platform    platforms.Platform
 	CharacterId ps2.CharacterId
 }

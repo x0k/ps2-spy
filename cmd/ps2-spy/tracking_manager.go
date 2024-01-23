@@ -12,6 +12,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/loaders/outfit_tracking_channels_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/trackable_character_ids_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/trackable_outfits_with_duplication_loader"
+	"github.com/x0k/ps2-spy/internal/meta"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/ps2/platforms"
 	"github.com/x0k/ps2-spy/internal/publisher"
@@ -23,7 +24,7 @@ import (
 func newTrackingManager(
 	storage *sqlite.Storage,
 	characterLoader loaders.KeyedLoader[ps2.CharacterId, ps2.Character],
-	characterTrackingChannelsLoader loaders.KeyedLoader[ps2.Character, []string],
+	characterTrackingChannelsLoader loaders.KeyedLoader[ps2.Character, []meta.ChannelId],
 	platform platforms.Platform,
 ) *tracking_manager.TrackingManager {
 	trackableCharactersLoader := trackable_character_ids_loader.NewStorage(storage, platform)

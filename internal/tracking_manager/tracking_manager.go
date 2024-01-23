@@ -12,6 +12,7 @@ import (
 	ps2events "github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/loaders"
+	"github.com/x0k/ps2-spy/internal/meta"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/savers/outfit_members_saver"
 )
@@ -24,20 +25,20 @@ type TrackingManager struct {
 	outfitsFilterMu                 sync.RWMutex
 	outfitsFilter                   map[ps2.OutfitId]int
 	characterLoader                 loaders.KeyedLoader[ps2.CharacterId, ps2.Character]
-	characterTrackingChannelsLoader loaders.KeyedLoader[ps2.Character, []string]
+	characterTrackingChannelsLoader loaders.KeyedLoader[ps2.Character, []meta.ChannelId]
 	trackableCharactersLoader       loaders.Loader[[]ps2.CharacterId]
 	outfitMembersLoader             loaders.KeyedLoader[ps2.OutfitId, []ps2.CharacterId]
-	outfitTrackingChannelsLoader    loaders.KeyedLoader[ps2.OutfitId, []string]
+	outfitTrackingChannelsLoader    loaders.KeyedLoader[ps2.OutfitId, []meta.ChannelId]
 	trackableOutfitsLoader          loaders.Loader[[]ps2.OutfitId]
 	rebuildFiltersInterval          time.Duration
 }
 
 func New(
 	charLoader loaders.KeyedLoader[ps2.CharacterId, ps2.Character],
-	characterTrackingChannelsLoader loaders.KeyedLoader[ps2.Character, []string],
+	characterTrackingChannelsLoader loaders.KeyedLoader[ps2.Character, []meta.ChannelId],
 	trackableCharactersLoader loaders.Loader[[]ps2.CharacterId],
 	outfitMembersLoader loaders.KeyedLoader[ps2.OutfitId, []ps2.CharacterId],
-	outfitTrackingChannelsLoader loaders.KeyedLoader[ps2.OutfitId, []string],
+	outfitTrackingChannelsLoader loaders.KeyedLoader[ps2.OutfitId, []meta.ChannelId],
 	trackableOutfitsLoader loaders.Loader[[]ps2.OutfitId],
 ) *TrackingManager {
 	return &TrackingManager{
@@ -139,7 +140,7 @@ func (tm *TrackingManager) characterTrackersCount(charId ps2.CharacterId) int {
 	return tm.charactersFilter[charId]
 }
 
-func (tm *TrackingManager) channelIdsForCharacter(ctx context.Context, characterId ps2.CharacterId) ([]string, error) {
+func (tm *TrackingManager) channelIdsForCharacter(ctx context.Context, characterId ps2.CharacterId) ([]meta.ChannelId, error) {
 	const op = "tracking_manager.TrackingManager.channelIdsForCharacter"
 	log := infra.OpLogger(ctx, op)
 	trackersCount := tm.characterTrackersCount(characterId)
@@ -162,7 +163,7 @@ func (tm *TrackingManager) outfitTrackersCount(outfitId ps2.OutfitId) int {
 	return tm.outfitsFilter[outfitId]
 }
 
-func (tm *TrackingManager) channelIdsForOutfit(ctx context.Context, outfitId ps2.OutfitId) ([]string, error) {
+func (tm *TrackingManager) channelIdsForOutfit(ctx context.Context, outfitId ps2.OutfitId) ([]meta.ChannelId, error) {
 	const op = "tracking_manager.TrackingManager.channelIdsForOutfitTag"
 	log := infra.OpLogger(ctx, op)
 	trackersCount := tm.outfitTrackersCount(outfitId)
@@ -175,7 +176,7 @@ func (tm *TrackingManager) channelIdsForOutfit(ctx context.Context, outfitId ps2
 	return tm.outfitTrackingChannelsLoader.Load(ctx, outfitId)
 }
 
-func (tm *TrackingManager) ChannelIds(ctx context.Context, event any) ([]string, error) {
+func (tm *TrackingManager) ChannelIds(ctx context.Context, event any) ([]meta.ChannelId, error) {
 	const op = "TrackingManager.ChannelIds"
 	switch e := event.(type) {
 	case ps2events.PlayerLogin:

@@ -12,6 +12,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/contextx"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/loaders"
+	"github.com/x0k/ps2-spy/internal/meta"
 	"github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
 
@@ -92,10 +93,10 @@ func ShowModal(handle func(ctx context.Context, s *discordgo.Session, i *discord
 type Ps2EventHandlerConfig struct {
 	Session                     *discordgo.Session
 	Timeout                     time.Duration
-	EventTrackingChannelsLoader loaders.QueriedLoader[any, []string]
+	EventTrackingChannelsLoader loaders.QueriedLoader[any, []meta.ChannelId]
 }
 
-type Ps2EventHandler[E any] func(ctx context.Context, channelIds []string, cfg *Ps2EventHandlerConfig, event E) error
+type Ps2EventHandler[E any] func(ctx context.Context, channelIds []meta.ChannelId, cfg *Ps2EventHandlerConfig, event E) error
 
 func (handler Ps2EventHandler[E]) Run(ctx context.Context, cfg *Ps2EventHandlerConfig, event E) {
 	const op = "bot.handlers.Ps2EventHandler.Run"
@@ -123,7 +124,7 @@ func (handler Ps2EventHandler[E]) Run(ctx context.Context, cfg *Ps2EventHandlerC
 }
 
 func SimpleMessage[E any](handle func(ctx context.Context, cfg *Ps2EventHandlerConfig, event E) (string, error)) Ps2EventHandler[E] {
-	return func(ctx context.Context, channelIds []string, cfg *Ps2EventHandlerConfig, event E) error {
+	return func(ctx context.Context, channelIds []meta.ChannelId, cfg *Ps2EventHandlerConfig, event E) error {
 		const op = "bot.handlers.SimpleMessage"
 		log := infra.OpLogger(ctx, op)
 		msg, err := handle(ctx, cfg, event)
@@ -156,10 +157,14 @@ func SimpleMessage[E any](handle func(ctx context.Context, cfg *Ps2EventHandlerC
 			} else {
 				msg = ""
 			}
-			for _, channel := range channelIds {
-				_, err = cfg.Session.ChannelMessageSend(channel, toSend)
+			for _, channelId := range channelIds {
+				_, err = cfg.Session.ChannelMessageSend(string(channelId), toSend)
 				if err != nil {
-					log.Error("error sending message", slog.String("channel", channel), sl.Err(err))
+					log.Error(
+						"error sending message",
+						slog.String("channel", string(channelId)),
+						sl.Err(err),
+					)
 					errors = append(errors, err.Error())
 				}
 			}

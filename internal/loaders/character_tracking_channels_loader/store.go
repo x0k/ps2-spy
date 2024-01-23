@@ -3,6 +3,7 @@ package character_tracking_channels_loader
 import (
 	"context"
 
+	"github.com/x0k/ps2-spy/internal/meta"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/storage/sqlite"
 )
@@ -17,6 +18,6 @@ func New(store *sqlite.Storage) *CharacterTrackingChannelsLoader {
 	}
 }
 
-func (l *CharacterTrackingChannelsLoader) Load(ctx context.Context, char ps2.Character) ([]string, error) {
+func (l *CharacterTrackingChannelsLoader) Load(ctx context.Context, char ps2.Character) ([]meta.ChannelId, error) {
 	return l.store.TrackingChannelIdsForCharacter(ctx, char.Platform, char.Id, char.OutfitId)
 }
