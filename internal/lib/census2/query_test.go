@@ -39,9 +39,11 @@ func TestNewQuery(t *testing.T) {
 		{
 			name: "Conditions",
 			query: NewQuery(GetQuery, Ps2_v2_NS, "test").
-				Where(Cond("faction_id").IsLessThanOrEquals(Int(4))).
-				Where(Cond("item_category_id").IsGreaterThanOrEquals(Int(2)).IsLessThan(Int(5))).
-				Where(Cond("faction_id").IsGreaterThan(Int(1))),
+				Where(
+					Cond("faction_id").IsLessThanOrEquals(Int(4)),
+					Cond("item_category_id").IsGreaterThanOrEquals(Int(2)).IsLessThan(Int(5)),
+					Cond("faction_id").IsGreaterThan(Int(1)),
+				),
 			want: "get/ps2:v2/test?faction_id=[4&item_category_id=]2&item_category_id=<5&faction_id=>1",
 		},
 		{

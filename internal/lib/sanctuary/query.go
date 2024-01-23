@@ -19,5 +19,5 @@ const (
 
 func NewQuery(queryType, namespace, collection string) *census2.Query {
 	return census2.NewQuery(queryType, namespace, collection).
-		Where(census2.Cond(CensusJSONField).Equals(census2.Bool(false)))
+		Where(census2.Cond(CensusJSONField).Equals(census2.BoolWithDefaultTrue(false)))
 }
