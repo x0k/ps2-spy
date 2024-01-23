@@ -10,6 +10,7 @@ import (
 	ps2commands "github.com/x0k/ps2-spy/internal/lib/census2/streaming/commands"
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/core"
 	ps2messages "github.com/x0k/ps2-spy/internal/lib/census2/streaming/messages"
+	"github.com/x0k/ps2-spy/internal/lib/publisher"
 	"nhooyr.io/websocket"
 	"nhooyr.io/websocket/wsjson"
 )
@@ -36,10 +37,10 @@ type Client struct {
 	msgBuffer                core.MessageBase
 	connStateChangeMsgBuffer ps2messages.ConnectionStateChanged
 	connectionTimeout        time.Duration
-	Msg                      chan map[string]any
+	publisher                publisher.Abstract[map[string]any]
 }
 
-func NewClient(log *slog.Logger, endpoint string, env string, serviceId string) *Client {
+func NewClient(log *slog.Logger, endpoint string, env string, serviceId string, publisher publisher.Abstract[map[string]any]) *Client {
 	return &Client{
 		log: log.With(
 			slog.String("component", "census2.streaming.Client"),
@@ -50,7 +51,7 @@ func NewClient(log *slog.Logger, endpoint string, env string, serviceId string) 
 		env:               env,
 		serviceId:         serviceId,
 		connectionTimeout: time.Duration(10) * time.Second,
-		Msg:               make(chan map[string]any),
+		publisher:         publisher,
 	}
 }
 
@@ -126,9 +127,7 @@ func (c *Client) onMessage(msg any) error {
 		c.log.Info("disconnected by server")
 		return ErrDisconnectedByServer
 	}
-	// Lock for backpressure
-	c.Msg <- m
-	return nil
+	return c.publisher.Publish(m)
 }
 
 func (c *Client) Subscribe(ctx context.Context, settings ps2commands.SubscriptionSettings) error {

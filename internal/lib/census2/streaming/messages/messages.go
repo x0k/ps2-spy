@@ -24,15 +24,27 @@ type ServiceStateChanged struct {
 	Online           core.StrBool `json:"online" mapstructure:"online"`
 }
 
+func (s *ServiceStateChanged) Type() string {
+	return ServiceStateChangedType
+}
+
 type Heartbeat struct {
 	core.MessageBase `mapstructure:",squash"`
 	Timestamp        string                  `json:"timestamp" mapstructure:"timestamp"`
 	Online           map[string]core.StrBool `json:"online" mapstructure:"online"`
 }
 
+func (h *Heartbeat) Type() string {
+	return HeartbeatType
+}
+
 type ServiceMessage[T any] struct {
 	core.MessageBase `mapstructure:",squash"`
 	Payload          T `json:"payload" mapstructure:"payload"`
+}
+
+func (s *ServiceMessage[T]) Type() string {
+	return ServiceMessageType
 }
 
 type SubscriptionSettings struct {
@@ -41,6 +53,10 @@ type SubscriptionSettings struct {
 	EventNames                     []string `json:"eventNames" mapstructure:"eventNames"`
 	Worlds                         []string `json:"worlds" mapstructure:"worlds"`
 	LogicalAndCharactersWithWorlds bool     `json:"logicalAndCharactersWithWorlds" mapstructure:"logicalAndCharactersWithWorlds"`
+}
+
+func (s *SubscriptionSettings) Type() string {
+	return SubscriptionSignatureField
 }
 
 const SubscriptionSignatureField = "subscription"

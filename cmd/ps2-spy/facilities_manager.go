@@ -8,11 +8,12 @@ import (
 	"github.com/x0k/ps2-spy/internal/infra"
 	ps2events "github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
+	"github.com/x0k/ps2-spy/internal/lib/publisher"
 )
 
 func startFacilitiesManager(
 	ctx context.Context,
-	ps2EventsPublisher *ps2events.Publisher,
+	ps2EventsPublisher *publisher.Publisher,
 	facilitiesManager *facilities_manager.FacilitiesManager,
 ) error {
 	const op = "startFacilitiesManager"

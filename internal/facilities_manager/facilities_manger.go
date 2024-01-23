@@ -8,8 +8,8 @@ import (
 	"github.com/x0k/ps2-spy/internal/infra"
 	ps2events "github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
+	"github.com/x0k/ps2-spy/internal/lib/publisher"
 	"github.com/x0k/ps2-spy/internal/ps2"
-	"github.com/x0k/ps2-spy/internal/publisher"
 )
 
 type FacilitiesManager struct {

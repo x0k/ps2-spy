@@ -13,9 +13,9 @@ import (
 	ps2events "github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
 	"github.com/x0k/ps2-spy/internal/lib/loaders"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
+	"github.com/x0k/ps2-spy/internal/lib/publisher"
 	"github.com/x0k/ps2-spy/internal/meta"
 	"github.com/x0k/ps2-spy/internal/ps2/platforms"
-	"github.com/x0k/ps2-spy/internal/publisher"
 	"github.com/x0k/ps2-spy/internal/savers/outfit_members_saver"
 )
 
@@ -39,7 +39,7 @@ type BotConfig struct {
 	SubmitHandlers               map[string]handlers.InteractionHandler
 	EventTrackingChannelsLoaders map[platforms.Platform]loaders.QueriedLoader[any, []meta.ChannelId]
 	// Raw PS2 events
-	Ps2EventsPublishers  map[platforms.Platform]*ps2events.Publisher
+	Ps2EventsPublishers  map[platforms.Platform]*publisher.Publisher
 	PlayerLoginHandlers  map[platforms.Platform]handlers.Ps2EventHandler[ps2events.PlayerLogin]
 	PlayerLogoutHandlers map[platforms.Platform]handlers.Ps2EventHandler[ps2events.PlayerLogout]
 	// Outfit events

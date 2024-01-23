@@ -1,6 +1,6 @@
 package storage
 
-import "github.com/x0k/ps2-spy/internal/publisher"
+import "github.com/x0k/ps2-spy/internal/lib/publisher"
 
 type channelOutfitSavedHandler chan<- ChannelOutfitSaved
 

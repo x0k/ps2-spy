@@ -8,12 +8,12 @@ import (
 
 	"github.com/x0k/ps2-spy/internal/infra"
 	"github.com/x0k/ps2-spy/internal/lib/census2"
+	"github.com/x0k/ps2-spy/internal/lib/publisher"
 	"github.com/x0k/ps2-spy/internal/loaders/outfit_member_ids_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/outfit_sync_at_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/trackable_outfits_loader"
 	"github.com/x0k/ps2-spy/internal/outfit_members_synchronizer"
 	"github.com/x0k/ps2-spy/internal/ps2/platforms"
-	"github.com/x0k/ps2-spy/internal/publisher"
 	"github.com/x0k/ps2-spy/internal/savers/outfit_members_saver"
 	"github.com/x0k/ps2-spy/internal/storage"
 	"github.com/x0k/ps2-spy/internal/storage/sqlite"

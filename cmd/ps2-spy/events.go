@@ -12,8 +12,8 @@ import (
 	ps2commands "github.com/x0k/ps2-spy/internal/lib/census2/streaming/commands"
 	ps2messages "github.com/x0k/ps2-spy/internal/lib/census2/streaming/messages"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
+	"github.com/x0k/ps2-spy/internal/lib/publisher"
 	"github.com/x0k/ps2-spy/internal/lib/retry"
-	"github.com/x0k/ps2-spy/internal/publisher"
 )
 
 func startStreamingClient(
@@ -49,12 +49,11 @@ func startStreamingClient(
 func startPs2EventsPublisher(
 	ctx context.Context,
 	cfg *config.Config,
-	event chan map[string]any,
+	msgPublisher *publisher.Publisher,
 	eventsPublisher publisher.Abstract[map[string]any],
 ) error {
 	const op = "startPs2EventsPublisher"
 	log := infra.OpLogger(ctx, op)
-	msgPublisher := ps2messages.NewPublisher()
 	serviceMsg := make(chan ps2messages.ServiceMessage[map[string]any])
 	serviceMsgUnSub, err := msgPublisher.AddHandler(serviceMsg)
 	if err != nil {
@@ -70,24 +69,8 @@ func startPs2EventsPublisher(
 			case <-ctx.Done():
 				return
 			case msg := <-serviceMsg:
-				err := eventsPublisher.Publish(msg.Payload)
-				if err != nil {
+				if err := eventsPublisher.Publish(msg.Payload); err != nil {
 					log.Error("failed to publish event", slog.Any("event", msg.Payload), sl.Err(err))
-				}
-			}
-		}
-	}()
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case msg := <-event:
-				err := msgPublisher.Publish(msg)
-				if err != nil {
-					log.Error("failed to publish message", slog.Any("message", msg), sl.Err(err))
 				}
 			}
 		}

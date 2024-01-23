@@ -27,12 +27,20 @@ type AchievementEarned struct {
 	ZoneID         string `json:"zone_id" mapstructure:"zone_id"`
 }
 
+func (*AchievementEarned) Type() string {
+	return AchievementEarnedEventName
+}
+
 type BattleRankUp struct {
 	core.EventBase `mapstructure:",squash"`
 	BattleRank     string `json:"battle_rank" mapstructure:"battle_rank"`
 	CharacterID    string `json:"character_id" mapstructure:"character_id"`
 	WorldID        string `json:"world_id" mapstructure:"world_id"`
 	ZoneID         string `json:"zone_id" mapstructure:"zone_id"`
+}
+
+func (*BattleRankUp) Type() string {
+	return BattleRankUpEventName
 }
 
 type Death struct {
@@ -52,6 +60,10 @@ type Death struct {
 	ZoneID              string `json:"zone_id" mapstructure:"zone_id"`
 }
 
+func (*Death) Type() string {
+	return DeathEventName
+}
+
 type GainExperience struct {
 	core.EventBase `mapstructure:",squash"`
 	Amount         string `json:"amount" mapstructure:"amount"`
@@ -64,6 +76,10 @@ type GainExperience struct {
 	ZoneID         string `json:"zone_id" mapstructure:"zone_id"`
 }
 
+func (*GainExperience) Type() string {
+	return GainExperienceEventName
+}
+
 type ItemAdded struct {
 	core.EventBase `mapstructure:",squash"`
 	CharacterID    string `json:"character_id" mapstructure:"character_id"`
@@ -72,6 +88,10 @@ type ItemAdded struct {
 	ItemID         string `json:"item_id" mapstructure:"item_id"`
 	WorldID        string `json:"world_id" mapstructure:"world_id"`
 	ZoneID         string `json:"zone_id" mapstructure:"zone_id"`
+}
+
+func (*ItemAdded) Type() string {
+	return ItemAddedEventName
 }
 
 type PlayerFacilityCapture struct {
@@ -83,6 +103,10 @@ type PlayerFacilityCapture struct {
 	ZoneID         string `json:"zone_id" mapstructure:"zone_id"`
 }
 
+func (*PlayerFacilityCapture) Type() string {
+	return PlayerFacilityCaptureEventName
+}
+
 type PlayerFacilityDefend struct {
 	core.EventBase `mapstructure:",squash"`
 	CharacterID    string `json:"character_id" mapstructure:"character_id"`
@@ -90,6 +114,10 @@ type PlayerFacilityDefend struct {
 	OutfitID       string `json:"outfit_id" mapstructure:"outfit_id"`
 	WorldID        string `json:"world_id" mapstructure:"world_id"`
 	ZoneID         string `json:"zone_id" mapstructure:"zone_id"`
+}
+
+func (*PlayerFacilityDefend) Type() string {
+	return PlayerFacilityDefendEventName
 }
 
 const CharacterIdField = "character_id"
@@ -100,10 +128,18 @@ type PlayerLogin struct {
 	WorldID        string `json:"world_id" mapstructure:"world_id"`
 }
 
+func (*PlayerLogin) Type() string {
+	return PlayerLoginEventName
+}
+
 type PlayerLogout struct {
 	core.EventBase `mapstructure:",squash"`
 	CharacterID    string `json:"character_id" mapstructure:"character_id"`
 	WorldID        string `json:"world_id" mapstructure:"world_id"`
+}
+
+func (*PlayerLogout) Type() string {
+	return PlayerLogoutEventName
 }
 
 type SkillAdded struct {
@@ -112,6 +148,10 @@ type SkillAdded struct {
 	SkillID        string `json:"skill_id" mapstructure:"skill_id"`
 	WorldID        string `json:"world_id" mapstructure:"world_id"`
 	ZoneID         string `json:"zone_id" mapstructure:"zone_id"`
+}
+
+func (*SkillAdded) Type() string {
+	return SkillAddedEventName
 }
 
 type VehicleDestroy struct {
@@ -130,6 +170,10 @@ type VehicleDestroy struct {
 	ZoneID              string `json:"zone_id" mapstructure:"zone_id"`
 }
 
+func (*VehicleDestroy) Type() string {
+	return VehicleDestroyEventName
+}
+
 type ContinentLock struct {
 	core.EventBase    `mapstructure:",squash"`
 	EventType         string `json:"event_type" mapstructure:"event_type"`
@@ -143,6 +187,10 @@ type ContinentLock struct {
 	ZoneID            string `json:"zone_id" mapstructure:"zone_id"`
 }
 
+func (*ContinentLock) Type() string {
+	return ContinentLockEventName
+}
+
 type FacilityControl struct {
 	core.EventBase `mapstructure:",squash"`
 	DurationHeld   string `json:"duration_held" mapstructure:"duration_held"`
@@ -152,6 +200,10 @@ type FacilityControl struct {
 	OutfitID       string `json:"outfit_id" mapstructure:"outfit_id"`
 	WorldID        string `json:"world_id" mapstructure:"world_id"`
 	ZoneID         string `json:"zone_id" mapstructure:"zone_id"`
+}
+
+func (*FacilityControl) Type() string {
+	return FacilityControlEventName
 }
 
 type MetagameEvent struct {
@@ -166,4 +218,8 @@ type MetagameEvent struct {
 	WorldID                string `json:"world_id" mapstructure:"world_id"`
 	InstanceID             string `json:"instance_id" mapstructure:"instance_id"`
 	ZoneID                 string `json:"zone_id" mapstructure:"zone_id"`
+}
+
+func (*MetagameEvent) Type() string {
+	return MetagameEventEventName
 }

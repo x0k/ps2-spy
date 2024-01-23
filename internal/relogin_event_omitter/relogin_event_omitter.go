@@ -9,7 +9,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/infra"
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/core"
 	ps2events "github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
-	"github.com/x0k/ps2-spy/internal/publisher"
+	"github.com/x0k/ps2-spy/internal/lib/publisher"
 )
 
 type ReLoginOmitter struct {

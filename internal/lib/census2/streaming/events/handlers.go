@@ -1,9 +1,6 @@
 package ps2events
 
-type eventHandler interface {
-	Type() string
-	Handle(e any)
-}
+import "github.com/x0k/ps2-spy/internal/lib/publisher"
 
 type achievementEarnedHandler chan<- AchievementEarned
 
@@ -11,7 +8,7 @@ func (h achievementEarnedHandler) Type() string {
 	return AchievementEarnedEventName
 }
 
-func (h achievementEarnedHandler) Handle(e any) {
+func (h achievementEarnedHandler) Handle(e publisher.Event) {
 	h <- *(e.(*AchievementEarned))
 }
 
@@ -21,7 +18,7 @@ func (h battleRankUpHandler) Type() string {
 	return BattleRankUpEventName
 }
 
-func (h battleRankUpHandler) Handle(e any) {
+func (h battleRankUpHandler) Handle(e publisher.Event) {
 	h <- *(e.(*BattleRankUp))
 }
 
@@ -31,7 +28,7 @@ func (h deathHandler) Type() string {
 	return DeathEventName
 }
 
-func (h deathHandler) Handle(e any) {
+func (h deathHandler) Handle(e publisher.Event) {
 	h <- *(e.(*Death))
 }
 
@@ -41,7 +38,7 @@ func (h gainExperienceHandler) Type() string {
 	return GainExperienceEventName
 }
 
-func (h gainExperienceHandler) Handle(e any) {
+func (h gainExperienceHandler) Handle(e publisher.Event) {
 	h <- *(e.(*GainExperience))
 }
 
@@ -51,7 +48,7 @@ func (h itemAddedHandler) Type() string {
 	return ItemAddedEventName
 }
 
-func (h itemAddedHandler) Handle(e any) {
+func (h itemAddedHandler) Handle(e publisher.Event) {
 	h <- *(e.(*ItemAdded))
 }
 
@@ -61,7 +58,7 @@ func (h playerFacilityCaptureHandler) Type() string {
 	return PlayerFacilityCaptureEventName
 }
 
-func (h playerFacilityCaptureHandler) Handle(e any) {
+func (h playerFacilityCaptureHandler) Handle(e publisher.Event) {
 	h <- *(e.(*PlayerFacilityCapture))
 }
 
@@ -71,7 +68,7 @@ func (h playerFacilityDefendHandler) Type() string {
 	return PlayerFacilityDefendEventName
 }
 
-func (h playerFacilityDefendHandler) Handle(e any) {
+func (h playerFacilityDefendHandler) Handle(e publisher.Event) {
 	h <- *(e.(*PlayerFacilityDefend))
 }
 
@@ -81,7 +78,7 @@ func (h playerLoginHandler) Type() string {
 	return PlayerLoginEventName
 }
 
-func (h playerLoginHandler) Handle(e any) {
+func (h playerLoginHandler) Handle(e publisher.Event) {
 	h <- *(e.(*PlayerLogin))
 }
 
@@ -91,7 +88,7 @@ func (h playerLogoutHandler) Type() string {
 	return PlayerLogoutEventName
 }
 
-func (h playerLogoutHandler) Handle(e any) {
+func (h playerLogoutHandler) Handle(e publisher.Event) {
 	h <- *(e.(*PlayerLogout))
 }
 
@@ -101,7 +98,7 @@ func (h skillAddedHandler) Type() string {
 	return SkillAddedEventName
 }
 
-func (h skillAddedHandler) Handle(e any) {
+func (h skillAddedHandler) Handle(e publisher.Event) {
 	h <- *(e.(*SkillAdded))
 }
 
@@ -111,7 +108,7 @@ func (h vehicleDestroyHandler) Type() string {
 	return VehicleDestroyEventName
 }
 
-func (h vehicleDestroyHandler) Handle(e any) {
+func (h vehicleDestroyHandler) Handle(e publisher.Event) {
 	h <- *(e.(*VehicleDestroy))
 }
 
@@ -121,7 +118,7 @@ func (h continentLockHandler) Type() string {
 	return ContinentLockEventName
 }
 
-func (h continentLockHandler) Handle(e any) {
+func (h continentLockHandler) Handle(e publisher.Event) {
 	h <- *(e.(*ContinentLock))
 }
 
@@ -131,7 +128,7 @@ func (h facilityControlHandler) Type() string {
 	return FacilityControlEventName
 }
 
-func (h facilityControlHandler) Handle(e any) {
+func (h facilityControlHandler) Handle(e publisher.Event) {
 	h <- *(e.(*FacilityControl))
 }
 
@@ -141,11 +138,11 @@ func (h metagameEventHandler) Type() string {
 	return MetagameEventEventName
 }
 
-func (h metagameEventHandler) Handle(e any) {
+func (h metagameEventHandler) Handle(e publisher.Event) {
 	h <- *(e.(*MetagameEvent))
 }
 
-func handlerForInterface(handler any) eventHandler {
+func CastHandler(handler any) publisher.Handler {
 	switch v := handler.(type) {
 	case chan AchievementEarned:
 		return achievementEarnedHandler(v)

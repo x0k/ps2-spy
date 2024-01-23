@@ -1,11 +1,10 @@
 package ps2messages
 
-import "maps"
+import (
+	"maps"
 
-type messageHandler interface {
-	Type() string
-	Handle(msg any)
-}
+	"github.com/x0k/ps2-spy/internal/lib/publisher"
+)
 
 type serviceStateChangedHandler chan<- ServiceStateChanged
 
@@ -13,7 +12,7 @@ func (h serviceStateChangedHandler) Type() string {
 	return ServiceStateChangedType
 }
 
-func (h serviceStateChangedHandler) Handle(msg any) {
+func (h serviceStateChangedHandler) Handle(msg publisher.Event) {
 	h <- *(msg.(*ServiceStateChanged))
 }
 
@@ -23,7 +22,7 @@ func (h heartbeatHandler) Type() string {
 	return HeartbeatType
 }
 
-func (h heartbeatHandler) Handle(msg any) {
+func (h heartbeatHandler) Handle(msg publisher.Event) {
 	h <- *(msg.(*Heartbeat))
 }
 
@@ -33,7 +32,7 @@ func (h serviceMessageHandler) Type() string {
 	return ServiceMessageType
 }
 
-func (h serviceMessageHandler) Handle(msg any) {
+func (h serviceMessageHandler) Handle(msg publisher.Event) {
 	t := msg.(*ServiceMessage[map[string]any])
 	h <- ServiceMessage[map[string]any]{
 		MessageBase: t.MessageBase,
@@ -47,11 +46,11 @@ func (h subscriptionSettingsHandler) Type() string {
 	return SubscriptionSignatureField
 }
 
-func (h subscriptionSettingsHandler) Handle(msg any) {
+func (h subscriptionSettingsHandler) Handle(msg publisher.Event) {
 	h <- *(msg.(*SubscriptionSettings))
 }
 
-func handlerForInterface(handler any) messageHandler {
+func CastHandler(handler any) publisher.Handler {
 	switch v := handler.(type) {
 	case chan ServiceStateChanged:
 		return serviceStateChangedHandler(v)

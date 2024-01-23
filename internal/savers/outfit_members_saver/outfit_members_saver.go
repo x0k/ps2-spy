@@ -5,9 +5,9 @@ import (
 	"time"
 
 	"github.com/x0k/ps2-spy/internal/lib/diff"
+	"github.com/x0k/ps2-spy/internal/lib/publisher"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/ps2/platforms"
-	"github.com/x0k/ps2-spy/internal/publisher"
 	"github.com/x0k/ps2-spy/internal/storage/sqlite"
 )
 

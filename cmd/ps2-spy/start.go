@@ -23,12 +23,14 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming"
 	ps2commands "github.com/x0k/ps2-spy/internal/lib/census2/streaming/commands"
 	ps2events "github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
+	ps2messages "github.com/x0k/ps2-spy/internal/lib/census2/streaming/messages"
 	"github.com/x0k/ps2-spy/internal/lib/fisu"
 	"github.com/x0k/ps2-spy/internal/lib/honu"
 	"github.com/x0k/ps2-spy/internal/lib/loaders"
 	"github.com/x0k/ps2-spy/internal/lib/ps2alerts"
 	"github.com/x0k/ps2-spy/internal/lib/ps2live/population"
 	"github.com/x0k/ps2-spy/internal/lib/ps2live/saerro"
+	"github.com/x0k/ps2-spy/internal/lib/publisher"
 	"github.com/x0k/ps2-spy/internal/lib/voidwell"
 	"github.com/x0k/ps2-spy/internal/loaders/alerts_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/character_ids_loader"
@@ -50,7 +52,6 @@ import (
 	"github.com/x0k/ps2-spy/internal/meta"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/ps2/platforms"
-	"github.com/x0k/ps2-spy/internal/publisher"
 	"github.com/x0k/ps2-spy/internal/relogin_event_omitter"
 	"github.com/x0k/ps2-spy/internal/savers/outfit_members_saver"
 	"github.com/x0k/ps2-spy/internal/savers/subscription_settings_saver"
@@ -67,11 +68,14 @@ func start(ctx context.Context, cfg *config.Config) error {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
+	pcStreamingMessagesPublisher := publisher.New(ps2messages.CastHandler)
+	pcStreamingRawDataPublisher := ps2messages.NewPublisher(pcStreamingMessagesPublisher)
 	pcStreamingClient := streaming.NewClient(
 		log,
 		"wss://push.planetside2.com/streaming",
 		streaming.Ps2_env,
 		cfg.CensusServiceId,
+		pcStreamingRawDataPublisher,
 	)
 	startStreamingClient(ctx, cfg, pcStreamingClient, ps2commands.SubscriptionSettings{
 		Worlds: []string{"1", "10", "13", "17", "19", "40"},
@@ -81,19 +85,23 @@ func start(ctx context.Context, cfg *config.Config) error {
 			ps2events.FacilityControlEventName,
 		},
 	})
-	pcPs2EventsPublisher := ps2events.NewPublisher()
-	pcReLoginOmitter := relogin_event_omitter.New(pcPs2EventsPublisher)
+	pcPs2EventsPublisher := publisher.New(ps2events.CastHandler)
+	pcPs2RawEventsPublisher := ps2events.NewPublisher(pcPs2EventsPublisher)
+	pcReLoginOmitter := relogin_event_omitter.New(pcPs2RawEventsPublisher)
 	pcReLoginOmitter.Start(ctx)
-	err = startPs2EventsPublisher(ctx, cfg, pcStreamingClient.Msg, pcReLoginOmitter)
+	err = startPs2EventsPublisher(ctx, cfg, pcStreamingMessagesPublisher, pcReLoginOmitter)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
+	ps4euStreamingMessagesPublisher := publisher.New(ps2messages.CastHandler)
+	ps4euStreamingRawDataPublisher := ps2messages.NewPublisher(ps4euStreamingMessagesPublisher)
 	ps4euStreamingClient := streaming.NewClient(
 		log,
 		"wss://push.planetside2.com/streaming",
 		streaming.Ps2ps4eu_env,
 		cfg.CensusServiceId,
+		ps4euStreamingRawDataPublisher,
 	)
 	startStreamingClient(ctx, cfg, ps4euStreamingClient, ps2commands.SubscriptionSettings{
 		Worlds: []string{"2000"},
@@ -103,19 +111,23 @@ func start(ctx context.Context, cfg *config.Config) error {
 			ps2events.FacilityControlEventName,
 		},
 	})
-	ps4euPs2EventsPublisher := ps2events.NewPublisher()
-	ps4euReLoginOmitter := relogin_event_omitter.New(ps4euPs2EventsPublisher)
+	ps4euPs2EventsPublisher := publisher.New(ps2events.CastHandler)
+	ps4euPs2RawEventsPublisher := ps2events.NewPublisher(ps4euPs2EventsPublisher)
+	ps4euReLoginOmitter := relogin_event_omitter.New(ps4euPs2RawEventsPublisher)
 	ps4euReLoginOmitter.Start(ctx)
-	err = startPs2EventsPublisher(ctx, cfg, ps4euStreamingClient.Msg, ps4euReLoginOmitter)
+	err = startPs2EventsPublisher(ctx, cfg, ps4euStreamingMessagesPublisher, ps4euReLoginOmitter)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
+	ps4usStreamingMessagesPublisher := publisher.New(ps2messages.CastHandler)
+	ps4usStreamingRawDataPublisher := ps2messages.NewPublisher(ps4usStreamingMessagesPublisher)
 	ps4usStreamingClient := streaming.NewClient(
 		log,
 		"wss://push.planetside2.com/streaming",
 		streaming.Ps2ps4us_env,
 		cfg.CensusServiceId,
+		ps4usStreamingRawDataPublisher,
 	)
 	startStreamingClient(ctx, cfg, ps4usStreamingClient, ps2commands.SubscriptionSettings{
 		Worlds: []string{"1000"},
@@ -125,10 +137,11 @@ func start(ctx context.Context, cfg *config.Config) error {
 			ps2events.FacilityControlEventName,
 		},
 	})
-	ps4usPs2EventsPublisher := ps2events.NewPublisher()
-	ps4usReLoginOmitter := relogin_event_omitter.New(ps4usPs2EventsPublisher)
+	ps4usPs2EventsPublisher := publisher.New(ps2events.CastHandler)
+	ps4usPs2RawEventsPublisher := ps2events.NewPublisher(ps4usPs2EventsPublisher)
+	ps4usReLoginOmitter := relogin_event_omitter.New(ps4usPs2RawEventsPublisher)
 	ps4usReLoginOmitter.Start(ctx)
-	err = startPs2EventsPublisher(ctx, cfg, ps4usStreamingClient.Msg, ps4usReLoginOmitter)
+	err = startPs2EventsPublisher(ctx, cfg, ps4usStreamingMessagesPublisher, ps4usReLoginOmitter)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
@@ -347,7 +360,7 @@ func start(ctx context.Context, cfg *config.Config) error {
 			platforms.PS4_EU: event_tracking_channels_loader.New(ps4euTrackingManager),
 			platforms.PS4_US: event_tracking_channels_loader.New(ps4usTrackingManager),
 		},
-		Ps2EventsPublishers: map[platforms.Platform]*ps2events.Publisher{
+		Ps2EventsPublishers: map[platforms.Platform]*publisher.Publisher{
 			platforms.PC:     pcPs2EventsPublisher,
 			platforms.PS4_EU: ps4euPs2EventsPublisher,
 			platforms.PS4_US: ps4usPs2EventsPublisher,

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/x0k/ps2-spy/internal/publisher"
+	"github.com/x0k/ps2-spy/internal/lib/publisher"
 )
 
 type TxPublisher struct {
