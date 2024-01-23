@@ -28,7 +28,7 @@ func New(
 }
 
 func (s *SubscriptionSettingsSaver) Save(ctx context.Context, channelId meta.ChannelId, settings meta.SubscriptionSettings) error {
-	old, err := s.settingsLoader.Load(ctx, meta.SettingsQuery{ChannelId: channelId})
+	old, err := s.settingsLoader.Load(ctx, meta.SettingsQuery{ChannelId: channelId, Platform: s.platform})
 	if err != nil {
 		return err
 	}
