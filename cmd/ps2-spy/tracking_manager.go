@@ -6,8 +6,8 @@ import (
 	"log/slog"
 
 	"github.com/x0k/ps2-spy/internal/infra"
+	"github.com/x0k/ps2-spy/internal/lib/loaders"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
-	"github.com/x0k/ps2-spy/internal/loaders"
 	"github.com/x0k/ps2-spy/internal/loaders/outfit_member_ids_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/outfit_tracking_channels_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/trackable_character_ids_loader"

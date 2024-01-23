@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/x0k/ps2-spy/internal/lib/loaders"
 	"github.com/x0k/ps2-spy/internal/lib/ps2live/population"
-	"github.com/x0k/ps2-spy/internal/loaders"
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
 

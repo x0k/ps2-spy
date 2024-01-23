@@ -13,7 +13,7 @@ import (
 type Client struct {
 	httpClient   *http.Client
 	honuEndpoint string
-	worlds       *containers.ExpiableValue[[]World]
+	worlds       *containers.Expiable[[]World]
 }
 
 const worldOverviewUrl = "/api/world/overview"
@@ -22,7 +22,7 @@ func NewClient(honuEndpoint string, httpClient *http.Client) *Client {
 	return &Client{
 		httpClient:   httpClient,
 		honuEndpoint: honuEndpoint,
-		worlds:       containers.NewExpiableValue[[]World](time.Minute),
+		worlds:       containers.NewExpiable[[]World](time.Minute),
 	}
 }
 

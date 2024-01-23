@@ -16,7 +16,7 @@ type Fallbacks[T any] struct {
 	log                  *slog.Logger
 	entities             map[string]T
 	priority             []string
-	lastSuccessfulEntity *ExpiableValue[string]
+	lastSuccessfulEntity *Expiable[string]
 }
 
 func NewFallbacks[T any](log *slog.Logger, entities map[string]T, priority []string, ttl time.Duration) *Fallbacks[T] {
@@ -24,7 +24,7 @@ func NewFallbacks[T any](log *slog.Logger, entities map[string]T, priority []str
 		log:                  log,
 		entities:             entities,
 		priority:             priority,
-		lastSuccessfulEntity: NewExpiableValue[string](ttl),
+		lastSuccessfulEntity: NewExpiable[string](ttl),
 	}
 }
 
@@ -33,7 +33,7 @@ func (f *Fallbacks[T]) Start(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 func (f *Fallbacks[T]) Exec(executor func(T) error) error {
-	if name, ok := f.lastSuccessfulEntity.Read(); ok {
+	if name, ok := f.lastSuccessfulEntity.Get(); ok {
 		entity, ok := f.entities[name]
 		if ok {
 			err := executor(entity)
@@ -56,7 +56,7 @@ func (f *Fallbacks[T]) Exec(executor func(T) error) error {
 			f.log.Debug("fallback failed", slog.String("fallback", name), sl.Err(err))
 			continue
 		}
-		f.lastSuccessfulEntity.Write(name)
+		f.lastSuccessfulEntity.Set(name)
 		return nil
 	}
 	return ErrAllFallbacksFailed

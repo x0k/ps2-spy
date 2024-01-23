@@ -13,7 +13,7 @@ import (
 type Client struct {
 	httpClient          *http.Client
 	endpoint            string
-	allWorldsPopulation *containers.ExpiableValue[AllWorldsPopulation]
+	allWorldsPopulation *containers.Expiable[AllWorldsPopulation]
 }
 
 const graphqlUrl = "/graphql"
@@ -22,7 +22,7 @@ func NewClient(endpoint string, httpClient *http.Client) *Client {
 	return &Client{
 		httpClient: httpClient,
 		endpoint:   endpoint,
-		allWorldsPopulation: containers.NewExpiableValue[AllWorldsPopulation](
+		allWorldsPopulation: containers.NewExpiable[AllWorldsPopulation](
 			time.Minute,
 		),
 	}

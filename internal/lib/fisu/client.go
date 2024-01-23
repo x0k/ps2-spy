@@ -13,7 +13,7 @@ import (
 type Client struct {
 	httpClient       *http.Client
 	fisuEndpoint     string
-	worldsPopulation *containers.ExpiableValue[WorldsPopulation]
+	worldsPopulation *containers.Expiable[WorldsPopulation]
 }
 
 const populationApiUrl = "/api/population/?world=1,10,13,17,19,24,40,1000,2000"
@@ -22,7 +22,7 @@ func NewClient(fisuEndpoint string, httpClient *http.Client) *Client {
 	return &Client{
 		httpClient:       httpClient,
 		fisuEndpoint:     fisuEndpoint,
-		worldsPopulation: containers.NewExpiableValue[WorldsPopulation](time.Minute),
+		worldsPopulation: containers.NewExpiable[WorldsPopulation](time.Minute),
 	}
 }
 

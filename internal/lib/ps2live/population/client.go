@@ -13,7 +13,7 @@ import (
 type Client struct {
 	httpClient       *http.Client
 	endpoint         string
-	worldsPopulation *containers.ExpiableValue[[]WorldPopulation]
+	worldsPopulation *containers.Expiable[[]WorldPopulation]
 }
 
 const populationAllUrl = "/population/all"
@@ -22,7 +22,7 @@ func NewClient(endpoint string, httpClient *http.Client) *Client {
 	return &Client{
 		httpClient: httpClient,
 		endpoint:   endpoint,
-		worldsPopulation: containers.NewExpiableValue[[]WorldPopulation](
+		worldsPopulation: containers.NewExpiable[[]WorldPopulation](
 			time.Minute,
 		),
 	}

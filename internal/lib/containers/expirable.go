@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-type ExpiableValue[T any] struct {
+type Expiable[T any] struct {
 	mu      sync.RWMutex
 	actual  atomic.Bool
 	val     T
@@ -16,23 +16,23 @@ type ExpiableValue[T any] struct {
 	started atomic.Bool
 }
 
-func NewExpiableValue[T any](ttl time.Duration) *ExpiableValue[T] {
-	return &ExpiableValue[T]{
+func NewExpiable[T any](ttl time.Duration) *Expiable[T] {
+	return &Expiable[T]{
 		ttl: ttl,
 	}
 }
 
-func (e *ExpiableValue[T]) MarkAsExpired() {
+func (e *Expiable[T]) MarkAsExpired() {
 	e.actual.Store(false)
 	e.ticker.Stop()
 }
 
-func (e *ExpiableValue[T]) ResetExpiration() {
+func (e *Expiable[T]) ResetExpiration() {
 	e.actual.Store(true)
 	e.ticker.Reset(e.ttl)
 }
 
-func (e *ExpiableValue[T]) Start(ctx context.Context, wg *sync.WaitGroup) {
+func (e *Expiable[T]) Start(ctx context.Context, wg *sync.WaitGroup) {
 	if e.started.Swap(true) {
 		return
 	}
@@ -52,31 +52,28 @@ func (e *ExpiableValue[T]) Start(ctx context.Context, wg *sync.WaitGroup) {
 	}()
 }
 
-func (e *ExpiableValue[T]) Read() (T, bool) {
+func (e *Expiable[T]) Get() (T, bool) {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
 	return e.val, e.actual.Load()
 }
 
-func (e *ExpiableValue[T]) Write(val T) {
+func (e *Expiable[T]) Set(val T) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	e.val = val
 	e.ResetExpiration()
 }
 
-func (e *ExpiableValue[T]) Load(loader func() (T, error)) (T, error) {
-	cached, ok := e.Read()
+func (e *Expiable[T]) Load(loader func() (T, error)) (T, error) {
+	cached, ok := e.Get()
 	if ok {
 		return cached, nil
 	}
-	e.mu.Lock()
-	defer e.mu.Unlock()
 	loaded, err := loader()
 	if err != nil {
 		return cached, err
 	}
-	e.val = loaded
-	e.ResetExpiration()
+	e.Set(loaded)
 	return loaded, nil
 }

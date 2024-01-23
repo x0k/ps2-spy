@@ -15,14 +15,14 @@ const alertsUrl = "/instances/active"
 type Client struct {
 	httpClient *http.Client
 	endpoint   string
-	alerts     *containers.ExpiableValue[[]Alert]
+	alerts     *containers.Expiable[[]Alert]
 }
 
 func NewClient(endpoint string, httpClient *http.Client) *Client {
 	return &Client{
 		httpClient: httpClient,
 		endpoint:   endpoint,
-		alerts:     containers.NewExpiableValue[[]Alert](time.Minute),
+		alerts:     containers.NewExpiable[[]Alert](time.Minute),
 	}
 }
 

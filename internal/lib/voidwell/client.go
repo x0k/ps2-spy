@@ -13,7 +13,7 @@ import (
 type Client struct {
 	httpClient       *http.Client
 	voidwellEndpoint string
-	worlds           *containers.ExpiableValue[[]World]
+	worlds           *containers.Expiable[[]World]
 }
 
 const worldsStateUrl = "/ps2/worldstate?platform=pc"
@@ -22,7 +22,7 @@ func NewClient(voidwellEndpoint string, httpClient *http.Client) *Client {
 	return &Client{
 		httpClient:       httpClient,
 		voidwellEndpoint: voidwellEndpoint,
-		worlds:           containers.NewExpiableValue[[]World](time.Minute),
+		worlds:           containers.NewExpiable[[]World](time.Minute),
 	}
 }
 
