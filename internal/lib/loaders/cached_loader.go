@@ -11,7 +11,7 @@ type CachedLoader[T any] struct {
 	loader Loader[T]
 }
 
-func NewLoadable[T any](loader Loader[T], cache containers.Cache[T]) *CachedLoader[T] {
+func NewCachedLoader[T any](loader Loader[T], cache containers.Cache[T]) *CachedLoader[T] {
 	return &CachedLoader[T]{
 		value:  cache,
 		loader: loader,
@@ -40,7 +40,7 @@ type CachedQueryLoader[Q any, K comparable, T any] struct {
 	mapper func(Q) K
 }
 
-func NewQueried[Q any, K comparable, T any](
+func NewCachedQueriedLoader[Q any, K comparable, T any](
 	loader QueriedLoader[Q, T],
 	cache containers.KeyedCache[K, T],
 	mapper func(Q) K,

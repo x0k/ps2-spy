@@ -8,23 +8,27 @@ import (
 	collections "github.com/x0k/ps2-spy/internal/lib/census2/collections/ps2"
 	"github.com/x0k/ps2-spy/internal/lib/loaders"
 	"github.com/x0k/ps2-spy/internal/ps2"
+	"github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
 
 type CensusLoader struct {
-	client  *census2.Client
-	queryMu sync.Mutex
-	query   *census2.Query
-	operand census2.Ptr[census2.Str]
+	client   *census2.Client
+	queryMu  sync.Mutex
+	query    *census2.Query
+	operand  census2.Ptr[census2.Str]
+	platform platforms.Platform
 }
 
-func NewCensus(client *census2.Client, ns string) *CensusLoader {
+func NewCensus(client *census2.Client, platform platforms.Platform) *CensusLoader {
 	operand := census2.NewPtr(census2.Str(""))
+	ns := platforms.PlatformNamespace(platform)
 	return &CensusLoader{
 		client:  client,
 		operand: operand,
 		query: census2.NewQuery(census2.GetQuery, ns, collections.Outfit).
 			Where(census2.Cond("outfit_id").Equals(operand)).
 			Show("outfit_id", "name", "alias"),
+		platform: platform,
 	}
 }
 
@@ -50,8 +54,9 @@ func (l *CensusLoader) Load(ctx context.Context, outfitId ps2.OutfitId) (ps2.Out
 		return ps2.Outfit{}, loaders.ErrNotFound
 	}
 	return ps2.Outfit{
-		Id:   ps2.OutfitId(outfits[0].OutfitId),
-		Name: outfits[0].Name,
-		Tag:  outfits[0].Alias,
+		Id:       ps2.OutfitId(outfits[0].OutfitId),
+		Name:     outfits[0].Name,
+		Tag:      outfits[0].Alias,
+		Platform: l.platform,
 	}, nil
 }

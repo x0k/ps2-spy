@@ -36,6 +36,10 @@ const (
 	selectAllTrackableOutfitsWithDuplicationForPlatform
 	selectAllUniqueTrackableOutfitsForPlatform
 	selectOutfitMembers
+	selectOutfit
+	insertOutfit
+	selectFacility
+	insertFacility
 	statementsCount
 )
 
@@ -46,6 +50,20 @@ type Storage struct {
 	statements [statementsCount]*sql.Stmt
 	tx         *sql.Tx
 	pub        publisher.Abstract[publisher.Event]
+}
+
+type outfitRow struct {
+	Platform   platforms.Platform
+	OutfitId   ps2.OutfitId
+	OutfitName string
+	OutfitTag  string
+}
+
+type facilityRow struct {
+	FacilityId   ps2.FacilityId
+	FacilityName string
+	FacilityType string
+	ZoneId       ps2.ZoneId
 }
 
 func (s *Storage) migrate(ctx context.Context) error {
@@ -92,6 +110,29 @@ CREATE TABLE IF NOT EXISTS channel_to_character (
 	platform TEXT NOT NULL,
 	character_id TEXT NOT NULL,
 	PRIMARY KEY (channel_id, platform, character_id)
+);`)
+	if err != nil {
+		return err
+	}
+
+	_, err = s.db.ExecContext(ctx, `
+CREATE TABLE IF NOT EXISTS outfit (
+	platform TEXT NOT NULL,
+	outfit_id TEXT NOT NULL,
+	outfit_name TEXT NOT NULL,
+	outfit_tag TEXT NOT NULL,
+	PRIMARY KEY (platform, outfit_id)
+);`)
+	if err != nil {
+		return err
+	}
+
+	_, err = s.db.ExecContext(ctx, `
+CREATE TABLE IF NOT EXISTS facility (
+	facility_id TEXT PRIMARY KEY NOT NULL,
+	facility_name TEXT NOT NULL,
+	facility_type TEXT NOT NULL,
+	zone_id INTEGER NOT NULL
 );`)
 	return err
 }
@@ -151,6 +192,10 @@ func (s *Storage) Start(ctx context.Context) error {
 		{selectAllTrackableOutfitsWithDuplicationForPlatform, "SELECT outfit_id FROM channel_to_outfit WHERE platform = ?"},
 		{selectAllUniqueTrackableOutfitsForPlatform, "SELECT DISTINCT outfit_id FROM channel_to_outfit WHERE platform = ?"},
 		{selectOutfitMembers, "SELECT character_id FROM outfit_to_character WHERE platform = ? AND outfit_id = ?"},
+		{selectOutfit, "SELECT * FROM outfit WHERE platform = ? AND outfit_id = ?"},
+		{insertOutfit, "INSERT INTO outfit VALUES (?, ?, ?, ?)"},
+		{selectFacility, "SELECT * FROM facility WHERE facility_id = ?"},
+		{insertFacility, "INSERT INTO facility VALUES (?, ?, ?, ?)"},
 	}
 	for _, raw := range rawStatements {
 		stmt, err := s.db.Prepare(raw.stmt)
@@ -503,4 +548,63 @@ func (s *Storage) OutfitMembers(ctx context.Context, platform platforms.Platform
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 	return rows, nil
+}
+
+func (s *Storage) Outfit(ctx context.Context, platform platforms.Platform, outfitId ps2.OutfitId) (ps2.Outfit, error) {
+	const op = "storage.sqlite.Outfit"
+	infra.OpLogger(ctx, op).Debug("params", slog.String("platform", string(platform)), slog.String("outfitId", string(outfitId)))
+	var o outfitRow
+	if err := s.queryRow(ctx, &o, selectOutfit, platform, outfitId); err != nil {
+		return ps2.Outfit{}, fmt.Errorf("%s: %w", op, err)
+	}
+	return ps2.Outfit{
+		Id:       o.OutfitId,
+		Name:     o.OutfitName,
+		Tag:      o.OutfitTag,
+		Platform: o.Platform,
+	}, nil
+}
+
+func (s *Storage) SaveOutfit(ctx context.Context, outfit ps2.Outfit) error {
+	const op = "storage.sqlite.SaveOutfit"
+	infra.OpLogger(ctx, op).Debug(
+		"params",
+		slog.Any("platform", outfit),
+	)
+	err := s.exec(ctx, insertOutfit, outfit.Platform, outfit.Id, outfit.Name, outfit.Tag)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+	return nil
+}
+
+func (s *Storage) Facility(ctx context.Context, facilityId ps2.FacilityId) (ps2.Facility, error) {
+	const op = "storage.sqlite.Facility"
+	infra.OpLogger(ctx, op).Debug("params", slog.String("facilityId", string(facilityId)))
+	var f facilityRow
+	if err := s.queryRow(ctx, &f, selectFacility, facilityId); err != nil {
+		return ps2.Facility{}, fmt.Errorf("%s: %w", op, err)
+	}
+	return ps2.Facility{
+		Id:     f.FacilityId,
+		Name:   f.FacilityName,
+		Type:   f.FacilityType,
+		ZoneId: f.ZoneId,
+	}, nil
+}
+
+func (s *Storage) SaveFacility(ctx context.Context, f ps2.Facility) error {
+	const op = "storage.sqlite.SaveFacility"
+	infra.OpLogger(ctx, op).Debug(
+		"params",
+		slog.String("facilityId", string(f.Id)),
+		slog.String("name", f.Name),
+		slog.String("type", f.Type),
+		slog.Int("zoneId", int(f.ZoneId)),
+	)
+	err := s.exec(ctx, insertFacility, f.Id, f.Name, f.Type, f.ZoneId)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+	return nil
 }

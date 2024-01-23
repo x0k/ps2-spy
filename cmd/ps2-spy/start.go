@@ -14,6 +14,8 @@ import (
 	"github.com/x0k/ps2-spy/internal/bot/handlers/event/logout_event_handler"
 	"github.com/x0k/ps2-spy/internal/bot/handlers/event/outfit_members_update_event_handler"
 	"github.com/x0k/ps2-spy/internal/bot/handlers/submit/channel_setup_submit_handler"
+	"github.com/x0k/ps2-spy/internal/cache/facility_cache"
+	"github.com/x0k/ps2-spy/internal/cache/outfit_cache"
 	"github.com/x0k/ps2-spy/internal/config"
 	"github.com/x0k/ps2-spy/internal/facilities_manager"
 	"github.com/x0k/ps2-spy/internal/infra"
@@ -254,13 +256,32 @@ func start(ctx context.Context, cfg *config.Config) error {
 	platformOutfitTagsLoader := platform_outfit_tags_loader.NewCensus(censusClient)
 	subSettingsLoader := subscription_settings_loader.New(sqlStorage)
 
-	pcOutfitLoader := outfit_loader.NewCensus(censusClient, census2.Ps2_v2_NS)
-	ps4euOutfitLoader := outfit_loader.NewCensus(censusClient, census2.Ps2ps4eu_v2_NS)
-	ps4usOutfitLoader := outfit_loader.NewCensus(censusClient, census2.Ps2ps4us_v2_NS)
+	pcOutfitLoader := loaders.NewCtxCachedKeyedLoader(
+		outfit_loader.NewCensus(censusClient, platforms.PC),
+		outfit_cache.NewStorage(sqlStorage, platforms.PC),
+	)
+	ps4euOutfitLoader := loaders.NewCtxCachedKeyedLoader(
+		outfit_loader.NewCensus(censusClient, platforms.PS4_EU),
+		outfit_cache.NewStorage(sqlStorage, platforms.PS4_EU),
+	)
+	ps4usOutfitLoader := loaders.NewCtxCachedKeyedLoader(
+		outfit_loader.NewCensus(censusClient, platforms.PS4_US),
+		outfit_cache.NewStorage(sqlStorage, platforms.PS4_US),
+	)
 
-	pcFacilityLoader := facility_loader.NewCensus(censusClient, census2.Ps2_v2_NS)
-	ps4euFacilityLoader := facility_loader.NewCensus(censusClient, census2.Ps2ps4eu_v2_NS)
-	ps4usFacilityLoader := facility_loader.NewCensus(censusClient, census2.Ps2ps4us_v2_NS)
+	facilityCache := facility_cache.NewStorage(sqlStorage)
+	pcFacilityLoader := loaders.NewCtxCachedKeyedLoader(
+		facility_loader.NewCensus(censusClient, census2.Ps2_v2_NS),
+		facilityCache,
+	)
+	ps4euFacilityLoader := loaders.NewCtxCachedKeyedLoader(
+		facility_loader.NewCensus(censusClient, census2.Ps2ps4eu_v2_NS),
+		facilityCache,
+	)
+	ps4usFacilityLoader := loaders.NewCtxCachedKeyedLoader(
+		facility_loader.NewCensus(censusClient, census2.Ps2ps4us_v2_NS),
+		facilityCache,
+	)
 
 	pcFacilitiesManagerPublisher := publisher.New(facilities_manager.CastHandler)
 	startFacilitiesManager(ctx, pcPs2EventsPublisher, facilities_manager.New(

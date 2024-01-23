@@ -120,9 +120,10 @@ type Character struct {
 type OutfitId string
 
 type Outfit struct {
-	Id   OutfitId
-	Name string
-	Tag  string
+	Id       OutfitId
+	Name     string
+	Tag      string
+	Platform platforms.Platform
 }
 
 type FacilityId string
