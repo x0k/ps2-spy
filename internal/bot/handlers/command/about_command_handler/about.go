@@ -8,7 +8,7 @@ import (
 )
 
 func New() handlers.InteractionHandler {
-	return handlers.DeferredEphemeralResponse(func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.WebhookEdit, error) {
+	return handlers.DeferredEphemeralResponse(func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.WebhookEdit, *handlers.Error) {
 		content := `# PlanetSide 2 Spy
 
 Simple discord bot for PlanetSide 2 outfits

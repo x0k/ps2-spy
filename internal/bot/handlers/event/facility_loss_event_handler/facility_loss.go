@@ -2,6 +2,7 @@ package facility_loss_event_handler
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/x0k/ps2-spy/internal/bot/handlers"
 	"github.com/x0k/ps2-spy/internal/bot/render"
@@ -18,18 +19,28 @@ func New(
 		ctx context.Context,
 		cfg *handlers.Ps2EventHandlerConfig,
 		event facilities_manager.FacilityLoss,
-	) (string, error) {
+	) (string, *handlers.Error) {
+		const op = "bot.handlers.event.facility_loss_event_handler"
 		worldId, err := ps2.ToWorldId(event.WorldID)
 		if err != nil {
-			return "", err
+			return "", &handlers.Error{
+				Msg: "Invalid world id",
+				Err: fmt.Errorf("%s parsing world id: %w", op, err),
+			}
 		}
 		facility, err := facilityLoader.Load(ctx, ps2.FacilityId(event.FacilityID))
 		if err != nil {
-			return "", err
+			return "", &handlers.Error{
+				Msg: "Failed to get facility data",
+				Err: fmt.Errorf("%s getting facility: %w", op, err),
+			}
 		}
 		outfitTag, err := outfitLoader.Load(ctx, event.OldOutfitId)
 		if err != nil {
-			return "", err
+			return "", &handlers.Error{
+				Msg: "Failed to get outfit data",
+				Err: fmt.Errorf("%s getting outfit: %w", op, err),
+			}
 		}
 		return render.RenderFacilityLoss(worldId, outfitTag, facility), nil
 	})

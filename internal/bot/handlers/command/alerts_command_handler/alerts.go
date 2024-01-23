@@ -17,7 +17,7 @@ func New(
 	alertsLoader loaders.KeyedLoader[string, loaders.Loaded[ps2.Alerts]],
 	worldAlertsLoader loaders.QueriedLoader[loaders.MultiLoaderQuery[ps2.WorldId], loaders.Loaded[ps2.Alerts]],
 ) handlers.InteractionHandler {
-	return handlers.DeferredEphemeralResponse(func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.WebhookEdit, error) {
+	return handlers.DeferredEphemeralResponse(func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.WebhookEdit, *handlers.Error) {
 		const op = "bot.handlers.command.alerts_command_handler"
 		log := infra.OpLogger(ctx, op)
 		opts := i.ApplicationCommandData().Options
@@ -36,7 +36,10 @@ func New(
 			log.Debug("getting world alerts")
 			alerts, err := worldAlertsLoader.Load(ctx, loaders.NewMultiLoaderQuery(provider, worldId))
 			if err != nil {
-				return nil, fmt.Errorf("%s error getting alerts: %w", op, err)
+				return nil, &handlers.Error{
+					Msg: "Failed to get world alerts",
+					Err: fmt.Errorf("%s getting world alerts: %w", op, err),
+				}
 			}
 			worldName := ps2.WorldNameById(worldId)
 			embed := []*discordgo.MessageEmbed{
@@ -49,7 +52,10 @@ func New(
 		log.Debug("getting global alerts")
 		alerts, err := alertsLoader.Load(ctx, provider)
 		if err != nil {
-			return nil, fmt.Errorf("error getting alerts: %q", err)
+			return nil, &handlers.Error{
+				Msg: "Failed to get global alerts",
+				Err: fmt.Errorf("%s getting alerts: %w", op, err),
+			}
 		}
 		embed := render.RenderAlerts(alerts)
 		return &discordgo.WebhookEdit{

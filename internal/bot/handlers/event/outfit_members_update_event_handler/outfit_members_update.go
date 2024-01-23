@@ -22,16 +22,22 @@ func New(
 		ctx context.Context,
 		cfg *handlers.Ps2EventHandlerConfig,
 		event outfit_members_saver.OutfitMembersUpdate,
-	) (string, error) {
+	) (string, *handlers.Error) {
 		const op = "bot.handlers.events.outfit_members_update_event_handler"
 		log := infra.OpLogger(ctx, op)
 		outfit, err := outfitLoader.Load(ctx, event.OutfitId)
 		if err != nil {
-			return "", fmt.Errorf("%s error getting outfit: %w", op, err)
+			return "", &handlers.Error{
+				Msg: "Failed to get outfit data",
+				Err: fmt.Errorf("%s error getting outfit: %w", op, err),
+			}
 		}
 		characters, err := charsLoader.Load(ctx, append(event.Members.ToAdd, event.Members.ToDel...))
 		if err != nil {
-			return "", fmt.Errorf("%s error getting characters: %w", op, err)
+			return "", &handlers.Error{
+				Msg: "Failed to get character data",
+				Err: fmt.Errorf("%s error getting characters: %w", op, err),
+			}
 		}
 		toAdd := make([]ps2.Character, 0, len(event.Members.ToAdd))
 		for _, id := range event.Members.ToAdd {

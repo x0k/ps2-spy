@@ -166,40 +166,44 @@ func New(
 	log := infra.OpLogger(ctx, op)
 	session, err := discordgo.New("Bot " + cfg.DiscordToken)
 	if err != nil {
-		return nil, fmt.Errorf("error creating Discord session: %w", err)
+		return nil, fmt.Errorf("%s creating Discord session: %w", op, err)
 	}
 	session.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {
 		log.Info("logged in as", slog.String("username", s.State.User.Username), slog.String("discriminator", s.State.User.Discriminator))
-		log.Info("running on", slog.Int("server_count", len(s.State.Guilds)))
+		log.Info("running on", slog.Int("serverCount", len(s.State.Guilds)))
 	})
 	session.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+		const op = "bot.Bot.InteractionCreateHandler"
 		var userId string
 		if i.Member != nil {
 			userId = i.Member.User.ID
 		} else {
 			userId = i.User.ID
 		}
-		l := log.With(
-			slog.String("guild_id", i.GuildID),
-			slog.String("user_id", userId),
+		log := infra.Logger(ctx).With(
+			infra.Op(op),
+			slog.String("guildId", i.GuildID),
+			slog.String("channelId", i.ChannelID),
+			slog.String("userId", userId),
 		)
+		log.Debug("interaction received", slog.String("type", i.Type.String()))
 		switch i.Type {
 		case discordgo.InteractionApplicationCommand:
-			l.Debug("command received", slog.String("command", i.ApplicationCommandData().Name))
+			log.Debug("command received", slog.String("command", i.ApplicationCommandData().Name))
 			if handler, ok := cfg.CommandHandlers[i.ApplicationCommandData().Name]; ok {
 				go handler.Run(ctx, cfg.CommandHandlerTimeout, s, i)
 			} else {
-				l.Warn("unknown command")
+				log.Warn("unknown command")
 			}
 		case discordgo.InteractionMessageComponent:
-			l.Debug("component invoked")
+			log.Debug("component invoked")
 		case discordgo.InteractionModalSubmit:
 			data := i.ModalSubmitData()
-			l.Debug("modal submitted", slog.Any("data", data))
+			log.Debug("modal submitted", slog.Any("data", data))
 			if handler, ok := cfg.SubmitHandlers[data.CustomID]; ok {
 				go handler.Run(ctx, cfg.CommandHandlerTimeout, s, i)
 			} else {
-				l.Warn("unknown modal")
+				log.Warn("unknown modal")
 			}
 		}
 	})

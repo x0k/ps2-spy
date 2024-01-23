@@ -9,7 +9,6 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/x0k/ps2-spy/internal/infra"
-	"github.com/x0k/ps2-spy/internal/lib/contextx"
 	"github.com/x0k/ps2-spy/internal/lib/loaders"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/meta"
@@ -34,30 +33,37 @@ var ModalsTitles = map[string]string{
 	CHANNEL_SETUP_PS4_US_MODAL: "Subscription Settings (PS4 US)",
 }
 
+type Error struct {
+	Msg string
+	Err error
+}
+
 type InteractionHandler func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) error
 
 func (handler InteractionHandler) Run(ctx context.Context, timeout time.Duration, s *discordgo.Session, i *discordgo.InteractionCreate) {
 	const op = "bot.handlers.InteractionHandler.Run"
-	log := infra.OpLogger(ctx, op)
-	t := time.Now()
+	var userId string
+	if i.Member != nil {
+		userId = i.Member.User.ID
+	} else {
+		userId = i.User.ID
+	}
+	log := infra.Logger(ctx).With(
+		infra.Op(op),
+		slog.String("command", i.ApplicationCommandData().Name),
+		slog.String("guildId", i.GuildID),
+		slog.String("channelId", i.ChannelID),
+		slog.String("userId", userId),
+	)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
-	err := contextx.Await(ctx, func() error {
-		err := handler(ctx, s, i)
-		if err != nil {
-			s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
-				Content: err.Error(),
-			})
-		}
-		return err
-	})
-	if err != nil {
+	log.Debug("run handler")
+	if err := handler(ctx, s, i); err != nil {
 		log.Error("error handling", sl.Err(err))
 	}
-	log.Debug("handled", slog.Duration("duration", time.Since(t)))
 }
 
-func DeferredEphemeralResponse(handle func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.WebhookEdit, error)) InteractionHandler {
+func DeferredEphemeralResponse(handle func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.WebhookEdit, *Error)) InteractionHandler {
 	return func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) error {
 		err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
@@ -68,20 +74,26 @@ func DeferredEphemeralResponse(handle func(ctx context.Context, s *discordgo.Ses
 		if err != nil {
 			return err
 		}
-		data, err := handle(ctx, s, i)
-		if err != nil {
-			return err
+		data, customErr := handle(ctx, s, i)
+		if customErr != nil {
+			s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
+				Content: customErr.Msg,
+			})
+			return customErr.Err
 		}
 		_, err = s.InteractionResponseEdit(i.Interaction, data)
 		return err
 	}
 }
 
-func ShowModal(handle func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.InteractionResponseData, error)) InteractionHandler {
+func ShowModal(handle func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.InteractionResponseData, *Error)) InteractionHandler {
 	return func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) error {
 		data, err := handle(ctx, s, i)
 		if err != nil {
-			return err
+			s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
+				Content: err.Msg,
+			})
+			return err.Err
 		}
 		return s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseModal,
@@ -100,36 +112,31 @@ type Ps2EventHandler[E any] func(ctx context.Context, channelIds []meta.ChannelI
 
 func (handler Ps2EventHandler[E]) Run(ctx context.Context, cfg *Ps2EventHandlerConfig, event E) {
 	const op = "bot.handlers.Ps2EventHandler.Run"
-	log := infra.OpLogger(ctx, op)
-	// log.Debug("handling", slog.Duration("timeout", cfg.Timeout))
-	// t := time.Now()
+	log := infra.Logger(ctx).With(infra.Op(op), slog.Any("event", event))
 	ctx, cancel := context.WithTimeout(ctx, cfg.Timeout)
 	defer cancel()
-	err := contextx.Await(ctx, func() error {
-		// log.Debug("check for tracking channels for", slog.Any("event", event))
-		channels, err := cfg.EventTrackingChannelsLoader.Load(ctx, event)
-		if err != nil {
-			return err
-		}
-		if len(channels) == 0 {
-			return nil
-		}
-		log.Debug("handling", slog.Any("event", event), slog.Int("channels_count", len(channels)))
-		return handler(ctx, channels, cfg, event)
-	})
+	channels, err := cfg.EventTrackingChannelsLoader.Load(ctx, event)
 	if err != nil {
-		log.Error("error handling", slog.Any("event", event), sl.Err(err))
+		log.Error("error loading tracking channels", sl.Err(err))
+		return
 	}
-	// log.Debug("handled", slog.Duration("duration", time.Since(t)))
+	if len(channels) == 0 {
+		return
+	}
+	log.Debug("run handler for", slog.Int("channelsCount", len(channels)))
+	if err := handler(ctx, channels, cfg, event); err != nil {
+		log.Error("error handling", sl.Err(err))
+	}
 }
 
-func SimpleMessage[E any](handle func(ctx context.Context, cfg *Ps2EventHandlerConfig, event E) (string, error)) Ps2EventHandler[E] {
+// TODO: publisher.Event to use event.Type() in error message
+func SimpleMessage[E any](handle func(ctx context.Context, cfg *Ps2EventHandlerConfig, event E) (string, *Error)) Ps2EventHandler[E] {
 	return func(ctx context.Context, channelIds []meta.ChannelId, cfg *Ps2EventHandlerConfig, event E) error {
 		const op = "bot.handlers.SimpleMessage"
 		log := infra.OpLogger(ctx, op)
 		msg, err := handle(ctx, cfg, event)
 		if err != nil {
-			return err
+			msg = err.Msg
 		}
 		if msg == "" {
 			return nil
@@ -158,7 +165,7 @@ func SimpleMessage[E any](handle func(ctx context.Context, cfg *Ps2EventHandlerC
 				msg = ""
 			}
 			for _, channelId := range channelIds {
-				_, err = cfg.Session.ChannelMessageSend(string(channelId), toSend)
+				_, err := cfg.Session.ChannelMessageSend(string(channelId), toSend)
 				if err != nil {
 					log.Error(
 						"error sending message",
@@ -169,8 +176,11 @@ func SimpleMessage[E any](handle func(ctx context.Context, cfg *Ps2EventHandlerC
 				}
 			}
 		}
+		if err != nil {
+			return fmt.Errorf("%s handling event: %w", op, err.Err)
+		}
 		if len(errors) > 0 {
-			return fmt.Errorf("error sending message: %s", strings.Join(errors, ", "))
+			return fmt.Errorf("%s sending messages: %s", op, strings.Join(errors, ", "))
 		}
 		return nil
 	}

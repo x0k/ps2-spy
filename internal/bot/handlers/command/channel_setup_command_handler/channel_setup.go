@@ -18,7 +18,7 @@ func New(
 	namesLoader loaders.QueriedLoader[meta.PlatformQuery[ps2.CharacterId], []string],
 	outfitTagsLoader loaders.QueriedLoader[meta.PlatformQuery[ps2.OutfitId], []string],
 ) handlers.InteractionHandler {
-	return handlers.ShowModal(func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.InteractionResponseData, error) {
+	return handlers.ShowModal(func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.InteractionResponseData, *handlers.Error) {
 		const op = "bot.handlers.command.channel_setup_command_handler"
 		platform := platforms.Platform(i.ApplicationCommandData().Options[0].Name)
 		settings, err := settingsLoader.Load(ctx, meta.SettingsQuery{
@@ -26,25 +26,37 @@ func New(
 			Platform:  platform,
 		})
 		if err != nil {
-			return nil, err
+			return nil, &handlers.Error{
+				Msg: "Failed to get settings",
+				Err: fmt.Errorf("%s getting settings: %w", op, err),
+			}
 		}
 		tags, err := outfitTagsLoader.Load(ctx, meta.PlatformQuery[ps2.OutfitId]{
 			Platform: platform,
 			Items:    settings.Outfits,
 		})
 		if err != nil {
-			return nil, err
+			return nil, &handlers.Error{
+				Msg: "Failed to get outfit tags",
+				Err: fmt.Errorf("%s getting outfit tags: %w", op, err),
+			}
 		}
 		names, err := namesLoader.Load(ctx, meta.PlatformQuery[ps2.CharacterId]{
 			Platform: platform,
 			Items:    settings.Characters,
 		})
 		if err != nil {
-			return nil, err
+			return nil, &handlers.Error{
+				Msg: "Failed to get character names",
+				Err: fmt.Errorf("%s getting character names: %w", op, err),
+			}
 		}
 		customId, ok := handlers.PlatformModals[platform]
 		if !ok {
-			return nil, fmt.Errorf("unknown platform: %q", platform)
+			return nil, &handlers.Error{
+				Msg: "Unsupported platform",
+				Err: fmt.Errorf("%s unsupported platform: %s", op, platform),
+			}
 		}
 		return &discordgo.InteractionResponseData{
 			CustomID: customId,

@@ -68,32 +68,40 @@ func (c *Client) Execute(ctx context.Context, q *Query) ([]any, error) {
 	return c.ExecutePrepared(ctx, q.Collection(), c.ToURL(q))
 }
 
-type DecodeError struct {
+type DecodeError[T any] struct {
 	Index int
+	Item  T
 	Err   error
 }
 
-func (e *DecodeError) Error() string {
-	return fmt.Sprintf("failed to decode item %d: %s", e.Index, e.Err.Error())
+func (e *DecodeError[T]) Error() string {
+	return fmt.Sprintf("item[%d] %v: %s", e.Index, e.Item, e.Err.Error())
 }
 
-type DecodeErrors []DecodeError
+type DecodeErrors[T any] []DecodeError[T]
 
-func (e DecodeErrors) Error() string {
-	return fmt.Sprintf("failed to decode %d items", len(e))
+func (e DecodeErrors[T]) Error() string {
+	var builder strings.Builder
+	builder.WriteString("failed to decode:\n")
+	builder.WriteString(e[0].Error())
+	for i := 1; i < len(e); i++ {
+		builder.WriteByte('\n')
+		builder.WriteString(e[i].Error())
+	}
+	return builder.String()
 }
 
 func DecodeCollection[T any](items []any) ([]T, error) {
 	res := make([]T, len(items))
-	errs := make([]DecodeError, 0, len(items))
+	errs := make([]DecodeError[T], 0, len(items))
 	for i, item := range items {
 		err := mapstructure.Decode(item, &res[i])
 		if err != nil {
-			errs = append(errs, DecodeError{Index: i, Err: err})
+			errs = append(errs, DecodeError[T]{Index: i, Item: res[i], Err: err})
 		}
 	}
 	if len(errs) > 0 {
-		return res, DecodeErrors(errs)
+		return res, DecodeErrors[T](errs)
 	}
 	return res, nil
 }

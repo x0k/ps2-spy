@@ -16,7 +16,7 @@ import (
 func New(
 	popLoader loaders.KeyedLoader[string, loaders.Loaded[ps2.WorldsPopulation]],
 ) handlers.InteractionHandler {
-	return handlers.DeferredEphemeralResponse(func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.WebhookEdit, error) {
+	return handlers.DeferredEphemeralResponse(func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.WebhookEdit, *handlers.Error) {
 		const op = "bot.handlers.command.population_command_handler"
 		log := infra.OpLogger(ctx, op)
 		opts := i.ApplicationCommandData().Options
@@ -27,7 +27,10 @@ func New(
 		log.Debug("parsed options", slog.String("provider", provider))
 		population, err := popLoader.Load(ctx, provider)
 		if err != nil {
-			return nil, fmt.Errorf("%s error getting population: %w", op, err)
+			return nil, &handlers.Error{
+				Msg: "Failed to get population",
+				Err: fmt.Errorf("%s error getting population: %w", op, err),
+			}
 		}
 		embeds := []*discordgo.MessageEmbed{
 			render.RenderPopulation(population),

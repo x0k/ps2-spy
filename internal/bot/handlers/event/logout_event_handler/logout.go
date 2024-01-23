@@ -18,11 +18,14 @@ func New(
 		ctx context.Context,
 		cfg *handlers.Ps2EventHandlerConfig,
 		event ps2events.PlayerLogout,
-	) (string, error) {
+	) (string, *handlers.Error) {
 		const op = "bot.handlers.events.logout_event_handler"
 		character, err := charLoader.Load(ctx, ps2.CharacterId(event.CharacterID))
 		if err != nil {
-			return "", fmt.Errorf("%s error getting character: %w", op, err)
+			return "", &handlers.Error{
+				Msg: "Failed to get character",
+				Err: fmt.Errorf("%s getting character: %w", op, err),
+			}
 		}
 		return render.RenderCharacterLogout(character), nil
 	})
