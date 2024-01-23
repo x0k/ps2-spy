@@ -11,8 +11,8 @@ import (
 )
 
 func New(
-	outfitLoader loaders.KeyedLoader[string, ps2.Outfit],
-	facilityLoader loaders.KeyedLoader[string, ps2.Facility],
+	outfitLoader loaders.KeyedLoader[ps2.OutfitId, ps2.Outfit],
+	facilityLoader loaders.KeyedLoader[ps2.FacilityId, ps2.Facility],
 ) handlers.Ps2EventHandler[facilities_manager.FacilityControl] {
 	return handlers.SimpleMessage[facilities_manager.FacilityControl](func(
 		ctx context.Context,
@@ -23,11 +23,11 @@ func New(
 		if err != nil {
 			return "", err
 		}
-		facility, err := facilityLoader.Load(ctx, event.FacilityID)
+		facility, err := facilityLoader.Load(ctx, ps2.FacilityId(event.FacilityID))
 		if err != nil {
 			return "", err
 		}
-		outfitTag, err := outfitLoader.Load(ctx, event.OutfitID)
+		outfitTag, err := outfitLoader.Load(ctx, ps2.OutfitId(event.OutfitID))
 		if err != nil {
 			return "", err
 		}

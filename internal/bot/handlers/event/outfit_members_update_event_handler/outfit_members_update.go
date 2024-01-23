@@ -15,7 +15,8 @@ import (
 )
 
 func New(
-	charsLoader loaders.QueriedLoader[[]string, map[string]ps2.Character],
+	outfitLoader loaders.KeyedLoader[ps2.OutfitId, ps2.Outfit],
+	charsLoader loaders.QueriedLoader[[]ps2.CharacterId, map[ps2.CharacterId]ps2.Character],
 ) handlers.Ps2EventHandler[outfit_members_saver.OutfitMembersUpdate] {
 	return handlers.SimpleMessage[outfit_members_saver.OutfitMembersUpdate](func(
 		ctx context.Context,
@@ -24,6 +25,10 @@ func New(
 	) (string, error) {
 		const op = "bot.handlers.events.outfit_members_update_event_handler"
 		log := infra.OpLogger(ctx, op)
+		outfit, err := outfitLoader.Load(ctx, event.OutfitId)
+		if err != nil {
+			return "", fmt.Errorf("%s error getting outfit: %w", op, err)
+		}
 		characters, err := charsLoader.Load(ctx, append(event.Members.ToAdd, event.Members.ToDel...))
 		if err != nil {
 			return "", fmt.Errorf("%s error getting characters: %w", op, err)
@@ -32,7 +37,7 @@ func New(
 		for _, id := range event.Members.ToAdd {
 			char, ok := characters[id]
 			if !ok {
-				log.Warn("character not found", slog.String("character_id", id))
+				log.Warn("character not found", slog.String("character_id", string(id)))
 				continue
 			}
 			toAdd = append(toAdd, char)
@@ -41,12 +46,12 @@ func New(
 		for _, id := range event.Members.ToDel {
 			char, ok := characters[id]
 			if !ok {
-				log.Warn("character not found", slog.String("character_id", id))
+				log.Warn("character not found", slog.String("character_id", string(id)))
 				continue
 			}
 			toDell = append(toDell, char)
 		}
-		return render.RenderOutfitMembersUpdate(event.OutfitTag, diff.Diff[ps2.Character]{
+		return render.RenderOutfitMembersUpdate(outfit, diff.Diff[ps2.Character]{
 			ToAdd: toAdd,
 			ToDel: toDell,
 		}), nil

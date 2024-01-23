@@ -34,25 +34,25 @@ type BotConfig struct {
 	Commands                     []*discordgo.ApplicationCommand
 	CommandHandlers              map[string]handlers.InteractionHandler
 	SubmitHandlers               map[string]handlers.InteractionHandler
-	EventTrackingChannelsLoaders map[string]loaders.QueriedLoader[any, []string]
+	EventTrackingChannelsLoaders map[platforms.Platform]loaders.QueriedLoader[any, []string]
 	// Raw PS2 events
-	Ps2EventsPublishers  map[string]*ps2events.Publisher
-	PlayerLoginHandlers  map[string]handlers.Ps2EventHandler[ps2events.PlayerLogin]
-	PlayerLogoutHandlers map[string]handlers.Ps2EventHandler[ps2events.PlayerLogout]
+	Ps2EventsPublishers  map[platforms.Platform]*ps2events.Publisher
+	PlayerLoginHandlers  map[platforms.Platform]handlers.Ps2EventHandler[ps2events.PlayerLogin]
+	PlayerLogoutHandlers map[platforms.Platform]handlers.Ps2EventHandler[ps2events.PlayerLogout]
 	// Outfit events
-	OutfitMembersSaverPublishers map[string]*publisher.Publisher
-	OutfitMembersUpdateHandlers  map[string]handlers.Ps2EventHandler[outfit_members_saver.OutfitMembersUpdate]
+	OutfitMembersSaverPublishers map[platforms.Platform]*publisher.Publisher
+	OutfitMembersUpdateHandlers  map[platforms.Platform]handlers.Ps2EventHandler[outfit_members_saver.OutfitMembersUpdate]
 	// Facility events
-	FacilitiesManagerPublishers map[string]*publisher.Publisher
-	FacilityControlHandlers     map[string]handlers.Ps2EventHandler[facilities_manager.FacilityControl]
-	FacilityLossHandlers        map[string]handlers.Ps2EventHandler[facilities_manager.FacilityLoss]
+	FacilitiesManagerPublishers map[platforms.Platform]*publisher.Publisher
+	FacilityControlHandlers     map[platforms.Platform]handlers.Ps2EventHandler[facilities_manager.FacilityControl]
+	FacilityLossHandlers        map[platforms.Platform]handlers.Ps2EventHandler[facilities_manager.FacilityLoss]
 }
 
 func startEventHandlersForPlatform(
 	ctx context.Context,
 	session *discordgo.Session,
 	cfg *BotConfig,
-	platform string,
+	platform platforms.Platform,
 ) error {
 	const op = "bot.startEventHandlersForPlatform"
 	eventTrackingChannelsLoader, ok := cfg.EventTrackingChannelsLoaders[platform]

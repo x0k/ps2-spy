@@ -2,11 +2,11 @@ package outfit_tags_loader
 
 import (
 	"context"
-	"strings"
 	"sync"
 
 	"github.com/x0k/ps2-spy/internal/lib/census2"
 	collections "github.com/x0k/ps2-spy/internal/lib/census2/collections/ps2"
+	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
 type CensusLoader struct {
@@ -22,7 +22,7 @@ func NewCensus(client *census2.Client, ns string) *CensusLoader {
 		client:  client,
 		operand: operand,
 		query: census2.NewQuery(census2.GetQuery, ns, collections.Outfit).
-			Where(census2.Cond("alias_lower").Equals(operand)).Show("alias"),
+			Where(census2.Cond("outfit_id").Equals(operand)).Show("alias"),
 	}
 }
 
@@ -34,13 +34,13 @@ func (l *CensusLoader) toUrl(values []census2.Str) string {
 	return l.client.ToURL(l.query)
 }
 
-func (l *CensusLoader) Load(ctx context.Context, outfitTags []string) ([]string, error) {
-	if len(outfitTags) == 0 {
+func (l *CensusLoader) Load(ctx context.Context, outfitIds []ps2.OutfitId) ([]string, error) {
+	if len(outfitIds) == 0 {
 		return nil, nil
 	}
-	values := make([]census2.Str, len(outfitTags))
-	for i, tag := range outfitTags {
-		values[i] = census2.Str(strings.ToLower(tag))
+	values := make([]census2.Str, len(outfitIds))
+	for i, outfitId := range outfitIds {
+		values[i] = census2.Str(outfitId)
 	}
 	url := l.toUrl(values)
 	outfits, err := census2.ExecutePreparedAndDecode[collections.OutfitItem](

@@ -12,7 +12,7 @@ import (
 )
 
 func New(
-	charLoader loaders.KeyedLoader[string, ps2.Character],
+	charLoader loaders.KeyedLoader[ps2.CharacterId, ps2.Character],
 ) handlers.Ps2EventHandler[ps2events.PlayerLogout] {
 	return handlers.SimpleMessage[ps2events.PlayerLogout](func(
 		ctx context.Context,
@@ -20,7 +20,7 @@ func New(
 		event ps2events.PlayerLogout,
 	) (string, error) {
 		const op = "bot.handlers.events.logout_event_handler"
-		character, err := charLoader.Load(ctx, event.CharacterID)
+		character, err := charLoader.Load(ctx, ps2.CharacterId(event.CharacterID))
 		if err != nil {
 			return "", fmt.Errorf("%s error getting character: %w", op, err)
 		}

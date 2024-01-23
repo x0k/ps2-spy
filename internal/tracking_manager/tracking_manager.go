@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"strings"
 	"sync"
 	"time"
 
@@ -21,36 +20,33 @@ var ErrUnknownEvent = fmt.Errorf("unknown event")
 
 type TrackingManager struct {
 	charactersFilterMu              sync.RWMutex
-	charactersFilter                map[string]int
+	charactersFilter                map[ps2.CharacterId]int
 	outfitsFilterMu                 sync.RWMutex
-	outfitsFilter                   map[string]int
-	characterLoader                 loaders.KeyedLoader[string, ps2.Character]
+	outfitsFilter                   map[ps2.OutfitId]int
+	characterLoader                 loaders.KeyedLoader[ps2.CharacterId, ps2.Character]
 	characterTrackingChannelsLoader loaders.KeyedLoader[ps2.Character, []string]
-	trackableCharactersLoader       loaders.Loader[[]string]
-	outfitMembersLoader             loaders.KeyedLoader[string, []string]
-	outfitTagLoader                 loaders.KeyedLoader[string, string]
-	outfitTrackingChannelsLoader    loaders.KeyedLoader[string, []string]
-	trackableOutfitsLoader          loaders.Loader[[]string]
+	trackableCharactersLoader       loaders.Loader[[]ps2.CharacterId]
+	outfitMembersLoader             loaders.KeyedLoader[ps2.OutfitId, []ps2.CharacterId]
+	outfitTrackingChannelsLoader    loaders.KeyedLoader[ps2.OutfitId, []string]
+	trackableOutfitsLoader          loaders.Loader[[]ps2.OutfitId]
 	rebuildFiltersInterval          time.Duration
 }
 
 func New(
-	charLoader loaders.KeyedLoader[string, ps2.Character],
+	charLoader loaders.KeyedLoader[ps2.CharacterId, ps2.Character],
 	characterTrackingChannelsLoader loaders.KeyedLoader[ps2.Character, []string],
-	trackableCharactersLoader loaders.Loader[[]string],
-	outfitMembersLoader loaders.KeyedLoader[string, []string],
-	outfitTagLoader loaders.KeyedLoader[string, string],
-	outfitTrackingChannelsLoader loaders.KeyedLoader[string, []string],
-	trackableOutfitsLoader loaders.Loader[[]string],
+	trackableCharactersLoader loaders.Loader[[]ps2.CharacterId],
+	outfitMembersLoader loaders.KeyedLoader[ps2.OutfitId, []ps2.CharacterId],
+	outfitTrackingChannelsLoader loaders.KeyedLoader[ps2.OutfitId, []string],
+	trackableOutfitsLoader loaders.Loader[[]ps2.OutfitId],
 ) *TrackingManager {
 	return &TrackingManager{
-		charactersFilter:                make(map[string]int),
-		outfitsFilter:                   make(map[string]int),
+		charactersFilter:                make(map[ps2.CharacterId]int),
+		outfitsFilter:                   make(map[ps2.OutfitId]int),
 		characterLoader:                 charLoader,
 		characterTrackingChannelsLoader: characterTrackingChannelsLoader,
 		trackableCharactersLoader:       trackableCharactersLoader,
 		outfitMembersLoader:             outfitMembersLoader,
-		outfitTagLoader:                 outfitTagLoader,
 		outfitTrackingChannelsLoader:    outfitTrackingChannelsLoader,
 		trackableOutfitsLoader:          trackableOutfitsLoader,
 		rebuildFiltersInterval:          time.Hour * 12,
@@ -77,7 +73,7 @@ func (tm *TrackingManager) rebuildCharactersFilterTask(ctx context.Context, wg *
 			slog.Int("new_size", newSize),
 		)
 	}
-	tm.charactersFilter = make(map[string]int, len(chars))
+	tm.charactersFilter = make(map[ps2.CharacterId]int, len(chars))
 	for _, char := range chars {
 		tm.charactersFilter[char]++
 	}
@@ -103,7 +99,7 @@ func (tm *TrackingManager) rebuildOutfitsFilterTask(ctx context.Context, wg *syn
 			slog.Int("new_size", newSize),
 		)
 	}
-	tm.outfitsFilter = make(map[string]int, len(outfits))
+	tm.outfitsFilter = make(map[ps2.OutfitId]int, len(outfits))
 	for _, outfit := range outfits {
 		tm.outfitsFilter[outfit]++
 	}
@@ -137,19 +133,19 @@ func (tm *TrackingManager) Start(ctx context.Context, wg *sync.WaitGroup) {
 	go tm.scheduleFiltersRebuildTasks(ctx, wg)
 }
 
-func (tm *TrackingManager) characterTrackersCount(charId string) int {
+func (tm *TrackingManager) characterTrackersCount(charId ps2.CharacterId) int {
 	tm.charactersFilterMu.RLock()
 	defer tm.charactersFilterMu.RUnlock()
 	return tm.charactersFilter[charId]
 }
 
-func (tm *TrackingManager) channelIdsForCharacter(ctx context.Context, characterId string) ([]string, error) {
+func (tm *TrackingManager) channelIdsForCharacter(ctx context.Context, characterId ps2.CharacterId) ([]string, error) {
 	const op = "tracking_manager.TrackingManager.channelIdsForCharacter"
 	log := infra.OpLogger(ctx, op)
 	trackersCount := tm.characterTrackersCount(characterId)
 	if trackersCount <= 0 {
 		if trackersCount < 0 {
-			log.Warn("invalid character trackers count", slog.String("char_id", characterId))
+			log.Warn("invalid character trackers count", slog.String("charId", string(characterId)))
 		}
 		return nil, nil
 	}
@@ -160,88 +156,75 @@ func (tm *TrackingManager) channelIdsForCharacter(ctx context.Context, character
 	return tm.characterTrackingChannelsLoader.Load(ctx, char)
 }
 
-func (tm *TrackingManager) outfitTrackersCount(outfitTag string) int {
+func (tm *TrackingManager) outfitTrackersCount(outfitId ps2.OutfitId) int {
 	tm.outfitsFilterMu.RLock()
 	defer tm.outfitsFilterMu.RUnlock()
-	return tm.outfitsFilter[outfitTag]
+	return tm.outfitsFilter[outfitId]
 }
 
-func (tm *TrackingManager) channelIdsForOutfitTag(ctx context.Context, outfitTag string) ([]string, error) {
-	const op = "tracking_manager.TrackingManager.channelIdsForOutfit"
+func (tm *TrackingManager) channelIdsForOutfit(ctx context.Context, outfitId ps2.OutfitId) ([]string, error) {
+	const op = "tracking_manager.TrackingManager.channelIdsForOutfitTag"
 	log := infra.OpLogger(ctx, op)
-	trackersCount := tm.outfitTrackersCount(outfitTag)
+	trackersCount := tm.outfitTrackersCount(outfitId)
 	if trackersCount <= 0 {
 		if trackersCount < 0 {
-			log.Warn("invalid outfit trackers count", slog.String("outfit_tag", outfitTag))
+			log.Warn("invalid outfit trackers count", slog.String("outfitId", string(outfitId)))
 		}
 		return nil, nil
 	}
-	return tm.outfitTrackingChannelsLoader.Load(ctx, outfitTag)
-}
-
-func (tm *TrackingManager) channelIdsForOutfitId(ctx context.Context, outfitId string) ([]string, error) {
-	const op = "tracking_manager.TrackingManager.channelIdsForOutfit"
-	// Ephemeral outfit
-	if outfitId == "0" {
-		return nil, nil
-	}
-	outfitTag, err := tm.outfitTagLoader.Load(ctx, outfitId)
-	if err != nil {
-		return nil, fmt.Errorf("%s load outfit %s: %w", op, outfitId, err)
-	}
-	return tm.channelIdsForOutfitTag(ctx, strings.ToLower(outfitTag))
+	return tm.outfitTrackingChannelsLoader.Load(ctx, outfitId)
 }
 
 func (tm *TrackingManager) ChannelIds(ctx context.Context, event any) ([]string, error) {
 	const op = "TrackingManager.ChannelIds"
 	switch e := event.(type) {
 	case ps2events.PlayerLogin:
-		return tm.channelIdsForCharacter(ctx, e.CharacterID)
+		return tm.channelIdsForCharacter(ctx, ps2.CharacterId(e.CharacterID))
 	case ps2events.PlayerLogout:
-		return tm.channelIdsForCharacter(ctx, e.CharacterID)
+		return tm.channelIdsForCharacter(ctx, ps2.CharacterId(e.CharacterID))
 	case outfit_members_saver.OutfitMembersUpdate:
-		return tm.channelIdsForOutfitTag(ctx, e.OutfitTag)
+		return tm.channelIdsForOutfit(ctx, e.OutfitId)
 	case facilities_manager.FacilityControl:
-		return tm.channelIdsForOutfitId(ctx, e.OutfitID)
+		return tm.channelIdsForOutfit(ctx, ps2.OutfitId(e.OutfitID))
 	case facilities_manager.FacilityLoss:
-		return tm.channelIdsForOutfitId(ctx, e.OldOutfitId)
+		return tm.channelIdsForOutfit(ctx, e.OldOutfitId)
 	}
 	return nil, fmt.Errorf("%s: %w", op, ErrUnknownEvent)
 }
 
-func (tm *TrackingManager) considerCharacter(charId string, delta int) {
+func (tm *TrackingManager) considerCharacter(charId ps2.CharacterId, delta int) {
 	tm.charactersFilterMu.Lock()
 	defer tm.charactersFilterMu.Unlock()
 	tm.charactersFilter[charId] += delta
 }
 
-func (tm *TrackingManager) TrackCharacter(charId string) {
+func (tm *TrackingManager) TrackCharacter(charId ps2.CharacterId) {
 	tm.considerCharacter(charId, 1)
 }
 
-func (tm *TrackingManager) UntrackCharacter(charId string) {
+func (tm *TrackingManager) UntrackCharacter(charId ps2.CharacterId) {
 	tm.considerCharacter(charId, -1)
 }
 
-func (tm *TrackingManager) TrackOutfitMember(charId string, outfitTag string) {
+func (tm *TrackingManager) TrackOutfitMember(charId ps2.CharacterId, outfitId ps2.OutfitId) {
 	const op = "tracking_manager.TrackingManager.TrackOutfitMember"
-	count := tm.outfitTrackersCount(outfitTag)
+	count := tm.outfitTrackersCount(outfitId)
 	tm.considerCharacter(charId, count)
 }
 
-func (tm *TrackingManager) UntrackOutfitMember(charId string, outfitTag string) {
+func (tm *TrackingManager) UntrackOutfitMember(charId ps2.CharacterId, outfitId ps2.OutfitId) {
 	const op = "tracking_manager.TrackingManager.UntrackOutfitMember"
-	count := tm.outfitTrackersCount(outfitTag)
+	count := tm.outfitTrackersCount(outfitId)
 	tm.considerCharacter(charId, -count)
 }
 
-func (tm *TrackingManager) considerOutfit(outfitTag string, delta int) {
+func (tm *TrackingManager) considerOutfit(outfitId ps2.OutfitId, delta int) {
 	tm.outfitsFilterMu.Lock()
 	defer tm.outfitsFilterMu.Unlock()
-	tm.outfitsFilter[outfitTag] += delta
+	tm.outfitsFilter[outfitId] += delta
 }
 
-func (tm *TrackingManager) considerOutfitMembers(members []string, delta int) {
+func (tm *TrackingManager) considerOutfitMembers(members []ps2.CharacterId, delta int) {
 	tm.charactersFilterMu.Lock()
 	defer tm.charactersFilterMu.Unlock()
 	for _, member := range members {
@@ -249,23 +232,23 @@ func (tm *TrackingManager) considerOutfitMembers(members []string, delta int) {
 	}
 }
 
-func (tm *TrackingManager) TrackOutfit(ctx context.Context, outfitTag string) error {
+func (tm *TrackingManager) TrackOutfit(ctx context.Context, outfitId ps2.OutfitId) error {
 	const op = "tracking_manager.TrackingManager.TrackOutfit"
-	tm.considerOutfit(outfitTag, 1)
-	members, err := tm.outfitMembersLoader.Load(ctx, outfitTag)
+	tm.considerOutfit(outfitId, 1)
+	members, err := tm.outfitMembersLoader.Load(ctx, outfitId)
 	if err != nil {
-		return fmt.Errorf("%s load members of %q: %w", op, outfitTag, err)
+		return fmt.Errorf("%s load members of %q: %w", op, outfitId, err)
 	}
 	tm.considerOutfitMembers(members, 1)
 	return nil
 }
 
-func (tm *TrackingManager) UntrackOutfit(ctx context.Context, outfitTag string) error {
+func (tm *TrackingManager) UntrackOutfit(ctx context.Context, outfitId ps2.OutfitId) error {
 	const op = "tracking_manager.TrackingManager.UntrackOutfit"
-	tm.considerOutfit(outfitTag, -1)
-	members, err := tm.outfitMembersLoader.Load(ctx, outfitTag)
+	tm.considerOutfit(outfitId, -1)
+	members, err := tm.outfitMembersLoader.Load(ctx, outfitId)
 	if err != nil {
-		return fmt.Errorf("%s load members of %q: %w", op, outfitTag, err)
+		return fmt.Errorf("%s load members of %q: %w", op, outfitId, err)
 	}
 	tm.considerOutfitMembers(members, -1)
 	return nil

@@ -1,6 +1,9 @@
 package facilities_manager
 
-import ps2events "github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
+import (
+	ps2events "github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
+	"github.com/x0k/ps2-spy/internal/ps2"
+)
 
 const (
 	FacilityControlType = "facility_control"
@@ -9,7 +12,7 @@ const (
 
 type FacilityControl struct {
 	ps2events.FacilityControl
-	OldOutfitId string
+	OldOutfitId ps2.OutfitId
 }
 
 func (e FacilityControl) Type() string {
@@ -18,7 +21,7 @@ func (e FacilityControl) Type() string {
 
 type FacilityLoss struct {
 	ps2events.FacilityControl
-	OldOutfitId string
+	OldOutfitId ps2.OutfitId
 }
 
 func (e FacilityLoss) Type() string {

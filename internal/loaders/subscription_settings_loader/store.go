@@ -17,12 +17,12 @@ func New(storage *sqlite.Storage) *SubscriptionSettingsLoader {
 	}
 }
 
-func (l *SubscriptionSettingsLoader) Load(ctx context.Context, key [2]string) (meta.SubscriptionSettings, error) {
-	outfits, err := l.storage.TrackingOutfitsForPlatform(ctx, key[0], key[1])
+func (l *SubscriptionSettingsLoader) Load(ctx context.Context, query meta.SettingsQuery) (meta.SubscriptionSettings, error) {
+	outfits, err := l.storage.TrackingOutfitsForPlatform(ctx, query.ChannelId, query.Platform)
 	if err != nil {
 		return meta.SubscriptionSettings{}, err
 	}
-	characters, err := l.storage.TrackingCharactersForPlatform(ctx, key[0], key[1])
+	characters, err := l.storage.TrackingCharactersForPlatform(ctx, query.ChannelId, query.Platform)
 	if err != nil {
 		return meta.SubscriptionSettings{}, err
 	}

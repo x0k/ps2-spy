@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strconv"
 	"time"
+
+	"github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
 
 type ZoneId int
@@ -103,23 +105,30 @@ type Alert struct {
 
 type Alerts []Alert
 
+type CharacterId string
+
 type Character struct {
-	Id        string
+	Id        CharacterId
 	FactionId string
 	Name      string
+	OutfitId  OutfitId
 	OutfitTag string
 	WorldId   WorldId
-	Platform  string
+	Platform  platforms.Platform
 }
 
+type OutfitId string
+
 type Outfit struct {
-	Id   string
+	Id   OutfitId
 	Name string
 	Tag  string
 }
 
+type FacilityId string
+
 type Facility struct {
-	Id     string
+	Id     FacilityId
 	Name   string
 	Type   string
 	ZoneId ZoneId

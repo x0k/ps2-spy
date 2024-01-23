@@ -9,33 +9,33 @@ import (
 	"github.com/x0k/ps2-spy/internal/bot/handlers"
 	"github.com/x0k/ps2-spy/internal/loaders"
 	"github.com/x0k/ps2-spy/internal/meta"
+	"github.com/x0k/ps2-spy/internal/ps2"
+	"github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
 
-type PlatformQuery struct {
-	Platform string
-	Items    []string
-}
-
 func New(
-	settingsLoader loaders.KeyedLoader[[2]string, meta.SubscriptionSettings],
-	namesLoader loaders.QueriedLoader[PlatformQuery, []string],
-	outfitTagsLoader loaders.QueriedLoader[PlatformQuery, []string],
+	settingsLoader loaders.KeyedLoader[meta.SettingsQuery, meta.SubscriptionSettings],
+	namesLoader loaders.QueriedLoader[meta.PlatformQuery[ps2.CharacterId], []string],
+	outfitTagsLoader loaders.QueriedLoader[meta.PlatformQuery[ps2.OutfitId], []string],
 ) handlers.InteractionHandler {
 	return handlers.ShowModal(func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.InteractionResponseData, error) {
 		const op = "bot.handlers.command.channel_setup_command_handler"
-		platform := i.ApplicationCommandData().Options[0].Name
-		settings, err := settingsLoader.Load(ctx, [2]string{i.ChannelID, platform})
+		platform := platforms.Platform(i.ApplicationCommandData().Options[0].Name)
+		settings, err := settingsLoader.Load(ctx, meta.SettingsQuery{
+			ChannelId: i.ChannelID,
+			Platform:  platform,
+		})
 		if err != nil {
 			return nil, err
 		}
-		tags, err := outfitTagsLoader.Load(ctx, PlatformQuery{
+		tags, err := outfitTagsLoader.Load(ctx, meta.PlatformQuery[ps2.OutfitId]{
 			Platform: platform,
 			Items:    settings.Outfits,
 		})
 		if err != nil {
 			return nil, err
 		}
-		names, err := namesLoader.Load(ctx, PlatformQuery{
+		names, err := namesLoader.Load(ctx, meta.PlatformQuery[ps2.CharacterId]{
 			Platform: platform,
 			Items:    settings.Characters,
 		})

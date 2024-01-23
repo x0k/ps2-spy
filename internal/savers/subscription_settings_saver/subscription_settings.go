@@ -5,19 +5,20 @@ import (
 
 	"github.com/x0k/ps2-spy/internal/loaders"
 	"github.com/x0k/ps2-spy/internal/meta"
+	"github.com/x0k/ps2-spy/internal/ps2/platforms"
 	"github.com/x0k/ps2-spy/internal/storage/sqlite"
 )
 
 type SubscriptionSettingsSaver struct {
-	platform       string
+	platform       platforms.Platform
 	storage        *sqlite.Storage
-	settingsLoader loaders.KeyedLoader[[2]string, meta.SubscriptionSettings]
+	settingsLoader loaders.KeyedLoader[meta.SettingsQuery, meta.SubscriptionSettings]
 }
 
 func New(
 	storage *sqlite.Storage,
-	settingsLoader loaders.KeyedLoader[[2]string, meta.SubscriptionSettings],
-	platform string,
+	settingsLoader loaders.KeyedLoader[meta.SettingsQuery, meta.SubscriptionSettings],
+	platform platforms.Platform,
 ) *SubscriptionSettingsSaver {
 	return &SubscriptionSettingsSaver{
 		storage:        storage,
@@ -27,7 +28,7 @@ func New(
 }
 
 func (s *SubscriptionSettingsSaver) Save(ctx context.Context, channelId string, settings meta.SubscriptionSettings) error {
-	old, err := s.settingsLoader.Load(ctx, [2]string{channelId, s.platform})
+	old, err := s.settingsLoader.Load(ctx, meta.SettingsQuery{ChannelId: channelId})
 	if err != nil {
 		return err
 	}
@@ -36,23 +37,23 @@ func (s *SubscriptionSettingsSaver) Save(ctx context.Context, channelId string, 
 		ctx,
 		len(diff.Outfits.ToAdd)+len(diff.Outfits.ToDel)+len(diff.Characters.ToAdd)+len(diff.Characters.ToDel),
 		func(tx *sqlite.Storage) error {
-			for _, outfit := range diff.Outfits.ToDel {
-				if err := tx.DeleteChannelOutfit(ctx, channelId, s.platform, outfit); err != nil {
+			for _, outfitId := range diff.Outfits.ToDel {
+				if err := tx.DeleteChannelOutfit(ctx, channelId, s.platform, outfitId); err != nil {
 					return err
 				}
 			}
-			for _, outfit := range diff.Outfits.ToAdd {
-				if err := tx.SaveChannelOutfit(ctx, channelId, s.platform, outfit); err != nil {
+			for _, outfitId := range diff.Outfits.ToAdd {
+				if err := tx.SaveChannelOutfit(ctx, channelId, s.platform, outfitId); err != nil {
 					return err
 				}
 			}
-			for _, character := range diff.Characters.ToDel {
-				if err := tx.DeleteChannelCharacter(ctx, channelId, s.platform, character); err != nil {
+			for _, characterId := range diff.Characters.ToDel {
+				if err := tx.DeleteChannelCharacter(ctx, channelId, s.platform, characterId); err != nil {
 					return err
 				}
 			}
-			for _, character := range diff.Characters.ToAdd {
-				if err := tx.SaveChannelCharacter(ctx, channelId, s.platform, character); err != nil {
+			for _, characterId := range diff.Characters.ToAdd {
+				if err := tx.SaveChannelCharacter(ctx, channelId, s.platform, characterId); err != nil {
 					return err
 				}
 			}
