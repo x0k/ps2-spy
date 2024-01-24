@@ -48,7 +48,7 @@ func New(
 
 func (s *OutfitMembersSynchronizer) saveMembers(ctx context.Context, wg *sync.WaitGroup, outfitId ps2.OutfitId, members []ps2.CharacterId) {
 	const op = "outfit_members_synchronizer.OutfitMembersSynchronizer.saveMembers"
-	log := infra.OpLogger(ctx, op).With(slog.String("outfitId", string(outfitId)), slog.Int("members_count", len(members)))
+	log := infra.OpLogger(ctx, op).With(slog.String("outfit_id", string(outfitId)), slog.Int("members_count", len(members)))
 	defer wg.Done()
 	if err := s.membersSaver.Save(ctx, outfitId, members); err != nil {
 		log.Error("failed to save members", sl.Err(err))
@@ -57,7 +57,7 @@ func (s *OutfitMembersSynchronizer) saveMembers(ctx context.Context, wg *sync.Wa
 
 func (s *OutfitMembersSynchronizer) SyncOutfit(ctx context.Context, wg *sync.WaitGroup, outfitId ps2.OutfitId) {
 	const op = "outfit_members_synchronizer.OutfitMembersSynchronizer.SyncOutfit"
-	log := infra.Logger(ctx).With(infra.Op(op), slog.String("outfitId", string(outfitId)))
+	log := infra.Logger(ctx).With(infra.Op(op), slog.String("outfit_id", string(outfitId)))
 	retry.RetryWhileWithRecover(retry.Retryable{
 		Try: func() error {
 			syncAt, err := s.outfitSyncAtLoader.Load(ctx, outfitId)

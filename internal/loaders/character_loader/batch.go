@@ -122,7 +122,7 @@ func (l *BatchLoader) Start(ctx context.Context, wg *sync.WaitGroup) {
 func (l *BatchLoader) load(log *slog.Logger, charId ps2.CharacterId) chan ps2.Character {
 	l.awaitersMu.Lock()
 	defer l.awaitersMu.Unlock()
-	log.Debug("awaiting for", slog.String("characterId", string(charId)))
+	log.Debug("awaiting for", slog.String("character_id", string(charId)))
 	c := make(chan ps2.Character)
 	l.awaiters[charId] = c
 	l.charId <- charId

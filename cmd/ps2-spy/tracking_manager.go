@@ -134,7 +134,7 @@ func startTrackingManager(
 					log.Error(
 						"failed to track outfit",
 						slog.String("platform", string(e.Platform)),
-						slog.String("outfitId", string(e.OutfitId)),
+						slog.String("outfit_id", string(e.OutfitId)),
 						sl.Err(err),
 					)
 				}
@@ -149,7 +149,7 @@ func startTrackingManager(
 					log.Error(
 						"failed to untrack outfit",
 						slog.String("platform", string(e.Platform)),
-						slog.String("outfitId", string(e.OutfitId)),
+						slog.String("outfit_id", string(e.OutfitId)),
 						sl.Err(err),
 					)
 				}

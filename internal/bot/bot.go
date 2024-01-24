@@ -59,9 +59,9 @@ func New(
 		}
 		log := infra.Logger(ctx).With(
 			infra.Op(op),
-			slog.String("guildId", i.GuildID),
-			slog.String("channelId", i.ChannelID),
-			slog.String("userId", userId),
+			slog.String("guild_id", i.GuildID),
+			slog.String("channel_id", i.ChannelID),
+			slog.String("user_id", userId),
 		)
 		log.Debug("interaction received", slog.String("type", i.Type.String()))
 		switch i.Type {

@@ -146,7 +146,7 @@ func (tm *TrackingManager) channelIdsForCharacter(ctx context.Context, character
 	trackersCount := tm.characterTrackersCount(characterId)
 	if trackersCount <= 0 {
 		if trackersCount < 0 {
-			log.Warn("invalid character trackers count", slog.String("charId", string(characterId)))
+			log.Warn("invalid character trackers count", slog.String("char_id", string(characterId)))
 		}
 		return nil, nil
 	}
@@ -169,7 +169,7 @@ func (tm *TrackingManager) channelIdsForOutfit(ctx context.Context, outfitId ps2
 	trackersCount := tm.outfitTrackersCount(outfitId)
 	if trackersCount <= 0 {
 		if trackersCount < 0 {
-			log.Warn("invalid outfit trackers count", slog.String("outfitId", string(outfitId)))
+			log.Warn("invalid outfit trackers count", slog.String("outfit_id", string(outfitId)))
 		}
 		return nil, nil
 	}

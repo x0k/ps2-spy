@@ -50,9 +50,9 @@ func (handler InteractionHandler) Run(ctx context.Context, timeout time.Duration
 	}
 	log := infra.Logger(ctx).With(
 		infra.Op(op),
-		slog.String("guildId", i.GuildID),
-		slog.String("channelId", i.ChannelID),
-		slog.String("userId", userId),
+		slog.String("guild_id", i.GuildID),
+		slog.String("channel_id", i.ChannelID),
+		slog.String("user_id", userId),
 	)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
