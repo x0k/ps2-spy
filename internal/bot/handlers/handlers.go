@@ -50,7 +50,6 @@ func (handler InteractionHandler) Run(ctx context.Context, timeout time.Duration
 	}
 	log := infra.Logger(ctx).With(
 		infra.Op(op),
-		slog.String("command", i.ApplicationCommandData().Name),
 		slog.String("guildId", i.GuildID),
 		slog.String("channelId", i.ChannelID),
 		slog.String("userId", userId),
