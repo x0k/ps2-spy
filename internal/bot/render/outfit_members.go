@@ -14,7 +14,7 @@ func RenderOutfitMembersUpdate(outfit ps2.Outfit, change diff.Diff[ps2.Character
 		builder.WriteString(outfit.Tag)
 		builder.WriteString("] outfit:**")
 		for i := range change.ToAdd {
-			builder.WriteString("\n\t- ")
+			builder.WriteString("\n- ")
 			builder.WriteString(change.ToAdd[i].Name)
 		}
 		if len(change.ToDel) > 0 {
@@ -26,7 +26,7 @@ func RenderOutfitMembersUpdate(outfit ps2.Outfit, change diff.Diff[ps2.Character
 		builder.WriteString(outfit.Tag)
 		builder.WriteString("] outfit:**")
 		for i := range change.ToDel {
-			builder.WriteString("\n\t- ")
+			builder.WriteString("\n- ")
 			builder.WriteString(change.ToDel[i].Name)
 		}
 	}
