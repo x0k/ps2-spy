@@ -12,9 +12,9 @@ func RenderFacilityControl(
 	facility ps2.Facility,
 ) string {
 	return fmt.Sprintf(
-		"[%s] %s captured %s (%s) on %s (%s)",
-		outfit.Tag,
+		"%s [%s] captured %s (%s) on %s (%s)",
 		outfit.Name,
+		outfit.Tag,
 		facility.Name,
 		facility.Type,
 		ps2.ZoneNameById(facility.ZoneId),
@@ -28,9 +28,9 @@ func RenderFacilityLoss(
 	facility ps2.Facility,
 ) string {
 	return fmt.Sprintf(
-		"[%s] %s lost %s (%s) on %s (%s)",
-		outfit.Tag,
+		"%s [%s] lost %s (%s) on %s (%s)",
 		outfit.Name,
+		outfit.Tag,
 		facility.Name,
 		facility.Type,
 		ps2.ZoneNameById(facility.ZoneId),

@@ -9,22 +9,20 @@ import (
 
 func RenderOutfitMembersUpdate(outfit ps2.Outfit, change diff.Diff[ps2.Character]) string {
 	builder := strings.Builder{}
+	builder.WriteString("Update of ")
+	builder.WriteString(outfit.Name)
+	builder.WriteString(" [")
+	builder.WriteString(outfit.Tag)
+	builder.WriteString("] outfit members:")
 	if len(change.ToAdd) > 0 {
-		builder.WriteString("Outfit members are updated.\n\n**Welcome to the [")
-		builder.WriteString(outfit.Tag)
-		builder.WriteString("] outfit:**")
+		builder.WriteString("\n**Welcome to the outfit:**")
 		for i := range change.ToAdd {
 			builder.WriteString("\n- ")
 			builder.WriteString(change.ToAdd[i].Name)
 		}
-		if len(change.ToDel) > 0 {
-			builder.WriteString("\n\n")
-		}
 	}
 	if len(change.ToDel) > 0 {
-		builder.WriteString("**Leaving the [")
-		builder.WriteString(outfit.Tag)
-		builder.WriteString("] outfit:**")
+		builder.WriteString("\n**Left the outfit:**")
 		for i := range change.ToDel {
 			builder.WriteString("\n- ")
 			builder.WriteString(change.ToDel[i].Name)
