@@ -17,14 +17,14 @@ var ErrConvertEvent = fmt.Errorf("failed to convert event")
 type ReLoginOmitter struct {
 	pub               publisher.Abstract[publisher.Event]
 	batchMu           sync.Mutex
-	logoutEventsBatch map[string]*ps2events.PlayerLogout
+	logoutEventsBatch map[string]ps2events.PlayerLogout
 	batchInterval     time.Duration
 }
 
 func New(pub publisher.Abstract[publisher.Event]) *ReLoginOmitter {
 	return &ReLoginOmitter{
 		pub:               pub,
-		logoutEventsBatch: make(map[string]*ps2events.PlayerLogout, 100),
+		logoutEventsBatch: make(map[string]ps2events.PlayerLogout, 100),
 		batchInterval:     time.Minute * 3,
 	}
 }
@@ -32,7 +32,7 @@ func New(pub publisher.Abstract[publisher.Event]) *ReLoginOmitter {
 func (r *ReLoginOmitter) addLogoutEvent(event *ps2events.PlayerLogout) {
 	r.batchMu.Lock()
 	defer r.batchMu.Unlock()
-	r.logoutEventsBatch[event.CharacterID] = event
+	r.logoutEventsBatch[event.CharacterID] = *event
 }
 
 func (r *ReLoginOmitter) shouldPublishLoginEvent(event *ps2events.PlayerLogin) bool {
@@ -48,11 +48,11 @@ func (r *ReLoginOmitter) shouldPublishLoginEvent(event *ps2events.PlayerLogin) b
 func (r *ReLoginOmitter) flushLogOutEvents(log *slog.Logger) {
 	r.batchMu.Lock()
 	defer r.batchMu.Unlock()
-	log.Debug("flush logout events", slog.Any("events_count", len(r.logoutEventsBatch)))
+	log.Debug("flush logout events", slog.Int("events_count", len(r.logoutEventsBatch)))
 	for _, event := range r.logoutEventsBatch {
-		r.pub.Publish(event)
+		r.pub.Publish(&event)
 	}
-	r.logoutEventsBatch = make(map[string]*ps2events.PlayerLogout, len(r.logoutEventsBatch))
+	r.logoutEventsBatch = make(map[string]ps2events.PlayerLogout, len(r.logoutEventsBatch))
 }
 
 func (r *ReLoginOmitter) flushTask(ctx context.Context, wg *sync.WaitGroup) {
