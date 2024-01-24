@@ -92,14 +92,20 @@ func (eh *EventHandlers) Start(
 }
 
 func NewEventHandlers(
+	ps2EventsPublisher *publisher.Publisher,
+	outfitMembersSaverPublisher *publisher.Publisher,
+	facilitiesManagerPublisher *publisher.Publisher,
 	characterLoader loaders.KeyedLoader[ps2.CharacterId, ps2.Character],
 	outfitLoader loaders.KeyedLoader[ps2.OutfitId, ps2.Outfit],
 	facilityLoader loaders.KeyedLoader[ps2.FacilityId, ps2.Facility],
 	charactersLoader loaders.QueriedLoader[[]ps2.CharacterId, map[ps2.CharacterId]ps2.Character],
 ) EventHandlers {
 	return EventHandlers{
-		playerLoginHandler:  login_event_handler.New(characterLoader),
-		playerLogoutHandler: logout_event_handler.New(characterLoader),
+		ps2EventsPublisher:          ps2EventsPublisher,
+		outfitMembersSaverPublisher: outfitMembersSaverPublisher,
+		facilitiesManagerPublisher:  facilitiesManagerPublisher,
+		playerLoginHandler:          login_event_handler.New(characterLoader),
+		playerLogoutHandler:         logout_event_handler.New(characterLoader),
 		outfitMembersUpdateHandler: outfit_members_update_event_handler.New(
 			outfitLoader,
 			charactersLoader,

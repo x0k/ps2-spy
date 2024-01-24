@@ -8,11 +8,6 @@ import (
 
 	"github.com/x0k/ps2-spy/internal/bot"
 	"github.com/x0k/ps2-spy/internal/bot/handlers"
-	"github.com/x0k/ps2-spy/internal/bot/handlers/event/facility_control_event_handler"
-	"github.com/x0k/ps2-spy/internal/bot/handlers/event/facility_loss_event_handler"
-	"github.com/x0k/ps2-spy/internal/bot/handlers/event/login_event_handler"
-	"github.com/x0k/ps2-spy/internal/bot/handlers/event/logout_event_handler"
-	"github.com/x0k/ps2-spy/internal/bot/handlers/event/outfit_members_update_event_handler"
 	"github.com/x0k/ps2-spy/internal/bot/handlers/submit/channel_setup_submit_handler"
 	"github.com/x0k/ps2-spy/internal/cache/facility_cache"
 	"github.com/x0k/ps2-spy/internal/cache/outfit_cache"
@@ -48,7 +43,6 @@ import (
 	"github.com/x0k/ps2-spy/internal/loaders/subscription_settings_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/world_alerts_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/world_population_loader"
-	"github.com/x0k/ps2-spy/internal/meta"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/ps2/platforms"
 	"github.com/x0k/ps2-spy/internal/savers/outfit_members_saver"
@@ -311,51 +305,39 @@ func start(ctx context.Context, cfg *config.Config) error {
 				subscription_settings_saver.New(sqlStorage, subSettingsLoader, platforms.PS4_US),
 			),
 		},
-		EventTrackingChannelsLoaders: map[platforms.Platform]loaders.QueriedLoader[any, []meta.ChannelId]{
-			platforms.PC:     event_tracking_channels_loader.New(pcTrackingManager),
-			platforms.PS4_EU: event_tracking_channels_loader.New(ps4euTrackingManager),
-			platforms.PS4_US: event_tracking_channels_loader.New(ps4usTrackingManager),
-		},
-		Ps2EventsPublishers: map[platforms.Platform]*publisher.Publisher{
-			platforms.PC:     pcPs2EventsPublisher,
-			platforms.PS4_EU: ps4euPs2EventsPublisher,
-			platforms.PS4_US: ps4usPs2EventsPublisher,
-		},
-		PlayerLoginHandlers: map[platforms.Platform]handlers.Ps2EventHandler[ps2events.PlayerLogin]{
-			platforms.PC:     login_event_handler.New(pcBatchedCharacterLoader),
-			platforms.PS4_EU: login_event_handler.New(ps4euBatchedCharacterLoader),
-			platforms.PS4_US: login_event_handler.New(ps4usBatchedCharacterLoader),
-		},
-		PlayerLogoutHandlers: map[platforms.Platform]handlers.Ps2EventHandler[ps2events.PlayerLogout]{
-			platforms.PC:     logout_event_handler.New(pcBatchedCharacterLoader),
-			platforms.PS4_EU: logout_event_handler.New(ps4euBatchedCharacterLoader),
-			platforms.PS4_US: logout_event_handler.New(ps4usBatchedCharacterLoader),
-		},
-		OutfitMembersSaverPublishers: map[platforms.Platform]*publisher.Publisher{
-			platforms.PC:     pcOutfitMembersSaverPublisher,
-			platforms.PS4_EU: ps4euOutfitMembersSaverPublisher,
-			platforms.PS4_US: ps4usOutfitMembersSaverPublisher,
-		},
-		OutfitMembersUpdateHandlers: map[platforms.Platform]handlers.Ps2EventHandler[outfit_members_saver.OutfitMembersUpdate]{
-			platforms.PC:     outfit_members_update_event_handler.New(pcOutfitLoader, pcCharactersLoader),
-			platforms.PS4_EU: outfit_members_update_event_handler.New(ps4euOutfitLoader, ps4euCharactersLoader),
-			platforms.PS4_US: outfit_members_update_event_handler.New(ps4usOutfitLoader, ps4usCharactersLoader),
-		},
-		FacilitiesManagerPublishers: map[platforms.Platform]*publisher.Publisher{
-			platforms.PC:     pcFacilitiesManagerPublisher,
-			platforms.PS4_EU: ps4euFacilitiesManagerPublisher,
-			platforms.PS4_US: ps4usFacilitiesManagerPublisher,
-		},
-		FacilityControlHandlers: map[platforms.Platform]handlers.Ps2EventHandler[facilities_manager.FacilityControl]{
-			platforms.PC:     facility_control_event_handler.New(pcOutfitLoader, pcFacilityLoader),
-			platforms.PS4_EU: facility_control_event_handler.New(ps4euOutfitLoader, ps4euFacilityLoader),
-			platforms.PS4_US: facility_control_event_handler.New(ps4usOutfitLoader, ps4usFacilityLoader),
-		},
-		FacilityLossHandlers: map[platforms.Platform]handlers.Ps2EventHandler[facilities_manager.FacilityLoss]{
-			platforms.PC:     facility_loss_event_handler.New(pcOutfitLoader, pcFacilityLoader),
-			platforms.PS4_EU: facility_loss_event_handler.New(ps4euOutfitLoader, ps4euFacilityLoader),
-			platforms.PS4_US: facility_loss_event_handler.New(ps4usOutfitLoader, ps4usFacilityLoader),
-		},
 	}
-	return startBot(ctx, botConfig)
+	return startBot(
+		ctx,
+		botConfig,
+		event_tracking_channels_loader.New(pcTrackingManager),
+		bot.NewEventHandlers(
+			pcPs2EventsPublisher,
+			pcOutfitMembersSaverPublisher,
+			pcFacilitiesManagerPublisher,
+			pcBatchedCharacterLoader,
+			pcOutfitLoader,
+			pcFacilityLoader,
+			pcCharactersLoader,
+		),
+		event_tracking_channels_loader.New(ps4euTrackingManager),
+		bot.NewEventHandlers(
+			ps4euPs2EventsPublisher,
+			ps4euOutfitMembersSaverPublisher,
+			ps4euFacilitiesManagerPublisher,
+			ps4euBatchedCharacterLoader,
+			ps4euOutfitLoader,
+			ps4euFacilityLoader,
+			ps4euCharactersLoader,
+		),
+		event_tracking_channels_loader.New(ps4usTrackingManager),
+		bot.NewEventHandlers(
+			ps4usPs2EventsPublisher,
+			ps4usOutfitMembersSaverPublisher,
+			ps4usFacilitiesManagerPublisher,
+			ps4usBatchedCharacterLoader,
+			ps4usOutfitLoader,
+			ps4usFacilityLoader,
+			ps4usCharactersLoader,
+		),
+	)
 }
