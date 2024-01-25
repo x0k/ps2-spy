@@ -6,6 +6,7 @@ import (
 
 	"github.com/x0k/ps2-spy/internal/lib/census2"
 	collections "github.com/x0k/ps2-spy/internal/lib/census2/collections/ps2"
+	"github.com/x0k/ps2-spy/internal/lib/retry"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/ps2/factions"
 	"github.com/x0k/ps2-spy/internal/ps2/platforms"
@@ -52,7 +53,15 @@ func (l *CensusLoader) Load(ctx context.Context, charIds []ps2.CharacterId) (map
 		strCharIds[i] = census2.Str(charId)
 	}
 	url := l.toUrl(strCharIds)
-	chars, err := census2.ExecutePreparedAndDecode[collections.CharacterItem](ctx, l.client, collections.Character, url)
+	var chars []collections.CharacterItem
+	var err error
+	retry.RetryWhileWithRecover(retry.Retryable{
+		Try: func() error {
+			chars, err = census2.ExecutePreparedAndDecode[collections.CharacterItem](ctx, l.client, collections.Character, url)
+			return err
+		},
+		While: retry.ContextIsNotCanceledAndMaxRetriesNotExceeded(3),
+	})
 	if err != nil {
 		return nil, err
 	}

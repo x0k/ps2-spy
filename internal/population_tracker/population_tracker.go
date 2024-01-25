@@ -11,6 +11,7 @@ import (
 	ps2events "github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
 	"github.com/x0k/ps2-spy/internal/lib/loaders"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
+	"github.com/x0k/ps2-spy/internal/lib/retry"
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
@@ -60,7 +61,15 @@ func (p *PopulationTracker) HandleLoginTask(ctx context.Context, wg *sync.WaitGr
 	defer wg.Done()
 	log := infra.OpLogger(ctx, op)
 	charId := ps2.CharacterId(event.CharacterID)
-	char, err := p.characterLoader.Load(ctx, charId)
+	var char ps2.Character
+	var err error
+	retry.RetryWhileWithRecover(retry.Retryable{
+		Try: func() error {
+			char, err = p.characterLoader.Load(ctx, charId)
+			return err
+		},
+		While: retry.ContextIsNotCanceledAndMaxRetriesNotExceeded(3),
+	})
 	if err != nil {
 		log.Error("failed to get character", slog.String("character_id", string(charId)), sl.Err(err))
 		return
