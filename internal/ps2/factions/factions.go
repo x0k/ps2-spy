@@ -2,13 +2,17 @@ package factions
 
 import "fmt"
 
-const None = "0"
-const VS = "1"
-const NC = "2"
-const TR = "3"
-const NSO = "4"
+type Id string
 
-var FactionNames = map[string]string{
+const (
+	None Id = "0"
+	VS   Id = "1"
+	NC   Id = "2"
+	TR   Id = "3"
+	NSO  Id = "4"
+)
+
+var FactionNames = map[Id]string{
 	None: "None",
 	VS:   "VS",
 	NC:   "NC",
@@ -16,7 +20,7 @@ var FactionNames = map[string]string{
 	NSO:  "NSO",
 }
 
-func FactionNameById(id string) string {
+func FactionNameById(id Id) string {
 	if name, ok := FactionNames[id]; ok {
 		return name
 	}

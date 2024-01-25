@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/x0k/ps2-spy/internal/ps2/factions"
 	"github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
 
@@ -90,7 +91,7 @@ type CharacterId string
 
 type Character struct {
 	Id        CharacterId
-	FactionId string
+	FactionId factions.Id
 	Name      string
 	OutfitId  OutfitId
 	OutfitTag string

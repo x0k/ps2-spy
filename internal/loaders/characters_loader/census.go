@@ -2,12 +2,12 @@ package characters_loader
 
 import (
 	"context"
-	"strconv"
 	"sync"
 
 	"github.com/x0k/ps2-spy/internal/lib/census2"
 	collections "github.com/x0k/ps2-spy/internal/lib/census2/collections/ps2"
 	"github.com/x0k/ps2-spy/internal/ps2"
+	"github.com/x0k/ps2-spy/internal/ps2/factions"
 	"github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
 
@@ -52,18 +52,14 @@ func (l *CensusLoader) Load(ctx context.Context, charIds []ps2.CharacterId) (map
 	}
 	m := make(map[ps2.CharacterId]ps2.Character, len(chars))
 	for _, char := range chars {
-		wId, err := strconv.Atoi(char.WorldId)
-		if err != nil {
-			continue
-		}
 		cId := ps2.CharacterId(char.CharacterId)
 		m[cId] = ps2.Character{
 			Id:        cId,
-			FactionId: char.FactionId,
+			FactionId: factions.Id(char.FactionId),
 			Name:      char.Name.First,
 			OutfitId:  ps2.OutfitId(char.Outfit.OutfitId),
 			OutfitTag: char.Outfit.Alias,
-			WorldId:   ps2.WorldId(wId),
+			WorldId:   ps2.WorldId(char.WorldId),
 			Platform:  l.platform,
 		}
 	}
