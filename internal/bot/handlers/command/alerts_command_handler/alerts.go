@@ -26,13 +26,13 @@ func New(
 		for _, opt := range opts {
 			switch opt.Name {
 			case "server":
-				worldId = ps2.WorldId(opt.IntValue())
+				worldId = ps2.WorldId(opt.StringValue())
 			case "provider":
 				provider = opt.StringValue()
 			}
 		}
-		log.Debug("parsed options", slog.Int("world_id", int(worldId)), slog.String("provider", provider))
-		if worldId > 0 {
+		log.Debug("parsed options", slog.String("world_id", string(worldId)), slog.String("provider", provider))
+		if worldId != "" {
 			log.Debug("getting world alerts")
 			alerts, err := worldAlertsLoader.Load(ctx, loaders.NewMultiLoaderQuery(provider, worldId))
 			if err != nil {

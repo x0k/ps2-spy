@@ -38,6 +38,12 @@ func loadOutfitInfo(c *census2.Client, tag string) (any, error) {
 				census2.Cond("alias_lower").
 					Equals(census2.Str(strings.ToLower(tag))),
 			).
+			WithJoin(
+				census2.Join(collections.CharactersWorld).
+					On("leader_character_id").
+					To("character_id").
+					InjectAt("characters_world"),
+			).
 			Resolve("member_character"),
 	)
 	if err != nil {

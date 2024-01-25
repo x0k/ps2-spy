@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strconv"
 	"time"
 
 	"github.com/x0k/ps2-spy/internal/lib/honu"
@@ -36,11 +37,13 @@ func (p *HonuLoader) Load(ctx context.Context) (loaders.Loaded[ps2.Alerts], erro
 					log.Printf("Failed to parse %q: %q", z.Alert.Timestamp, err)
 					continue
 				}
+				worldId := ps2.WorldId(strconv.Itoa(w.WorldId))
+				zoneId := ps2.ZoneId(strconv.Itoa(z.ZoneId))
 				alert := ps2.Alert{
-					WorldId:          ps2.WorldId(w.WorldId),
-					WorldName:        ps2.WorldNames[ps2.WorldId(w.WorldId)],
-					ZoneId:           ps2.ZoneId(z.ZoneId),
-					ZoneName:         ps2.ZoneNames[ps2.ZoneId(z.ZoneId)],
+					WorldId:          worldId,
+					WorldName:        ps2.WorldNames[worldId],
+					ZoneId:           zoneId,
+					ZoneName:         ps2.ZoneNames[zoneId],
 					AlertName:        z.AlertInfo.Name,
 					AlertDescription: z.AlertInfo.Description,
 					StartedAt:        startedAt,
@@ -54,10 +57,10 @@ func (p *HonuLoader) Load(ctx context.Context) (loaders.Loaded[ps2.Alerts], erro
 					},
 				}
 				if alert.WorldName == "" {
-					alert.WorldName = fmt.Sprintf("World %d", alert.WorldId)
+					alert.WorldName = fmt.Sprintf("World %s", alert.WorldId)
 				}
 				if alert.ZoneName == "" {
-					alert.ZoneName = fmt.Sprintf("Zone %d", alert.ZoneId)
+					alert.ZoneName = fmt.Sprintf("Zone %s", alert.ZoneId)
 				}
 				alerts = append(alerts, alert)
 			}

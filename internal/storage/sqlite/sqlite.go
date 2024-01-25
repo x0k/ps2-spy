@@ -132,7 +132,7 @@ CREATE TABLE IF NOT EXISTS facility (
 	facility_id TEXT PRIMARY KEY NOT NULL,
 	facility_name TEXT NOT NULL,
 	facility_type TEXT NOT NULL,
-	zone_id INTEGER NOT NULL
+	zone_id TEXT NOT NULL
 );`)
 	return err
 }
@@ -600,7 +600,7 @@ func (s *Storage) SaveFacility(ctx context.Context, f ps2.Facility) error {
 		slog.String("facility_id", string(f.Id)),
 		slog.String("name", f.Name),
 		slog.String("type", f.Type),
-		slog.Int("zoneId", int(f.ZoneId)),
+		slog.String("zoneId", string(f.ZoneId)),
 	)
 	err := s.exec(ctx, insertFacility, f.Id, f.Name, f.Type, f.ZoneId)
 	if err != nil {

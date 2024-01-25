@@ -2,6 +2,7 @@ package population_loader
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/x0k/ps2-spy/internal/lib/honu"
 	"github.com/x0k/ps2-spy/internal/lib/loaders"
@@ -28,7 +29,7 @@ func (p *HonuLoader) Load(ctx context.Context) (loaders.Loaded[ps2.WorldsPopulat
 		Worlds: worlds,
 	}
 	for i, w := range overview {
-		world := ps2.NewWorldPopulation(ps2.WorldId(w.WorldId), w.WorldName)
+		world := ps2.NewWorldPopulation(ps2.WorldId(strconv.Itoa(w.WorldId)), w.WorldName)
 		for _, z := range w.Zones {
 			world.All += z.Players.All
 			world.VS += z.Players.VS

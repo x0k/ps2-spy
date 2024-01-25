@@ -2,6 +2,7 @@ package population_loader
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/x0k/ps2-spy/internal/lib/fisu"
 	"github.com/x0k/ps2-spy/internal/lib/loaders"
@@ -30,7 +31,7 @@ func (l *FisuLoader) Load(ctx context.Context) (loaders.Loaded[ps2.WorldsPopulat
 			continue
 		}
 		wp := wpArr[0]
-		worldId := ps2.WorldId(wp.WorldId)
+		worldId := ps2.WorldId(strconv.Itoa(wp.WorldId))
 		world := ps2.NewWorldPopulation(worldId, "")
 		world.All = wp.VS + wp.NC + wp.TR + wp.NS
 		world.VS = wp.VS

@@ -3,6 +3,7 @@ package alerts_loader
 import (
 	"context"
 	"log"
+	"strconv"
 	"time"
 
 	"github.com/x0k/ps2-spy/internal/lib/loaders"
@@ -43,11 +44,13 @@ func (p *VoidWellLoader) Load(ctx context.Context) (loaders.Loaded[ps2.Alerts], 
 				log.Printf("[%s alerts loader] Failed to parse %q: %q", p.client.Endpoint(), z.AlertState.Timestamp, err)
 				continue
 			}
+			worldId := ps2.WorldId(strconv.Itoa(s.Id))
+			zoneId := ps2.ZoneId(strconv.Itoa(e.ZoneId))
 			alert := ps2.Alert{
-				WorldId:          ps2.WorldId(s.Id),
-				WorldName:        ps2.WorldNames[ps2.WorldId(s.Id)],
-				ZoneId:           ps2.ZoneId(e.ZoneId),
-				ZoneName:         ps2.ZoneNames[ps2.ZoneId(e.ZoneId)],
+				WorldId:          worldId,
+				WorldName:        ps2.WorldNames[worldId],
+				ZoneId:           zoneId,
+				ZoneName:         ps2.ZoneNames[zoneId],
 				AlertName:        e.Name,
 				AlertDescription: e.Description,
 				StartedAt:        startedAt,

@@ -71,16 +71,8 @@ func (l *CensusLoader) load(ctx context.Context, url string) (ps2.Alerts, error)
 				Description: "This alert is not registered yet",
 			}
 		}
-		worldId, err := strconv.Atoi(e.WorldId)
-		if err != nil {
-			log.Error("failed to parse world id", slog.String("world_id", e.WorldId), sl.Err(err))
-			continue
-		}
-		zoneId, err := strconv.Atoi(e.ZoneId)
-		if err != nil {
-			log.Error("failed to parse zone id", slog.String("zone_id", e.ZoneId), sl.Err(err))
-			continue
-		}
+		worldId := ps2.WorldId(e.WorldId)
+		zoneId := ps2.ZoneId(e.ZoneId)
 		timesamp, err := strconv.ParseInt(e.Timestamp, 10, 64)
 		if err != nil {
 			log.Error("failed to parse timestamp", slog.String("timestamp", e.Timestamp), sl.Err(err))

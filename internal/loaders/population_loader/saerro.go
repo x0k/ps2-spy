@@ -2,6 +2,7 @@ package population_loader
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/x0k/ps2-spy/internal/lib/loaders"
 	"github.com/x0k/ps2-spy/internal/lib/ps2live/saerro"
@@ -29,7 +30,7 @@ func (p *SaerroLoader) Load(ctx context.Context) (loaders.Loaded[ps2.WorldsPopul
 		Worlds: worlds,
 	}
 	for i, w := range allWorlds {
-		world := ps2.NewWorldPopulation(ps2.WorldId(w.Id), w.Name)
+		world := ps2.NewWorldPopulation(ps2.WorldId(strconv.Itoa(w.Id)), w.Name)
 		for _, z := range w.Zones.All {
 			world.All += z.Population.Total
 			world.VS += z.Population.VS

@@ -248,17 +248,17 @@ func start(ctx context.Context, cfg *config.Config) error {
 
 	pcFacilitiesManagerPublisher := publisher.New(facilities_manager.CastHandler)
 	startFacilitiesManager(ctx, pcPs2EventsPublisher, facilities_manager.New(
-		[]string{"1", "10", "13", "17", "19", "40"},
+		[]ps2.WorldId{"1", "10", "13", "17", "19", "40"},
 		pcFacilitiesManagerPublisher,
 	))
 	ps4euFacilitiesManagerPublisher := publisher.New(facilities_manager.CastHandler)
 	startFacilitiesManager(ctx, ps4euPs2EventsPublisher, facilities_manager.New(
-		[]string{"2000"},
+		[]ps2.WorldId{"2000"},
 		ps4euFacilitiesManagerPublisher,
 	))
 	ps4usFacilitiesManagerPublisher := publisher.New(facilities_manager.CastHandler)
 	startFacilitiesManager(ctx, ps4usPs2EventsPublisher, facilities_manager.New(
-		[]string{"1000"},
+		[]ps2.WorldId{"1000"},
 		ps4usFacilitiesManagerPublisher,
 	))
 

@@ -102,6 +102,8 @@ type OutfitItem struct {
 	Members []CharacterItem `json:"members" mapstructure:"members"`
 	// Resolvable
 	OutfitMembers []OutfitMemberItem `json:"outfit_members" mapstructure:"outfit_members"`
+	// Joinable
+	CharactersWorld CharactersWorldItem `json:"characters_world" mapstructure:"characters_world"`
 }
 
 const OutfitMember = "outfit_member"
@@ -151,6 +153,12 @@ type MapItem struct {
 }
 
 const CharactersWorld = "characters_world"
+
+type CharactersWorldItem struct {
+	CharacterId string `json:"character_id" mapstructure:"character_id"`
+	WorldId     string `json:"world_id" mapstructure:"world_id"`
+}
+
 const CharactersOnlineStatus = "characters_online_status"
 const CharactersFriend = "characters_friend"
 const Leaderboard = "leaderboard"

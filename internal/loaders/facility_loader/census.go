@@ -49,14 +49,10 @@ func (l *CensusLoader) Load(ctx context.Context, facilityId ps2.FacilityId) (ps2
 	if len(regions) == 0 {
 		return ps2.Facility{}, loaders.ErrNotFound
 	}
-	zoneId, err := ps2.ToZoneId(regions[0].ZoneId)
-	if err != nil {
-		return ps2.Facility{}, err
-	}
 	return ps2.Facility{
 		Id:     ps2.FacilityId(regions[0].FacilityId),
 		Name:   regions[0].FacilityName,
 		Type:   regions[0].FacilityType,
-		ZoneId: zoneId,
+		ZoneId: ps2.ZoneId(regions[0].ZoneId),
 	}, nil
 }

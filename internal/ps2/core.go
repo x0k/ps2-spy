@@ -2,33 +2,14 @@ package ps2
 
 import (
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
 
-type ZoneId int
+type ZoneId string
 
-func ToZoneId(id string) (ZoneId, error) {
-	const op = "ps2.ToZoneId"
-	i, err := strconv.Atoi(id)
-	if err != nil {
-		return 0, fmt.Errorf("%s: %w", op, err)
-	}
-	return ZoneId(i), nil
-}
-
-type WorldId int
-
-func ToWorldId(id string) (WorldId, error) {
-	const op = "ps2.ToWorldId"
-	i, err := strconv.Atoi(id)
-	if err != nil {
-		return 0, fmt.Errorf("%s: %w", op, err)
-	}
-	return WorldId(i), nil
-}
+type WorldId string
 
 type StatsByFactions struct {
 	All   int
@@ -57,14 +38,14 @@ func WorldNameById(id WorldId) string {
 	if name, ok := WorldNames[id]; ok {
 		return name
 	}
-	return fmt.Sprintf("World %d", id)
+	return fmt.Sprintf("World %s", id)
 }
 
 func ZoneNameById(id ZoneId) string {
 	if name, ok := ZoneNames[id]; ok {
 		return name
 	}
-	return fmt.Sprintf("Zone %d", id)
+	return fmt.Sprintf("Zone %s", id)
 }
 
 type WorldPopulation struct {
@@ -137,27 +118,27 @@ type Facility struct {
 
 var ErrWorldNotFound = fmt.Errorf("world not found")
 var ZoneNames = map[ZoneId]string{
-	2:   "Indar",
-	4:   "Hossin",
-	6:   "Amerish",
-	8:   "Esamir",
-	344: "Oshur",
+	"2":   "Indar",
+	"4":   "Hossin",
+	"6":   "Amerish",
+	"8":   "Esamir",
+	"344": "Oshur",
 }
 var ZoneFacilitiesCount = map[ZoneId]int{
-	2:   89,
-	4:   88,
-	6:   81,
-	8:   51,
-	344: 75,
+	"2":   89,
+	"4":   88,
+	"6":   81,
+	"8":   51,
+	"344": 75,
 }
 var WorldNames = map[WorldId]string{
-	1:    "Connery",
-	10:   "Miller",
-	13:   "Cobalt",
-	17:   "Emerald",
-	19:   "Jaeger",
-	24:   "Apex",
-	40:   "SolTech",
-	1000: "Genudine",
-	2000: "Ceres",
+	"1":    "Connery",
+	"10":   "Miller",
+	"13":   "Cobalt",
+	"17":   "Emerald",
+	"19":   "Jaeger",
+	"24":   "Apex",
+	"40":   "SolTech",
+	"1000": "Genudine",
+	"2000": "Ceres",
 }
