@@ -3,6 +3,7 @@ package census2
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -15,14 +16,19 @@ import (
 var ErrFailedToDecode = fmt.Errorf("failed to decode")
 
 type Client struct {
+	log            *slog.Logger
 	httpClient     *http.Client
 	censusEndpoint string
 	serviceId      string
 	cache          *expirable.LRU[string, []any]
 }
 
-func NewClient(censusEndpoint string, serviceId string, httpClient *http.Client) *Client {
+func NewClient(log *slog.Logger, censusEndpoint string, serviceId string, httpClient *http.Client) *Client {
 	return &Client{
+		log: log.With(
+			slog.String("component", "census2.Client"),
+			slog.String("endpoint", censusEndpoint),
+		),
 		httpClient:     httpClient,
 		censusEndpoint: censusEndpoint,
 		serviceId:      serviceId,
@@ -52,6 +58,7 @@ func (c *Client) ExecutePrepared(ctx context.Context, collection, url string) ([
 	if cached, ok := c.cache.Get(url); ok {
 		return cached, nil
 	}
+	c.log.Debug("fetching", slog.String("url", url))
 	content, err := httpx.GetJson[map[string]any](ctx, c.httpClient, url)
 	if err != nil {
 		return nil, err

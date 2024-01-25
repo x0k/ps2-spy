@@ -24,11 +24,17 @@ func NewCensus(client *census2.Client, platform platforms.Platform) *CensusLoade
 	return &CensusLoader{
 		client:  client,
 		operand: operand,
-		// TODO: Use show
 		query: census2.NewQuery(census2.GetQuery, platforms.PlatformNamespace(platform), collections.Character).
 			Where(census2.Cond("character_id").Equals(operand)).
-			// TODO: Use join with show
-			Resolve("outfit", "world"),
+			Show("character_id", "faction_id", "name.first").
+			WithJoin(
+				census2.Join(collections.OutfitMemberExtended).
+					InjectAt("outfit_member_extended").
+					Show("outfit_id", "alias"),
+				census2.Join(collections.CharactersWorld).
+					InjectAt("characters_world"),
+			),
+		// TODO: Use join with show
 		platform: platform,
 	}
 }
@@ -57,9 +63,9 @@ func (l *CensusLoader) Load(ctx context.Context, charIds []ps2.CharacterId) (map
 			Id:        cId,
 			FactionId: factions.Id(char.FactionId),
 			Name:      char.Name.First,
-			OutfitId:  ps2.OutfitId(char.Outfit.OutfitId),
-			OutfitTag: char.Outfit.Alias,
-			WorldId:   ps2.WorldId(char.WorldId),
+			OutfitId:  ps2.OutfitId(char.OutfitMemberExtended.OutfitId),
+			OutfitTag: char.OutfitMemberExtended.Alias,
+			WorldId:   ps2.WorldId(char.CharactersWorld.WorldId),
 			Platform:  l.platform,
 		}
 	}

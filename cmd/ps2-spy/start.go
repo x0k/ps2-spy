@@ -60,37 +60,39 @@ func start(ctx context.Context, cfg *config.Config) error {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
+	EventName := []string{
+		ps2events.PlayerLoginEventName,
+		ps2events.PlayerLogoutEventName,
+		ps2events.FacilityControlEventName,
+		ps2events.AchievementEarnedEventName,
+		ps2events.BattleRankUpEventName,
+		ps2events.DeathEventName,
+		ps2events.GainExperienceEventName,
+		ps2events.ItemAddedEventName,
+		ps2events.PlayerFacilityCaptureEventName,
+		ps2events.PlayerFacilityDefendEventName,
+		ps2events.SkillAddedEventName,
+		ps2events.VehicleDestroyEventName,
+	}
 	pcPs2EventsPublisher, err := startNewPs2EventsPublisher(ctx, cfg, streaming.Ps2_env, ps2commands.SubscriptionSettings{
-		Worlds: []string{"1", "10", "13", "17", "19", "40"},
-		EventNames: []string{
-			ps2events.PlayerLoginEventName,
-			ps2events.PlayerLogoutEventName,
-			ps2events.FacilityControlEventName,
-		},
+		Worlds:     []string{"1", "10", "13", "17", "19", "40"},
+		EventNames: EventName,
 	})
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
 	ps4euPs2EventsPublisher, err := startNewPs2EventsPublisher(ctx, cfg, streaming.Ps2ps4eu_env, ps2commands.SubscriptionSettings{
-		Worlds: []string{"2000"},
-		EventNames: []string{
-			ps2events.PlayerLoginEventName,
-			ps2events.PlayerLogoutEventName,
-			ps2events.FacilityControlEventName,
-		},
+		Worlds:     []string{"2000"},
+		EventNames: EventName,
 	})
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
 	ps4usPs2EventsPublisher, err := startNewPs2EventsPublisher(ctx, cfg, streaming.Ps2ps4us_env, ps2commands.SubscriptionSettings{
-		Worlds: []string{"1000"},
-		EventNames: []string{
-			ps2events.PlayerLoginEventName,
-			ps2events.PlayerLogoutEventName,
-			ps2events.FacilityControlEventName,
-		},
+		Worlds:     []string{"1000"},
+		EventNames: EventName,
 	})
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
@@ -113,8 +115,8 @@ func start(ctx context.Context, cfg *config.Config) error {
 	saerroClient.Start(ctx, wg)
 	ps2alertsClient := ps2alerts.NewClient("https://api.ps2alerts.com", httpClient)
 	ps2alertsClient.Start(ctx, wg)
-	censusClient := census2.NewClient("https://census.daybreakgames.com", cfg.CensusServiceId, httpClient)
-	sanctuaryClient := census2.NewClient("https://census.lithafalcon.cc", cfg.CensusServiceId, httpClient)
+	censusClient := census2.NewClient(log, "https://census.daybreakgames.com", cfg.CensusServiceId, httpClient)
+	sanctuaryClient := census2.NewClient(log, "https://census.lithafalcon.cc", cfg.CensusServiceId, httpClient)
 	// multi loaders
 	popLoader := population_loader.NewMulti(
 		log,
@@ -164,6 +166,19 @@ func start(ctx context.Context, cfg *config.Config) error {
 	ps4usCharactersLoader := characters_loader.NewCensus(censusClient, platforms.PS4_US)
 	ps4usBatchedCharacterLoader := character_loader.NewBatch(ps4usCharactersLoader, time.Minute)
 	ps4usBatchedCharacterLoader.Start(ctx, wg)
+
+	_, err = startNewPopulationTracker(ctx, pcBatchedCharacterLoader, pcPs2EventsPublisher)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+	_, err = startNewPopulationTracker(ctx, ps4euBatchedCharacterLoader, ps4euPs2EventsPublisher)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+	_, err = startNewPopulationTracker(ctx, ps4usBatchedCharacterLoader, ps4usPs2EventsPublisher)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
 
 	characterTrackingChannelsLoader := character_tracking_channels_loader.New(sqlStorage)
 	pcTrackingManager := newTrackingManager(
@@ -306,7 +321,7 @@ func start(ctx context.Context, cfg *config.Config) error {
 			),
 		},
 	}
-	return startBot(
+	return startNewBot(
 		ctx,
 		botConfig,
 		event_tracking_channels_loader.New(pcTrackingManager),

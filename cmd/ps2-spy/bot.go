@@ -13,7 +13,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/meta"
 )
 
-func startBot(
+func startNewBot(
 	ctx context.Context,
 	cfg *bot.BotConfig,
 	pcEventTrackingChannelsLoader loaders.QueriedLoader[any, []meta.ChannelId],

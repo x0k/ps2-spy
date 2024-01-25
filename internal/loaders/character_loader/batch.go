@@ -46,7 +46,11 @@ func (l *BatchLoader) batch() []ps2.CharacterId {
 func (l *BatchLoader) releaseAwaiters(log *slog.Logger, batch []ps2.CharacterId, chars map[ps2.CharacterId]ps2.Character) {
 	l.awaitersMu.Lock()
 	defer l.awaitersMu.Unlock()
-	log.Debug("releasing awaiters", slog.Int("batch_size", len(batch)))
+	log.Debug(
+		"releasing awaiters",
+		slog.Int("batch_size", len(batch)),
+		slog.Int("loaded_size", len(chars)),
+	)
 	for _, id := range batch {
 		if channels, ok := l.awaiters[id]; ok {
 			char, ok := chars[id]
@@ -75,6 +79,9 @@ func (l *BatchLoader) processBatchTask(ctx context.Context, wg *sync.WaitGroup) 
 			return
 		case <-ticker.C:
 			batch := l.batch()
+			if len(batch) == 0 {
+				continue
+			}
 			log.Debug("execute batch", slog.Int("batch_size", len(batch)))
 			loaded, err := l.loader.Load(ctx, batch)
 			if err != nil {
