@@ -143,3 +143,14 @@ var WorldNames = map[WorldId]string{
 	"1000": "Genudine",
 	"2000": "Ceres",
 }
+var WorldPlatforms = map[WorldId]platforms.Platform{
+	"1":    platforms.PC,
+	"10":   platforms.PC,
+	"13":   platforms.PC,
+	"17":   platforms.PC,
+	"19":   platforms.PC,
+	"24":   platforms.PC,
+	"40":   platforms.PC,
+	"1000": platforms.PS4_US,
+	"2000": platforms.PS4_EU,
+}

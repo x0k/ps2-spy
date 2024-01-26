@@ -52,7 +52,7 @@ func NewCommands(
 			Description: "Returns the server population.",
 			Options: []*discordgo.ApplicationCommandOption{
 				{
-					Type:        discordgo.ApplicationCommandOptionInteger,
+					Type:        discordgo.ApplicationCommandOptionString,
 					Name:        "server",
 					Description: "Server name",
 					Choices:     serverNames(),

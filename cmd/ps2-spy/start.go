@@ -66,6 +66,7 @@ func start(ctx context.Context, cfg *config.Config) error {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
+	All := []string{"all"}
 	EventName := []string{
 		ps2events.PlayerLoginEventName,
 		ps2events.PlayerLogoutEventName,
@@ -81,7 +82,8 @@ func start(ctx context.Context, cfg *config.Config) error {
 		ps2events.VehicleDestroyEventName,
 	}
 	pcPs2EventsPublisher, err := startNewPs2EventsPublisher(ctx, cfg, streaming.Ps2_env, ps2commands.SubscriptionSettings{
-		Worlds:     []string{"1", "10", "13", "17", "19", "40"},
+		Worlds:     All,
+		Characters: All,
 		EventNames: EventName,
 	})
 	if err != nil {
@@ -89,7 +91,8 @@ func start(ctx context.Context, cfg *config.Config) error {
 	}
 
 	ps4euPs2EventsPublisher, err := startNewPs2EventsPublisher(ctx, cfg, streaming.Ps2ps4eu_env, ps2commands.SubscriptionSettings{
-		Worlds:     []string{"2000"},
+		Worlds:     All,
+		Characters: All,
 		EventNames: EventName,
 	})
 	if err != nil {
@@ -97,7 +100,8 @@ func start(ctx context.Context, cfg *config.Config) error {
 	}
 
 	ps4usPs2EventsPublisher, err := startNewPs2EventsPublisher(ctx, cfg, streaming.Ps2ps4us_env, ps2commands.SubscriptionSettings{
-		Worlds:     []string{"1000"},
+		Worlds:     All,
+		Characters: All,
 		EventNames: EventName,
 	})
 	if err != nil {
@@ -123,43 +127,6 @@ func start(ctx context.Context, cfg *config.Config) error {
 	ps2alertsClient.Start(ctx, wg)
 	censusClient := census2.NewClient(log, "https://census.daybreakgames.com", cfg.CensusServiceId, httpClient)
 	sanctuaryClient := census2.NewClient(log, "https://census.lithafalcon.cc", cfg.CensusServiceId, httpClient)
-	// multi loaders
-	popLoader := population_loader.NewMulti(
-		log,
-		map[string]loaders.Loader[loaders.Loaded[ps2.WorldsPopulation]]{
-			"honu":      population_loader.NewHonu(honuClient),
-			"ps2live":   population_loader.NewPS2Live(populationClient),
-			"saerro":    population_loader.NewSaerro(saerroClient),
-			"fisu":      population_loader.NewFisu(fisuClient),
-			"sanctuary": population_loader.NewSanctuary(sanctuaryClient),
-			"voidwell":  population_loader.NewVoidWell(voidWellClient),
-		},
-		[]string{"honu", "ps2live", "saerro", "fisu", "sanctuary", "voidwell"},
-	)
-	popLoader.Start(ctx, wg)
-	worldPopLoader := world_population_loader.NewMulti(
-		log,
-		map[string]loaders.KeyedLoader[ps2.WorldId, loaders.Loaded[ps2.DetailedWorldPopulation]]{
-			"honu":     world_population_loader.NewHonu(honuClient),
-			"saerro":   world_population_loader.NewSaerro(saerroClient),
-			"voidwell": world_population_loader.NewVoidWell(voidWellClient),
-		},
-		[]string{"honu", "saerro", "voidwell"},
-	)
-	worldPopLoader.Start(ctx, wg)
-	alertsLoader := alerts_loader.NewMulti(
-		log,
-		map[string]loaders.Loader[loaders.Loaded[ps2.Alerts]]{
-			"ps2alerts": alerts_loader.NewPS2Alerts(ps2alertsClient),
-			"honu":      alerts_loader.NewHonu(honuClient),
-			"census":    alerts_loader.NewCensus(censusClient),
-			"voidwell":  alerts_loader.NewVoidWell(voidWellClient),
-		},
-		[]string{"ps2alerts", "honu", "census", "voidwell"},
-	)
-	alertsLoader.Start(ctx, wg)
-	worldAlertsLoader := world_alerts_loader.NewMulti(alertsLoader)
-	worldAlertsLoader.Start(ctx, wg)
 
 	// TODO: Use MultiKeyedCache
 	pcCharactersLoader := characters_loader.NewCensus(censusClient, platforms.PC)
@@ -186,6 +153,57 @@ func start(ctx context.Context, cfg *config.Config) error {
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
+	platformPopulationTrackers := map[platforms.Platform]*population_tracker.PopulationTracker{
+		platforms.PC:     pcPopulationTracker,
+		platforms.PS4_EU: ps4euPopulationTracker,
+		platforms.PS4_US: ps4usPopulationTracker,
+	}
+
+	// multi loaders
+	popLoader := population_loader.NewMulti(
+		log,
+		map[string]loaders.Loader[loaders.Loaded[ps2.WorldsPopulation]]{
+			"spy": population_loader.NewPopulationTrackerLoader(
+				cfg.BotName,
+				platformPopulationTrackers,
+			),
+			"honu":      population_loader.NewHonu(honuClient),
+			"ps2live":   population_loader.NewPS2Live(populationClient),
+			"saerro":    population_loader.NewSaerro(saerroClient),
+			"fisu":      population_loader.NewFisu(fisuClient),
+			"sanctuary": population_loader.NewSanctuary(sanctuaryClient),
+			"voidwell":  population_loader.NewVoidWell(voidWellClient),
+		},
+		[]string{"spy", "honu", "ps2live", "saerro", "fisu", "sanctuary", "voidwell"},
+	)
+	popLoader.Start(ctx, wg)
+	worldPopLoader := world_population_loader.NewMulti(
+		log,
+		map[string]loaders.KeyedLoader[ps2.WorldId, loaders.Loaded[ps2.DetailedWorldPopulation]]{
+			"spy": world_population_loader.NewPopulationTrackerLoader(
+				cfg.BotName,
+				platformPopulationTrackers,
+			),
+			"honu":     world_population_loader.NewHonu(honuClient),
+			"saerro":   world_population_loader.NewSaerro(saerroClient),
+			"voidwell": world_population_loader.NewVoidWell(voidWellClient),
+		},
+		[]string{"spy", "honu", "saerro", "voidwell"},
+	)
+	worldPopLoader.Start(ctx, wg)
+	alertsLoader := alerts_loader.NewMulti(
+		log,
+		map[string]loaders.Loader[loaders.Loaded[ps2.Alerts]]{
+			"ps2alerts": alerts_loader.NewPS2Alerts(ps2alertsClient),
+			"honu":      alerts_loader.NewHonu(honuClient),
+			"census":    alerts_loader.NewCensus(censusClient),
+			"voidwell":  alerts_loader.NewVoidWell(voidWellClient),
+		},
+		[]string{"ps2alerts", "honu", "census", "voidwell"},
+	)
+	alertsLoader.Start(ctx, wg)
+	worldAlertsLoader := world_alerts_loader.NewMulti(alertsLoader)
+	worldAlertsLoader.Start(ctx, wg)
 
 	characterTrackingChannelsLoader := character_tracking_channels_loader.New(sqlStorage)
 	pcTrackingManager := newTrackingManager(

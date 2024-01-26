@@ -135,10 +135,14 @@ func (l *BatchLoader) Load(ctx context.Context, charId ps2.CharacterId) (ps2.Cha
 	if ok {
 		return cached, nil
 	}
-	char := <-l.load(log, charId)
-	if char.Id == "" {
-		return char, loaders.ErrNotFound
+	select {
+	case <-ctx.Done():
+		return ps2.Character{}, ctx.Err()
+	case char := <-l.load(log, charId):
+		if char.Id == "" {
+			return char, loaders.ErrNotFound
+		}
+		l.cache.Add(charId, char)
+		return char, nil
 	}
-	l.cache.Add(charId, char)
-	return char, nil
 }

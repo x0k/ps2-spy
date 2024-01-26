@@ -38,6 +38,13 @@ func (o *onlineCharactersTracker) HandleLogout(event ps2events.PlayerLogout) boo
 	return false
 }
 
+func (o *onlineCharactersTracker) HandleInactive(charId ps2.CharacterId) {
+	if outfitId, ok := o.characterOutfits[charId]; ok {
+		delete(o.characterOutfits, charId)
+		delete(o.onlineCharacters[outfitId], charId)
+	}
+}
+
 func (o *onlineCharactersTracker) TrackableOnlineEntities(settings meta.SubscriptionSettings) meta.TrackableEntities[map[ps2.OutfitId][]ps2.Character, []ps2.Character] {
 	outfits := make(map[ps2.OutfitId][]ps2.Character, len(settings.Outfits))
 	for _, outfitId := range settings.Outfits {

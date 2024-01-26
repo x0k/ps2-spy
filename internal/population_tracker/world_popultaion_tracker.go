@@ -1,6 +1,8 @@
 package population_tracker
 
 import (
+	"log/slog"
+
 	ps2events "github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/ps2/factions"
@@ -53,13 +55,30 @@ func (w *worldPopulationTracker) HandleLogout(event ps2events.PlayerLogout) bool
 	return true
 }
 
-func (w *worldPopulationTracker) HandleZoneIdAction(strZoneId, strCharId string) {
+func (w *worldPopulationTracker) HandleInactive(charId ps2.CharacterId) {
+	factionId, ok := w.charactersFactions[charId]
+	if !ok {
+		return
+	}
+	delete(w.charactersFactions, charId)
+	w.population[factionId] -= 1
+	if zoneId, ok := w.charactersLastZoneId[charId]; ok {
+		w.zonesPopulation[zoneId][factionId] -= 1
+		delete(w.charactersLastZoneId, charId)
+	}
+}
+
+func (w *worldPopulationTracker) HandleZoneIdAction(log *slog.Logger, strZoneId, strCharId string) {
 	charId := ps2.CharacterId(strCharId)
 	factionId, ok := w.charactersFactions[charId]
 	if !ok {
 		return
 	}
 	zoneId := ps2.ZoneId(strZoneId)
+	if _, ok := w.zonesPopulation[zoneId]; !ok {
+		log.Warn("zone not found", slog.String("zone_id", string(zoneId)))
+		return
+	}
 	if lastZoneId, ok := w.charactersLastZoneId[charId]; ok {
 		if lastZoneId == zoneId {
 			return
@@ -68,4 +87,12 @@ func (w *worldPopulationTracker) HandleZoneIdAction(strZoneId, strCharId string)
 	}
 	w.zonesPopulation[zoneId][factionId] += 1
 	w.charactersLastZoneId[charId] = zoneId
+}
+
+func (w *worldPopulationTracker) Population() map[factions.Id]int {
+	return w.population
+}
+
+func (w *worldPopulationTracker) ZonesPopulation() map[ps2.ZoneId]map[factions.Id]int {
+	return w.zonesPopulation
 }

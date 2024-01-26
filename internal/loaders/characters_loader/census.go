@@ -2,10 +2,13 @@ package characters_loader
 
 import (
 	"context"
+	"log/slog"
 	"sync"
 
+	"github.com/x0k/ps2-spy/internal/infra"
 	"github.com/x0k/ps2-spy/internal/lib/census2"
 	collections "github.com/x0k/ps2-spy/internal/lib/census2/collections/ps2"
+	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/lib/retry"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/ps2/factions"
@@ -48,6 +51,8 @@ func (l *CensusLoader) toUrl(charIds []census2.Str) string {
 }
 
 func (l *CensusLoader) Load(ctx context.Context, charIds []ps2.CharacterId) (map[ps2.CharacterId]ps2.Character, error) {
+	const op = "loaders.characters_loader.CensusLoader.Load"
+	log := infra.OpLogger(ctx, op)
 	strCharIds := make([]census2.Str, len(charIds))
 	for i, charId := range charIds {
 		strCharIds[i] = census2.Str(charId)
@@ -58,6 +63,9 @@ func (l *CensusLoader) Load(ctx context.Context, charIds []ps2.CharacterId) (map
 	retry.RetryWhileWithRecover(retry.Retryable{
 		Try: func() error {
 			chars, err = census2.ExecutePreparedAndDecode[collections.CharacterItem](ctx, l.client, collections.Character, url)
+			if err != nil {
+				log.Warn("failed to load characters, retrying", slog.String("url", url), sl.Err(err))
+			}
 			return err
 		},
 		While: retry.ContextIsNotCanceledAndMaxRetriesNotExceeded(3),
