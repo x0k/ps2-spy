@@ -26,7 +26,7 @@ func NewBatch(
 	batchRate time.Duration,
 ) *BatchLoader {
 	return &BatchLoader{
-		cache:     expirable.NewLRU[ps2.CharacterId, ps2.Character](1000, nil, time.Hour*12),
+		cache:     expirable.NewLRU[ps2.CharacterId, ps2.Character](0, nil, time.Hour*24),
 		loader:    loader,
 		awaiters:  make(map[ps2.CharacterId][]chan ps2.Character, 100),
 		batchRate: batchRate,
