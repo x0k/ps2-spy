@@ -76,7 +76,7 @@ func (w *worldPopulationTracker) HandleZoneIdAction(log *slog.Logger, strZoneId,
 	}
 	zoneId := ps2.ZoneId(strZoneId)
 	if _, ok := w.zonesPopulation[zoneId]; !ok {
-		log.Warn("zone not found", slog.String("zone_id", string(zoneId)))
+		log.Debug("zone not found", slog.String("zone_id", string(zoneId)))
 		return
 	}
 	if lastZoneId, ok := w.charactersLastZoneId[charId]; ok {
