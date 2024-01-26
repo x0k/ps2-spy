@@ -5,6 +5,7 @@ import (
 	"log/slog"
 
 	"github.com/x0k/ps2-spy/internal/infra"
+	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/ps2/platforms"
 	"github.com/x0k/ps2-spy/internal/storage/sqlite"
@@ -29,9 +30,12 @@ func (s *StorageCache) Get(ctx context.Context, outfitIds []ps2.OutfitId) (map[p
 		slog.Any("outfit_ids", outfitIds),
 	)
 	res := make(map[ps2.OutfitId]ps2.Outfit)
+	if len(outfitIds) == 0 {
+		return res, true
+	}
 	outfits, err := s.storage.Outfits(ctx, s.platform, outfitIds)
 	if err != nil {
-		log.Error("failed to get outfits", err)
+		log.Error("failed to get outfits", sl.Err(err))
 		return res, false
 	}
 	for _, outfit := range outfits {

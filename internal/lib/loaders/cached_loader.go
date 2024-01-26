@@ -87,6 +87,9 @@ func (l *CachedMultiKeyedLoader[K, T]) Cached(ctx context.Context, keys []K) (ma
 }
 
 func (l *CachedMultiKeyedLoader[K, T]) Load(ctx context.Context, keys []K) (map[K]T, error) {
+	if len(keys) == 0 {
+		return make(map[K]T), nil
+	}
 	cached, ok := l.cache.Get(ctx, keys)
 	if ok {
 		return cached, nil
