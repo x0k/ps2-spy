@@ -5,6 +5,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/hashicorp/golang-lru/v2/expirable"
 )
 
 type Expiable[T any] struct {
@@ -76,4 +78,23 @@ func (e *Expiable[T]) Load(loader func() (T, error)) (T, error) {
 	}
 	e.Set(loaded)
 	return loaded, nil
+}
+
+type ExpiableLRU[K comparable, T any] struct {
+	cache *expirable.LRU[K, T]
+}
+
+func NewExpiableLRU[K comparable, T any](size int, ttl time.Duration) *ExpiableLRU[K, T] {
+	return &ExpiableLRU[K, T]{
+		cache: expirable.NewLRU[K, T](size, nil, ttl),
+	}
+}
+
+func (e *ExpiableLRU[K, T]) Get(_ context.Context, key K) (T, bool) {
+	return e.cache.Get(key)
+}
+
+func (e *ExpiableLRU[K, T]) Add(_ context.Context, key K, value T) error {
+	e.cache.Add(key, value)
+	return nil
 }

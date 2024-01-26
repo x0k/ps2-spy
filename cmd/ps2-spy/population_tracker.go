@@ -76,8 +76,8 @@ func startPopulationTracker(
 	wg := infra.Wg(ctx)
 	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		defer func() {
-			wg.Done()
 			achievementUnSub()
 			battleRankUpUnSub()
 			deathUnSub()

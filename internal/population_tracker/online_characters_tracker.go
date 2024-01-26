@@ -44,7 +44,7 @@ func (o *onlineCharactersTracker) TrackableOnlineEntities(settings meta.Subscrip
 		if characters, ok := o.onlineCharacters[outfitId]; ok {
 			chars := make([]ps2.Character, 0, len(characters))
 			for _, char := range characters {
-				chars = append(outfits[outfitId], char)
+				chars = append(chars, char)
 			}
 			outfits[outfitId] = chars
 		}

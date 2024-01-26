@@ -21,7 +21,7 @@ func NewCommandHandlers(
 	settingsLoader loaders.KeyedLoader[meta.SettingsQuery, meta.SubscriptionSettings],
 	charNamesLoader loaders.QueriedLoader[meta.PlatformQuery[ps2.CharacterId], []string],
 	outfitTagsLoader loaders.QueriedLoader[meta.PlatformQuery[ps2.OutfitId], []string],
-	onlineTrackableEntitiesLoader loaders.KeyedLoader[meta.SettingsQuery, meta.TrackableEntities[
+	trackableOnlineEntitiesLoader loaders.KeyedLoader[meta.SettingsQuery, meta.TrackableEntities[
 		map[ps2.OutfitId][]ps2.Character,
 		[]ps2.Character,
 	]],
@@ -35,7 +35,7 @@ func NewCommandHandlers(
 			worldAlertsLoader,
 		),
 		"setup":  channel_setup_command_handler.New(settingsLoader, charNamesLoader, outfitTagsLoader),
-		"online": online_command_handler.New(onlineTrackableEntitiesLoader, outfitsLoader),
+		"online": online_command_handler.New(trackableOnlineEntitiesLoader, outfitsLoader),
 		"about":  about_command_handler.New(),
 	}
 }

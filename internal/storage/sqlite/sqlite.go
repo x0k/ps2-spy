@@ -20,6 +20,7 @@ import (
 )
 
 const (
+	// Simple statements
 	insertChannelOutfit = iota
 	deleteChannelOutfit
 	insertChannelCharacter
@@ -40,6 +41,8 @@ const (
 	insertOutfit
 	selectFacility
 	insertFacility
+	// Dynamic statements
+	selectOutfits
 	statementsCount
 )
 
@@ -47,7 +50,7 @@ var ErrTransactionNotStarted = errors.New("transaction not started")
 
 type Storage struct {
 	db         *sql.DB
-	statements [statementsCount]*sql.Stmt
+	statements [statementsCount]statement
 	tx         *sql.Tx
 	pub        publisher.Abstract[publisher.Event]
 }
@@ -159,7 +162,7 @@ func (s *Storage) Start(ctx context.Context) error {
 	if err := s.migrate(ctx); err != nil {
 		return fmt.Errorf("%s cannot migrate: %w", op, err)
 	}
-	rawStatements := [statementsCount]struct {
+	simpleStatements := [...]struct {
 		name int
 		stmt string
 	}{
@@ -197,12 +200,33 @@ func (s *Storage) Start(ctx context.Context) error {
 		{selectFacility, "SELECT * FROM facility WHERE facility_id = ?"},
 		{insertFacility, "INSERT INTO facility VALUES (?, ?, ?, ?)"},
 	}
-	for _, raw := range rawStatements {
-		stmt, err := s.db.Prepare(raw.stmt)
+	for _, simple := range simpleStatements {
+		stmt, err := s.db.Prepare(simple.stmt)
 		if err != nil {
 			return fmt.Errorf("%s: %w", op, err)
 		}
-		s.statements[raw.name] = stmt
+		s.statements[simple.name] = simpleStatement{stmt}
+	}
+	dynamicStatements := [...]struct {
+		name         int
+		queryBuilder func(args ...any) (string, error)
+	}{
+		{selectOutfits, func(args ...any) (string, error) {
+			b := strings.Builder{}
+			b.WriteString("SELECT * FROM outfit WHERE platform = ? AND outfit_id IN (")
+			b.WriteByte('?')
+			for i := 2; i < len(args); i++ {
+				b.WriteString(", ?")
+			}
+			b.WriteByte(')')
+			return b.String(), nil
+		}},
+	}
+	for _, dynamic := range dynamicStatements {
+		s.statements[dynamic.name] = &dynamicStatement{
+			db:           s.db,
+			queryBuilder: dynamic.queryBuilder,
+		}
 	}
 	return nil
 }
@@ -257,11 +281,12 @@ func (s *Storage) Begin(
 	return txPublisher.Commit()
 }
 
-func (s *Storage) stmt(ctx context.Context, st int) *sql.Stmt {
-	if s.tx != nil {
-		return s.tx.StmtContext(ctx, s.statements[st])
+func (s *Storage) stmt(ctx context.Context, st int) statement {
+	stmt := s.statements[st]
+	if s.tx == nil {
+		return stmt
 	}
-	return s.statements[st]
+	return stmt.UseTx(ctx, s.tx)
 }
 
 func (s *Storage) exec(ctx context.Context, statement int, args ...any) error {
@@ -281,7 +306,25 @@ func (s *Storage) queryRow(ctx context.Context, result any, statement int, args 
 	return nil
 }
 
-func query[T any](ctx context.Context, s *Storage, statement int, args ...any) ([]T, error) {
+func defaultScan[T any](rows *sql.Rows) (T, error) {
+	var result T
+	err := rows.Scan(&result)
+	return result, err
+}
+
+func outfitScan(rows *sql.Rows) (ps2.Outfit, error) {
+	var outfit ps2.Outfit
+	err := rows.Scan(&outfit.Platform, &outfit.Id, &outfit.Name, &outfit.Tag)
+	return outfit, err
+}
+
+func query[T any](
+	ctx context.Context,
+	s *Storage,
+	statement int,
+	customScan func(*sql.Rows) (T, error),
+	args ...any,
+) ([]T, error) {
 	const op = "storage.sqlite.query"
 	log := infra.OpLogger(ctx, op)
 	rows, err := s.stmt(ctx, statement).QueryContext(ctx, args...)
@@ -289,10 +332,12 @@ func query[T any](ctx context.Context, s *Storage, statement int, args ...any) (
 		return nil, err
 	}
 	defer rows.Close()
+	if customScan == nil {
+		customScan = defaultScan
+	}
 	results := make([]T, 0)
 	for rows.Next() {
-		var result T
-		err = rows.Scan(&result)
+		result, err := customScan(rows)
 		if err != nil {
 			log.Error("cannot scan row", sl.Err(err))
 			continue
@@ -465,7 +510,7 @@ func (s *Storage) TrackingChannelIdsForCharacter(ctx context.Context, platform p
 		slog.String("character_id", string(characterId)),
 		slog.String("outfit_id", string(outfitId)),
 	)
-	rows, err := query[meta.ChannelId](ctx, s, selectTrackingChannelsForCharacter, platform, characterId, platform, outfitId)
+	rows, err := query[meta.ChannelId](ctx, s, selectTrackingChannelsForCharacter, nil, platform, characterId, platform, outfitId)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -475,7 +520,7 @@ func (s *Storage) TrackingChannelIdsForCharacter(ctx context.Context, platform p
 func (s *Storage) TrackingChannelsIdsForOutfit(ctx context.Context, platform platforms.Platform, outfitId ps2.OutfitId) ([]meta.ChannelId, error) {
 	const op = "storage.sqlite.TrackingChannelsIdsForOutfit"
 	infra.OpLogger(ctx, op).Debug("params", slog.String("platform", string(platform)), slog.String("outfit_id", string(outfitId)))
-	rows, err := query[meta.ChannelId](ctx, s, selectTrackingChannelsForOutfit, platform, outfitId)
+	rows, err := query[meta.ChannelId](ctx, s, selectTrackingChannelsForOutfit, nil, platform, outfitId)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -489,7 +534,7 @@ func (s *Storage) TrackingOutfitsForPlatform(ctx context.Context, channelId meta
 		slog.String("channel_id", string(channelId)),
 		slog.String("platform", string(platform)),
 	)
-	rows, err := query[ps2.OutfitId](ctx, s, selectChannelOutfitsForPlatform, channelId, platform)
+	rows, err := query[ps2.OutfitId](ctx, s, selectChannelOutfitsForPlatform, nil, channelId, platform)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -503,7 +548,7 @@ func (s *Storage) TrackingCharactersForPlatform(ctx context.Context, channelId m
 		slog.String("channel_id", string(channelId)),
 		slog.String("platform", string(platform)),
 	)
-	rows, err := query[ps2.CharacterId](ctx, s, selectChannelCharactersForPlatform, channelId, platform)
+	rows, err := query[ps2.CharacterId](ctx, s, selectChannelCharactersForPlatform, nil, channelId, platform)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -513,7 +558,7 @@ func (s *Storage) TrackingCharactersForPlatform(ctx context.Context, channelId m
 func (s *Storage) AllTrackableCharactersWithDuplicationsForPlatform(ctx context.Context, platform platforms.Platform) ([]ps2.CharacterId, error) {
 	const op = "storage.sqlite.AllTrackableCharactersForPlatform"
 	infra.OpLogger(ctx, op).Debug("params", slog.String("platform", string(platform)))
-	rows, err := query[ps2.CharacterId](ctx, s, selectAllTrackableCharactersWithDuplicationForPlatform, platform, platform)
+	rows, err := query[ps2.CharacterId](ctx, s, selectAllTrackableCharactersWithDuplicationForPlatform, nil, platform, platform)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -523,7 +568,7 @@ func (s *Storage) AllTrackableCharactersWithDuplicationsForPlatform(ctx context.
 func (s *Storage) AllTrackableOutfitsWithDuplicationsForPlatform(ctx context.Context, platform platforms.Platform) ([]ps2.OutfitId, error) {
 	const op = "storage.sqlite.AllTrackableOutfitsWithDuplicationsForPlatform"
 	infra.OpLogger(ctx, op).Debug("params", slog.String("platform", string(platform)))
-	rows, err := query[ps2.OutfitId](ctx, s, selectAllTrackableOutfitsWithDuplicationForPlatform, platform)
+	rows, err := query[ps2.OutfitId](ctx, s, selectAllTrackableOutfitsWithDuplicationForPlatform, nil, platform)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -533,7 +578,7 @@ func (s *Storage) AllTrackableOutfitsWithDuplicationsForPlatform(ctx context.Con
 func (s *Storage) AllUniqueTrackableOutfitsForPlatform(ctx context.Context, platform platforms.Platform) ([]ps2.OutfitId, error) {
 	const op = "storage.sqlite.AllUniqueTrackableOutfitsForPlatform"
 	infra.OpLogger(ctx, op).Debug("params", slog.String("platform", string(platform)))
-	rows, err := query[ps2.OutfitId](ctx, s, selectAllUniqueTrackableOutfitsForPlatform, platform)
+	rows, err := query[ps2.OutfitId](ctx, s, selectAllUniqueTrackableOutfitsForPlatform, nil, platform)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -543,7 +588,7 @@ func (s *Storage) AllUniqueTrackableOutfitsForPlatform(ctx context.Context, plat
 func (s *Storage) OutfitMembers(ctx context.Context, platform platforms.Platform, outfitId ps2.OutfitId) ([]ps2.CharacterId, error) {
 	const op = "storage.sqlite.OutfitMembers"
 	infra.OpLogger(ctx, op).Debug("params", slog.String("platform", string(platform)), slog.String("outfit_id", string(outfitId)))
-	rows, err := query[ps2.CharacterId](ctx, s, selectOutfitMembers, platform, outfitId)
+	rows, err := query[ps2.CharacterId](ctx, s, selectOutfitMembers, nil, platform, outfitId)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -576,6 +621,21 @@ func (s *Storage) SaveOutfit(ctx context.Context, outfit ps2.Outfit) error {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 	return nil
+}
+
+func (s *Storage) Outfits(ctx context.Context, platform platforms.Platform, outfitIds []ps2.OutfitId) ([]ps2.Outfit, error) {
+	const op = "storage.sqlite.Outfits"
+	infra.OpLogger(ctx, op).Debug("params", slog.String("platform", string(platform)))
+	args := make([]any, len(outfitIds)+1)
+	args[0] = platform
+	for i, id := range outfitIds {
+		args[i+1] = id
+	}
+	rows, err := query(ctx, s, selectOutfits, outfitScan, args...)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	return rows, nil
 }
 
 func (s *Storage) Facility(ctx context.Context, facilityId ps2.FacilityId) (ps2.Facility, error) {

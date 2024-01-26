@@ -7,14 +7,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/hashicorp/golang-lru/v2/expirable"
+	"github.com/x0k/ps2-spy/internal/lib/containers"
 	"github.com/x0k/ps2-spy/internal/lib/loaders"
 	"github.com/x0k/ps2-spy/internal/loaders/multi_loaders"
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
 type MultiLoader struct {
-	value          *loaders.CachedQueryLoader[loaders.MultiLoaderQuery[ps2.WorldId], loaders.MultiLoaderQuery[ps2.WorldId], loaders.Loaded[ps2.DetailedWorldPopulation]]
+	value          *loaders.CachedQueryLoader[loaders.MultiLoaderQuery[ps2.WorldId], loaders.Loaded[ps2.DetailedWorldPopulation]]
 	fallbackLoader *loaders.KeyedFallbackLoader[ps2.WorldId, loaders.Loaded[ps2.DetailedWorldPopulation]]
 	loaders        []string
 }
@@ -32,9 +32,9 @@ func NewMulti(
 	)
 	loadersWithDefault[multi_loaders.DefaultLoader] = fallbackLoader
 	multiLoader := loaders.NewKeyedMultiLoader(loadersWithDefault)
-	value := loaders.NewCachedKeyedLoader[loaders.MultiLoaderQuery[ps2.WorldId], loaders.Loaded[ps2.DetailedWorldPopulation]](
+	value := loaders.NewCachedQueriedLoader[loaders.MultiLoaderQuery[ps2.WorldId], loaders.Loaded[ps2.DetailedWorldPopulation]](
 		multiLoader,
-		expirable.NewLRU[loaders.MultiLoaderQuery[ps2.WorldId], loaders.Loaded[ps2.DetailedWorldPopulation]]((len(priority)+1)*len(ps2.ZoneNames), nil, time.Minute),
+		containers.NewExpiableLRU[loaders.MultiLoaderQuery[ps2.WorldId], loaders.Loaded[ps2.DetailedWorldPopulation]]((len(priority)+1)*len(ps2.ZoneNames), time.Minute),
 	)
 	return &MultiLoader{
 		value:          value,

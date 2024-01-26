@@ -7,14 +7,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/hashicorp/golang-lru/v2/expirable"
+	"github.com/x0k/ps2-spy/internal/lib/containers"
 	"github.com/x0k/ps2-spy/internal/lib/loaders"
 	"github.com/x0k/ps2-spy/internal/loaders/multi_loaders"
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
 type MultiLoader struct {
-	alerts         *loaders.CachedQueryLoader[string, string, loaders.Loaded[ps2.Alerts]]
+	alerts         *loaders.CachedQueryLoader[string, loaders.Loaded[ps2.Alerts]]
 	fallbackLoader *loaders.FallbackLoader[loaders.Loaded[ps2.Alerts]]
 	loaders        []string
 }
@@ -32,9 +32,9 @@ func NewMulti(
 	)
 	loadersWithDefault[multi_loaders.DefaultLoader] = fallbackLoader
 	multiLoader := loaders.NewMultiLoader(loadersWithDefault)
-	alerts := loaders.NewCachedKeyedLoader(
+	alerts := loaders.NewCachedQueriedLoader(
 		multiLoader,
-		expirable.NewLRU[string, loaders.Loaded[ps2.Alerts]](len(priority)+1, nil, time.Minute),
+		containers.NewExpiableLRU[string, loaders.Loaded[ps2.Alerts]](len(priority)+1, time.Minute),
 	)
 	return &MultiLoader{
 		alerts:         alerts,
