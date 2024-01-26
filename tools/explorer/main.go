@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"path"
@@ -38,6 +39,12 @@ func loadOutfitInfo(c *census2.Client, tag string) (any, error) {
 				census2.Cond("alias_lower").
 					Equals(census2.Str(strings.ToLower(tag))),
 			).
+			WithJoin(
+				census2.Join(collections.CharactersWorld).
+					On("leader_character_id").
+					To("character_id").
+					InjectAt("characters_world"),
+			).
 			Resolve("member_character"),
 	)
 	if err != nil {
@@ -57,7 +64,6 @@ func loadOutfits(c *census2.Client, tagsStr string) (any, error) {
 			census2.Cond("alias_lower").Equals(census2.StrList(tags...)),
 		).
 		SetLimit(len(tags))
-	log.Printf("%s run query: %s", op, q.String())
 	outfits, err := c.Execute(context.Background(), q)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
@@ -73,7 +79,6 @@ func loadCharacterInfo(c *census2.Client, name string) (any, error) {
 				Equals(census2.Str(strings.ToLower(name))),
 		).
 		Resolve("outfit", "world")
-	log.Printf("%s run query: %s", op, q.String())
 	characters, err := c.Execute(context.Background(), q)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
@@ -93,7 +98,6 @@ func loadCharacters(c *census2.Client, namesStr string) (any, error) {
 				Equals(census2.StrList(names...)),
 		).
 		SetLimit(len(names))
-	log.Printf("%s run query: %s", op, q.String())
 	characters, err := c.Execute(context.Background(), q)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
@@ -114,7 +118,6 @@ func loadOutfitMembers(c *census2.Client, outfitTag string) (any, error) {
 				InjectAt("members").
 				IsList(true),
 		)
-	log.Printf("run query: %s", q.String())
 	outfits, err := c.Execute(context.Background(), q)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
@@ -144,7 +147,6 @@ func loadWorldState(c *census2.Client, query string) (any, error) {
 				On("Regions.Row.RowData.RegionId").
 				To("map_region_id"),
 		)
-	log.Printf("run query: %s", q.String())
 	events, err := c.Execute(context.Background(), q)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
@@ -163,7 +165,8 @@ var handlers = map[string]func(c *census2.Client, query string) (any, error){
 
 func main() {
 	httpClient := &http.Client{}
-	censusClient := census2.NewClient("https://census.daybreakgames.com", "", httpClient)
+	l := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
+	censusClient := census2.NewClient(l, "https://census.daybreakgames.com", "", httpClient)
 	handler, ok := handlers[resource]
 	if !ok {
 		log.Fatalf("unknown resource: %s", resource)

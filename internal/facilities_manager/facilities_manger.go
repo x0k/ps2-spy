@@ -2,7 +2,6 @@ package facilities_manager
 
 import (
 	"context"
-	"strconv"
 	"sync"
 
 	"github.com/x0k/ps2-spy/internal/infra"
@@ -13,21 +12,20 @@ import (
 )
 
 type FacilitiesManager struct {
-	stateMu sync.Mutex
-	// worldId -> zoneId -> facilityId -> outfitId
-	state     map[string]map[string]map[string]ps2.OutfitId
+	stateMu   sync.Mutex
+	state     map[ps2.WorldId]map[ps2.ZoneId]map[ps2.FacilityId]ps2.OutfitId
 	publisher publisher.Abstract[publisher.Event]
 }
 
 func New(
-	worldIds []string,
+	worldIds []ps2.WorldId,
 	publisher publisher.Abstract[publisher.Event],
 ) *FacilitiesManager {
-	worlds := make(map[string]map[string]map[string]ps2.OutfitId, len(worldIds))
+	worlds := make(map[ps2.WorldId]map[ps2.ZoneId]map[ps2.FacilityId]ps2.OutfitId, len(worldIds))
 	for _, worldId := range worldIds {
-		world := make(map[string]map[string]ps2.OutfitId, len(ps2.ZoneNames))
+		world := make(map[ps2.ZoneId]map[ps2.FacilityId]ps2.OutfitId, len(ps2.ZoneNames))
 		for zoneId := range ps2.ZoneNames {
-			world[strconv.Itoa(int(zoneId))] = make(map[string]ps2.OutfitId, ps2.ZoneFacilitiesCount[zoneId])
+			world[zoneId] = make(map[ps2.FacilityId]ps2.OutfitId, ps2.ZoneFacilitiesCount[zoneId])
 		}
 		worlds[worldId] = world
 	}
@@ -40,20 +38,23 @@ func New(
 func (fm *FacilitiesManager) updateState(event ps2events.FacilityControl) ps2.OutfitId {
 	fm.stateMu.Lock()
 	defer fm.stateMu.Unlock()
-	world := fm.state[event.WorldID]
+	wId := ps2.WorldId(event.WorldID)
+	world := fm.state[wId]
 	// This maps make should never happen, but just in case
 	if world == nil {
-		world = make(map[string]map[string]ps2.OutfitId)
-		fm.state[event.WorldID] = world
+		world = make(map[ps2.ZoneId]map[ps2.FacilityId]ps2.OutfitId)
+		fm.state[wId] = world
 	}
-	zone := world[event.ZoneID]
+	zId := ps2.ZoneId(event.ZoneID)
+	zone := world[zId]
 	// This maps make should never happen, but just in case
 	if zone == nil {
-		zone = make(map[string]ps2.OutfitId)
-		world[event.ZoneID] = zone
+		zone = make(map[ps2.FacilityId]ps2.OutfitId)
+		world[zId] = zone
 	}
-	oldOutfitId := zone[event.FacilityID]
-	zone[event.FacilityID] = ps2.OutfitId(event.OutfitID)
+	fId := ps2.FacilityId(event.FacilityID)
+	oldOutfitId := zone[fId]
+	zone[fId] = ps2.OutfitId(event.OutfitID)
 	return oldOutfitId
 }
 

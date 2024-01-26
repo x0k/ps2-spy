@@ -84,6 +84,10 @@ type CharacterItem struct {
 	Outfit OutfitItem `json:"outfit" mapstructure:"outfit"`
 	// Resolvable
 	WorldId string `json:"world_id" mapstructure:"world_id"`
+	// Joinable
+	OutfitMemberExtended OutfitMemberExtendedItem `json:"outfit_member_extended" mapstructure:"outfit_member_extended"`
+	// Joinable
+	CharactersWorld CharactersWorldItem `json:"characters_world" mapstructure:"characters_world"`
 }
 
 const Outfit = "outfit"
@@ -102,6 +106,8 @@ type OutfitItem struct {
 	Members []CharacterItem `json:"members" mapstructure:"members"`
 	// Resolvable
 	OutfitMembers []OutfitMemberItem `json:"outfit_members" mapstructure:"outfit_members"`
+	// Joinable
+	CharactersWorld CharactersWorldItem `json:"characters_world" mapstructure:"characters_world"`
 }
 
 const OutfitMember = "outfit_member"
@@ -113,6 +119,25 @@ type OutfitMemberItem struct {
 	MemberSinceDate string `json:"member_since_date" mapstructure:"member_since_date"`
 	Rank            string `json:"rank" mapstructure:"rank"`
 	RankOrdinal     string `json:"rank_ordinal" mapstructure:"rank_ordinal"`
+}
+
+const OutfitMemberExtended = "outfit_member_extended"
+
+type OutfitMemberExtendedItem struct {
+	CharacterId       string `json:"character_id" mapstructure:"character_id"`
+	MemberSince       string `json:"member_since" mapstructure:"member_since"`
+	MemberSinceDate   string `json:"member_since_date" mapstructure:"member_since_date"`
+	MemberRank        string `json:"member_rank" mapstructure:"member_rank"`
+	MemberRankOrdinal string `json:"member_rank_ordinal" mapstructure:"member_rank_ordinal"`
+	OutfitId          string `json:"outfit_id" mapstructure:"outfit_id"`
+	Name              string `json:"name" mapstructure:"name"`
+	NameLower         string `json:"name_lower" mapstructure:"name_lower"`
+	Alias             string `json:"alias" mapstructure:"alias"`
+	AliasLower        string `json:"alias_lower" mapstructure:"alias_lower"`
+	TimeCreated       string `json:"time_created" mapstructure:"time_created"`
+	TimeCreatedDate   string `json:"time_created_date" mapstructure:"time_created_date"`
+	LeaderCharacterId string `json:"leader_character_id" mapstructure:"leader_character_id"`
+	MemberCount       string `json:"member_count" mapstructure:"member_count"`
 }
 
 const MapRegion = "map_region"
@@ -151,6 +176,12 @@ type MapItem struct {
 }
 
 const CharactersWorld = "characters_world"
+
+type CharactersWorldItem struct {
+	CharacterId string `json:"character_id" mapstructure:"character_id"`
+	WorldId     string `json:"world_id" mapstructure:"world_id"`
+}
+
 const CharactersOnlineStatus = "characters_online_status"
 const CharactersFriend = "characters_friend"
 const Leaderboard = "leaderboard"

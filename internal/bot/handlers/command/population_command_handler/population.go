@@ -19,6 +19,7 @@ func New(
 	return handlers.DeferredEphemeralResponse(func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.WebhookEdit, *handlers.Error) {
 		const op = "bot.handlers.command.population_command_handler"
 		log := infra.OpLogger(ctx, op)
+		// TODO: add `platform` option
 		opts := i.ApplicationCommandData().Options
 		var provider string
 		if len(opts) > 0 {

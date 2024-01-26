@@ -31,6 +31,7 @@ type StorageConfig struct {
 }
 
 type Config struct {
+	BotName                string        `yaml:"bot_name" env:"BOT_NAME" env-default:"PS 2 Spy"`
 	Logger                 LoggerConfig  `yaml:"logger"`
 	Storage                StorageConfig `yaml:"storage"`
 	CommandHandlerTimeout  time.Duration `yaml:"command_handler_timeout" env:"COMMAND_HANDLER_TIMEOUT" env-default:"25s"`

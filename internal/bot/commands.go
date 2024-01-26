@@ -52,7 +52,7 @@ func NewCommands(
 			Description: "Returns the server population.",
 			Options: []*discordgo.ApplicationCommandOption{
 				{
-					Type:        discordgo.ApplicationCommandOptionInteger,
+					Type:        discordgo.ApplicationCommandOptionString,
 					Name:        "server",
 					Description: "Server name",
 					Choices:     serverNames(),
@@ -102,6 +102,27 @@ func NewCommands(
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
 					Name:        string(platforms.PS4_US),
 					Description: "Subscription settings for the PS4 US platform",
+				},
+			},
+		},
+		{
+			Name:        "online",
+			Description: "Returns online trackable outfits members and characters",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        string(platforms.PC),
+					Description: "For PC platform",
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        string(platforms.PS4_EU),
+					Description: "For PS4 EU platform",
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        string(platforms.PS4_US),
+					Description: "For PS4 US platform",
 				},
 			},
 		},

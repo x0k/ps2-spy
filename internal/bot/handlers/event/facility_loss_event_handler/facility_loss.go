@@ -21,13 +21,7 @@ func New(
 		event facilities_manager.FacilityLoss,
 	) (string, *handlers.Error) {
 		const op = "bot.handlers.event.facility_loss_event_handler"
-		worldId, err := ps2.ToWorldId(event.WorldID)
-		if err != nil {
-			return "", &handlers.Error{
-				Msg: "Invalid world id",
-				Err: fmt.Errorf("%s parsing world id: %w", op, err),
-			}
-		}
+		worldId := ps2.WorldId(event.WorldID)
 		facility, err := facilityLoader.Load(ctx, ps2.FacilityId(event.FacilityID))
 		if err != nil {
 			return "", &handlers.Error{

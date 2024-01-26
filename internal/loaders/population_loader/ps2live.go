@@ -2,6 +2,7 @@ package population_loader
 
 import (
 	"context"
+	"strconv"
 	"time"
 
 	"github.com/x0k/ps2-spy/internal/lib/loaders"
@@ -33,7 +34,7 @@ func (p *PS2LiveLoader) Load(ctx context.Context) (loaders.Loaded[ps2.WorldsPopu
 		if cachedAt, err := time.Parse(time.RFC3339, pop.CachedAt); err == nil && cachedAt.Before(updatedAt) {
 			updatedAt = cachedAt
 		}
-		world := ps2.NewWorldPopulation(ps2.WorldId(pop.Id), "")
+		world := ps2.NewWorldPopulation(ps2.WorldId(strconv.Itoa(pop.Id)), "")
 		world.All = pop.Average
 		world.VS = pop.Factions.VS
 		world.NC = pop.Factions.NC

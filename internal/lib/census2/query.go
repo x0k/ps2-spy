@@ -188,13 +188,13 @@ func (q *Query) Where(terms ...queryCondition) *Query {
 	return q
 }
 
-func (q *Query) WithJoin(join queryJoin) *Query {
-	q.join.value.values = append(q.join.value.values, join)
+func (q *Query) WithJoin(joins ...queryJoin) *Query {
+	q.join.value.values = append(q.join.value.values, joins...)
 	return q
 }
 
-func (q *Query) WithTree(tree queryTree) *Query {
-	q.tree.value.values = append(q.tree.value.values, tree)
+func (q *Query) WithTree(trees ...queryTree) *Query {
+	q.tree.value.values = append(q.tree.value.values, trees...)
 	return q
 }
 

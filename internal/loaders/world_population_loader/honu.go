@@ -2,6 +2,7 @@ package world_population_loader
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/x0k/ps2-spy/internal/lib/honu"
 	"github.com/x0k/ps2-spy/internal/lib/loaders"
@@ -28,7 +29,7 @@ func (p *HonuLoader) Load(ctx context.Context, worldId ps2.WorldId) (loaders.Loa
 		return loaders.Loaded[ps2.DetailedWorldPopulation]{}, err
 	}
 	for _, w := range overview {
-		wId := ps2.WorldId(w.WorldId)
+		wId := ps2.WorldId(strconv.Itoa(w.WorldId))
 		if wId != worldId {
 			continue
 		}
@@ -38,7 +39,7 @@ func (p *HonuLoader) Load(ctx context.Context, worldId ps2.WorldId) (loaders.Loa
 			Zones: make([]ps2.ZonePopulation, len(w.Zones)),
 		}
 		for i, z := range w.Zones {
-			zoneId := ps2.ZoneId(z.ZoneId)
+			zoneId := ps2.ZoneId(strconv.Itoa(z.ZoneId))
 			world.Zones[i] = ps2.ZonePopulation{
 				Id:     zoneId,
 				Name:   ps2.ZoneNameById(zoneId),

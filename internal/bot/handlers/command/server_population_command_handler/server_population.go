@@ -20,12 +20,12 @@ func New(
 		const op = "bot.handlers.command.server_population_command_handler"
 		log := infra.OpLogger(ctx, op)
 		opts := i.ApplicationCommandData().Options
-		server := opts[0].IntValue()
+		server := opts[0].StringValue()
 		var provider string
 		if len(opts) > 1 {
 			provider = opts[1].StringValue()
 		}
-		log.Debug("parsed options", slog.Int64("server", server), slog.String("provider", provider))
+		log.Debug("parsed options", slog.String("server", server), slog.String("provider", provider))
 		population, err := worldPopLoader.Load(ctx, loaders.NewMultiLoaderQuery(provider, ps2.WorldId(server)))
 		if err != nil {
 			return nil, &handlers.Error{

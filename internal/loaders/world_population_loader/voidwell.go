@@ -2,6 +2,7 @@ package world_population_loader
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/x0k/ps2-spy/internal/lib/loaders"
 	"github.com/x0k/ps2-spy/internal/lib/voidwell"
@@ -24,7 +25,7 @@ func (p *VoidWellLoader) Load(ctx context.Context, worldId ps2.WorldId) (loaders
 		return loaders.Loaded[ps2.DetailedWorldPopulation]{}, err
 	}
 	for _, state := range states {
-		wId := ps2.WorldId(state.Id)
+		wId := ps2.WorldId(strconv.Itoa(state.Id))
 		if wId != worldId {
 			continue
 		}
@@ -34,7 +35,7 @@ func (p *VoidWellLoader) Load(ctx context.Context, worldId ps2.WorldId) (loaders
 			Zones: make([]ps2.ZonePopulation, len(state.ZoneStates)),
 		}
 		for i, zoneState := range state.ZoneStates {
-			zoneId := ps2.ZoneId(zoneState.Id)
+			zoneId := ps2.ZoneId(strconv.Itoa(zoneState.Id))
 			world.Zones[i] = ps2.ZonePopulation{
 				Id:     zoneId,
 				Name:   zoneState.Name,

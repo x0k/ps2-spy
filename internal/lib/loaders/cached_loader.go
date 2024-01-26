@@ -18,48 +18,43 @@ func NewCachedLoader[T any](loader Loader[T], cache containers.Cache[T]) *Cached
 	}
 }
 
-func (v *CachedLoader[T]) Cached() (T, bool) {
-	return v.value.Get()
+func (v *CachedLoader[T]) Cached(ctx context.Context) (T, bool) {
+	return v.value.Get(ctx)
 }
 
 func (v *CachedLoader[T]) Load(ctx context.Context) (T, error) {
-	if cached, ok := v.value.Get(); ok {
+	if cached, ok := v.value.Get(ctx); ok {
 		return cached, nil
 	}
 	loaded, err := v.loader.Load(ctx)
 	if err != nil {
 		return loaded, err
 	}
-	v.value.Set(loaded)
+	v.value.Set(ctx, loaded)
 	return loaded, nil
 }
 
-type CachedQueryLoader[Q any, K comparable, T any] struct {
-	cache  containers.KeyedCache[K, T]
+type CachedQueryLoader[Q any, T any] struct {
+	cache  containers.QueryCache[Q, T]
 	loader QueriedLoader[Q, T]
-	mapper func(Q) K
 }
 
-func NewCachedQueriedLoader[Q any, K comparable, T any](
+func NewCachedQueriedLoader[Q any, T any](
 	loader QueriedLoader[Q, T],
-	cache containers.KeyedCache[K, T],
-	mapper func(Q) K,
-) *CachedQueryLoader[Q, K, T] {
-	return &CachedQueryLoader[Q, K, T]{
+	cache containers.QueryCache[Q, T],
+) *CachedQueryLoader[Q, T] {
+	return &CachedQueryLoader[Q, T]{
 		cache:  cache,
 		loader: loader,
-		mapper: mapper,
 	}
 }
 
-func (v *CachedQueryLoader[Q, K, T]) Cached(query Q) (T, bool) {
-	key := v.mapper(query)
-	return v.cache.Get(key)
+func (v *CachedQueryLoader[Q, T]) Cached(ctx context.Context, query Q) (T, bool) {
+	return v.cache.Get(ctx, query)
 }
 
-func (v *CachedQueryLoader[Q, K, T]) Load(ctx context.Context, query Q) (T, error) {
-	key := v.mapper(query)
-	cached, ok := v.cache.Get(key)
+func (v *CachedQueryLoader[Q, T]) Load(ctx context.Context, query Q) (T, error) {
+	cached, ok := v.cache.Get(ctx, query)
 	if ok {
 		return cached, nil
 	}
@@ -67,17 +62,51 @@ func (v *CachedQueryLoader[Q, K, T]) Load(ctx context.Context, query Q) (T, erro
 	if err != nil {
 		return loaded, err
 	}
-	v.cache.Add(key, loaded)
+	v.cache.Add(ctx, query, loaded)
 	return loaded, nil
 }
 
-func NewCachedKeyedLoader[K comparable, T any](
-	loader KeyedLoader[K, T],
-	cache containers.KeyedCache[K, T],
-) *CachedQueryLoader[K, K, T] {
-	return &CachedQueryLoader[K, K, T]{
+type CachedMultiKeyedLoader[K comparable, T any] struct {
+	cache  containers.MultiKeyedCache[K, T]
+	loader QueriedLoader[[]K, map[K]T]
+}
+
+func NewCtxCachedMultiKeyedLoader[K comparable, T any](
+	loader QueriedLoader[[]K, map[K]T],
+	cache containers.MultiKeyedCache[K, T],
+) *CachedMultiKeyedLoader[K, T] {
+	return &CachedMultiKeyedLoader[K, T]{
 		cache:  cache,
 		loader: loader,
-		mapper: func(k K) K { return k },
 	}
+}
+
+// Return true if all keys are cached
+func (l *CachedMultiKeyedLoader[K, T]) Cached(ctx context.Context, keys []K) (map[K]T, bool) {
+	return l.cache.Get(ctx, keys)
+}
+
+func (l *CachedMultiKeyedLoader[K, T]) Load(ctx context.Context, keys []K) (map[K]T, error) {
+	if len(keys) == 0 {
+		return make(map[K]T), nil
+	}
+	cached, ok := l.cache.Get(ctx, keys)
+	if ok {
+		return cached, nil
+	}
+	toLoad := make([]K, 0, len(keys))
+	for _, k := range keys {
+		if _, ok := cached[k]; !ok {
+			toLoad = append(toLoad, k)
+		}
+	}
+	loaded, err := l.loader.Load(ctx, toLoad)
+	if err != nil {
+		return cached, err
+	}
+	l.cache.Add(ctx, loaded)
+	for k, v := range cached {
+		loaded[k] = v
+	}
+	return loaded, nil
 }

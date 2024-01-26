@@ -5,6 +5,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/bot/handlers/command/about_command_handler"
 	"github.com/x0k/ps2-spy/internal/bot/handlers/command/alerts_command_handler"
 	"github.com/x0k/ps2-spy/internal/bot/handlers/command/channel_setup_command_handler"
+	"github.com/x0k/ps2-spy/internal/bot/handlers/command/online_command_handler"
 	"github.com/x0k/ps2-spy/internal/bot/handlers/command/population_command_handler"
 	serverpopulation "github.com/x0k/ps2-spy/internal/bot/handlers/command/server_population_command_handler"
 	"github.com/x0k/ps2-spy/internal/lib/loaders"
@@ -20,6 +21,11 @@ func NewCommandHandlers(
 	settingsLoader loaders.KeyedLoader[meta.SettingsQuery, meta.SubscriptionSettings],
 	charNamesLoader loaders.QueriedLoader[meta.PlatformQuery[ps2.CharacterId], []string],
 	outfitTagsLoader loaders.QueriedLoader[meta.PlatformQuery[ps2.OutfitId], []string],
+	trackableOnlineEntitiesLoader loaders.KeyedLoader[meta.SettingsQuery, meta.TrackableEntities[
+		map[ps2.OutfitId][]ps2.Character,
+		[]ps2.Character,
+	]],
+	outfitsLoader loaders.QueriedLoader[meta.PlatformQuery[ps2.OutfitId], map[ps2.OutfitId]ps2.Outfit],
 ) map[string]handlers.InteractionHandler {
 	return map[string]handlers.InteractionHandler{
 		"population":        population_command_handler.New(popLoader),
@@ -28,7 +34,8 @@ func NewCommandHandlers(
 			alertsLoader,
 			worldAlertsLoader,
 		),
-		"setup": channel_setup_command_handler.New(settingsLoader, charNamesLoader, outfitTagsLoader),
-		"about": about_command_handler.New(),
+		"setup":  channel_setup_command_handler.New(settingsLoader, charNamesLoader, outfitTagsLoader),
+		"online": online_command_handler.New(trackableOnlineEntitiesLoader, outfitsLoader),
+		"about":  about_command_handler.New(),
 	}
 }

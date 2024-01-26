@@ -2,6 +2,7 @@ package population_loader
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/x0k/ps2-spy/internal/lib/census2"
 	"github.com/x0k/ps2-spy/internal/lib/loaders"
@@ -31,7 +32,7 @@ func (l *SanctuaryLoader) Load(ctx context.Context) (loaders.Loaded[ps2.WorldsPo
 		Worlds: worlds,
 	}
 	for i, w := range wp {
-		world := ps2.NewWorldPopulation(ps2.WorldId(w.WorldId), "")
+		world := ps2.NewWorldPopulation(ps2.WorldId(strconv.Itoa(w.WorldId)), "")
 		world.All = w.Total
 		world.VS = w.Population.VS
 		world.NC = w.Population.NC

@@ -52,4 +52,5 @@ func main() {
 	log.Info("gracefully shutting down.")
 	cancel()
 	wg.Wait()
+	log.Info("shutdown complete.")
 }

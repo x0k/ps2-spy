@@ -14,13 +14,11 @@ import (
 )
 
 type BatchLoader struct {
-	cache       *expirable.LRU[ps2.CharacterId, ps2.Character]
-	loader      loaders.QueriedLoader[[]ps2.CharacterId, map[ps2.CharacterId]ps2.Character]
-	charId      chan ps2.CharacterId
-	charIdBatch chan []ps2.CharacterId
-	awaitersMu  sync.Mutex
-	awaiters    map[ps2.CharacterId]chan ps2.Character
-	batchRate   time.Duration
+	cache      *expirable.LRU[ps2.CharacterId, ps2.Character]
+	loader     loaders.QueriedLoader[[]ps2.CharacterId, map[ps2.CharacterId]ps2.Character]
+	awaitersMu sync.Mutex
+	awaiters   map[ps2.CharacterId][]chan ps2.Character
+	batchRate  time.Duration
 }
 
 func NewBatch(
@@ -28,50 +26,45 @@ func NewBatch(
 	batchRate time.Duration,
 ) *BatchLoader {
 	return &BatchLoader{
-		cache:       expirable.NewLRU[ps2.CharacterId, ps2.Character](1000, nil, time.Hour*12),
-		loader:      loader,
-		charId:      make(chan ps2.CharacterId, 1000),
-		charIdBatch: make(chan []ps2.CharacterId),
-		awaiters:    make(map[ps2.CharacterId]chan ps2.Character),
-		batchRate:   batchRate,
+		cache:     expirable.NewLRU[ps2.CharacterId, ps2.Character](0, nil, time.Hour*24),
+		loader:    loader,
+		awaiters:  make(map[ps2.CharacterId][]chan ps2.Character, 100),
+		batchRate: batchRate,
 	}
 }
 
-func (l *BatchLoader) flushBatchTask(ctx context.Context, wg *sync.WaitGroup) {
-	const op = "loaders.character_loader.batch.flushBatchTask"
-	log := infra.OpLogger(ctx, op)
-	defer wg.Done()
-	ticker := time.NewTicker(l.batchRate)
-	defer ticker.Stop()
-	var batch []ps2.CharacterId
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case id := <-l.charId:
-			batch = append(batch, id)
-		case <-ticker.C:
-			log.Debug("flushing batch", slog.Int("batch_size", len(batch)))
-			if len(batch) == 0 {
-				continue
-			}
-			l.charIdBatch <- batch
-			batch = make([]ps2.CharacterId, 0, len(batch))
-		}
+func (l *BatchLoader) batch() []ps2.CharacterId {
+	l.awaitersMu.Lock()
+	defer l.awaitersMu.Unlock()
+	batch := make([]ps2.CharacterId, 0, len(l.awaiters))
+	for id := range l.awaiters {
+		batch = append(batch, id)
 	}
+	return batch
 }
 
 func (l *BatchLoader) releaseAwaiters(log *slog.Logger, batch []ps2.CharacterId, chars map[ps2.CharacterId]ps2.Character) {
 	l.awaitersMu.Lock()
 	defer l.awaitersMu.Unlock()
-	log.Debug("releasing awaiters", slog.Int("batch_size", len(batch)))
+	if len(batch) != len(chars) {
+		log.Warn(
+			"not all characters were loaded",
+			slog.Int("batch_size", len(batch)),
+			slog.Int("loaded_size", len(chars)),
+		)
+	}
 	for _, id := range batch {
-		if c, ok := l.awaiters[id]; ok {
-			if char, ok := chars[id]; ok {
-				c <- char
+		if channels, ok := l.awaiters[id]; ok {
+			char, ok := chars[id]
+			for _, c := range channels {
+				if ok {
+					c <- char
+				}
+				close(c)
 			}
-			close(c)
 			delete(l.awaiters, id)
+		} else {
+			log.Warn("awaiter not found", slog.String("character_id", string(id)))
 		}
 	}
 }
@@ -80,11 +73,17 @@ func (l *BatchLoader) processBatchTask(ctx context.Context, wg *sync.WaitGroup) 
 	const op = "loaders.character_loader.batch.processBatchTask"
 	log := infra.OpLogger(ctx, op)
 	defer wg.Done()
+	ticker := time.NewTicker(l.batchRate)
+	defer ticker.Stop()
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case batch := <-l.charIdBatch:
+		case <-ticker.C:
+			batch := l.batch()
+			if len(batch) == 0 {
+				continue
+			}
 			log.Debug("execute batch", slog.Int("batch_size", len(batch)))
 			loaded, err := l.loader.Load(ctx, batch)
 			if err != nil {
@@ -104,8 +103,10 @@ func (l *BatchLoader) cleanupTask(ctx context.Context, wg *sync.WaitGroup) {
 	log.Info("cleaning up")
 	l.awaitersMu.Lock()
 	defer l.awaitersMu.Unlock()
-	for _, c := range l.awaiters {
-		close(c)
+	for _, channels := range l.awaiters {
+		for _, c := range channels {
+			close(c)
+		}
 	}
 	clear(l.awaiters)
 }
@@ -113,8 +114,7 @@ func (l *BatchLoader) cleanupTask(ctx context.Context, wg *sync.WaitGroup) {
 func (l *BatchLoader) Start(ctx context.Context, wg *sync.WaitGroup) {
 	const op = "loaders.character_loader.batch.Start"
 	infra.OpLogger(ctx, op).Info("starting loader")
-	wg.Add(3)
-	go l.flushBatchTask(ctx, wg)
+	wg.Add(2)
 	go l.processBatchTask(ctx, wg)
 	go l.cleanupTask(ctx, wg)
 }
@@ -124,23 +124,25 @@ func (l *BatchLoader) load(log *slog.Logger, charId ps2.CharacterId) chan ps2.Ch
 	defer l.awaitersMu.Unlock()
 	log.Debug("awaiting for", slog.String("character_id", string(charId)))
 	c := make(chan ps2.Character)
-	l.awaiters[charId] = c
-	l.charId <- charId
+	l.awaiters[charId] = append(l.awaiters[charId], c)
 	return c
 }
 
 func (l *BatchLoader) Load(ctx context.Context, charId ps2.CharacterId) (ps2.Character, error) {
 	const op = "loaders.character_loader.batch.Load"
 	log := infra.OpLogger(ctx, op)
-	log.Debug("loading", slog.String("character_id", string(charId)))
 	cached, ok := l.cache.Get(charId)
 	if ok {
 		return cached, nil
 	}
-	char := <-l.load(log, charId)
-	if char.Id == "" {
-		return char, loaders.ErrNotFound
+	select {
+	case <-ctx.Done():
+		return ps2.Character{}, ctx.Err()
+	case char := <-l.load(log, charId):
+		if char.Id == "" {
+			return char, loaders.ErrNotFound
+		}
+		l.cache.Add(charId, char)
+		return char, nil
 	}
-	l.cache.Add(charId, char)
-	return char, nil
 }
