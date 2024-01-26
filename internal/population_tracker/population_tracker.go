@@ -76,7 +76,7 @@ func (p *PopulationTracker) HandleLoginTask(ctx context.Context, wg *sync.WaitGr
 		Try: func() error {
 			char, err = p.characterLoader.Load(ctx, charId)
 			if err != nil {
-				log.Warn("failed to get character, retrying", slog.String("character_id", string(charId)), sl.Err(err))
+				log.Debug("failed to get character, retrying", slog.String("character_id", string(charId)), sl.Err(err))
 			}
 			return err
 		},
