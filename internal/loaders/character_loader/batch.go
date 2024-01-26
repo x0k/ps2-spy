@@ -46,11 +46,13 @@ func (l *BatchLoader) batch() []ps2.CharacterId {
 func (l *BatchLoader) releaseAwaiters(log *slog.Logger, batch []ps2.CharacterId, chars map[ps2.CharacterId]ps2.Character) {
 	l.awaitersMu.Lock()
 	defer l.awaitersMu.Unlock()
-	log.Debug(
-		"releasing awaiters",
-		slog.Int("batch_size", len(batch)),
-		slog.Int("loaded_size", len(chars)),
-	)
+	if len(batch) != len(chars) {
+		log.Warn(
+			"not all characters were loaded",
+			slog.Int("batch_size", len(batch)),
+			slog.Int("loaded_size", len(chars)),
+		)
+	}
 	for _, id := range batch {
 		if channels, ok := l.awaiters[id]; ok {
 			char, ok := chars[id]
@@ -129,7 +131,6 @@ func (l *BatchLoader) load(log *slog.Logger, charId ps2.CharacterId) chan ps2.Ch
 func (l *BatchLoader) Load(ctx context.Context, charId ps2.CharacterId) (ps2.Character, error) {
 	const op = "loaders.character_loader.batch.Load"
 	log := infra.OpLogger(ctx, op)
-	log.Debug("loading", slog.String("character_id", string(charId)))
 	cached, ok := l.cache.Get(charId)
 	if ok {
 		return cached, nil

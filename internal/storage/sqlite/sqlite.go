@@ -55,20 +55,6 @@ type Storage struct {
 	pub        publisher.Abstract[publisher.Event]
 }
 
-type outfitRow struct {
-	Platform   platforms.Platform
-	OutfitId   ps2.OutfitId
-	OutfitName string
-	OutfitTag  string
-}
-
-type facilityRow struct {
-	FacilityId   ps2.FacilityId
-	FacilityName string
-	FacilityType string
-	ZoneId       ps2.ZoneId
-}
-
 func (s *Storage) migrate(ctx context.Context) error {
 
 	// TODO: Normalize schema by extracting (platform, outfit_id) into separate table
@@ -296,33 +282,46 @@ func (s *Storage) exec(ctx context.Context, statement int, args ...any) error {
 	return nil
 }
 
-func (s *Storage) queryRow(ctx context.Context, result any, statement int, args ...any) error {
-	if err := s.stmt(ctx, statement).QueryRowContext(ctx, args...).Scan(result); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return storage.ErrNotFound
-		}
-		return err
-	}
-	return nil
-}
-
-func defaultScan[T any](rows *sql.Rows) (T, error) {
+func defaultScan[T any](r row) (T, error) {
 	var result T
-	err := rows.Scan(&result)
+	err := r.Scan(&result)
 	return result, err
 }
 
-func outfitScan(rows *sql.Rows) (ps2.Outfit, error) {
+func outfitScan(r row) (ps2.Outfit, error) {
 	var outfit ps2.Outfit
-	err := rows.Scan(&outfit.Platform, &outfit.Id, &outfit.Name, &outfit.Tag)
-	return outfit, err
+	return outfit, r.Scan(&outfit.Platform, &outfit.Id, &outfit.Name, &outfit.Tag)
+}
+
+func facilityScan(r row) (ps2.Facility, error) {
+	var facility ps2.Facility
+	return facility, r.Scan(&facility.Id, &facility.Name, &facility.Type, &facility.ZoneId)
+}
+
+func queryRow[T any](
+	ctx context.Context,
+	s *Storage,
+	statement int,
+	customScan func(row) (T, error),
+	args ...any,
+) (T, error) {
+	if customScan == nil {
+		customScan = defaultScan
+	}
+	result, err := customScan(
+		s.stmt(ctx, statement).QueryRowContext(ctx, args...),
+	)
+	if errors.Is(err, sql.ErrNoRows) {
+		return result, storage.ErrNotFound
+	}
+	return result, err
 }
 
 func query[T any](
 	ctx context.Context,
 	s *Storage,
 	statement int,
-	customScan func(*sql.Rows) (T, error),
+	customScan func(row) (T, error),
 	args ...any,
 ) ([]T, error) {
 	const op = "storage.sqlite.query"
@@ -494,8 +493,7 @@ func (s *Storage) SaveOutfitSynchronizedAt(ctx context.Context, platform platfor
 func (s *Storage) OutfitSynchronizedAt(ctx context.Context, platform platforms.Platform, outfitId ps2.OutfitId) (time.Time, error) {
 	const op = "storage.sqlite.OutfitSynchronizedAt"
 	infra.OpLogger(ctx, op).Debug("params", slog.String("platform", string(platform)), slog.String("outfit_id", string(outfitId)))
-	var syncAt time.Time
-	err := s.queryRow(ctx, &syncAt, selectOutfitSynchronization, platform, outfitId)
+	syncAt, err := queryRow[time.Time](ctx, s, selectOutfitSynchronization, nil, platform, outfitId)
 	if err != nil {
 		return time.Time{}, fmt.Errorf("%s: %w", op, err)
 	}
@@ -598,16 +596,11 @@ func (s *Storage) OutfitMembers(ctx context.Context, platform platforms.Platform
 func (s *Storage) Outfit(ctx context.Context, platform platforms.Platform, outfitId ps2.OutfitId) (ps2.Outfit, error) {
 	const op = "storage.sqlite.Outfit"
 	infra.OpLogger(ctx, op).Debug("params", slog.String("platform", string(platform)), slog.String("outfit_id", string(outfitId)))
-	var o outfitRow
-	if err := s.queryRow(ctx, &o, selectOutfit, platform, outfitId); err != nil {
+	outfit, err := queryRow(ctx, s, selectOutfit, outfitScan, platform, outfitId)
+	if err != nil {
 		return ps2.Outfit{}, fmt.Errorf("%s: %w", op, err)
 	}
-	return ps2.Outfit{
-		Id:       o.OutfitId,
-		Name:     o.OutfitName,
-		Tag:      o.OutfitTag,
-		Platform: o.Platform,
-	}, nil
+	return outfit, nil
 }
 
 func (s *Storage) SaveOutfit(ctx context.Context, outfit ps2.Outfit) error {
@@ -641,16 +634,11 @@ func (s *Storage) Outfits(ctx context.Context, platform platforms.Platform, outf
 func (s *Storage) Facility(ctx context.Context, facilityId ps2.FacilityId) (ps2.Facility, error) {
 	const op = "storage.sqlite.Facility"
 	infra.OpLogger(ctx, op).Debug("params", slog.String("facility_id", string(facilityId)))
-	var f facilityRow
-	if err := s.queryRow(ctx, &f, selectFacility, facilityId); err != nil {
+	facility, err := queryRow(ctx, s, selectFacility, facilityScan, facilityId)
+	if err != nil {
 		return ps2.Facility{}, fmt.Errorf("%s: %w", op, err)
 	}
-	return ps2.Facility{
-		Id:     f.FacilityId,
-		Name:   f.FacilityName,
-		Type:   f.FacilityType,
-		ZoneId: f.ZoneId,
-	}, nil
+	return facility, nil
 }
 
 func (s *Storage) SaveFacility(ctx context.Context, f ps2.Facility) error {
