@@ -168,7 +168,6 @@ func (p *PopulationTracker) DetailedWorldPopulation(worldId ps2.WorldId) (ps2.De
 		return ps2.DetailedWorldPopulation{}, ErrWorldPopulationTrackerNotFound
 	}
 	zonesPopulation := tracker.ZonesPopulation()
-	fmt.Println("zonesPopulation", zonesPopulation)
 	total := 0
 	zones := make([]ps2.ZonePopulation, 0, len(zonesPopulation))
 	for zoneId, zonePopulation := range zonesPopulation {
