@@ -12,15 +12,16 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/loaders"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/lib/retry"
+	"github.com/x0k/ps2-spy/internal/meta"
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
 type PopulationTracker struct {
-	characterLoader             loaders.KeyedLoader[ps2.CharacterId, ps2.Character]
-	mu                          sync.Mutex
-	worldPopulationTrackers     map[ps2.WorldId]*worldPopulationTracker
-	outfitsOnlineMembersTracker *onlineCharactersTracker
-	unhandledLeftCharacters     *expirable.LRU[ps2.CharacterId, struct{}]
+	characterLoader         loaders.KeyedLoader[ps2.CharacterId, ps2.Character]
+	mu                      sync.RWMutex
+	worldPopulationTrackers map[ps2.WorldId]*worldPopulationTracker
+	onlineCharactersTracker *onlineCharactersTracker
+	unhandledLeftCharacters *expirable.LRU[ps2.CharacterId, struct{}]
 }
 
 func New(characterLoader loaders.KeyedLoader[ps2.CharacterId, ps2.Character]) *PopulationTracker {
@@ -29,10 +30,10 @@ func New(characterLoader loaders.KeyedLoader[ps2.CharacterId, ps2.Character]) *P
 		trackers[worldId] = newWorldPopulationTracker()
 	}
 	return &PopulationTracker{
-		characterLoader:             characterLoader,
-		unhandledLeftCharacters:     expirable.NewLRU[ps2.CharacterId, struct{}](0, nil, 5*time.Minute),
-		worldPopulationTrackers:     trackers,
-		outfitsOnlineMembersTracker: newOnlineCharactersTracker(),
+		characterLoader:         characterLoader,
+		unhandledLeftCharacters: expirable.NewLRU[ps2.CharacterId, struct{}](0, nil, 5*time.Minute),
+		worldPopulationTrackers: trackers,
+		onlineCharactersTracker: newOnlineCharactersTracker(),
 	}
 }
 
@@ -53,7 +54,7 @@ func (p *PopulationTracker) handleLogin(log *slog.Logger, char ps2.Character) {
 	} else {
 		log.Warn("world not found", slog.String("world_id", string(char.WorldId)))
 	}
-	p.outfitsOnlineMembersTracker.HandleLogin(char)
+	p.onlineCharactersTracker.HandleLogin(char)
 }
 
 func (p *PopulationTracker) HandleLoginTask(ctx context.Context, wg *sync.WaitGroup, event ps2events.PlayerLogin) {
@@ -89,7 +90,7 @@ func (p *PopulationTracker) HandleLogout(ctx context.Context, event ps2events.Pl
 	} else {
 		log.Warn("world not found", slog.String("world_id", string(worldId)))
 	}
-	handled = handled && p.outfitsOnlineMembersTracker.HandleLogout(event)
+	handled = handled && p.onlineCharactersTracker.HandleLogout(event)
 	if !handled {
 		p.unhandledLeftCharacters.Add(ps2.CharacterId(event.CharacterID), struct{}{})
 	}
@@ -106,4 +107,10 @@ func (p *PopulationTracker) HandleWorldZoneIdAction(ctx context.Context, worldId
 	} else {
 		log.Warn("world not found", slog.String("world_id", string(wId)))
 	}
+}
+
+func (p *PopulationTracker) TrackableOnlineEntities(settings meta.SubscriptionSettings) meta.TrackableEntities[map[ps2.OutfitId][]ps2.Character, []ps2.Character] {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	return p.onlineCharactersTracker.TrackableOnlineEntities(settings)
 }

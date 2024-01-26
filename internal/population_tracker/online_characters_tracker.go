@@ -2,6 +2,7 @@ package population_tracker
 
 import (
 	ps2events "github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
+	"github.com/x0k/ps2-spy/internal/meta"
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
@@ -35,4 +36,27 @@ func (o *onlineCharactersTracker) HandleLogout(event ps2events.PlayerLogout) boo
 		return true
 	}
 	return false
+}
+
+func (o *onlineCharactersTracker) TrackableOnlineEntities(settings meta.SubscriptionSettings) meta.TrackableEntities[map[ps2.OutfitId][]ps2.Character, []ps2.Character] {
+	outfits := make(map[ps2.OutfitId][]ps2.Character, len(settings.Outfits))
+	for _, outfitId := range settings.Outfits {
+		if characters, ok := o.onlineCharacters[outfitId]; ok {
+			chars := make([]ps2.Character, 0, len(characters))
+			for _, char := range characters {
+				chars = append(outfits[outfitId], char)
+			}
+			outfits[outfitId] = chars
+		}
+	}
+	characters := make([]ps2.Character, 0, len(settings.Characters))
+	for _, charId := range settings.Characters {
+		if outfitId, ok := o.characterOutfits[charId]; ok {
+			characters = append(characters, o.onlineCharacters[outfitId][charId])
+		}
+	}
+	return meta.TrackableEntities[map[ps2.OutfitId][]ps2.Character, []ps2.Character]{
+		Outfits:    outfits,
+		Characters: characters,
+	}
 }

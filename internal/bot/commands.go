@@ -106,6 +106,27 @@ func NewCommands(
 			},
 		},
 		{
+			Name:        "online",
+			Description: "Returns online trackable outfits members and characters",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        string(platforms.PC),
+					Description: "For PC platform",
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        string(platforms.PS4_EU),
+					Description: "For PS4 EU platform",
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        string(platforms.PS4_US),
+					Description: "For PS4 US platform",
+				},
+			},
+		},
+		{
 			Name:        "about",
 			Description: "About this bot",
 		},
