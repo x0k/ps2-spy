@@ -141,15 +141,30 @@ func start(ctx context.Context, cfg *config.Config) error {
 	ps4usBatchedCharacterLoader := character_loader.NewBatch(ps4usCharactersLoader, 30*time.Second)
 	ps4usBatchedCharacterLoader.Start(ctx, wg)
 
-	pcPopulationTracker, err := startNewPopulationTracker(ctx, pcBatchedCharacterLoader, pcPs2EventsPublisher)
+	pcPopulationTracker, err := startNewPopulationTracker(
+		ctx,
+		ps2.PcPlatformWorldIds,
+		pcBatchedCharacterLoader,
+		pcPs2EventsPublisher,
+	)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
-	ps4euPopulationTracker, err := startNewPopulationTracker(ctx, ps4euBatchedCharacterLoader, ps4euPs2EventsPublisher)
+	ps4euPopulationTracker, err := startNewPopulationTracker(
+		ctx,
+		ps2.Ps4euPlatformWorldIds,
+		ps4euBatchedCharacterLoader,
+		ps4euPs2EventsPublisher,
+	)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
-	ps4usPopulationTracker, err := startNewPopulationTracker(ctx, ps4usBatchedCharacterLoader, ps4usPs2EventsPublisher)
+	ps4usPopulationTracker, err := startNewPopulationTracker(
+		ctx,
+		ps2.Ps4usPlatformWorldIds,
+		ps4usBatchedCharacterLoader,
+		ps4usPs2EventsPublisher,
+	)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
@@ -288,17 +303,17 @@ func start(ctx context.Context, cfg *config.Config) error {
 
 	pcFacilitiesManagerPublisher := publisher.New(facilities_manager.CastHandler)
 	startFacilitiesManager(ctx, pcPs2EventsPublisher, facilities_manager.New(
-		[]ps2.WorldId{"1", "10", "13", "17", "19", "40"},
+		ps2.PcPlatformWorldIds,
 		pcFacilitiesManagerPublisher,
 	))
 	ps4euFacilitiesManagerPublisher := publisher.New(facilities_manager.CastHandler)
 	startFacilitiesManager(ctx, ps4euPs2EventsPublisher, facilities_manager.New(
-		[]ps2.WorldId{"2000"},
+		ps2.Ps4euPlatformWorldIds,
 		ps4euFacilitiesManagerPublisher,
 	))
 	ps4usFacilitiesManagerPublisher := publisher.New(facilities_manager.CastHandler)
 	startFacilitiesManager(ctx, ps4usPs2EventsPublisher, facilities_manager.New(
-		[]ps2.WorldId{"1000"},
+		ps2.Ps4usPlatformWorldIds,
 		ps4usFacilitiesManagerPublisher,
 	))
 

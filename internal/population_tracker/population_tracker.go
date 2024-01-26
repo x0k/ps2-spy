@@ -29,9 +29,9 @@ type PopulationTracker struct {
 	unhandledLeftCharacters *expirable.LRU[ps2.CharacterId, struct{}]
 }
 
-func New(ctx context.Context, characterLoader loaders.KeyedLoader[ps2.CharacterId, ps2.Character]) *PopulationTracker {
+func New(ctx context.Context, worldIds []ps2.WorldId, characterLoader loaders.KeyedLoader[ps2.CharacterId, ps2.Character]) *PopulationTracker {
 	trackers := make(map[ps2.WorldId]*worldPopulationTracker, len(ps2.WorldNames))
-	for worldId := range ps2.WorldNames {
+	for _, worldId := range worldIds {
 		trackers[worldId] = newWorldPopulationTracker()
 	}
 	onlineCharactersTracker := newOnlineCharactersTracker()

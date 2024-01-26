@@ -154,3 +154,6 @@ var WorldPlatforms = map[WorldId]platforms.Platform{
 	"1000": platforms.PS4_US,
 	"2000": platforms.PS4_EU,
 }
+var PcPlatformWorldIds = []WorldId{"1", "10", "13", "17", "19", "24", "40"}
+var Ps4euPlatformWorldIds = []WorldId{"2000"}
+var Ps4usPlatformWorldIds = []WorldId{"1000"}

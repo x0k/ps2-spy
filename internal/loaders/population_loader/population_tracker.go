@@ -2,7 +2,6 @@ package population_loader
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 
 	"github.com/x0k/ps2-spy/internal/infra"
@@ -32,17 +31,16 @@ func (l *PopulationTrackerLoader) Load(ctx context.Context) (loaders.Loaded[ps2.
 	log := infra.OpLogger(ctx, op)
 	total := 0
 	worlds := make([]ps2.WorldPopulation, 0)
-	// for _, platform := range []platforms.Platform{platforms.PC} {
-	tracker, ok := l.populationTrackers[platforms.PC]
-	if !ok {
-		log.Warn("no population tracker for platform", slog.String("platform", string(platforms.PC)))
-		// continue
-		return loaders.Loaded[ps2.WorldsPopulation]{}, fmt.Errorf("%s no population tracker for platform %s", op, platforms.PC)
+	for _, platform := range platforms.Platforms {
+		tracker, ok := l.populationTrackers[platform]
+		if !ok {
+			log.Warn("no population tracker for platform", slog.String("platform", string(platform)))
+			continue
+		}
+		population := tracker.WorldsPopulation()
+		total += population.Total
+		worlds = append(worlds, population.Worlds...)
 	}
-	population := tracker.WorldsPopulation()
-	total += population.Total
-	worlds = append(worlds, population.Worlds...)
-	// }
 	return loaders.LoadedNow(l.botName, ps2.WorldsPopulation{
 		Total:  total,
 		Worlds: worlds,

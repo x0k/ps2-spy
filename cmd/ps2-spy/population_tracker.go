@@ -125,10 +125,11 @@ func startPopulationTracker(
 
 func startNewPopulationTracker(
 	ctx context.Context,
+	worldIds []ps2.WorldId,
 	characterLoader loaders.KeyedLoader[ps2.CharacterId, ps2.Character],
 	ps2EventsPublisher *publisher.Publisher,
 ) (*population_tracker.PopulationTracker, error) {
-	populationTracker := population_tracker.New(ctx, characterLoader)
+	populationTracker := population_tracker.New(ctx, worldIds, characterLoader)
 	return populationTracker, startPopulationTracker(
 		ctx,
 		populationTracker,
