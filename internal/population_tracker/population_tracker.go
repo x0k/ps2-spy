@@ -7,9 +7,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/hashicorp/golang-lru/v2/expirable"
 	"github.com/x0k/ps2-spy/internal/infra"
 	ps2events "github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
+	"github.com/x0k/ps2-spy/internal/lib/containers"
 	"github.com/x0k/ps2-spy/internal/lib/loaders"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/lib/retry"
@@ -20,43 +20,73 @@ import (
 
 var ErrWorldPopulationTrackerNotFound = fmt.Errorf("world population tracker not found")
 
-// TODO: Track characters activity to remove inactive characters
+type player struct {
+	characterId ps2.CharacterId
+	worldId     ps2.WorldId
+}
+
 type PopulationTracker struct {
 	characterLoader         loaders.KeyedLoader[ps2.CharacterId, ps2.Character]
-	mutex                   *sync.RWMutex
-	worldPopulationTrackers map[ps2.WorldId]*worldPopulationTracker
-	onlineCharactersTracker *onlineCharactersTracker
-	unhandledLeftCharacters *expirable.LRU[ps2.CharacterId, struct{}]
+	mutex                   sync.RWMutex
+	worldPopulationTrackers map[ps2.WorldId]worldPopulationTracker
+	onlineCharactersTracker onlineCharactersTracker
+	activePlayers           *containers.ExpirableList[player]
+	inactivityCheckInterval time.Duration
+	inactiveTimeout         time.Duration
 }
 
 func New(ctx context.Context, worldIds []ps2.WorldId, characterLoader loaders.KeyedLoader[ps2.CharacterId, ps2.Character]) *PopulationTracker {
-	trackers := make(map[ps2.WorldId]*worldPopulationTracker, len(ps2.WorldNames))
+	trackers := make(map[ps2.WorldId]worldPopulationTracker, len(ps2.WorldNames))
 	for _, worldId := range worldIds {
 		trackers[worldId] = newWorldPopulationTracker()
 	}
-	onlineCharactersTracker := newOnlineCharactersTracker()
-	mutex := &sync.RWMutex{}
 	return &PopulationTracker{
-		mutex:                   mutex,
 		characterLoader:         characterLoader,
-		unhandledLeftCharacters: expirable.NewLRU[ps2.CharacterId, struct{}](0, nil, 5*time.Minute),
 		worldPopulationTrackers: trackers,
-		onlineCharactersTracker: onlineCharactersTracker,
+		onlineCharactersTracker: newOnlineCharactersTracker(),
+		activePlayers:           containers.NewExpirableList[player](),
+		inactivityCheckInterval: time.Minute,
+		inactiveTimeout:         10 * time.Minute,
 	}
+}
+
+func (p *PopulationTracker) handleInactive(log *slog.Logger, now time.Time) {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+	p.activePlayers.RemoveExpired(now.Add(-p.inactiveTimeout), func(pl player) {
+		if w, ok := p.worldPopulationTrackers[pl.worldId]; ok {
+			w.HandleInactive(pl.characterId)
+		} else {
+			log.Warn("world not found", slog.String("world_id", string(pl.worldId)))
+		}
+		p.onlineCharactersTracker.HandleInactive(pl.characterId)
+	})
+}
+
+func (p *PopulationTracker) Start(ctx context.Context) {
+	const op = "population_tracker.PopulationTracker.Start"
+	log := infra.OpLogger(ctx, op)
+	wg := infra.Wg(ctx)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		ticker := time.NewTicker(p.inactivityCheckInterval)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case t := <-ticker.C:
+				p.handleInactive(log, t)
+			}
+		}
+	}()
 }
 
 func (p *PopulationTracker) handleLogin(log *slog.Logger, char ps2.Character) {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
-	// Player left before character info is loaded.
-	// Since logout event is delayed, this condition
-	// will be triggered really rarely
-	if p.unhandledLeftCharacters.Contains(char.Id) {
-		log.Warn("character is already logged out", slog.String("character_id", string(char.Id)))
-		p.unhandledLeftCharacters.Remove(char.Id)
-		return
-
-	}
+	p.activePlayers.Push(player{char.Id, char.WorldId})
 	if w, ok := p.worldPopulationTrackers[char.WorldId]; ok {
 		w.HandleLogin(char)
 	} else {
@@ -94,30 +124,29 @@ func (p *PopulationTracker) HandleLogout(ctx context.Context, event ps2events.Pl
 	log := infra.OpLogger(ctx, op)
 	worldId := ps2.WorldId(event.WorldID)
 	charId := ps2.CharacterId(event.CharacterID)
-	handled := true
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
+	p.activePlayers.Remove(player{charId, worldId})
 	if w, ok := p.worldPopulationTrackers[worldId]; ok {
-		handled = handled && w.HandleLogout(event)
+		w.HandleInactive(charId)
 	} else {
 		log.Warn("world not found", slog.String("world_id", string(worldId)))
 	}
-	handled = handled && p.onlineCharactersTracker.HandleLogout(event)
-	if !handled {
-		p.unhandledLeftCharacters.Add(charId, struct{}{})
-	}
+	p.onlineCharactersTracker.HandleInactive(charId)
 }
 
 func (p *PopulationTracker) HandleWorldZoneIdAction(ctx context.Context, worldId, zoneId, charId string) {
 	const op = "population_tracker.PopulationTracker.HandleWorldZoneIdAction"
 	log := infra.OpLogger(ctx, op)
+	cId := ps2.CharacterId(charId)
 	wId := ps2.WorldId(worldId)
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
+	p.activePlayers.Push(player{cId, wId})
 	if w, ok := p.worldPopulationTrackers[wId]; ok {
-		w.HandleZoneIdAction(log, zoneId, charId)
+		w.HandleZoneIdAction(log, cId, zoneId)
 	} else {
-		log.Warn("world not found", slog.String("world_id", string(wId)))
+		log.Warn("world not found", slog.String("world_id", worldId))
 	}
 }
 

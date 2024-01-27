@@ -18,6 +18,7 @@ func startPopulationTracker(
 	ps2EventsPublisher *publisher.Publisher,
 ) error {
 	const op = "startPopulationTracker"
+	populationTracker.Start(ctx)
 	achievementEarned := make(chan ps2events.AchievementEarned)
 	achievementUnSub, err := ps2EventsPublisher.AddHandler(achievementEarned)
 	if err != nil {
