@@ -40,7 +40,7 @@ func (f *Fallbacks[T]) Exec(executor func(T) error) error {
 			if err == nil {
 				return nil
 			}
-			f.log.Debug("last successful fallback failed", slog.String("fallback", name), sl.Err(err))
+			f.log.Debug("[ERROR] last successful fallback failed", slog.String("fallback", name), sl.Err(err))
 		} else {
 			f.log.Warn("last successful fallback not found", slog.String("fallback", name))
 		}
@@ -53,7 +53,7 @@ func (f *Fallbacks[T]) Exec(executor func(T) error) error {
 		}
 		err := executor(entity)
 		if err != nil {
-			f.log.Debug("fallback failed", slog.String("fallback", name), sl.Err(err))
+			f.log.Debug("[ERROR] fallback failed", slog.String("fallback", name), sl.Err(err))
 			continue
 		}
 		f.lastSuccessfulEntity.Set(name)

@@ -64,7 +64,7 @@ func (l *CensusLoader) Load(ctx context.Context, charIds []ps2.CharacterId) (map
 		Try: func() error {
 			chars, err = census2.ExecutePreparedAndDecode[collections.CharacterItem](ctx, l.client, collections.Character, url)
 			if err != nil {
-				log.Debug("failed to load characters, retrying", slog.String("url", url), sl.Err(err))
+				log.Debug("[ERROR] failed to load characters, retrying", slog.String("url", url), sl.Err(err))
 			}
 			return err
 		},

@@ -47,8 +47,8 @@ func (l *BatchLoader) releaseAwaiters(log *slog.Logger, batch []ps2.CharacterId,
 	l.awaitersMu.Lock()
 	defer l.awaitersMu.Unlock()
 	if len(batch) != len(chars) {
-		log.Warn(
-			"not all characters were loaded",
+		log.Debug(
+			"[WARN] not all characters were loaded",
 			slog.Int("batch_size", len(batch)),
 			slog.Int("loaded_size", len(chars)),
 		)
