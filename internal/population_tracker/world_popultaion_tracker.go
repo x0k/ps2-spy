@@ -56,15 +56,16 @@ func (w *worldPopulationTracker) HandleZoneIdAction(log *slog.Logger, charId ps2
 		return
 	}
 	zoneId := ps2.ZoneId(strZoneId)
-	if _, ok := w.zonesPopulation[zoneId]; !ok {
-		log.Debug("zone not found", slog.String("zone_id", string(zoneId)))
-		return
-	}
 	if lastZoneId, ok := w.charactersLastZoneId[charId]; ok {
 		if lastZoneId == zoneId {
 			return
 		}
 		w.zonesPopulation[lastZoneId][factionId] -= 1
+	}
+	// Non interesting zone like VR training
+	if _, ok := w.zonesPopulation[zoneId]; !ok {
+		delete(w.charactersLastZoneId, charId)
+		return
 	}
 	w.zonesPopulation[zoneId][factionId] += 1
 	w.charactersLastZoneId[charId] = zoneId
