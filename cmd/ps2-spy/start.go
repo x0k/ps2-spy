@@ -178,6 +178,7 @@ func start(ctx context.Context, cfg *config.Config) error {
 	popLoader := population_loader.NewMulti(
 		log,
 		map[string]loaders.Loader[loaders.Loaded[ps2.WorldsPopulation]]{
+			// TODO: Add tiny cache for spy loaders
 			"spy": population_loader.NewPopulationTrackerLoader(
 				cfg.BotName,
 				platformPopulationTrackers,

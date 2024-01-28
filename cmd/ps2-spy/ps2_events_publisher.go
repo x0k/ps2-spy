@@ -31,7 +31,7 @@ func startNewPs2EventsPublisher(
 	rawMessagesPublisher := ps2messages.NewPublisher(messagesPublisher)
 	client := streaming.NewClient(
 		log,
-		"wss://push.planetside2.com/streaming",
+		cfg.CensusStreamingEndpoint,
 		env,
 		cfg.CensusServiceId,
 		rawMessagesPublisher,
