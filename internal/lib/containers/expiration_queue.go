@@ -26,6 +26,11 @@ func (l *ExpirationQueue[K]) Len() int {
 	return len(l.nodes)
 }
 
+func (l *ExpirationQueue[K]) Has(key K) bool {
+	_, ok := l.nodes[key]
+	return ok
+}
+
 func (l *ExpirationQueue[K]) Push(key K) {
 	now := time.Now()
 
@@ -83,12 +88,14 @@ func (l *ExpirationQueue[K]) Remove(key K) {
 	}
 }
 
-func (l *ExpirationQueue[K]) RemoveExpired(expirationTime time.Time, onRemove func(key K)) {
+func (l *ExpirationQueue[K]) RemoveExpired(expirationTime time.Time, onRemove func(key K)) int {
 	curr := l.head
+	count := 0
 	for curr != nil && curr.updatedAt.Before(expirationTime) {
 		k := curr.key
 		onRemove(k)
 		delete(l.nodes, k)
+		count++
 		curr = curr.next
 	}
 	if curr == nil {
@@ -101,4 +108,5 @@ func (l *ExpirationQueue[K]) RemoveExpired(expirationTime time.Time, onRemove fu
 		}
 		l.head = curr
 	}
+	return count
 }

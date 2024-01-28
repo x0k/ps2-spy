@@ -53,9 +53,7 @@ func New(ctx context.Context, worldIds []ps2.WorldId, characterLoader loaders.Ke
 func (p *PopulationTracker) handleInactive(log *slog.Logger, now time.Time) {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
-	count := 0
-	p.activePlayers.RemoveExpired(now.Add(-p.inactiveTimeout), func(pl player) {
-		count++
+	count := p.activePlayers.RemoveExpired(now.Add(-p.inactiveTimeout), func(pl player) {
 		if w, ok := p.worldPopulationTrackers[pl.worldId]; ok {
 			w.HandleInactive(pl.characterId)
 		} else {

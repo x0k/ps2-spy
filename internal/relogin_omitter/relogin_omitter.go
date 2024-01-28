@@ -1,4 +1,4 @@
-package relogin_event_omitter
+package relogin_omitter
 
 import (
 	"context"
@@ -9,7 +9,9 @@ import (
 
 	"github.com/x0k/ps2-spy/internal/infra"
 	ps2events "github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
+	"github.com/x0k/ps2-spy/internal/lib/containers"
 	"github.com/x0k/ps2-spy/internal/lib/publisher"
+	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
 var ErrConvertEvent = fmt.Errorf("failed to convert event")
@@ -17,56 +19,66 @@ var ErrConvertEvent = fmt.Errorf("failed to convert event")
 type ReLoginOmitter struct {
 	pub               publisher.Abstract[publisher.Event]
 	batchMu           sync.Mutex
-	logoutEventsBatch map[string]ps2events.PlayerLogout
-	batchInterval     time.Duration
+	logoutEventsQueue *containers.ExpirationQueue[ps2.CharacterId]
+	logoutEvents      map[ps2.CharacterId]ps2events.PlayerLogout
+	flushInterval     time.Duration
+	delayDuration     time.Duration
 }
 
 func New(pub publisher.Abstract[publisher.Event]) *ReLoginOmitter {
 	return &ReLoginOmitter{
 		pub:               pub,
-		logoutEventsBatch: make(map[string]ps2events.PlayerLogout, 100),
-		batchInterval:     time.Minute * 3,
+		logoutEventsQueue: containers.NewExpirationQueue[ps2.CharacterId](),
+		logoutEvents:      make(map[ps2.CharacterId]ps2events.PlayerLogout),
+		flushInterval:     1 * time.Minute,
+		delayDuration:     3 * time.Minute,
 	}
 }
 
 func (r *ReLoginOmitter) addLogoutEvent(event *ps2events.PlayerLogout) {
 	r.batchMu.Lock()
 	defer r.batchMu.Unlock()
-	r.logoutEventsBatch[event.CharacterID] = *event
+	charId := ps2.CharacterId(event.CharacterID)
+	r.logoutEventsQueue.Push(charId)
+	r.logoutEvents[charId] = *event
 }
 
 func (r *ReLoginOmitter) shouldPublishLoginEvent(event *ps2events.PlayerLogin) bool {
 	r.batchMu.Lock()
 	defer r.batchMu.Unlock()
-	if _, ok := r.logoutEventsBatch[event.CharacterID]; ok {
-		delete(r.logoutEventsBatch, event.CharacterID)
+	charId := ps2.CharacterId(event.CharacterID)
+	if r.logoutEventsQueue.Has(charId) {
+		r.logoutEventsQueue.Remove(charId)
+		delete(r.logoutEvents, charId)
 		return false
 	}
 	return true
 }
 
-func (r *ReLoginOmitter) flushLogOutEvents(log *slog.Logger) {
+func (r *ReLoginOmitter) flushLogOutEvents(now time.Time, log *slog.Logger) {
 	r.batchMu.Lock()
 	defer r.batchMu.Unlock()
-	log.Debug("flush logout events", slog.Int("events_count", len(r.logoutEventsBatch)))
-	for _, event := range r.logoutEventsBatch {
-		r.pub.Publish(&event)
-	}
-	r.logoutEventsBatch = make(map[string]ps2events.PlayerLogout, len(r.logoutEventsBatch))
+	count := r.logoutEventsQueue.RemoveExpired(now.Add(-r.delayDuration), func(charId ps2.CharacterId) {
+		if e, ok := r.logoutEvents[charId]; ok {
+			r.pub.Publish(&e)
+			delete(r.logoutEvents, charId)
+		}
+	})
+	log.Debug("logout events flushed", slog.Int("events_count", count))
 }
 
 func (r *ReLoginOmitter) flushTask(ctx context.Context, wg *sync.WaitGroup) {
 	const op = "relogin_event_ommiter.ReLoginOmitter.flushTask"
 	log := infra.OpLogger(ctx, op)
 	defer wg.Done()
-	ticker := time.NewTicker(r.batchInterval)
+	ticker := time.NewTicker(r.flushInterval)
 	defer ticker.Stop()
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case <-ticker.C:
-			r.flushLogOutEvents(log)
+		case now := <-ticker.C:
+			r.flushLogOutEvents(now, log)
 		}
 	}
 }

@@ -15,7 +15,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/lib/publisher"
 	"github.com/x0k/ps2-spy/internal/lib/retry"
-	"github.com/x0k/ps2-spy/internal/relogin_event_omitter"
+	"github.com/x0k/ps2-spy/internal/relogin_omitter"
 )
 
 func startNewPs2EventsPublisher(
@@ -58,7 +58,7 @@ func startNewPs2EventsPublisher(
 	}()
 	// Handle events
 	eventsPublisher := publisher.New(ps2events.CastHandler)
-	reLoginOmitter := relogin_event_omitter.New(eventsPublisher)
+	reLoginOmitter := relogin_omitter.New(eventsPublisher)
 	reLoginOmitter.Start(ctx)
 	rawEventsPublisher := ps2events.NewPublisher(reLoginOmitter)
 	serviceMsg := make(chan ps2messages.ServiceMessage[map[string]any])
