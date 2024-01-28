@@ -30,7 +30,7 @@ type PopulationTracker struct {
 	mutex                   sync.RWMutex
 	worldPopulationTrackers map[ps2.WorldId]worldPopulationTracker
 	onlineCharactersTracker onlineCharactersTracker
-	activePlayers           *containers.ExpirableList[player]
+	activePlayers           *containers.ExpirationQueue[player]
 	inactivityCheckInterval time.Duration
 	inactiveTimeout         time.Duration
 }
@@ -44,7 +44,7 @@ func New(ctx context.Context, worldIds []ps2.WorldId, characterLoader loaders.Ke
 		characterLoader:         characterLoader,
 		worldPopulationTrackers: trackers,
 		onlineCharactersTracker: newOnlineCharactersTracker(),
-		activePlayers:           containers.NewExpirableList[player](),
+		activePlayers:           containers.NewExpirationQueue[player](),
 		inactivityCheckInterval: time.Minute,
 		inactiveTimeout:         10 * time.Minute,
 	}
@@ -53,7 +53,9 @@ func New(ctx context.Context, worldIds []ps2.WorldId, characterLoader loaders.Ke
 func (p *PopulationTracker) handleInactive(log *slog.Logger, now time.Time) {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
+	count := 0
 	p.activePlayers.RemoveExpired(now.Add(-p.inactiveTimeout), func(pl player) {
+		count++
 		if w, ok := p.worldPopulationTrackers[pl.worldId]; ok {
 			w.HandleInactive(pl.characterId)
 		} else {
@@ -61,6 +63,7 @@ func (p *PopulationTracker) handleInactive(log *slog.Logger, now time.Time) {
 		}
 		p.onlineCharactersTracker.HandleInactive(pl.characterId)
 	})
+	log.Debug("inactive players removed", slog.Int("queue_size", p.activePlayers.Len()), slog.Int("count", count))
 }
 
 func (p *PopulationTracker) Start(ctx context.Context) {

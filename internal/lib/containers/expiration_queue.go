@@ -10,37 +10,49 @@ type node[K comparable] struct {
 	updatedAt  time.Time
 }
 
-type ExpirableList[K comparable] struct {
+type ExpirationQueue[K comparable] struct {
 	nodes map[K]*node[K]
 	head  *node[K]
 	tail  *node[K]
 }
 
-func NewExpirableList[K comparable]() *ExpirableList[K] {
-	return &ExpirableList[K]{
+func NewExpirationQueue[K comparable]() *ExpirationQueue[K] {
+	return &ExpirationQueue[K]{
 		nodes: make(map[K]*node[K]),
 	}
 }
 
-func (l *ExpirableList[K]) Push(key K) {
+func (l *ExpirationQueue[K]) Len() int {
+	return len(l.nodes)
+}
+
+func (l *ExpirationQueue[K]) Push(key K) {
 	now := time.Now()
+
 	if node, ok := l.nodes[key]; ok {
 		if node == l.tail {
 			return
 		}
 		// Should have next since it is not a tail
 		node.next.prev = node.prev
-		if node.prev != nil {
+		if node == l.head {
+			l.head = node.next
+		} else {
 			node.prev.next = node.next
 		}
+
 		node.next = nil
 		node.prev = l.tail
 		node.updatedAt = now
+
 		l.tail.next = node
 		l.tail = node
+
 		return
 	}
+
 	node := &node[K]{key: key, updatedAt: now}
+
 	if l.tail == nil {
 		l.head = node
 		l.tail = node
@@ -49,10 +61,11 @@ func (l *ExpirableList[K]) Push(key K) {
 		node.prev = l.tail
 		l.tail = node
 	}
+
 	l.nodes[key] = node
 }
 
-func (l *ExpirableList[K]) Remove(key K) {
+func (l *ExpirationQueue[K]) Remove(key K) {
 	if node, ok := l.nodes[key]; ok {
 		if node == l.head {
 			l.head = node.next
@@ -70,7 +83,7 @@ func (l *ExpirableList[K]) Remove(key K) {
 	}
 }
 
-func (l *ExpirableList[K]) RemoveExpired(expirationTime time.Time, onRemove func(key K)) {
+func (l *ExpirationQueue[K]) RemoveExpired(expirationTime time.Time, onRemove func(key K)) {
 	curr := l.head
 	for curr != nil && curr.updatedAt.Before(expirationTime) {
 		k := curr.key
@@ -82,7 +95,10 @@ func (l *ExpirableList[K]) RemoveExpired(expirationTime time.Time, onRemove func
 		l.head = nil
 		l.tail = nil
 	} else {
-		curr.prev = nil
+		if curr.prev != nil {
+			curr.prev.next = nil
+			curr.prev = nil
+		}
 		l.head = curr
 	}
 }
