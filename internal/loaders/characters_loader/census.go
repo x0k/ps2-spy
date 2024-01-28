@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"sync"
+	"time"
 
 	"github.com/x0k/ps2-spy/internal/infra"
 	"github.com/x0k/ps2-spy/internal/lib/census2"
@@ -63,12 +64,17 @@ func (l *CensusLoader) Load(ctx context.Context, charIds []ps2.CharacterId) (map
 	retry.RetryWhileWithRecover(retry.Retryable{
 		Try: func() error {
 			chars, err = census2.ExecutePreparedAndDecode[collections.CharacterItem](ctx, l.client, collections.Character, url)
-			if err != nil {
-				log.Debug("[ERROR] failed to load characters, retrying", slog.String("url", url), sl.Err(err))
-			}
 			return err
 		},
 		While: retry.ContextIsNotCanceledAndMaxRetriesNotExceeded(3),
+		BeforeSleep: func(d time.Duration) {
+			log.Debug(
+				"[ERROR] failed to load characters, retrying",
+				slog.Duration("after", d),
+				slog.String("url", url),
+				sl.Err(err),
+			)
+		},
 	})
 	if err != nil {
 		return nil, err

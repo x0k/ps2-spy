@@ -106,12 +106,17 @@ func (p *PopulationTracker) HandleLoginTask(ctx context.Context, wg *sync.WaitGr
 	retry.RetryWhileWithRecover(retry.Retryable{
 		Try: func() error {
 			char, err = p.characterLoader.Load(ctx, charId)
-			if err != nil {
-				log.Debug("[ERROR] failed to get character, retrying", slog.String("character_id", string(charId)), sl.Err(err))
-			}
 			return err
 		},
 		While: retry.ContextIsNotCanceledAndMaxRetriesNotExceeded(3),
+		BeforeSleep: func(d time.Duration) {
+			log.Debug(
+				"[ERROR] failed to get character, retrying",
+				slog.Duration("after", d),
+				slog.String("character_id", string(charId)),
+				sl.Err(err),
+			)
+		},
 	})
 	if err != nil {
 		log.Error("failed to get character", slog.String("character_id", string(charId)), sl.Err(err))
