@@ -3,7 +3,6 @@ package population_tracker
 import (
 	"log/slog"
 
-	ps2events "github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/ps2/factions"
 )
@@ -17,12 +16,12 @@ type worldPopulationTracker struct {
 	charactersLastZoneId map[ps2.CharacterId]ps2.ZoneId
 }
 
-func newWorldPopulationTracker() *worldPopulationTracker {
+func newWorldPopulationTracker() worldPopulationTracker {
 	zonesPopulation := make(map[ps2.ZoneId]map[factions.Id]int, len(ps2.ZoneNames))
 	for zoneId := range ps2.ZoneNames {
 		zonesPopulation[zoneId] = make(map[factions.Id]int, len(factions.FactionNames))
 	}
-	return &worldPopulationTracker{
+	return worldPopulationTracker{
 		population: make(map[factions.Id]int, len(factions.FactionNames)),
 
 		zonesPopulation: zonesPopulation,
@@ -38,23 +37,6 @@ func (w *worldPopulationTracker) HandleLogin(character ps2.Character) {
 	w.charactersFactions[character.Id] = character.FactionId
 }
 
-func (w *worldPopulationTracker) HandleLogout(event ps2events.PlayerLogout) bool {
-	charId := ps2.CharacterId(event.CharacterID)
-	factionId, ok := w.charactersFactions[charId]
-	if !ok {
-		return false
-	}
-	delete(w.charactersFactions, charId)
-
-	w.population[factionId] -= 1
-
-	if zoneId, ok := w.charactersLastZoneId[charId]; ok {
-		w.zonesPopulation[zoneId][factionId] -= 1
-		delete(w.charactersLastZoneId, charId)
-	}
-	return true
-}
-
 func (w *worldPopulationTracker) HandleInactive(charId ps2.CharacterId) {
 	factionId, ok := w.charactersFactions[charId]
 	if !ok {
@@ -68,22 +50,22 @@ func (w *worldPopulationTracker) HandleInactive(charId ps2.CharacterId) {
 	}
 }
 
-func (w *worldPopulationTracker) HandleZoneIdAction(log *slog.Logger, strZoneId, strCharId string) {
-	charId := ps2.CharacterId(strCharId)
+func (w *worldPopulationTracker) HandleZoneIdAction(log *slog.Logger, charId ps2.CharacterId, strZoneId string) {
 	factionId, ok := w.charactersFactions[charId]
 	if !ok {
 		return
 	}
 	zoneId := ps2.ZoneId(strZoneId)
-	if _, ok := w.zonesPopulation[zoneId]; !ok {
-		log.Debug("zone not found", slog.String("zone_id", string(zoneId)))
-		return
-	}
 	if lastZoneId, ok := w.charactersLastZoneId[charId]; ok {
 		if lastZoneId == zoneId {
 			return
 		}
 		w.zonesPopulation[lastZoneId][factionId] -= 1
+	}
+	// Non interesting zone like VR training
+	if _, ok := w.zonesPopulation[zoneId]; !ok {
+		delete(w.charactersLastZoneId, charId)
+		return
 	}
 	w.zonesPopulation[zoneId][factionId] += 1
 	w.charactersLastZoneId[charId] = zoneId

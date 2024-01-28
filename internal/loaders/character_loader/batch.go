@@ -119,10 +119,9 @@ func (l *BatchLoader) Start(ctx context.Context, wg *sync.WaitGroup) {
 	go l.cleanupTask(ctx, wg)
 }
 
-func (l *BatchLoader) load(log *slog.Logger, charId ps2.CharacterId) chan ps2.Character {
+func (l *BatchLoader) load(charId ps2.CharacterId) chan ps2.Character {
 	l.awaitersMu.Lock()
 	defer l.awaitersMu.Unlock()
-	log.Debug("awaiting for", slog.String("character_id", string(charId)))
 	c := make(chan ps2.Character)
 	l.awaiters[charId] = append(l.awaiters[charId], c)
 	return c
@@ -130,7 +129,6 @@ func (l *BatchLoader) load(log *slog.Logger, charId ps2.CharacterId) chan ps2.Ch
 
 func (l *BatchLoader) Load(ctx context.Context, charId ps2.CharacterId) (ps2.Character, error) {
 	const op = "loaders.character_loader.batch.Load"
-	log := infra.OpLogger(ctx, op)
 	cached, ok := l.cache.Get(charId)
 	if ok {
 		return cached, nil
@@ -138,7 +136,7 @@ func (l *BatchLoader) Load(ctx context.Context, charId ps2.CharacterId) (ps2.Cha
 	select {
 	case <-ctx.Done():
 		return ps2.Character{}, ctx.Err()
-	case char := <-l.load(log, charId):
+	case char := <-l.load(charId):
 		if char.Id == "" {
 			return char, loaders.ErrNotFound
 		}
