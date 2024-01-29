@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 
+	"github.com/x0k/ps2-spy/internal/characters_tracker"
 	"github.com/x0k/ps2-spy/internal/lib/loaders"
 	"github.com/x0k/ps2-spy/internal/meta"
-	"github.com/x0k/ps2-spy/internal/population_tracker"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
@@ -15,12 +15,12 @@ var ErrPopulationTrackerNotFound = errors.New("population tracker not found")
 
 type PopulationTrackerLoader struct {
 	settingsLoader     loaders.KeyedLoader[meta.SettingsQuery, meta.SubscriptionSettings]
-	populationTrackers map[platforms.Platform]*population_tracker.PopulationTracker
+	populationTrackers map[platforms.Platform]*characters_tracker.CharactersTracker
 }
 
 func New(
 	settingsLoader loaders.KeyedLoader[meta.SettingsQuery, meta.SubscriptionSettings],
-	populationTrackers map[platforms.Platform]*population_tracker.PopulationTracker,
+	populationTrackers map[platforms.Platform]*characters_tracker.CharactersTracker,
 ) *PopulationTrackerLoader {
 	return &PopulationTrackerLoader{
 		settingsLoader:     settingsLoader,

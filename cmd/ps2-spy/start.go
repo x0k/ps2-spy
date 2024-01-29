@@ -12,6 +12,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/cache/facility_cache"
 	"github.com/x0k/ps2-spy/internal/cache/outfit_cache"
 	"github.com/x0k/ps2-spy/internal/cache/outfits_cache"
+	"github.com/x0k/ps2-spy/internal/characters_tracker"
 	"github.com/x0k/ps2-spy/internal/config"
 	"github.com/x0k/ps2-spy/internal/facilities_manager"
 	"github.com/x0k/ps2-spy/internal/infra"
@@ -48,7 +49,6 @@ import (
 	"github.com/x0k/ps2-spy/internal/loaders/world_alerts_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/world_population_loader"
 	"github.com/x0k/ps2-spy/internal/meta"
-	"github.com/x0k/ps2-spy/internal/population_tracker"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/ps2/platforms"
 	"github.com/x0k/ps2-spy/internal/savers/outfit_members_saver"
@@ -141,7 +141,7 @@ func start(ctx context.Context, cfg *config.Config) error {
 	ps4usBatchedCharacterLoader := character_loader.NewBatch(ps4usCharactersLoader, 10*time.Second)
 	ps4usBatchedCharacterLoader.Start(ctx, wg)
 
-	pcPopulationTracker, err := startNewPopulationTracker(
+	pcCharactersTracker, err := startNewCharactersTracker(
 		ctx,
 		ps2.PcPlatformWorldIds,
 		pcBatchedCharacterLoader,
@@ -150,7 +150,7 @@ func start(ctx context.Context, cfg *config.Config) error {
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
-	ps4euPopulationTracker, err := startNewPopulationTracker(
+	ps4euCharactersTracker, err := startNewCharactersTracker(
 		ctx,
 		ps2.Ps4euPlatformWorldIds,
 		ps4euBatchedCharacterLoader,
@@ -159,7 +159,7 @@ func start(ctx context.Context, cfg *config.Config) error {
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
-	ps4usPopulationTracker, err := startNewPopulationTracker(
+	ps4usCharactersTracker, err := startNewCharactersTracker(
 		ctx,
 		ps2.Ps4usPlatformWorldIds,
 		ps4usBatchedCharacterLoader,
@@ -168,10 +168,10 @@ func start(ctx context.Context, cfg *config.Config) error {
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
-	platformPopulationTrackers := map[platforms.Platform]*population_tracker.PopulationTracker{
-		platforms.PC:     pcPopulationTracker,
-		platforms.PS4_EU: ps4euPopulationTracker,
-		platforms.PS4_US: ps4usPopulationTracker,
+	platformCharactersTrackers := map[platforms.Platform]*characters_tracker.CharactersTracker{
+		platforms.PC:     pcCharactersTracker,
+		platforms.PS4_EU: ps4euCharactersTracker,
+		platforms.PS4_US: ps4usCharactersTracker,
 	}
 
 	// multi loaders
@@ -179,9 +179,9 @@ func start(ctx context.Context, cfg *config.Config) error {
 		log,
 		map[string]loaders.Loader[loaders.Loaded[ps2.WorldsPopulation]]{
 			// TODO: Add tiny cache for spy loaders
-			"spy": population_loader.NewPopulationTrackerLoader(
+			"spy": population_loader.NewCharactersTrackerLoader(
 				cfg.BotName,
-				platformPopulationTrackers,
+				platformCharactersTrackers,
 			),
 			"honu":      population_loader.NewHonu(honuClient),
 			"ps2live":   population_loader.NewPS2Live(populationClient),
@@ -196,9 +196,9 @@ func start(ctx context.Context, cfg *config.Config) error {
 	worldPopLoader := world_population_loader.NewMulti(
 		log,
 		map[string]loaders.KeyedLoader[ps2.WorldId, loaders.Loaded[ps2.DetailedWorldPopulation]]{
-			"spy": world_population_loader.NewPopulationTrackerLoader(
+			"spy": world_population_loader.NewCharactersTrackerLoader(
 				cfg.BotName,
-				platformPopulationTrackers,
+				platformCharactersTrackers,
 			),
 			"honu":     world_population_loader.NewHonu(honuClient),
 			"saerro":   world_population_loader.NewSaerro(saerroClient),
@@ -339,10 +339,10 @@ func start(ctx context.Context, cfg *config.Config) error {
 			platformOutfitTagsLoader,
 			trackable_online_entities_loader.New(
 				subSettingsLoader,
-				map[platforms.Platform]*population_tracker.PopulationTracker{
-					platforms.PC:     pcPopulationTracker,
-					platforms.PS4_EU: ps4euPopulationTracker,
-					platforms.PS4_US: ps4usPopulationTracker,
+				map[platforms.Platform]*characters_tracker.CharactersTracker{
+					platforms.PC:     pcCharactersTracker,
+					platforms.PS4_EU: ps4euCharactersTracker,
+					platforms.PS4_US: ps4usCharactersTracker,
 				},
 			),
 			loaders.NewCachedQueriedLoader(

@@ -4,34 +4,34 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/x0k/ps2-spy/internal/characters_tracker"
 	"github.com/x0k/ps2-spy/internal/lib/loaders"
-	"github.com/x0k/ps2-spy/internal/population_tracker"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
 
-type PopulationTrackerLoader struct {
+type CharactersTrackerLoader struct {
 	botName            string
-	populationTrackers map[platforms.Platform]*population_tracker.PopulationTracker
+	charactersTrackers map[platforms.Platform]*characters_tracker.CharactersTracker
 }
 
-func NewPopulationTrackerLoader(
+func NewCharactersTrackerLoader(
 	botName string,
-	populationTrackers map[platforms.Platform]*population_tracker.PopulationTracker,
-) *PopulationTrackerLoader {
-	return &PopulationTrackerLoader{
+	charactersTrackers map[platforms.Platform]*characters_tracker.CharactersTracker,
+) *CharactersTrackerLoader {
+	return &CharactersTrackerLoader{
 		botName:            botName,
-		populationTrackers: populationTrackers,
+		charactersTrackers: charactersTrackers,
 	}
 }
 
-func (l *PopulationTrackerLoader) Load(ctx context.Context, worldId ps2.WorldId) (loaders.Loaded[ps2.DetailedWorldPopulation], error) {
-	const op = "loaders.world_population_loader.PopulationTrackerLoader.Load"
+func (l *CharactersTrackerLoader) Load(ctx context.Context, worldId ps2.WorldId) (loaders.Loaded[ps2.DetailedWorldPopulation], error) {
+	const op = "loaders.world_population_loader.CharactersTrackerLoader.Load"
 	platform, ok := ps2.WorldPlatforms[worldId]
 	if !ok {
 		return loaders.Loaded[ps2.DetailedWorldPopulation]{}, fmt.Errorf("%s: unknown world %q", op, worldId)
 	}
-	tracker, ok := l.populationTrackers[platform]
+	tracker, ok := l.charactersTrackers[platform]
 	if !ok {
 		return loaders.Loaded[ps2.DetailedWorldPopulation]{}, fmt.Errorf("%s: no population tracker for platform %s", op, platform)
 	}

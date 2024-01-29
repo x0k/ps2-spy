@@ -4,21 +4,21 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/x0k/ps2-spy/internal/characters_tracker"
 	"github.com/x0k/ps2-spy/internal/infra"
 	ps2events "github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
 	"github.com/x0k/ps2-spy/internal/lib/loaders"
 	"github.com/x0k/ps2-spy/internal/lib/publisher"
-	"github.com/x0k/ps2-spy/internal/population_tracker"
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
-func startPopulationTracker(
+func startCharactersTracker(
 	ctx context.Context,
-	populationTracker *population_tracker.PopulationTracker,
+	charactersTracker *characters_tracker.CharactersTracker,
 	ps2EventsPublisher *publisher.Publisher,
 ) error {
-	const op = "startPopulationTracker"
-	populationTracker.Start(ctx)
+	const op = "startCharactersTracker"
+	charactersTracker.Start(ctx)
 	achievementEarned := make(chan ps2events.AchievementEarned)
 	achievementUnSub, err := ps2EventsPublisher.AddHandler(achievementEarned)
 	if err != nil {
@@ -97,45 +97,45 @@ func startPopulationTracker(
 				return
 			case e := <-playerLogin:
 				wg.Add(1)
-				go populationTracker.HandleLoginTask(ctx, wg, e)
+				go charactersTracker.HandleLoginTask(ctx, wg, e)
 			case e := <-playerLogout:
-				populationTracker.HandleLogout(ctx, e)
+				charactersTracker.HandleLogout(ctx, e)
 			case e := <-achievementEarned:
-				populationTracker.HandleWorldZoneIdAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
+				charactersTracker.HandleWorldZoneIdAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
 			case e := <-battleRankUp:
-				populationTracker.HandleWorldZoneIdAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
+				charactersTracker.HandleWorldZoneIdAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
 			case e := <-death:
-				populationTracker.HandleWorldZoneIdAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
+				charactersTracker.HandleWorldZoneIdAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
 			case e := <-gainExperience:
-				populationTracker.HandleWorldZoneIdAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
+				charactersTracker.HandleWorldZoneIdAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
 			case e := <-itemAdded:
-				populationTracker.HandleWorldZoneIdAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
+				charactersTracker.HandleWorldZoneIdAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
 			case e := <-playerFacilityCapture:
-				populationTracker.HandleWorldZoneIdAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
+				charactersTracker.HandleWorldZoneIdAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
 			case e := <-playerFacilityDefend:
-				populationTracker.HandleWorldZoneIdAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
+				charactersTracker.HandleWorldZoneIdAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
 			case e := <-skillAdded:
-				populationTracker.HandleWorldZoneIdAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
+				charactersTracker.HandleWorldZoneIdAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
 			case e := <-vehicleDestroy:
-				populationTracker.HandleWorldZoneIdAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
+				charactersTracker.HandleWorldZoneIdAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
 			}
 		}
 	}()
 	return nil
 }
 
-func startNewPopulationTracker(
+func startNewCharactersTracker(
 	ctx context.Context,
 	worldIds []ps2.WorldId,
 	characterLoader loaders.KeyedLoader[ps2.CharacterId, ps2.Character],
 	ps2EventsPublisher *publisher.Publisher,
-) (*population_tracker.PopulationTracker, error) {
-	const op = "startNewPopulationTracker"
+) (*characters_tracker.CharactersTracker, error) {
+	const op = "startNewCharactersTracker"
 	log := infra.OpLogger(ctx, op)
-	populationTracker := population_tracker.New(log, worldIds, characterLoader)
-	return populationTracker, startPopulationTracker(
+	charactersTracker := characters_tracker.New(log, worldIds, characterLoader)
+	return charactersTracker, startCharactersTracker(
 		ctx,
-		populationTracker,
+		charactersTracker,
 		ps2EventsPublisher,
 	)
 }
