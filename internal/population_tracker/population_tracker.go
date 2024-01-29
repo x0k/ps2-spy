@@ -43,12 +43,11 @@ func New(log *slog.Logger, worldIds []ps2.WorldId, characterLoader loaders.Keyed
 	for _, worldId := range worldIds {
 		trackers[worldId] = newWorldPopulationTracker()
 	}
-	l := log.With(
-		slog.String("component", "population_tracker.PopulationTracker"),
-		slog.String("world_ids", fmt.Sprintf("%v", worldIds)),
-	)
 	return &PopulationTracker{
-		log:                     l,
+		log: log.With(
+			slog.String("component", "population_tracker.PopulationTracker"),
+			slog.String("world_ids", fmt.Sprintf("%v", worldIds)),
+		),
 		worldPopulationTrackers: trackers,
 		onlineCharactersTracker: newOnlineCharactersTracker(),
 		activePlayers:           containers.NewExpirationQueue[player](),
@@ -56,9 +55,6 @@ func New(log *slog.Logger, worldIds []ps2.WorldId, characterLoader loaders.Keyed
 		inactiveTimeout:         10 * time.Minute,
 		retryableCharacterLoader: retryable.NewWithArg[ps2.CharacterId, ps2.Character](
 			characterLoader.Load,
-			while.ErrorIsHere,
-			while.RetryCountIsLessThan(3),
-			perform.Debug(l, "[ERROR] failed to get character, retrying"),
 		),
 	}
 }
@@ -112,7 +108,17 @@ func (p *PopulationTracker) handleLogin(char ps2.Character) {
 func (p *PopulationTracker) HandleLoginTask(ctx context.Context, wg *sync.WaitGroup, event ps2events.PlayerLogin) {
 	defer wg.Done()
 	charId := ps2.CharacterId(event.CharacterID)
-	char, err := p.retryableCharacterLoader.Run(ctx, charId)
+	char, err := p.retryableCharacterLoader.Run(
+		ctx,
+		charId,
+		while.ErrorIsHere,
+		while.RetryCountIsLessThan(3),
+		perform.Debug(
+			p.log,
+			"[ERROR] failed to get character, retrying",
+			slog.String("character_id", string(charId)),
+		),
+	)
 	if err != nil {
 		p.log.Error("failed to get character", slog.String("character_id", string(charId)), sl.Err(err))
 		return

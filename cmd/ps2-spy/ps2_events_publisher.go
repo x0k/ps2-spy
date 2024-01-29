@@ -16,6 +16,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/publisher"
 	"github.com/x0k/ps2-spy/internal/lib/retryable"
 	"github.com/x0k/ps2-spy/internal/lib/retryable/perform"
+	"github.com/x0k/ps2-spy/internal/lib/retryable/while"
 	"github.com/x0k/ps2-spy/internal/relogin_omitter"
 )
 
@@ -51,8 +52,12 @@ func startNewPs2EventsPublisher(
 				defer client.Close()
 				return client.Subscribe(ctx, settings)
 			},
+		).Run(
+			ctx,
+			while.ContextIsNotCancelled,
 			perform.RecoverSuspenseDuration(1*time.Second),
-		).Run(ctx)
+			perform.Debug(log, "[ERROR] subscription failed, retrying"),
+		)
 	}()
 	// Handle events
 	eventsPublisher := publisher.New(ps2events.CastHandler)

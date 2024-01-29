@@ -5,15 +5,21 @@ import (
 	"time"
 )
 
+// Thread safe
 type Retryable struct {
 	try              func(ctx context.Context) error
-	conditions       []func(*Retryable) bool
-	beforeSuspense   []func(*Retryable)
 	SuspenseDuration time.Duration
 	Err              error
 }
 
-func New(action func(ctx context.Context) error, options ...any) *Retryable {
+func New(action func(ctx context.Context) error) *Retryable {
+	return &Retryable{
+		try:              action,
+		SuspenseDuration: 1 * time.Second,
+	}
+}
+
+func (r Retryable) Run(ctx context.Context, options ...any) error {
 	conditions := make([]func(*Retryable) bool, 0, len(options))
 	beforeSuspense := make([]func(*Retryable), 0, len(options))
 	for _, option := range options {
@@ -24,26 +30,20 @@ func New(action func(ctx context.Context) error, options ...any) *Retryable {
 			beforeSuspense = append(beforeSuspense, v)
 		}
 	}
-	return &Retryable{
-		try:              action,
-		conditions:       conditions,
-		beforeSuspense:   beforeSuspense,
-		SuspenseDuration: 1 * time.Second,
-	}
-}
-
-func (r *Retryable) Run(ctx context.Context) error {
 	t := time.NewTimer(0)
 	defer t.Stop()
+	if !t.Stop() {
+		<-t.C
+	}
 	for {
 		r.Err = r.try(ctx)
-		for _, condition := range r.conditions {
-			if !condition(r) {
+		for _, condition := range conditions {
+			if !condition(&r) {
 				return r.Err
 			}
 		}
-		for _, beforeSuspense := range r.beforeSuspense {
-			beforeSuspense(r)
+		for _, beforeSuspense := range beforeSuspense {
+			beforeSuspense(&r)
 		}
 		t.Reset(r.SuspenseDuration)
 		select {
@@ -55,6 +55,7 @@ func (r *Retryable) Run(ctx context.Context) error {
 	}
 }
 
+// Thread unsafe
 type WithReturn[R any] struct {
 	ret *Retryable
 	res R
@@ -63,7 +64,6 @@ type WithReturn[R any] struct {
 
 func NewWithReturn[R any](
 	action func(ctx context.Context) (R, error),
-	options ...any,
 ) *WithReturn[R] {
 	r2 := &WithReturn[R]{}
 	r2.ret = New(func(ctx context.Context) error {
@@ -73,11 +73,12 @@ func NewWithReturn[R any](
 	return r2
 }
 
-func (r *WithReturn[R]) Run(ctx context.Context) (R, error) {
-	r.ret.Run(ctx)
+func (r *WithReturn[R]) Run(ctx context.Context, options ...any) (R, error) {
+	r.ret.Run(ctx, options...)
 	return r.res, r.err
 }
 
+// Thread unsafe
 type WithArg[A any, R any] struct {
 	ret *Retryable
 	arg A
@@ -87,7 +88,6 @@ type WithArg[A any, R any] struct {
 
 func NewWithArg[A any, R any](
 	action func(context.Context, A) (R, error),
-	options ...any,
 ) *WithArg[A, R] {
 	r3 := &WithArg[A, R]{}
 	r3.ret = New(func(ctx context.Context) error {
@@ -97,8 +97,8 @@ func NewWithArg[A any, R any](
 	return r3
 }
 
-func (r *WithArg[A, R]) Run(ctx context.Context, arg A) (R, error) {
+func (r *WithArg[A, R]) Run(ctx context.Context, arg A, options ...any) (R, error) {
 	r.arg = arg
-	r.ret.Run(ctx)
+	r.ret.Run(ctx, options...)
 	return r.res, r.err
 }

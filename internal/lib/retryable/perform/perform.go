@@ -8,12 +8,9 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/retryable"
 )
 
-func Debug(log *slog.Logger, msg string) func(r *retryable.Retryable) {
+func Debug(log *slog.Logger, msg string, args ...any) func(r *retryable.Retryable) {
 	return func(r *retryable.Retryable) {
-		if log == nil {
-			return
-		}
-		log.Debug(msg, sl.Err(r.Err), slog.Duration("suspense_duration", r.SuspenseDuration))
+		log.Debug(msg, append(args, sl.Err(r.Err), slog.Duration("suspense_duration", r.SuspenseDuration))...)
 	}
 }
 

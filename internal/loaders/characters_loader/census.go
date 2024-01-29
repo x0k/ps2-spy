@@ -16,6 +16,7 @@ import (
 )
 
 type CensusLoader struct {
+	log                       *slog.Logger
 	client                    *census2.Client
 	operand                   census2.Ptr[census2.List[census2.Str]]
 	queryMu                   sync.Mutex
@@ -26,11 +27,11 @@ type CensusLoader struct {
 
 func NewCensus(log *slog.Logger, client *census2.Client, platform platforms.Platform) *CensusLoader {
 	operand := census2.NewPtr(census2.StrList())
-	l := log.With(
-		slog.String("component", "loaders.characters_loader.CensusLoader"),
-		slog.String("platform", string(platform)),
-	)
 	return &CensusLoader{
+		log: log.With(
+			slog.String("component", "loaders.characters_loader.CensusLoader"),
+			slog.String("platform", string(platform)),
+		),
 		client:  client,
 		operand: operand,
 		query: census2.NewQuery(census2.GetQuery, platforms.PlatformNamespace(platform), collections.Character).
@@ -44,13 +45,10 @@ func NewCensus(log *slog.Logger, client *census2.Client, platform platforms.Plat
 					InjectAt("characters_world"),
 			),
 		platform: platform,
-		retryableCharactersLoader: retryable.NewWithArg[string, []collections.CharacterItem](
+		retryableCharactersLoader: retryable.NewWithArg(
 			func(ctx context.Context, url string) ([]collections.CharacterItem, error) {
 				return census2.ExecutePreparedAndDecode[collections.CharacterItem](ctx, client, collections.Character, url)
 			},
-			while.ErrorIsHere,
-			while.RetryCountIsLessThan(3),
-			perform.Debug(l, "[ERROR] failed to load characters, retrying"),
 		),
 	}
 }
@@ -68,7 +66,17 @@ func (l *CensusLoader) Load(ctx context.Context, charIds []ps2.CharacterId) (map
 		strCharIds[i] = census2.Str(charId)
 	}
 	url := l.toUrl(strCharIds)
-	chars, err := l.retryableCharactersLoader.Run(ctx, url)
+	chars, err := l.retryableCharactersLoader.Run(
+		ctx,
+		url,
+		while.ErrorIsHere,
+		while.RetryCountIsLessThan(3),
+		perform.Debug(
+			l.log,
+			"[ERROR] failed to load characters, retrying",
+			slog.String("url", url),
+		),
+	)
 	if err != nil {
 		return nil, err
 	}

@@ -61,30 +61,30 @@ func (s *OutfitMembersSynchronizer) saveMembersTask(ctx context.Context, wg *syn
 func (s *OutfitMembersSynchronizer) SyncOutfit(ctx context.Context, wg *sync.WaitGroup, outfitId ps2.OutfitId) {
 	const op = "outfit_members_synchronizer.OutfitMembersSynchronizer.SyncOutfit"
 	log := infra.Logger(ctx).With(infra.Op(op), slog.String("outfit_id", string(outfitId)))
-	err := retryable.New(
-		func(ctx context.Context) error {
-			syncAt, err := s.outfitSyncAtLoader.Load(ctx, outfitId)
-			isNotFound := errors.Is(err, loaders.ErrNotFound)
-			if err != nil && !isNotFound {
-				return fmt.Errorf("failed to load last sync time: %w", err)
-			}
-			if !isNotFound && time.Since(syncAt) < s.refreshInterval {
-				log.Debug("skipping sync")
-				return nil
-			}
-			members, err := s.censusMembersLoader.Load(ctx, outfitId)
-			log.Debug("synchronizing", slog.Int("members", len(members)))
-			if err != nil {
-				return fmt.Errorf("failed to load members from census: %w", err)
-			}
-			wg.Add(1)
-			go s.saveMembersTask(ctx, wg, outfitId, members)
+	err := retryable.New(func(ctx context.Context) error {
+		syncAt, err := s.outfitSyncAtLoader.Load(ctx, outfitId)
+		isNotFound := errors.Is(err, loaders.ErrNotFound)
+		if err != nil && !isNotFound {
+			return fmt.Errorf("failed to load last sync time: %w", err)
+		}
+		if !isNotFound && time.Since(syncAt) < s.refreshInterval {
+			log.Debug("skipping sync")
 			return nil
-		},
+		}
+		members, err := s.censusMembersLoader.Load(ctx, outfitId)
+		log.Debug("synchronizing", slog.Int("members", len(members)))
+		if err != nil {
+			return fmt.Errorf("failed to load members from census: %w", err)
+		}
+		wg.Add(1)
+		go s.saveMembersTask(ctx, wg, outfitId, members)
+		return nil
+	}).Run(
+		ctx,
 		while.ErrorIsHere,
 		while.RetryCountIsLessThan(3),
 		perform.Debug(log, "retry to load members"),
-	).Run(ctx)
+	)
 	if err != nil {
 		log.Error("failed to sync", sl.Err(err))
 	}

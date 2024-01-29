@@ -10,6 +10,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/lib/retryable"
 	"github.com/x0k/ps2-spy/internal/lib/retryable/perform"
+	"github.com/x0k/ps2-spy/internal/lib/retryable/while"
 	"github.com/x0k/ps2-spy/internal/meta"
 )
 
@@ -50,11 +51,14 @@ func startNewBot(
 					return err
 				}
 				<-ctx.Done()
-				return nil
+				return ctx.Err()
 			},
+		).Run(
+			ctx,
+			while.ContextIsNotCancelled,
 			perform.RecoverSuspenseDuration(1*time.Second),
 			perform.Debug(log, "retry to start bot"),
-		).Run(ctx)
+		)
 	}()
 	return nil
 }
