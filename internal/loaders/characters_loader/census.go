@@ -4,29 +4,34 @@ import (
 	"context"
 	"log/slog"
 	"sync"
-	"time"
 
-	"github.com/x0k/ps2-spy/internal/infra"
 	"github.com/x0k/ps2-spy/internal/lib/census2"
 	collections "github.com/x0k/ps2-spy/internal/lib/census2/collections/ps2"
-	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
-	"github.com/x0k/ps2-spy/internal/lib/retry"
+	"github.com/x0k/ps2-spy/internal/lib/retryable"
+	"github.com/x0k/ps2-spy/internal/lib/retryable/perform"
+	"github.com/x0k/ps2-spy/internal/lib/retryable/while"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/ps2/factions"
 	"github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
 
 type CensusLoader struct {
-	client   *census2.Client
-	operand  census2.Ptr[census2.List[census2.Str]]
-	queryMu  sync.Mutex
-	query    *census2.Query
-	platform platforms.Platform
+	log                       *slog.Logger
+	client                    *census2.Client
+	operand                   census2.Ptr[census2.List[census2.Str]]
+	queryMu                   sync.Mutex
+	query                     *census2.Query
+	platform                  platforms.Platform
+	retryableCharactersLoader *retryable.WithArg[string, []collections.CharacterItem]
 }
 
-func NewCensus(client *census2.Client, platform platforms.Platform) *CensusLoader {
+func NewCensus(log *slog.Logger, client *census2.Client, platform platforms.Platform) *CensusLoader {
 	operand := census2.NewPtr(census2.StrList())
 	return &CensusLoader{
+		log: log.With(
+			slog.String("component", "loaders.characters_loader.CensusLoader"),
+			slog.String("platform", string(platform)),
+		),
 		client:  client,
 		operand: operand,
 		query: census2.NewQuery(census2.GetQuery, platforms.PlatformNamespace(platform), collections.Character).
@@ -39,8 +44,12 @@ func NewCensus(client *census2.Client, platform platforms.Platform) *CensusLoade
 				census2.Join(collections.CharactersWorld).
 					InjectAt("characters_world"),
 			),
-		// TODO: Use join with show
 		platform: platform,
+		retryableCharactersLoader: retryable.NewWithArg(
+			func(ctx context.Context, url string) ([]collections.CharacterItem, error) {
+				return census2.ExecutePreparedAndDecode[collections.CharacterItem](ctx, client, collections.Character, url)
+			},
+		),
 	}
 }
 
@@ -52,30 +61,22 @@ func (l *CensusLoader) toUrl(charIds []census2.Str) string {
 }
 
 func (l *CensusLoader) Load(ctx context.Context, charIds []ps2.CharacterId) (map[ps2.CharacterId]ps2.Character, error) {
-	const op = "loaders.characters_loader.CensusLoader.Load"
-	log := infra.OpLogger(ctx, op)
 	strCharIds := make([]census2.Str, len(charIds))
 	for i, charId := range charIds {
 		strCharIds[i] = census2.Str(charId)
 	}
 	url := l.toUrl(strCharIds)
-	var chars []collections.CharacterItem
-	var err error
-	retry.RetryWhileWithRecover(retry.Retryable{
-		Try: func() error {
-			chars, err = census2.ExecutePreparedAndDecode[collections.CharacterItem](ctx, l.client, collections.Character, url)
-			return err
-		},
-		While: retry.ContextIsNotCanceledAndMaxRetriesNotExceeded(3),
-		BeforeSleep: func(d time.Duration) {
-			log.Debug(
-				"[ERROR] failed to load characters, retrying",
-				slog.Duration("after", d),
-				slog.String("url", url),
-				sl.Err(err),
-			)
-		},
-	})
+	chars, err := l.retryableCharactersLoader.Run(
+		ctx,
+		url,
+		while.ErrorIsHere,
+		while.RetryCountIsLessThan(3),
+		perform.Debug(
+			l.log,
+			"[ERROR] failed to load characters, retrying",
+			slog.String("url", url),
+		),
+	)
 	if err != nil {
 		return nil, err
 	}

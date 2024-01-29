@@ -14,7 +14,9 @@ import (
 	ps2messages "github.com/x0k/ps2-spy/internal/lib/census2/streaming/messages"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/lib/publisher"
-	"github.com/x0k/ps2-spy/internal/lib/retry"
+	"github.com/x0k/ps2-spy/internal/lib/retryable"
+	"github.com/x0k/ps2-spy/internal/lib/retryable/perform"
+	"github.com/x0k/ps2-spy/internal/lib/retryable/while"
 	"github.com/x0k/ps2-spy/internal/relogin_omitter"
 )
 
@@ -40,8 +42,8 @@ func startNewPs2EventsPublisher(
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		retry.RetryWhileWithRecover(retry.Retryable{
-			Try: func() error {
+		retryable.New(
+			func(ctx context.Context) error {
 				err := client.Connect(ctx)
 				if err != nil {
 					log.Error("failed to connect to websocket", sl.Err(err))
@@ -50,11 +52,12 @@ func startNewPs2EventsPublisher(
 				defer client.Close()
 				return client.Subscribe(ctx, settings)
 			},
-			While: retry.ContextIsNotCanceled,
-			BeforeSleep: func(d time.Duration) {
-				log.Debug("retry to connect", slog.Duration("after", d))
-			},
-		})
+		).Run(
+			ctx,
+			while.ContextIsNotCancelled,
+			perform.RecoverSuspenseDuration(1*time.Second),
+			perform.Debug(log, "[ERROR] subscription failed, retrying"),
+		)
 	}()
 	// Handle events
 	eventsPublisher := publisher.New(ps2events.CastHandler)

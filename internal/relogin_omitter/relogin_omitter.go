@@ -55,7 +55,7 @@ func (r *ReLoginOmitter) shouldPublishLoginEvent(event *ps2events.PlayerLogin) b
 	return true
 }
 
-func (r *ReLoginOmitter) flushLogOutEvents(now time.Time, log *slog.Logger) {
+func (r *ReLoginOmitter) flushLogOutEvents(log *slog.Logger, now time.Time) {
 	r.batchMu.Lock()
 	defer r.batchMu.Unlock()
 	count := r.logoutEventsQueue.RemoveExpired(now.Add(-r.delayDuration), func(charId ps2.CharacterId) {
@@ -64,7 +64,13 @@ func (r *ReLoginOmitter) flushLogOutEvents(now time.Time, log *slog.Logger) {
 			delete(r.logoutEvents, charId)
 		}
 	})
-	log.Debug("logout events flushed", slog.Int("events_count", count))
+	if count > 0 {
+		log.Debug(
+			"logout events flushed",
+			slog.Int("events_count", count),
+			slog.Int("queue_size", r.logoutEventsQueue.Len()),
+		)
+	}
 }
 
 func (r *ReLoginOmitter) flushTask(ctx context.Context, wg *sync.WaitGroup) {
@@ -78,7 +84,7 @@ func (r *ReLoginOmitter) flushTask(ctx context.Context, wg *sync.WaitGroup) {
 		case <-ctx.Done():
 			return
 		case now := <-ticker.C:
-			r.flushLogOutEvents(now, log)
+			r.flushLogOutEvents(log, now)
 		}
 	}
 }

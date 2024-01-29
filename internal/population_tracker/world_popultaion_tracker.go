@@ -1,8 +1,6 @@
 package population_tracker
 
 import (
-	"log/slog"
-
 	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/ps2/factions"
 )
@@ -50,7 +48,7 @@ func (w *worldPopulationTracker) HandleInactive(charId ps2.CharacterId) {
 	}
 }
 
-func (w *worldPopulationTracker) HandleZoneIdAction(log *slog.Logger, charId ps2.CharacterId, strZoneId string) {
+func (w *worldPopulationTracker) HandleZoneIdAction(charId ps2.CharacterId, strZoneId string) {
 	factionId, ok := w.charactersFactions[charId]
 	if !ok {
 		return

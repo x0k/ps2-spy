@@ -2,14 +2,15 @@ package main
 
 import (
 	"context"
-	"log/slog"
 	"time"
 
 	"github.com/x0k/ps2-spy/internal/bot"
 	"github.com/x0k/ps2-spy/internal/infra"
 	"github.com/x0k/ps2-spy/internal/lib/loaders"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
-	"github.com/x0k/ps2-spy/internal/lib/retry"
+	"github.com/x0k/ps2-spy/internal/lib/retryable"
+	"github.com/x0k/ps2-spy/internal/lib/retryable/perform"
+	"github.com/x0k/ps2-spy/internal/lib/retryable/while"
 	"github.com/x0k/ps2-spy/internal/meta"
 )
 
@@ -29,8 +30,8 @@ func startNewBot(
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		retry.RetryWhileWithRecover(retry.Retryable{
-			Try: func() error {
+		retryable.New(
+			func(ctx context.Context) error {
 				b, err := bot.New(ctx, cfg)
 				if err != nil {
 					return err
@@ -52,11 +53,12 @@ func startNewBot(
 				<-ctx.Done()
 				return ctx.Err()
 			},
-			While: retry.ContextIsNotCanceled,
-			BeforeSleep: func(d time.Duration) {
-				log.Debug("retry to start bot", slog.Duration("after", d))
-			},
-		})
+		).Run(
+			ctx,
+			while.ContextIsNotCancelled,
+			perform.RecoverSuspenseDuration(1*time.Second),
+			perform.Debug(log, "retry to start bot"),
+		)
 	}()
 	return nil
 }

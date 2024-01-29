@@ -12,7 +12,9 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/containers"
 	"github.com/x0k/ps2-spy/internal/lib/loaders"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
-	"github.com/x0k/ps2-spy/internal/lib/retry"
+	"github.com/x0k/ps2-spy/internal/lib/retryable"
+	"github.com/x0k/ps2-spy/internal/lib/retryable/perform"
+	"github.com/x0k/ps2-spy/internal/lib/retryable/while"
 	"github.com/x0k/ps2-spy/internal/meta"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/ps2/factions"
@@ -26,47 +28,54 @@ type player struct {
 }
 
 type PopulationTracker struct {
-	characterLoader         loaders.KeyedLoader[ps2.CharacterId, ps2.Character]
-	mutex                   sync.RWMutex
-	worldPopulationTrackers map[ps2.WorldId]worldPopulationTracker
-	onlineCharactersTracker onlineCharactersTracker
-	activePlayers           *containers.ExpirationQueue[player]
-	inactivityCheckInterval time.Duration
-	inactiveTimeout         time.Duration
+	log                      *slog.Logger
+	mutex                    sync.RWMutex
+	worldPopulationTrackers  map[ps2.WorldId]worldPopulationTracker
+	onlineCharactersTracker  onlineCharactersTracker
+	activePlayers            *containers.ExpirationQueue[player]
+	inactivityCheckInterval  time.Duration
+	inactiveTimeout          time.Duration
+	retryableCharacterLoader *retryable.WithArg[ps2.CharacterId, ps2.Character]
 }
 
-func New(ctx context.Context, worldIds []ps2.WorldId, characterLoader loaders.KeyedLoader[ps2.CharacterId, ps2.Character]) *PopulationTracker {
+func New(log *slog.Logger, worldIds []ps2.WorldId, characterLoader loaders.KeyedLoader[ps2.CharacterId, ps2.Character]) *PopulationTracker {
 	trackers := make(map[ps2.WorldId]worldPopulationTracker, len(ps2.WorldNames))
 	for _, worldId := range worldIds {
 		trackers[worldId] = newWorldPopulationTracker()
 	}
 	return &PopulationTracker{
-		characterLoader:         characterLoader,
+		log: log.With(
+			slog.String("component", "population_tracker.PopulationTracker"),
+			slog.String("world_ids", fmt.Sprintf("%v", worldIds)),
+		),
 		worldPopulationTrackers: trackers,
 		onlineCharactersTracker: newOnlineCharactersTracker(),
 		activePlayers:           containers.NewExpirationQueue[player](),
 		inactivityCheckInterval: time.Minute,
 		inactiveTimeout:         10 * time.Minute,
+		retryableCharacterLoader: retryable.NewWithArg[ps2.CharacterId, ps2.Character](
+			characterLoader.Load,
+		),
 	}
 }
 
-func (p *PopulationTracker) handleInactive(log *slog.Logger, now time.Time) {
+func (p *PopulationTracker) handleInactive(now time.Time) {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 	count := p.activePlayers.RemoveExpired(now.Add(-p.inactiveTimeout), func(pl player) {
 		if w, ok := p.worldPopulationTrackers[pl.worldId]; ok {
 			w.HandleInactive(pl.characterId)
 		} else {
-			log.Warn("world not found", slog.String("world_id", string(pl.worldId)))
+			p.log.Warn("world not found", slog.String("world_id", string(pl.worldId)))
 		}
 		p.onlineCharactersTracker.HandleInactive(pl.characterId)
 	})
-	log.Debug("inactive players removed", slog.Int("queue_size", p.activePlayers.Len()), slog.Int("count", count))
+	if count > 0 {
+		p.log.Debug("inactive players removed", slog.Int("queue_size", p.activePlayers.Len()), slog.Int("count", count))
+	}
 }
 
 func (p *PopulationTracker) Start(ctx context.Context) {
-	const op = "population_tracker.PopulationTracker.Start"
-	log := infra.OpLogger(ctx, op)
 	wg := infra.Wg(ctx)
 	wg.Add(1)
 	go func() {
@@ -78,56 +87,46 @@ func (p *PopulationTracker) Start(ctx context.Context) {
 			case <-ctx.Done():
 				return
 			case t := <-ticker.C:
-				p.handleInactive(log, t)
+				p.handleInactive(t)
 			}
 		}
 	}()
 }
 
-func (p *PopulationTracker) handleLogin(log *slog.Logger, char ps2.Character) {
+func (p *PopulationTracker) handleLogin(char ps2.Character) {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 	p.activePlayers.Push(player{char.Id, char.WorldId})
 	if w, ok := p.worldPopulationTrackers[char.WorldId]; ok {
 		w.HandleLogin(char)
 	} else {
-		log.Warn("world not found", slog.String("world_id", string(char.WorldId)))
+		p.log.Warn("world not found", slog.String("world_id", string(char.WorldId)))
 	}
 	p.onlineCharactersTracker.HandleLogin(char)
 }
 
 func (p *PopulationTracker) HandleLoginTask(ctx context.Context, wg *sync.WaitGroup, event ps2events.PlayerLogin) {
 	defer wg.Done()
-	const op = "population_tracker.PopulationTracker.HandleLogin"
-	log := infra.OpLogger(ctx, op)
 	charId := ps2.CharacterId(event.CharacterID)
-	var char ps2.Character
-	var err error
-	retry.RetryWhileWithRecover(retry.Retryable{
-		Try: func() error {
-			char, err = p.characterLoader.Load(ctx, charId)
-			return err
-		},
-		While: retry.ContextIsNotCanceledAndMaxRetriesNotExceeded(3),
-		BeforeSleep: func(d time.Duration) {
-			log.Debug(
-				"[ERROR] failed to get character, retrying",
-				slog.Duration("after", d),
-				slog.String("character_id", string(charId)),
-				sl.Err(err),
-			)
-		},
-	})
+	char, err := p.retryableCharacterLoader.Run(
+		ctx,
+		charId,
+		while.ErrorIsHere,
+		while.RetryCountIsLessThan(3),
+		perform.Debug(
+			p.log,
+			"[ERROR] failed to get character, retrying",
+			slog.String("character_id", string(charId)),
+		),
+	)
 	if err != nil {
-		log.Error("failed to get character", slog.String("character_id", string(charId)), sl.Err(err))
+		p.log.Error("failed to get character", slog.String("character_id", string(charId)), sl.Err(err))
 		return
 	}
-	p.handleLogin(log, char)
+	p.handleLogin(char)
 }
 
 func (p *PopulationTracker) HandleLogout(ctx context.Context, event ps2events.PlayerLogout) {
-	const op = "population_tracker.PopulationTracker.HandleLogout"
-	log := infra.OpLogger(ctx, op)
 	worldId := ps2.WorldId(event.WorldID)
 	charId := ps2.CharacterId(event.CharacterID)
 	p.mutex.Lock()
@@ -136,23 +135,21 @@ func (p *PopulationTracker) HandleLogout(ctx context.Context, event ps2events.Pl
 	if w, ok := p.worldPopulationTrackers[worldId]; ok {
 		w.HandleInactive(charId)
 	} else {
-		log.Warn("world not found", slog.String("world_id", string(worldId)))
+		p.log.Warn("world not found", slog.String("world_id", string(worldId)))
 	}
 	p.onlineCharactersTracker.HandleInactive(charId)
 }
 
 func (p *PopulationTracker) HandleWorldZoneIdAction(ctx context.Context, worldId, zoneId, charId string) {
-	const op = "population_tracker.PopulationTracker.HandleWorldZoneIdAction"
-	log := infra.OpLogger(ctx, op)
 	cId := ps2.CharacterId(charId)
 	wId := ps2.WorldId(worldId)
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 	p.activePlayers.Push(player{cId, wId})
 	if w, ok := p.worldPopulationTrackers[wId]; ok {
-		w.HandleZoneIdAction(log, cId, zoneId)
+		w.HandleZoneIdAction(cId, zoneId)
 	} else {
-		log.Warn("world not found", slog.String("world_id", worldId))
+		p.log.Warn("world not found", slog.String("world_id", worldId))
 	}
 }
 
