@@ -3,6 +3,7 @@ package outfit_members_synchronizer
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"sync"
 	"sync/atomic"
@@ -11,7 +12,9 @@ import (
 	"github.com/x0k/ps2-spy/internal/infra"
 	"github.com/x0k/ps2-spy/internal/lib/loaders"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
-	"github.com/x0k/ps2-spy/internal/lib/retry"
+	"github.com/x0k/ps2-spy/internal/lib/retryable"
+	"github.com/x0k/ps2-spy/internal/lib/retryable/perform"
+	"github.com/x0k/ps2-spy/internal/lib/retryable/while"
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
@@ -46,8 +49,8 @@ func New(
 	}
 }
 
-func (s *OutfitMembersSynchronizer) saveMembers(ctx context.Context, wg *sync.WaitGroup, outfitId ps2.OutfitId, members []ps2.CharacterId) {
-	const op = "outfit_members_synchronizer.OutfitMembersSynchronizer.saveMembers"
+func (s *OutfitMembersSynchronizer) saveMembersTask(ctx context.Context, wg *sync.WaitGroup, outfitId ps2.OutfitId, members []ps2.CharacterId) {
+	const op = "outfit_members_synchronizer.OutfitMembersSynchronizer.saveMembersTask"
 	log := infra.OpLogger(ctx, op).With(slog.String("outfit_id", string(outfitId)), slog.Int("members_count", len(members)))
 	defer wg.Done()
 	if err := s.membersSaver.Save(ctx, outfitId, members); err != nil {
@@ -58,13 +61,12 @@ func (s *OutfitMembersSynchronizer) saveMembers(ctx context.Context, wg *sync.Wa
 func (s *OutfitMembersSynchronizer) SyncOutfit(ctx context.Context, wg *sync.WaitGroup, outfitId ps2.OutfitId) {
 	const op = "outfit_members_synchronizer.OutfitMembersSynchronizer.SyncOutfit"
 	log := infra.Logger(ctx).With(infra.Op(op), slog.String("outfit_id", string(outfitId)))
-	retry.RetryWhileWithRecover(retry.Retryable{
-		Try: func() error {
+	err := retryable.New(
+		func(ctx context.Context) error {
 			syncAt, err := s.outfitSyncAtLoader.Load(ctx, outfitId)
 			isNotFound := errors.Is(err, loaders.ErrNotFound)
 			if err != nil && !isNotFound {
-				log.Error("failed to load last sync time", sl.Err(err))
-				return err
+				return fmt.Errorf("failed to load last sync time: %w", err)
 			}
 			if !isNotFound && time.Since(syncAt) < s.refreshInterval {
 				log.Debug("skipping sync")
@@ -73,18 +75,19 @@ func (s *OutfitMembersSynchronizer) SyncOutfit(ctx context.Context, wg *sync.Wai
 			members, err := s.censusMembersLoader.Load(ctx, outfitId)
 			log.Debug("synchronizing", slog.Int("members", len(members)))
 			if err != nil {
-				log.Error("failed to load members from census", sl.Err(err))
-				return err
+				return fmt.Errorf("failed to load members from census: %w", err)
 			}
 			wg.Add(1)
-			go s.saveMembers(ctx, wg, outfitId, members)
+			go s.saveMembersTask(ctx, wg, outfitId, members)
 			return nil
 		},
-		While: retry.ContextIsNotCanceledAndMaxRetriesNotExceeded(3),
-		BeforeSleep: func(d time.Duration) {
-			log.Debug("retry to load members", slog.Duration("after", d))
-		},
-	})
+		while.ErrorIsHere,
+		while.RetryCountIsLessThan(3),
+		perform.Debug(log, "retry to load members"),
+	).Run(ctx)
+	if err != nil {
+		log.Error("failed to sync", sl.Err(err))
+	}
 }
 
 func (s *OutfitMembersSynchronizer) sync(ctx context.Context, wg *sync.WaitGroup) {

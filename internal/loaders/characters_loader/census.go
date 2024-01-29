@@ -16,12 +16,12 @@ import (
 )
 
 type CensusLoader struct {
-	client              *census2.Client
-	operand             census2.Ptr[census2.List[census2.Str]]
-	queryMu             sync.Mutex
-	query               *census2.Query
-	platform            platforms.Platform
-	rawCharactersLoader *retryable.WithArg[string, []collections.CharacterItem]
+	client                    *census2.Client
+	operand                   census2.Ptr[census2.List[census2.Str]]
+	queryMu                   sync.Mutex
+	query                     *census2.Query
+	platform                  platforms.Platform
+	retryableCharactersLoader *retryable.WithArg[string, []collections.CharacterItem]
 }
 
 func NewCensus(log *slog.Logger, client *census2.Client, platform platforms.Platform) *CensusLoader {
@@ -44,7 +44,7 @@ func NewCensus(log *slog.Logger, client *census2.Client, platform platforms.Plat
 					InjectAt("characters_world"),
 			),
 		platform: platform,
-		rawCharactersLoader: retryable.NewWithArg[string, []collections.CharacterItem](
+		retryableCharactersLoader: retryable.NewWithArg[string, []collections.CharacterItem](
 			func(ctx context.Context, url string) ([]collections.CharacterItem, error) {
 				return census2.ExecutePreparedAndDecode[collections.CharacterItem](ctx, client, collections.Character, url)
 			},
@@ -68,7 +68,7 @@ func (l *CensusLoader) Load(ctx context.Context, charIds []ps2.CharacterId) (map
 		strCharIds[i] = census2.Str(charId)
 	}
 	url := l.toUrl(strCharIds)
-	chars, err := l.rawCharactersLoader.Run(ctx, url)
+	chars, err := l.retryableCharactersLoader.Run(ctx, url)
 	if err != nil {
 		return nil, err
 	}

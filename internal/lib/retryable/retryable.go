@@ -5,39 +5,37 @@ import (
 	"time"
 )
 
-type Base struct {
+type Retryable struct {
 	try              func(ctx context.Context) error
-	conditions       []func(*Base) bool
-	beforeSuspense   []func(*Base)
-	ShouldRetry      bool
+	conditions       []func(*Retryable) bool
+	beforeSuspense   []func(*Retryable)
 	SuspenseDuration time.Duration
 	Err              error
 }
 
-func New(action func(ctx context.Context) error, options ...any) *Base {
-	conditions := make([]func(*Base) bool, 0, len(options))
-	beforeSuspense := make([]func(*Base), 0, len(options))
+func New(action func(ctx context.Context) error, options ...any) *Retryable {
+	conditions := make([]func(*Retryable) bool, 0, len(options))
+	beforeSuspense := make([]func(*Retryable), 0, len(options))
 	for _, option := range options {
 		switch v := option.(type) {
-		case func(*Base) bool:
+		case func(*Retryable) bool:
 			conditions = append(conditions, v)
-		case func(*Base):
+		case func(*Retryable):
 			beforeSuspense = append(beforeSuspense, v)
 		}
 	}
-	return &Base{
+	return &Retryable{
 		try:              action,
 		conditions:       conditions,
 		beforeSuspense:   beforeSuspense,
-		ShouldRetry:      true,
 		SuspenseDuration: 1 * time.Second,
 	}
 }
 
-func (r *Base) Run(ctx context.Context) error {
+func (r *Retryable) Run(ctx context.Context) error {
 	t := time.NewTimer(0)
 	defer t.Stop()
-	for r.ShouldRetry {
+	for {
 		r.Err = r.try(ctx)
 		for _, condition := range r.conditions {
 			if !condition(r) {
@@ -55,11 +53,10 @@ func (r *Base) Run(ctx context.Context) error {
 		}
 		r.SuspenseDuration *= 2
 	}
-	return r.Err
 }
 
 type WithReturn[R any] struct {
-	ret *Base
+	ret *Retryable
 	res R
 	err error
 }
@@ -82,7 +79,7 @@ func (r *WithReturn[R]) Run(ctx context.Context) (R, error) {
 }
 
 type WithArg[A any, R any] struct {
-	ret *Base
+	ret *Retryable
 	arg A
 	res R
 	err error
