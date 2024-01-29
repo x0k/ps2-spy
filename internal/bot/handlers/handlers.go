@@ -128,7 +128,11 @@ func (handler Ps2EventHandler[E]) Run(ctx context.Context, cfg *Ps2EventHandlerC
 	}
 }
 
-// TODO: publisher.Event to use event.Type() in error message
+// TODO: publisher.Event instead of `any` to use event.Type()
+//       in error message.
+//       Currently it is too painful cause `ps2events` uses
+//		 pointer receivers in `Type()` method.
+
 func SimpleMessage[E any](handle func(ctx context.Context, cfg *Ps2EventHandlerConfig, event E) (string, *Error)) Ps2EventHandler[E] {
 	return func(ctx context.Context, channelIds []meta.ChannelId, cfg *Ps2EventHandlerConfig, event E) error {
 		const op = "bot.handlers.SimpleMessage"
