@@ -130,15 +130,15 @@ func start(ctx context.Context, cfg *config.Config) error {
 
 	// TODO: Use MultiKeyedCache
 	pcCharactersLoader := characters_loader.NewCensus(log, censusClient, platforms.PC)
-	pcBatchedCharacterLoader := character_loader.NewBatch(pcCharactersLoader, 30*time.Second)
+	pcBatchedCharacterLoader := character_loader.NewBatch(pcCharactersLoader, 10*time.Second)
 	pcBatchedCharacterLoader.Start(ctx, wg)
 
 	ps4euCharactersLoader := characters_loader.NewCensus(log, censusClient, platforms.PS4_EU)
-	ps4euBatchedCharacterLoader := character_loader.NewBatch(ps4euCharactersLoader, 30*time.Second)
+	ps4euBatchedCharacterLoader := character_loader.NewBatch(ps4euCharactersLoader, 10*time.Second)
 	ps4euBatchedCharacterLoader.Start(ctx, wg)
 
 	ps4usCharactersLoader := characters_loader.NewCensus(log, censusClient, platforms.PS4_US)
-	ps4usBatchedCharacterLoader := character_loader.NewBatch(ps4usCharactersLoader, 30*time.Second)
+	ps4usBatchedCharacterLoader := character_loader.NewBatch(ps4usCharactersLoader, 10*time.Second)
 	ps4usBatchedCharacterLoader.Start(ctx, wg)
 
 	pcPopulationTracker, err := startNewPopulationTracker(
