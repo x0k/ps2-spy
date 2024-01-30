@@ -140,14 +140,14 @@ func (p *CharactersTracker) HandleLogout(ctx context.Context, event ps2events.Pl
 	p.onlineCharactersTracker.HandleInactive(charId)
 }
 
-func (p *CharactersTracker) HandleWorldZoneIdAction(ctx context.Context, worldId, zoneId, charId string) {
+func (p *CharactersTracker) HandleWorldZoneAction(ctx context.Context, worldId, zoneId, charId string) {
 	cId := ps2.CharacterId(charId)
 	wId := ps2.WorldId(worldId)
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 	p.activePlayers.Push(player{cId, wId})
 	if w, ok := p.worldPopulationTrackers[wId]; ok {
-		w.HandleZoneIdAction(cId, zoneId)
+		w.HandleZoneAction(cId, zoneId)
 	} else {
 		p.log.Warn("world not found", slog.String("world_id", worldId))
 	}

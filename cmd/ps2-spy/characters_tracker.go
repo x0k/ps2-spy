@@ -101,23 +101,23 @@ func startCharactersTracker(
 			case e := <-playerLogout:
 				charactersTracker.HandleLogout(ctx, e)
 			case e := <-achievementEarned:
-				charactersTracker.HandleWorldZoneIdAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
+				charactersTracker.HandleWorldZoneAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
 			case e := <-battleRankUp:
-				charactersTracker.HandleWorldZoneIdAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
+				charactersTracker.HandleWorldZoneAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
 			case e := <-death:
-				charactersTracker.HandleWorldZoneIdAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
+				charactersTracker.HandleWorldZoneAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
 			case e := <-gainExperience:
-				charactersTracker.HandleWorldZoneIdAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
+				charactersTracker.HandleWorldZoneAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
 			case e := <-itemAdded:
-				charactersTracker.HandleWorldZoneIdAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
+				charactersTracker.HandleWorldZoneAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
 			case e := <-playerFacilityCapture:
-				charactersTracker.HandleWorldZoneIdAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
+				charactersTracker.HandleWorldZoneAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
 			case e := <-playerFacilityDefend:
-				charactersTracker.HandleWorldZoneIdAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
+				charactersTracker.HandleWorldZoneAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
 			case e := <-skillAdded:
-				charactersTracker.HandleWorldZoneIdAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
+				charactersTracker.HandleWorldZoneAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
 			case e := <-vehicleDestroy:
-				charactersTracker.HandleWorldZoneIdAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
+				charactersTracker.HandleWorldZoneAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
 			}
 		}
 	}()
