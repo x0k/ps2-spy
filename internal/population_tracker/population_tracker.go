@@ -113,8 +113,9 @@ func (p *PopulationTracker) HandleLoginTask(ctx context.Context, wg *sync.WaitGr
 		charId,
 		while.ErrorIsHere,
 		while.RetryCountIsLessThan(3),
-		perform.Debug(
+		perform.Log(
 			p.log,
+			slog.LevelDebug,
 			"[ERROR] failed to get character, retrying",
 			slog.String("character_id", string(charId)),
 		),

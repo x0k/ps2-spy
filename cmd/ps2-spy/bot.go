@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
 	"github.com/x0k/ps2-spy/internal/bot"
@@ -57,7 +58,7 @@ func startNewBot(
 			ctx,
 			while.ContextIsNotCancelled,
 			perform.RecoverSuspenseDuration(1*time.Second),
-			perform.Debug(log, "retry to start bot"),
+			perform.Log(log, slog.LevelError, "bot failed, restarting"),
 		)
 	}()
 	return nil

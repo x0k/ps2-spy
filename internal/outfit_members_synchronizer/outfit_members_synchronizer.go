@@ -83,7 +83,7 @@ func (s *OutfitMembersSynchronizer) SyncOutfit(ctx context.Context, wg *sync.Wai
 		ctx,
 		while.ErrorIsHere,
 		while.RetryCountIsLessThan(3),
-		perform.Debug(log, "retry to load members"),
+		perform.Log(log, slog.LevelDebug, "members sync failed, retrying"),
 	)
 	if err != nil {
 		log.Error("failed to sync", sl.Err(err))

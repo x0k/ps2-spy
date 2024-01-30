@@ -46,7 +46,7 @@ func startNewPs2EventsPublisher(
 			func(ctx context.Context) error {
 				err := client.Connect(ctx)
 				if err != nil {
-					log.Error("failed to connect to websocket", sl.Err(err))
+					log.LogAttrs(ctx, slog.LevelError, "failed to connect to websocket", sl.Err(err), slog.Any("settings", settings))
 					return err
 				}
 				defer client.Close()
@@ -56,7 +56,7 @@ func startNewPs2EventsPublisher(
 			ctx,
 			while.ContextIsNotCancelled,
 			perform.RecoverSuspenseDuration(1*time.Second),
-			perform.Debug(log, "[ERROR] subscription failed, retrying"),
+			perform.Log(log, slog.LevelError, "subscription failed, retrying"),
 		)
 	}()
 	// Handle events

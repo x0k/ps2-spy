@@ -71,8 +71,9 @@ func (l *CensusLoader) Load(ctx context.Context, charIds []ps2.CharacterId) (map
 		url,
 		while.ErrorIsHere,
 		while.RetryCountIsLessThan(3),
-		perform.Debug(
+		perform.Log(
 			l.log,
+			slog.LevelDebug,
 			"[ERROR] failed to load characters, retrying",
 			slog.String("url", url),
 		),
