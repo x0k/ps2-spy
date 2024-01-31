@@ -14,7 +14,6 @@ import (
 	"github.com/x0k/ps2-spy/internal/cache/outfits_cache"
 	"github.com/x0k/ps2-spy/internal/characters_tracker"
 	"github.com/x0k/ps2-spy/internal/config"
-	"github.com/x0k/ps2-spy/internal/facilities_manager"
 	"github.com/x0k/ps2-spy/internal/infra"
 	"github.com/x0k/ps2-spy/internal/lib/census2"
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming"
@@ -80,9 +79,9 @@ func start(ctx context.Context, cfg *config.Config) error {
 		ps2events.PlayerFacilityDefendEventName,
 		ps2events.SkillAddedEventName,
 		ps2events.VehicleDestroyEventName,
-		// TODO: ContinentLockEventName,
 		ps2events.FacilityControlEventName,
 		ps2events.MetagameEventEventName,
+		ps2events.ContinentLockEventName,
 	}
 	pcPs2EventsPublisher, err := startNewPs2EventsPublisher(ctx, cfg, streaming.Ps2_env, ps2commands.SubscriptionSettings{
 		Worlds:     All,
@@ -177,15 +176,18 @@ func start(ctx context.Context, cfg *config.Config) error {
 		platforms.PS4_US: ps4usCharactersTracker,
 	}
 
-	pcWorldsTracker, err := startNewWorldsTracker(ctx, pcPs2EventsPublisher)
+	pcWorldsTrackerPublisher := publisher.New(worlds_tracker.CastHandler)
+	pcWorldsTracker, err := startNewWorldsTracker(ctx, pcPs2EventsPublisher, pcWorldsTrackerPublisher)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
-	ps4euWorldsTracker, err := startNewWorldsTracker(ctx, ps4euPs2EventsPublisher)
+	ps4euWorldsTrackerPublisher := publisher.New(worlds_tracker.CastHandler)
+	ps4euWorldsTracker, err := startNewWorldsTracker(ctx, ps4euPs2EventsPublisher, ps4euWorldsTrackerPublisher)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
-	ps4usWorldsTracker, err := startNewWorldsTracker(ctx, ps4usPs2EventsPublisher)
+	ps4usWorldsTrackerPublisher := publisher.New(worlds_tracker.CastHandler)
+	ps4usWorldsTracker, err := startNewWorldsTracker(ctx, ps4usPs2EventsPublisher, ps4usWorldsTrackerPublisher)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
@@ -324,22 +326,6 @@ func start(ctx context.Context, cfg *config.Config) error {
 		facilityCache,
 	)
 
-	pcFacilitiesManagerPublisher := publisher.New(facilities_manager.CastHandler)
-	startFacilitiesManager(ctx, pcPs2EventsPublisher, facilities_manager.New(
-		ps2.PcPlatformWorldIds,
-		pcFacilitiesManagerPublisher,
-	))
-	ps4euFacilitiesManagerPublisher := publisher.New(facilities_manager.CastHandler)
-	startFacilitiesManager(ctx, ps4euPs2EventsPublisher, facilities_manager.New(
-		ps2.Ps4euPlatformWorldIds,
-		ps4euFacilitiesManagerPublisher,
-	))
-	ps4usFacilitiesManagerPublisher := publisher.New(facilities_manager.CastHandler)
-	startFacilitiesManager(ctx, ps4usPs2EventsPublisher, facilities_manager.New(
-		ps2.Ps4usPlatformWorldIds,
-		ps4usFacilitiesManagerPublisher,
-	))
-
 	// bot
 	botConfig := &bot.BotConfig{
 		DiscordToken:           cfg.DiscordToken,
@@ -407,7 +393,7 @@ func start(ctx context.Context, cfg *config.Config) error {
 		bot.NewEventHandlers(
 			pcPs2EventsPublisher,
 			pcOutfitMembersSaverPublisher,
-			pcFacilitiesManagerPublisher,
+			pcWorldsTrackerPublisher,
 			pcBatchedCharacterLoader,
 			pcOutfitLoader,
 			pcFacilityLoader,
@@ -417,7 +403,7 @@ func start(ctx context.Context, cfg *config.Config) error {
 		bot.NewEventHandlers(
 			ps4euPs2EventsPublisher,
 			ps4euOutfitMembersSaverPublisher,
-			ps4euFacilitiesManagerPublisher,
+			ps4euWorldsTrackerPublisher,
 			ps4euBatchedCharacterLoader,
 			ps4euOutfitLoader,
 			ps4euFacilityLoader,
@@ -427,7 +413,7 @@ func start(ctx context.Context, cfg *config.Config) error {
 		bot.NewEventHandlers(
 			ps4usPs2EventsPublisher,
 			ps4usOutfitMembersSaverPublisher,
-			ps4usFacilitiesManagerPublisher,
+			ps4usWorldsTrackerPublisher,
 			ps4usBatchedCharacterLoader,
 			ps4usOutfitLoader,
 			ps4usFacilityLoader,
