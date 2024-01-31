@@ -55,6 +55,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/savers/subscription_settings_saver"
 	"github.com/x0k/ps2-spy/internal/storage"
 	"github.com/x0k/ps2-spy/internal/tracking_manager"
+	"github.com/x0k/ps2-spy/internal/worlds_tracker"
 )
 
 func start(ctx context.Context, cfg *config.Config) error {
@@ -70,7 +71,6 @@ func start(ctx context.Context, cfg *config.Config) error {
 	EventName := []string{
 		ps2events.PlayerLoginEventName,
 		ps2events.PlayerLogoutEventName,
-		ps2events.FacilityControlEventName,
 		ps2events.AchievementEarnedEventName,
 		ps2events.BattleRankUpEventName,
 		ps2events.DeathEventName,
@@ -80,6 +80,9 @@ func start(ctx context.Context, cfg *config.Config) error {
 		ps2events.PlayerFacilityDefendEventName,
 		ps2events.SkillAddedEventName,
 		ps2events.VehicleDestroyEventName,
+		// TODO: ContinentLockEventName,
+		ps2events.FacilityControlEventName,
+		ps2events.MetagameEventEventName,
 	}
 	pcPs2EventsPublisher, err := startNewPs2EventsPublisher(ctx, cfg, streaming.Ps2_env, ps2commands.SubscriptionSettings{
 		Worlds:     All,
@@ -174,6 +177,24 @@ func start(ctx context.Context, cfg *config.Config) error {
 		platforms.PS4_US: ps4usCharactersTracker,
 	}
 
+	pcWorldsTracker, err := startNewWorldsTracker(ctx, pcPs2EventsPublisher)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+	ps4euWorldsTracker, err := startNewWorldsTracker(ctx, ps4euPs2EventsPublisher)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+	ps4usWorldsTracker, err := startNewWorldsTracker(ctx, ps4usPs2EventsPublisher)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+	platformWorldsTrackers := map[platforms.Platform]*worlds_tracker.WorldsTracker{
+		platforms.PC:     pcWorldsTracker,
+		platforms.PS4_EU: ps4euWorldsTracker,
+		platforms.PS4_US: ps4usWorldsTracker,
+	}
+
 	// multi loaders
 	popLoader := population_loader.NewMulti(
 		log,
@@ -210,12 +231,13 @@ func start(ctx context.Context, cfg *config.Config) error {
 	alertsLoader := alerts_loader.NewMulti(
 		log,
 		map[string]loaders.Loader[loaders.Loaded[ps2.Alerts]]{
+			"spy":       alerts_loader.NewWorldsTrackerLoader(cfg.BotName, platformWorldsTrackers),
 			"ps2alerts": alerts_loader.NewPS2Alerts(ps2alertsClient),
 			"honu":      alerts_loader.NewHonu(honuClient),
 			"census":    alerts_loader.NewCensus(censusClient),
 			"voidwell":  alerts_loader.NewVoidWell(voidWellClient),
 		},
-		[]string{"ps2alerts", "honu", "census", "voidwell"},
+		[]string{"spy", "ps2alerts", "honu", "census", "voidwell"},
 	)
 	alertsLoader.Start(ctx, wg)
 	worldAlertsLoader := world_alerts_loader.NewMulti(alertsLoader)

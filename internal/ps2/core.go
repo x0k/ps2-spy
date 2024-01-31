@@ -73,6 +73,19 @@ type WorldsPopulation struct {
 	Worlds []WorldPopulation
 }
 
+type MetagameEventId string
+
+type MetagameEvent struct {
+	Id          MetagameEventId
+	Name        string
+	Description string
+	Duration    time.Duration
+}
+
+type InstanceId string
+
+const StartedMetagameEventStateName = "started"
+
 type Alert struct {
 	WorldId          WorldId
 	WorldName        string
