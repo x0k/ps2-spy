@@ -10,13 +10,13 @@ import (
 	"github.com/x0k/ps2-spy/internal/bot/handlers/event/login_event_handler"
 	"github.com/x0k/ps2-spy/internal/bot/handlers/event/logout_event_handler"
 	"github.com/x0k/ps2-spy/internal/bot/handlers/event/outfit_members_update_event_handler"
-	"github.com/x0k/ps2-spy/internal/facilities_manager"
 	"github.com/x0k/ps2-spy/internal/infra"
 	ps2events "github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
 	"github.com/x0k/ps2-spy/internal/lib/loaders"
 	"github.com/x0k/ps2-spy/internal/lib/publisher"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/savers/outfit_members_saver"
+	"github.com/x0k/ps2-spy/internal/worlds_tracker"
 )
 
 type EventHandlers struct {
@@ -25,9 +25,9 @@ type EventHandlers struct {
 	playerLogoutHandler         handlers.Ps2EventHandler[ps2events.PlayerLogout]
 	outfitMembersSaverPublisher *publisher.Publisher
 	outfitMembersUpdateHandler  handlers.Ps2EventHandler[outfit_members_saver.OutfitMembersUpdate]
-	facilitiesManagerPublisher  *publisher.Publisher
-	facilityControlHandler      handlers.Ps2EventHandler[facilities_manager.FacilityControl]
-	facilityLossHandler         handlers.Ps2EventHandler[facilities_manager.FacilityLoss]
+	worldsTrackerPublisher      *publisher.Publisher
+	facilityControlHandler      handlers.Ps2EventHandler[worlds_tracker.FacilityControl]
+	facilityLossHandler         handlers.Ps2EventHandler[worlds_tracker.FacilityLoss]
 }
 
 func (eh *EventHandlers) Start(
@@ -51,13 +51,13 @@ func (eh *EventHandlers) Start(
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
-	facilityControl := make(chan facilities_manager.FacilityControl)
-	facilityControlUnSub, err := eh.facilitiesManagerPublisher.AddHandler(facilityControl)
+	facilityControl := make(chan worlds_tracker.FacilityControl)
+	facilityControlUnSub, err := eh.worldsTrackerPublisher.AddHandler(facilityControl)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
-	facilityLoss := make(chan facilities_manager.FacilityLoss)
-	facilityLossUnSub, err := eh.facilitiesManagerPublisher.AddHandler(facilityLoss)
+	facilityLoss := make(chan worlds_tracker.FacilityLoss)
+	facilityLossUnSub, err := eh.worldsTrackerPublisher.AddHandler(facilityLoss)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
@@ -94,7 +94,7 @@ func (eh *EventHandlers) Start(
 func NewEventHandlers(
 	ps2EventsPublisher *publisher.Publisher,
 	outfitMembersSaverPublisher *publisher.Publisher,
-	facilitiesManagerPublisher *publisher.Publisher,
+	worldsTrackerPublisher *publisher.Publisher,
 	characterLoader loaders.KeyedLoader[ps2.CharacterId, ps2.Character],
 	outfitLoader loaders.KeyedLoader[ps2.OutfitId, ps2.Outfit],
 	facilityLoader loaders.KeyedLoader[ps2.FacilityId, ps2.Facility],
@@ -103,7 +103,7 @@ func NewEventHandlers(
 	return EventHandlers{
 		ps2EventsPublisher:          ps2EventsPublisher,
 		outfitMembersSaverPublisher: outfitMembersSaverPublisher,
-		facilitiesManagerPublisher:  facilitiesManagerPublisher,
+		worldsTrackerPublisher:      worldsTrackerPublisher,
 		playerLoginHandler:          login_event_handler.New(characterLoader),
 		playerLogoutHandler:         logout_event_handler.New(characterLoader),
 		outfitMembersUpdateHandler: outfit_members_update_event_handler.New(

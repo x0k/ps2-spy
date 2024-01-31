@@ -1,4 +1,4 @@
-package population_tracker
+package characters_tracker
 
 import (
 	"context"
@@ -27,7 +27,7 @@ type player struct {
 	worldId     ps2.WorldId
 }
 
-type PopulationTracker struct {
+type CharactersTracker struct {
 	log                      *slog.Logger
 	mutex                    sync.RWMutex
 	worldPopulationTrackers  map[ps2.WorldId]worldPopulationTracker
@@ -38,14 +38,14 @@ type PopulationTracker struct {
 	retryableCharacterLoader *retryable.WithArg[ps2.CharacterId, ps2.Character]
 }
 
-func New(log *slog.Logger, worldIds []ps2.WorldId, characterLoader loaders.KeyedLoader[ps2.CharacterId, ps2.Character]) *PopulationTracker {
+func New(log *slog.Logger, worldIds []ps2.WorldId, characterLoader loaders.KeyedLoader[ps2.CharacterId, ps2.Character]) *CharactersTracker {
 	trackers := make(map[ps2.WorldId]worldPopulationTracker, len(ps2.WorldNames))
 	for _, worldId := range worldIds {
 		trackers[worldId] = newWorldPopulationTracker()
 	}
-	return &PopulationTracker{
+	return &CharactersTracker{
 		log: log.With(
-			slog.String("component", "population_tracker.PopulationTracker"),
+			slog.String("component", "characters_tracker.CharactersTracker"),
 			slog.String("world_ids", fmt.Sprintf("%v", worldIds)),
 		),
 		worldPopulationTrackers: trackers,
@@ -59,7 +59,7 @@ func New(log *slog.Logger, worldIds []ps2.WorldId, characterLoader loaders.Keyed
 	}
 }
 
-func (p *PopulationTracker) handleInactive(now time.Time) {
+func (p *CharactersTracker) handleInactive(now time.Time) {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 	count := p.activePlayers.RemoveExpired(now.Add(-p.inactiveTimeout), func(pl player) {
@@ -75,7 +75,7 @@ func (p *PopulationTracker) handleInactive(now time.Time) {
 	}
 }
 
-func (p *PopulationTracker) Start(ctx context.Context) {
+func (p *CharactersTracker) Start(ctx context.Context) {
 	wg := infra.Wg(ctx)
 	wg.Add(1)
 	go func() {
@@ -93,7 +93,7 @@ func (p *PopulationTracker) Start(ctx context.Context) {
 	}()
 }
 
-func (p *PopulationTracker) handleLogin(char ps2.Character) {
+func (p *CharactersTracker) handleLogin(char ps2.Character) {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 	p.activePlayers.Push(player{char.Id, char.WorldId})
@@ -105,7 +105,7 @@ func (p *PopulationTracker) handleLogin(char ps2.Character) {
 	p.onlineCharactersTracker.HandleLogin(char)
 }
 
-func (p *PopulationTracker) HandleLoginTask(ctx context.Context, wg *sync.WaitGroup, event ps2events.PlayerLogin) {
+func (p *CharactersTracker) HandleLoginTask(ctx context.Context, wg *sync.WaitGroup, event ps2events.PlayerLogin) {
 	defer wg.Done()
 	charId := ps2.CharacterId(event.CharacterID)
 	char, err := p.retryableCharacterLoader.Run(
@@ -127,7 +127,7 @@ func (p *PopulationTracker) HandleLoginTask(ctx context.Context, wg *sync.WaitGr
 	p.handleLogin(char)
 }
 
-func (p *PopulationTracker) HandleLogout(ctx context.Context, event ps2events.PlayerLogout) {
+func (p *CharactersTracker) HandleLogout(ctx context.Context, event ps2events.PlayerLogout) {
 	worldId := ps2.WorldId(event.WorldID)
 	charId := ps2.CharacterId(event.CharacterID)
 	p.mutex.Lock()
@@ -141,26 +141,26 @@ func (p *PopulationTracker) HandleLogout(ctx context.Context, event ps2events.Pl
 	p.onlineCharactersTracker.HandleInactive(charId)
 }
 
-func (p *PopulationTracker) HandleWorldZoneIdAction(ctx context.Context, worldId, zoneId, charId string) {
+func (p *CharactersTracker) HandleWorldZoneAction(ctx context.Context, worldId, zoneId, charId string) {
 	cId := ps2.CharacterId(charId)
 	wId := ps2.WorldId(worldId)
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 	p.activePlayers.Push(player{cId, wId})
 	if w, ok := p.worldPopulationTrackers[wId]; ok {
-		w.HandleZoneIdAction(cId, zoneId)
+		w.HandleZoneAction(cId, zoneId)
 	} else {
 		p.log.Warn("world not found", slog.String("world_id", worldId))
 	}
 }
 
-func (p *PopulationTracker) TrackableOnlineEntities(settings meta.SubscriptionSettings) meta.TrackableEntities[map[ps2.OutfitId][]ps2.Character, []ps2.Character] {
+func (p *CharactersTracker) TrackableOnlineEntities(settings meta.SubscriptionSettings) meta.TrackableEntities[map[ps2.OutfitId][]ps2.Character, []ps2.Character] {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
 	return p.onlineCharactersTracker.TrackableOnlineEntities(settings)
 }
 
-func (p *PopulationTracker) WorldsPopulation() ps2.WorldsPopulation {
+func (p *CharactersTracker) WorldsPopulation() ps2.WorldsPopulation {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
 	total := 0
@@ -193,7 +193,7 @@ func (p *PopulationTracker) WorldsPopulation() ps2.WorldsPopulation {
 	}
 }
 
-func (p *PopulationTracker) DetailedWorldPopulation(worldId ps2.WorldId) (ps2.DetailedWorldPopulation, error) {
+func (p *CharactersTracker) DetailedWorldPopulation(worldId ps2.WorldId) (ps2.DetailedWorldPopulation, error) {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
 	tracker, ok := p.worldPopulationTrackers[worldId]
