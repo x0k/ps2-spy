@@ -1,4 +1,4 @@
-package facilities_manager
+package worlds_tracker
 
 import "github.com/x0k/ps2-spy/internal/lib/publisher"
 

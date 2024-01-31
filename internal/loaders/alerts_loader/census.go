@@ -51,7 +51,7 @@ func (l *CensusLoader) load(ctx context.Context, url string) (ps2.Alerts, error)
 	actualEvents := make(map[string]collections.MetagameWorldEventItem, len(events))
 	for i := len(events) - 1; i >= 0; i-- {
 		e := events[i]
-		if e.MetagameEventStateName == "started" {
+		if e.MetagameEventStateName == ps2.StartedMetagameEventStateName {
 			actualEvents[e.InstanceId] = e
 		} else {
 			delete(actualEvents, e.InstanceId)
@@ -59,18 +59,7 @@ func (l *CensusLoader) load(ctx context.Context, url string) (ps2.Alerts, error)
 	}
 	alerts := make(ps2.Alerts, 0, len(actualEvents))
 	for _, e := range actualEvents {
-		eventId, err := strconv.Atoi(e.MetagameEventId)
-		if err != nil {
-			log.Error("failed to parse event id", slog.String("event_id", e.MetagameEventId), sl.Err(err))
-			continue
-		}
-		alertInfo, ok := ps2.AlertsMap[eventId]
-		if !ok {
-			alertInfo = ps2.AlertInfo{
-				Name:        fmt.Sprintf("Unknown alert (%d)", eventId),
-				Description: "This alert is not registered yet",
-			}
-		}
+		eventId := ps2.MetagameEventId(e.MetagameEventId)
 		worldId := ps2.WorldId(e.WorldId)
 		zoneId := ps2.ZoneId(e.ZoneId)
 		timesamp, err := strconv.ParseInt(e.Timestamp, 10, 64)
@@ -78,13 +67,11 @@ func (l *CensusLoader) load(ctx context.Context, url string) (ps2.Alerts, error)
 			log.Error("failed to parse timestamp", slog.String("timestamp", e.Timestamp), sl.Err(err))
 			continue
 		}
-		var duration time.Duration
-		if eventInfo, ok := ps2.MetagameEventsMap[eventId]; ok {
-			d, err := strconv.Atoi(eventInfo.DurationMinutes)
-			if err != nil {
-				log.Error("failed to parse duration", slog.String("duration", eventInfo.DurationMinutes), sl.Err(err))
-			} else {
-				duration = time.Duration(d) * time.Minute
+		eventInfo, ok := ps2.MetagameEventsMap[eventId]
+		if !ok {
+			eventInfo = ps2.MetagameEvent{
+				Name:        fmt.Sprintf("Unknown alert (%s)", eventId),
+				Description: "This event is not registered yet",
 			}
 		}
 		startedAt := time.Unix(timesamp, 0)
@@ -96,10 +83,10 @@ func (l *CensusLoader) load(ctx context.Context, url string) (ps2.Alerts, error)
 			WorldName:        ps2.WorldNames[ps2.WorldId(worldId)],
 			ZoneId:           ps2.ZoneId(zoneId),
 			ZoneName:         ps2.ZoneNames[ps2.ZoneId(zoneId)],
-			AlertName:        alertInfo.Name,
-			AlertDescription: alertInfo.Description,
+			AlertName:        eventInfo.Name,
+			AlertDescription: eventInfo.Description,
 			StartedAt:        startedAt,
-			Duration:         duration,
+			Duration:         eventInfo.Duration,
 			TerritoryControl: ps2.StatsByFactions{
 				All: 100,
 				NC:  int(nc),

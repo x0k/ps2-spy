@@ -1,4 +1,4 @@
-package population_tracker
+package characters_tracker
 
 import (
 	"github.com/x0k/ps2-spy/internal/ps2"
@@ -30,8 +30,10 @@ func newWorldPopulationTracker() worldPopulationTracker {
 }
 
 func (w *worldPopulationTracker) HandleLogin(character ps2.Character) {
+	if _, ok := w.charactersFactions[character.Id]; ok {
+		return
+	}
 	w.population[character.FactionId] += 1
-
 	w.charactersFactions[character.Id] = character.FactionId
 }
 
@@ -48,7 +50,7 @@ func (w *worldPopulationTracker) HandleInactive(charId ps2.CharacterId) {
 	}
 }
 
-func (w *worldPopulationTracker) HandleZoneIdAction(charId ps2.CharacterId, strZoneId string) {
+func (w *worldPopulationTracker) HandleZoneAction(charId ps2.CharacterId, strZoneId string) {
 	factionId, ok := w.charactersFactions[charId]
 	if !ok {
 		return

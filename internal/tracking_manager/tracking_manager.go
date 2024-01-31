@@ -7,7 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/x0k/ps2-spy/internal/facilities_manager"
 	"github.com/x0k/ps2-spy/internal/infra"
 	ps2events "github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
 	"github.com/x0k/ps2-spy/internal/lib/loaders"
@@ -15,6 +14,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/meta"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/savers/outfit_members_saver"
+	"github.com/x0k/ps2-spy/internal/worlds_tracker"
 )
 
 var ErrUnknownEvent = fmt.Errorf("unknown event")
@@ -185,9 +185,9 @@ func (tm *TrackingManager) ChannelIds(ctx context.Context, event any) ([]meta.Ch
 		return tm.channelIdsForCharacter(ctx, ps2.CharacterId(e.CharacterID))
 	case outfit_members_saver.OutfitMembersUpdate:
 		return tm.channelIdsForOutfit(ctx, e.OutfitId)
-	case facilities_manager.FacilityControl:
+	case worlds_tracker.FacilityControl:
 		return tm.channelIdsForOutfit(ctx, ps2.OutfitId(e.OutfitID))
-	case facilities_manager.FacilityLoss:
+	case worlds_tracker.FacilityLoss:
 		return tm.channelIdsForOutfit(ctx, e.OldOutfitId)
 	}
 	return nil, fmt.Errorf("%s: %w", op, ErrUnknownEvent)
