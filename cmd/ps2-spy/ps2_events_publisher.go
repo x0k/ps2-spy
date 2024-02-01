@@ -12,29 +12,34 @@ import (
 	ps2commands "github.com/x0k/ps2-spy/internal/lib/census2/streaming/commands"
 	ps2events "github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
 	ps2messages "github.com/x0k/ps2-spy/internal/lib/census2/streaming/messages"
+	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/lib/publisher"
 	"github.com/x0k/ps2-spy/internal/lib/retryable"
 	"github.com/x0k/ps2-spy/internal/lib/retryable/perform"
 	"github.com/x0k/ps2-spy/internal/lib/retryable/while"
+	"github.com/x0k/ps2-spy/internal/ps2/platforms"
 	"github.com/x0k/ps2-spy/internal/relogin_omitter"
 )
 
 func startNewPs2EventsPublisher(
 	ctx context.Context,
+	logger *logger.Logger,
 	cfg *config.Config,
-	env string,
+	platform platforms.Platform,
 	settings ps2commands.SubscriptionSettings,
 ) (*publisher.Publisher, error) {
 	const op = "startNewPs2EventsPublisher"
-	log := infra.OpLogger(ctx, op)
+	log := logger.With(
+		slog.String("platform", string(platform)),
+	)
 	// Handle messages
 	messagesPublisher := publisher.New(ps2messages.CastHandler)
 	rawMessagesPublisher := ps2messages.NewPublisher(messagesPublisher)
 	client := streaming.NewClient(
 		log.Logger,
 		cfg.CensusStreamingEndpoint,
-		env,
+		platforms.PlatformEnvironment(platform),
 		cfg.CensusServiceId,
 		rawMessagesPublisher,
 	)
@@ -46,7 +51,7 @@ func startNewPs2EventsPublisher(
 			func(ctx context.Context) error {
 				err := client.Connect(ctx)
 				if err != nil {
-					log.LogAttrs(ctx, slog.LevelError, "failed to connect to websocket", sl.Err(err), slog.Any("settings", settings))
+					log.Error(ctx, "failed to connect to websocket", sl.Err(err), slog.Any("settings", settings))
 					return err
 				}
 				defer client.Close()
@@ -61,7 +66,7 @@ func startNewPs2EventsPublisher(
 	}()
 	// Handle events
 	eventsPublisher := publisher.New(ps2events.CastHandler)
-	reLoginOmitter := relogin_omitter.New(eventsPublisher)
+	reLoginOmitter := relogin_omitter.New(log, eventsPublisher)
 	reLoginOmitter.Start(ctx)
 	rawEventsPublisher := ps2events.NewPublisher(reLoginOmitter)
 	serviceMsg := make(chan ps2messages.ServiceMessage[map[string]any])

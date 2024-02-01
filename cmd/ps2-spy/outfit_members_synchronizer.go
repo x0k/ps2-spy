@@ -8,6 +8,7 @@ import (
 
 	"github.com/x0k/ps2-spy/internal/infra"
 	"github.com/x0k/ps2-spy/internal/lib/census2"
+	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/publisher"
 	"github.com/x0k/ps2-spy/internal/loaders/outfit_member_ids_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/outfit_sync_at_loader"
@@ -22,6 +23,7 @@ import (
 var ErrPublisherNotFound = fmt.Errorf("publisher not found")
 
 func newOutfitMembersSynchronizer(
+	log *logger.Logger,
 	storage *sqlite.Storage,
 	censusClient *census2.Client,
 	membersSaverPublisher publisher.Abstract[publisher.Event],
@@ -34,6 +36,7 @@ func newOutfitMembersSynchronizer(
 	outfitMembersLoader := outfit_member_ids_loader.NewCensus(censusClient, ns)
 	outfitMembersSaver := outfit_members_saver.New(storage, membersSaverPublisher, platform)
 	return outfit_members_synchronizer.New(
+		log.With(slog.String("platform", string(platform))),
 		trackableOutfitsLoader,
 		outfitSyncAtLoader,
 		outfitMembersLoader,
@@ -44,18 +47,19 @@ func newOutfitMembersSynchronizer(
 
 func startOutfitMembersSynchronizers(
 	ctx context.Context,
+	log *logger.Logger,
 	sqlStorage *sqlite.Storage,
 	censusClient *census2.Client,
 	publisher *publisher.Publisher,
 	outfitMembersSaverPublishers map[platforms.Platform]publisher.Abstract[publisher.Event],
 ) error {
 	const op = "startOutfitMembersSynchronizer"
-	log := infra.OpLogger(ctx, op)
 	pcOutfitMembersSaverPublisher, ok := outfitMembersSaverPublishers[platforms.PC]
 	if !ok {
 		return fmt.Errorf("%s %s: %w", op, platforms.PC, ErrPublisherNotFound)
 	}
 	pcOutfitMembersSynchronizer := newOutfitMembersSynchronizer(
+		log,
 		sqlStorage,
 		censusClient,
 		pcOutfitMembersSaverPublisher,
@@ -67,6 +71,7 @@ func startOutfitMembersSynchronizers(
 		return fmt.Errorf("%s %s: %w", op, platforms.PS4_EU, ErrPublisherNotFound)
 	}
 	ps4euOutfitMembersSynchronizer := newOutfitMembersSynchronizer(
+		log,
 		sqlStorage,
 		censusClient,
 		ps4euOutfitMembersSaverPublisher,
@@ -78,6 +83,7 @@ func startOutfitMembersSynchronizers(
 		return fmt.Errorf("%s %s: %w", op, platforms.PS4_US, ErrPublisherNotFound)
 	}
 	ps4usOutfitMembersSynchronizer := newOutfitMembersSynchronizer(
+		log,
 		sqlStorage,
 		censusClient,
 		ps4usOutfitMembersSaverPublisher,
@@ -107,12 +113,11 @@ func startOutfitMembersSynchronizers(
 			case <-ctx.Done():
 				return
 			case saved := <-channelOutfitSaved:
-				os, ok := oss[saved.Platform]
-				if !ok {
+				if os, ok := oss[saved.Platform]; ok {
+					os.SyncOutfit(ctx, wg, saved.OutfitId)
+				} else {
 					log.Warn(ctx, "platform not found", slog.String("platform", string(saved.Platform)))
-					continue
 				}
-				os.SyncOutfit(ctx, wg, saved.OutfitId)
 			}
 		}
 	}()

@@ -36,7 +36,7 @@ func main() {
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	err := start(ctx, cfg)
+	err := start(ctx, log, cfg)
 	if err != nil {
 		log.Error(ctx, "unsuccess start, shutting down", sl.Err(err))
 		cancel()

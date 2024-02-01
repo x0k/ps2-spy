@@ -8,6 +8,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/infra"
 	ps2events "github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
 	"github.com/x0k/ps2-spy/internal/lib/loaders"
+	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/publisher"
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
@@ -126,13 +127,12 @@ func startCharactersTracker(
 
 func startNewCharactersTracker(
 	ctx context.Context,
+	log *logger.Logger,
 	worldIds []ps2.WorldId,
 	characterLoader loaders.KeyedLoader[ps2.CharacterId, ps2.Character],
 	ps2EventsPublisher *publisher.Publisher,
 	charactersTrackerPublisher *publisher.Publisher,
 ) (*characters_tracker.CharactersTracker, error) {
-	const op = "startNewCharactersTracker"
-	log := infra.OpLogger(ctx, op)
 	charactersTracker := characters_tracker.New(log, worldIds, characterLoader, charactersTrackerPublisher)
 	return charactersTracker, startCharactersTracker(
 		ctx,

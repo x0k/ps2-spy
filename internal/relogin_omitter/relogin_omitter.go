@@ -10,6 +10,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/infra"
 	ps2events "github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
 	"github.com/x0k/ps2-spy/internal/lib/containers"
+	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/publisher"
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
@@ -17,6 +18,7 @@ import (
 var ErrConvertEvent = fmt.Errorf("failed to convert event")
 
 type ReLoginOmitter struct {
+	log               *logger.Logger
 	pub               publisher.Abstract[publisher.Event]
 	batchMu           sync.Mutex
 	logoutEventsQueue *containers.ExpirationQueue[ps2.CharacterId]
@@ -25,8 +27,9 @@ type ReLoginOmitter struct {
 	delayDuration     time.Duration
 }
 
-func New(pub publisher.Abstract[publisher.Event]) *ReLoginOmitter {
+func New(log *logger.Logger, pub publisher.Abstract[publisher.Event]) *ReLoginOmitter {
 	return &ReLoginOmitter{
+		log:               log.With(slog.String("component", "relogin_omitter.ReLoginOmitter")),
 		pub:               pub,
 		logoutEventsQueue: containers.NewExpirationQueue[ps2.CharacterId](),
 		logoutEvents:      make(map[ps2.CharacterId]ps2events.PlayerLogout),
@@ -55,7 +58,7 @@ func (r *ReLoginOmitter) shouldPublishLoginEvent(event *ps2events.PlayerLogin) b
 	return true
 }
 
-func (r *ReLoginOmitter) flushLogOutEvents(log *slog.Logger, now time.Time) {
+func (r *ReLoginOmitter) flushLogOutEvents(ctx context.Context, now time.Time) {
 	r.batchMu.Lock()
 	defer r.batchMu.Unlock()
 	count := r.logoutEventsQueue.RemoveExpired(now.Add(-r.delayDuration), func(charId ps2.CharacterId) {
@@ -65,7 +68,8 @@ func (r *ReLoginOmitter) flushLogOutEvents(log *slog.Logger, now time.Time) {
 		}
 	})
 	if count > 0 {
-		log.Debug(
+		r.log.Debug(
+			ctx,
 			"logout events flushed",
 			slog.Int("events_count", count),
 			slog.Int("queue_size", r.logoutEventsQueue.Len()),
@@ -75,7 +79,6 @@ func (r *ReLoginOmitter) flushLogOutEvents(log *slog.Logger, now time.Time) {
 
 func (r *ReLoginOmitter) flushTask(ctx context.Context, wg *sync.WaitGroup) {
 	const op = "relogin_event_ommiter.ReLoginOmitter.flushTask"
-	log := infra.OpLogger(ctx, op)
 	defer wg.Done()
 	ticker := time.NewTicker(r.flushInterval)
 	defer ticker.Stop()
@@ -84,14 +87,13 @@ func (r *ReLoginOmitter) flushTask(ctx context.Context, wg *sync.WaitGroup) {
 		case <-ctx.Done():
 			return
 		case now := <-ticker.C:
-			r.flushLogOutEvents(log, now)
+			r.flushLogOutEvents(ctx, now)
 		}
 	}
 }
 
 func (r *ReLoginOmitter) Start(ctx context.Context) {
-	const op = "relogin_event_ommiter.ReLoginOmitter.Start"
-	infra.OpLogger(ctx, op).Info("starting")
+	r.log.Info(ctx, "starting")
 	wg := infra.Wg(ctx)
 	wg.Add(1)
 	go r.flushTask(ctx, wg)

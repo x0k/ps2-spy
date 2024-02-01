@@ -8,6 +8,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/bot"
 	"github.com/x0k/ps2-spy/internal/infra"
 	"github.com/x0k/ps2-spy/internal/lib/loaders"
+	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/lib/retryable"
 	"github.com/x0k/ps2-spy/internal/lib/retryable/perform"
@@ -17,6 +18,7 @@ import (
 
 func startNewBot(
 	ctx context.Context,
+	log *logger.Logger,
 	cfg *bot.BotConfig,
 	pcEventTrackingChannelsLoader loaders.QueriedLoader[any, []meta.ChannelId],
 	pcEventHandlers bot.EventHandlers,
@@ -26,14 +28,13 @@ func startNewBot(
 	ps4usEventHandlers bot.EventHandlers,
 ) error {
 	const op = "startBot"
-	log := infra.OpLogger(ctx, op)
 	wg := infra.Wg(ctx)
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		retryable.New(
 			func(ctx context.Context) error {
-				b, err := bot.New(ctx, cfg)
+				b, err := bot.New(ctx, log, cfg)
 				if err != nil {
 					return err
 				}

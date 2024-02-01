@@ -3,4 +3,3 @@ storage:
 logger:
   level: debug
   handler_type: pretty
-census_streaming_endpoint: wss://push.nanite-systems.net/streaming

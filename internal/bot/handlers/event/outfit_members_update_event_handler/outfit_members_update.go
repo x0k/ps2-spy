@@ -7,14 +7,15 @@ import (
 
 	"github.com/x0k/ps2-spy/internal/bot/handlers"
 	"github.com/x0k/ps2-spy/internal/bot/render"
-	"github.com/x0k/ps2-spy/internal/infra"
 	"github.com/x0k/ps2-spy/internal/lib/diff"
 	"github.com/x0k/ps2-spy/internal/lib/loaders"
+	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/savers/outfit_members_saver"
 )
 
 func New(
+	log *logger.Logger,
 	outfitLoader loaders.KeyedLoader[ps2.OutfitId, ps2.Outfit],
 	charsLoader loaders.QueriedLoader[[]ps2.CharacterId, map[ps2.CharacterId]ps2.Character],
 ) handlers.Ps2EventHandler[outfit_members_saver.OutfitMembersUpdate] {
@@ -24,7 +25,6 @@ func New(
 		event outfit_members_saver.OutfitMembersUpdate,
 	) (string, *handlers.Error) {
 		const op = "bot.handlers.events.outfit_members_update_event_handler"
-		log := infra.OpLogger(ctx, op)
 		outfit, err := outfitLoader.Load(ctx, event.OutfitId)
 		if err != nil {
 			return "", &handlers.Error{
@@ -43,7 +43,7 @@ func New(
 		for _, id := range event.Members.ToAdd {
 			char, ok := characters[id]
 			if !ok {
-				log.Warn("character not found", slog.String("character_id", string(id)))
+				log.Warn(ctx, "character not found", slog.String("character_id", string(id)))
 				continue
 			}
 			toAdd = append(toAdd, char)
@@ -52,7 +52,7 @@ func New(
 		for _, id := range event.Members.ToDel {
 			char, ok := characters[id]
 			if !ok {
-				log.Warn("character not found", slog.String("character_id", string(id)))
+				log.Warn(ctx, "character not found", slog.String("character_id", string(id)))
 				continue
 			}
 			toDell = append(toDell, char)

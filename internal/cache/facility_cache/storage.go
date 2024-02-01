@@ -5,7 +5,7 @@ import (
 	"errors"
 	"log/slog"
 
-	"github.com/x0k/ps2-spy/internal/infra"
+	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/storage"
@@ -13,23 +13,22 @@ import (
 )
 
 type StorageCache struct {
+	log     *logger.Logger
 	storage *sqlite.Storage
 }
 
-func NewStorage(storage *sqlite.Storage) *StorageCache {
+func NewStorage(log *logger.Logger, storage *sqlite.Storage) *StorageCache {
 	return &StorageCache{
+		log:     log.With(slog.String("component", "cache.facility_cache.StorageCache")),
 		storage: storage,
 	}
 }
 
 func (s *StorageCache) Get(ctx context.Context, facilityId ps2.FacilityId) (ps2.Facility, bool) {
 	const op = "cache.facility_cache.StorageCache.Get"
-	log := infra.Logger(ctx).With(
-		slog.String("facility_id", string(facilityId)),
-	)
 	facility, err := s.storage.Facility(ctx, facilityId)
 	if err != nil && !errors.Is(err, storage.ErrNotFound) {
-		log.Error("failed to get facility", sl.Err(err))
+		s.log.Error(ctx, "failed to get facility", slog.String("facility_id", string(facilityId)), sl.Err(err))
 	}
 	return facility, err == nil
 }

@@ -102,7 +102,7 @@ func (w *WorldsTracker) HandleMetagameEvent(ctx context.Context, event ps2events
 	defer w.mutex.Unlock()
 	world, ok := w.worlds[ps2.WorldId(event.WorldID)]
 	if !ok {
-		return ErrWorldNotFound
+		return fmt.Errorf("%s world %q: %w", op, event.WorldID, ErrWorldNotFound)
 	}
 	zone, ok := world[ps2.ZoneId(event.ZoneID)]
 	// Non interesting zone
@@ -129,12 +129,13 @@ func (w *WorldsTracker) HandleMetagameEvent(ctx context.Context, event ps2events
 }
 
 func (w *WorldsTracker) updateFacilityState(event ps2events.FacilityControl) (ps2.OutfitId, error) {
+	const op = "worlds_tracker.WorldsTracker.updateFacilityState"
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
 	worldId := ps2.WorldId(event.WorldID)
 	world, ok := w.worlds[worldId]
 	if !ok {
-		return ps2.OutfitId(""), ErrWorldNotFound
+		return ps2.OutfitId(""), fmt.Errorf("%s world %q: %w", op, worldId, ErrWorldNotFound)
 	}
 	zoneId := ps2.ZoneId(event.ZoneID)
 	zone, ok := world[zoneId]
@@ -189,11 +190,12 @@ func (w *WorldsTracker) HandleFacilityControl(ctx context.Context, event ps2even
 }
 
 func (w *WorldsTracker) HandleContinentLock(ctx context.Context, event ps2events.ContinentLock) error {
+	const op = "worlds_tracker.WorldsTracker.HandleContinentLock"
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
 	world, ok := w.worlds[ps2.WorldId(event.WorldID)]
 	if !ok {
-		return ErrWorldNotFound
+		return fmt.Errorf("%s world %q: %w", op, event.WorldID, ErrWorldNotFound)
 	}
 	zone, ok := world[ps2.ZoneId(event.ZoneID)]
 	// Non interesting zone

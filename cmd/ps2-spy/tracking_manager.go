@@ -7,6 +7,7 @@ import (
 
 	"github.com/x0k/ps2-spy/internal/infra"
 	"github.com/x0k/ps2-spy/internal/lib/loaders"
+	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/lib/publisher"
 	"github.com/x0k/ps2-spy/internal/loaders/outfit_member_ids_loader"
@@ -22,6 +23,7 @@ import (
 )
 
 func newTrackingManager(
+	log *logger.Logger,
 	storage *sqlite.Storage,
 	characterLoader loaders.KeyedLoader[ps2.CharacterId, ps2.Character],
 	characterTrackingChannelsLoader loaders.KeyedLoader[ps2.Character, []meta.ChannelId],
@@ -32,6 +34,7 @@ func newTrackingManager(
 	outfitTrackingChannelsLoader := outfit_tracking_channels_loader.NewStorage(storage, platform)
 	trackableOutfitsLoader := trackable_outfits_with_duplication_loader.NewStorage(storage, platform)
 	return tracking_manager.New(
+		log,
 		characterLoader,
 		characterTrackingChannelsLoader,
 		trackableCharactersLoader,
@@ -43,11 +46,11 @@ func newTrackingManager(
 
 func startTrackingManager(
 	ctx context.Context,
+	log *logger.Logger,
 	tms map[platforms.Platform]*tracking_manager.TrackingManager,
 	publisher *publisher.Publisher,
 ) error {
 	const op = "startTrackingManager"
-	log := infra.OpLogger(ctx, op)
 	wg := infra.Wg(ctx)
 	for _, tm := range tms {
 		tm.Start(ctx, wg)

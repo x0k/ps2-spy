@@ -10,6 +10,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/bot/handlers"
 	"github.com/x0k/ps2-spy/internal/infra"
 	"github.com/x0k/ps2-spy/internal/lib/loaders"
+	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/meta"
 )
@@ -19,6 +20,7 @@ var ErrEventsPublisherNotFound = fmt.Errorf("events publisher not found")
 var ErrEventHandlerNotFound = fmt.Errorf("event handler not found")
 
 type Bot struct {
+	log                 *logger.Logger
 	session             *discordgo.Session
 	eventHandlerTimeout time.Duration
 	removeCommands      bool
@@ -37,17 +39,17 @@ type BotConfig struct {
 
 func New(
 	ctx context.Context,
+	log *logger.Logger,
 	cfg *BotConfig,
 ) (*Bot, error) {
 	const op = "bot.Bot.New"
-	log := infra.OpLogger(ctx, op)
 	session, err := discordgo.New("Bot " + cfg.DiscordToken)
 	if err != nil {
 		return nil, fmt.Errorf("%s creating Discord session: %w", op, err)
 	}
 	session.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {
-		log.Info("logged in as", slog.String("username", s.State.User.Username), slog.String("discriminator", s.State.User.Discriminator))
-		log.Info("running on", slog.Int("serverCount", len(s.State.Guilds)))
+		log.Info(ctx, "logged in as", slog.String("username", s.State.User.Username), slog.String("discriminator", s.State.User.Discriminator))
+		log.Info(ctx, "running on", slog.Int("serverCount", len(s.State.Guilds)))
 	})
 	session.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		const op = "bot.Bot.InteractionCreateHandler"
@@ -57,30 +59,32 @@ func New(
 		} else {
 			userId = i.User.ID
 		}
-		log := infra.Logger(ctx).With(
+		hLog := log.With(
 			infra.Op(op),
 			slog.String("guild_id", i.GuildID),
 			slog.String("channel_id", i.ChannelID),
 			slog.String("user_id", userId),
 		)
-		log.Debug("interaction received", slog.String("type", i.Type.String()))
+		hLog.Debug(ctx, "interaction received", slog.String("type", i.Type.String()))
 		switch i.Type {
 		case discordgo.InteractionApplicationCommand:
-			log.Debug("command received", slog.String("command", i.ApplicationCommandData().Name))
+			cLog := hLog.With(slog.String("command_name", i.ApplicationCommandData().Name))
+			cLog.Debug(ctx, "command received")
 			if handler, ok := cfg.CommandHandlers[i.ApplicationCommandData().Name]; ok {
-				go handler.Run(ctx, cfg.CommandHandlerTimeout, s, i)
+				go handler.Run(ctx, cLog, cfg.CommandHandlerTimeout, s, i)
 			} else {
-				log.Warn("unknown command")
+				hLog.Warn(ctx, "unknown command")
 			}
 		case discordgo.InteractionMessageComponent:
-			log.Debug("component invoked")
+			hLog.Debug(ctx, "component invoked")
 		case discordgo.InteractionModalSubmit:
 			data := i.ModalSubmitData()
-			log.Debug("modal submitted", slog.Any("data", data))
+			smLog := hLog.With(slog.Any("modal_data", data))
+			smLog.Debug(ctx, "modal submitted")
 			if handler, ok := cfg.SubmitHandlers[data.CustomID]; ok {
-				go handler.Run(ctx, cfg.CommandHandlerTimeout, s, i)
+				go handler.Run(ctx, smLog, cfg.CommandHandlerTimeout, s, i)
 			} else {
-				log.Warn("unknown modal")
+				smLog.Warn(ctx, "unknown modal")
 			}
 		}
 	})
@@ -89,12 +93,13 @@ func New(
 	if err != nil {
 		return nil, fmt.Errorf("%s session open: %w", op, err)
 	}
-	log.Info("adding commands")
+	log.Info(ctx, "adding commands")
 	registeredCommands, err := session.ApplicationCommandBulkOverwrite(session.State.User.ID, "", cfg.Commands)
 	if err != nil {
 		return nil, fmt.Errorf("%s registering commands: %w", op, err)
 	}
 	return &Bot{
+		log:                 log,
 		session:             session,
 		eventHandlerTimeout: cfg.Ps2EventHandlerTimeout,
 		removeCommands:      cfg.RemoveCommands,
@@ -117,12 +122,11 @@ func (b *Bot) StartEventHandlers(
 
 func (b *Bot) Stop(ctx context.Context) error {
 	const op = "bot.Bot.Stop"
-	log := infra.OpLogger(ctx, op)
-	log.Info("stopping bot")
+	b.log.Info(ctx, "stopping bot")
 	if b.removeCommands {
 		for _, v := range b.registeredCommands {
 			if err := b.session.ApplicationCommandDelete(b.session.State.User.ID, "", v.ID); err != nil {
-				log.Error("cannot delete command", slog.String("command", v.Name), sl.Err(err))
+				b.log.Error(ctx, "cannot delete command", slog.String("command", v.Name), sl.Err(err))
 			}
 		}
 	}

@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/x0k/ps2-spy/internal/characters_tracker"
-	"github.com/x0k/ps2-spy/internal/infra"
 	"github.com/x0k/ps2-spy/internal/lib/loaders"
+	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/meta"
 	"github.com/x0k/ps2-spy/internal/ps2"
@@ -20,6 +20,7 @@ import (
 var ErrUnknownEvent = fmt.Errorf("unknown event")
 
 type TrackingManager struct {
+	log                             *logger.Logger
 	charactersFilterMu              sync.RWMutex
 	charactersFilter                map[ps2.CharacterId]int
 	outfitsFilterMu                 sync.RWMutex
@@ -34,6 +35,7 @@ type TrackingManager struct {
 }
 
 func New(
+	log *logger.Logger,
 	charLoader loaders.KeyedLoader[ps2.CharacterId, ps2.Character],
 	characterTrackingChannelsLoader loaders.KeyedLoader[ps2.Character, []meta.ChannelId],
 	trackableCharactersLoader loaders.Loader[[]ps2.CharacterId],
@@ -42,6 +44,9 @@ func New(
 	trackableOutfitsLoader loaders.Loader[[]ps2.OutfitId],
 ) *TrackingManager {
 	return &TrackingManager{
+		log: log.With(
+			slog.String("component", "tracking_manager.TrackingManager"),
+		),
 		charactersFilter:                make(map[ps2.CharacterId]int),
 		outfitsFilter:                   make(map[ps2.OutfitId]int),
 		characterLoader:                 charLoader,
@@ -56,11 +61,10 @@ func New(
 
 func (tm *TrackingManager) rebuildCharactersFilterTask(ctx context.Context, wg *sync.WaitGroup) {
 	const op = "tracking_manager.TrackingManager.rebuildCharactersFilterTask"
-	log := infra.OpLogger(ctx, op)
 	defer wg.Done()
 	chars, err := tm.trackableCharactersLoader.Load(ctx)
 	if err != nil {
-		log.Error("failed to load trackable characters", sl.Err(err))
+		tm.log.Error(ctx, "failed to load trackable characters", sl.Err(err))
 		return
 	}
 	tm.charactersFilterMu.Lock()
@@ -68,7 +72,8 @@ func (tm *TrackingManager) rebuildCharactersFilterTask(ctx context.Context, wg *
 	oldSize := len(tm.charactersFilter)
 	newSize := len(chars)
 	if oldSize != newSize {
-		log.Info(
+		tm.log.Info(
+			ctx,
 			"fixing inconsistent characters filter",
 			slog.Int("old_size", oldSize),
 			slog.Int("new_size", newSize),
@@ -82,11 +87,10 @@ func (tm *TrackingManager) rebuildCharactersFilterTask(ctx context.Context, wg *
 
 func (tm *TrackingManager) rebuildOutfitsFilterTask(ctx context.Context, wg *sync.WaitGroup) {
 	const op = "tracking_manager.TrackingManager.rebuildOutfitsFilterTask"
-	log := infra.OpLogger(ctx, op)
 	defer wg.Done()
 	outfits, err := tm.trackableOutfitsLoader.Load(ctx)
 	if err != nil {
-		log.Error("failed to load trackable outfits", sl.Err(err))
+		tm.log.Error(ctx, "failed to load trackable outfits", sl.Err(err))
 		return
 	}
 	tm.outfitsFilterMu.Lock()
@@ -94,7 +98,8 @@ func (tm *TrackingManager) rebuildOutfitsFilterTask(ctx context.Context, wg *syn
 	oldSize := len(tm.outfitsFilter)
 	newSize := len(outfits)
 	if oldSize != newSize {
-		log.Info(
+		tm.log.Info(
+			ctx,
 			"fixing inconsistent outfits filter",
 			slog.Int("old_size", oldSize),
 			slog.Int("new_size", newSize),
@@ -108,7 +113,7 @@ func (tm *TrackingManager) rebuildOutfitsFilterTask(ctx context.Context, wg *syn
 
 func (tm *TrackingManager) goRebuildFiltersTasks(ctx context.Context, wg *sync.WaitGroup) {
 	const op = "tracking_manager.TrackingManager.goRebuildFiltersTasks"
-	infra.OpLogger(ctx, op).Debug("rebuilding filters")
+	tm.log.Debug(ctx, "rebuilding filters")
 	wg.Add(2)
 	go tm.rebuildCharactersFilterTask(ctx, wg)
 	go tm.rebuildOutfitsFilterTask(ctx, wg)
@@ -142,11 +147,10 @@ func (tm *TrackingManager) characterTrackersCount(charId ps2.CharacterId) int {
 
 func (tm *TrackingManager) channelIdsForCharacter(ctx context.Context, characterId ps2.CharacterId) ([]meta.ChannelId, error) {
 	const op = "tracking_manager.TrackingManager.channelIdsForCharacter"
-	log := infra.OpLogger(ctx, op)
 	trackersCount := tm.characterTrackersCount(characterId)
 	if trackersCount <= 0 {
 		if trackersCount < 0 {
-			log.Warn("invalid character trackers count", slog.String("char_id", string(characterId)))
+			tm.log.Warn(ctx, "invalid character trackers count", slog.String("char_id", string(characterId)))
 		}
 		return nil, nil
 	}
@@ -165,11 +169,10 @@ func (tm *TrackingManager) outfitTrackersCount(outfitId ps2.OutfitId) int {
 
 func (tm *TrackingManager) channelIdsForOutfit(ctx context.Context, outfitId ps2.OutfitId) ([]meta.ChannelId, error) {
 	const op = "tracking_manager.TrackingManager.channelIdsForOutfitTag"
-	log := infra.OpLogger(ctx, op)
 	trackersCount := tm.outfitTrackersCount(outfitId)
 	if trackersCount <= 0 {
 		if trackersCount < 0 {
-			log.Warn("invalid outfit trackers count", slog.String("outfit_id", string(outfitId)))
+			tm.log.Warn(ctx, "invalid outfit trackers count", slog.String("outfit_id", string(outfitId)))
 		}
 		return nil, nil
 	}
