@@ -17,7 +17,6 @@ import (
 	"github.com/x0k/ps2-spy/internal/config"
 	"github.com/x0k/ps2-spy/internal/infra"
 	"github.com/x0k/ps2-spy/internal/lib/census2"
-	"github.com/x0k/ps2-spy/internal/lib/census2/streaming"
 	ps2commands "github.com/x0k/ps2-spy/internal/lib/census2/streaming/commands"
 	ps2events "github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
 	"github.com/x0k/ps2-spy/internal/lib/containers"
@@ -84,7 +83,7 @@ func start(ctx context.Context, log *logger.Logger, cfg *config.Config) error {
 		ps2events.MetagameEventEventName,
 		ps2events.ContinentLockEventName,
 	}
-	pcPs2EventsPublisher, err := startNewPs2EventsPublisher(ctx, log, cfg, streaming.Ps2_env, ps2commands.SubscriptionSettings{
+	pcPs2EventsPublisher, err := startNewPs2EventsPublisher(ctx, log, cfg, platforms.PC, ps2commands.SubscriptionSettings{
 		Worlds:     All,
 		Characters: All,
 		EventNames: EventName,
@@ -93,7 +92,7 @@ func start(ctx context.Context, log *logger.Logger, cfg *config.Config) error {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
-	ps4euPs2EventsPublisher, err := startNewPs2EventsPublisher(ctx, log, cfg, streaming.Ps2ps4eu_env, ps2commands.SubscriptionSettings{
+	ps4euPs2EventsPublisher, err := startNewPs2EventsPublisher(ctx, log, cfg, platforms.PS4_EU, ps2commands.SubscriptionSettings{
 		Worlds:     All,
 		Characters: All,
 		EventNames: EventName,
@@ -102,7 +101,7 @@ func start(ctx context.Context, log *logger.Logger, cfg *config.Config) error {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
-	ps4usPs2EventsPublisher, err := startNewPs2EventsPublisher(ctx, log, cfg, streaming.Ps2ps4us_env, ps2commands.SubscriptionSettings{
+	ps4usPs2EventsPublisher, err := startNewPs2EventsPublisher(ctx, log, cfg, platforms.PS4_US, ps2commands.SubscriptionSettings{
 		Worlds:     All,
 		Characters: All,
 		EventNames: EventName,
