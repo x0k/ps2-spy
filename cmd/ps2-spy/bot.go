@@ -39,7 +39,7 @@ func startNewBot(
 				}
 				defer func() {
 					if err := b.Stop(ctx); err != nil {
-						log.Error("failed to stop bot", sl.Err(err))
+						log.Error(ctx, "failed to stop bot", sl.Err(err))
 					}
 				}()
 				if err := b.StartEventHandlers(ctx, pcEventTrackingChannelsLoader, pcEventHandlers); err != nil {
@@ -58,7 +58,7 @@ func startNewBot(
 			ctx,
 			while.ContextIsNotCancelled,
 			perform.RecoverSuspenseDuration(1*time.Second),
-			perform.Log(log, slog.LevelError, "bot failed, restarting"),
+			perform.Log(log.Logger, slog.LevelError, "bot failed, restarting"),
 		)
 	}()
 	return nil

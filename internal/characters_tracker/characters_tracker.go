@@ -11,6 +11,7 @@ import (
 	ps2events "github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
 	"github.com/x0k/ps2-spy/internal/lib/containers"
 	"github.com/x0k/ps2-spy/internal/lib/loaders"
+	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/lib/retryable"
 	"github.com/x0k/ps2-spy/internal/lib/retryable/perform"
@@ -28,7 +29,7 @@ type player struct {
 }
 
 type CharactersTracker struct {
-	log                      *slog.Logger
+	log                      *logger.Logger
 	mutex                    sync.RWMutex
 	worldPopulationTrackers  map[ps2.WorldId]worldPopulationTracker
 	onlineCharactersTracker  onlineCharactersTracker
@@ -38,7 +39,7 @@ type CharactersTracker struct {
 	retryableCharacterLoader *retryable.WithArg[ps2.CharacterId, ps2.Character]
 }
 
-func New(log *slog.Logger, worldIds []ps2.WorldId, characterLoader loaders.KeyedLoader[ps2.CharacterId, ps2.Character]) *CharactersTracker {
+func New(log *logger.Logger, worldIds []ps2.WorldId, characterLoader loaders.KeyedLoader[ps2.CharacterId, ps2.Character]) *CharactersTracker {
 	trackers := make(map[ps2.WorldId]worldPopulationTracker, len(ps2.WorldNames))
 	for _, worldId := range worldIds {
 		trackers[worldId] = newWorldPopulationTracker()
@@ -59,19 +60,24 @@ func New(log *slog.Logger, worldIds []ps2.WorldId, characterLoader loaders.Keyed
 	}
 }
 
-func (p *CharactersTracker) handleInactive(now time.Time) {
+func (p *CharactersTracker) handleInactive(ctx context.Context, now time.Time) {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 	count := p.activePlayers.RemoveExpired(now.Add(-p.inactiveTimeout), func(pl player) {
 		if w, ok := p.worldPopulationTrackers[pl.worldId]; ok {
 			w.HandleInactive(pl.characterId)
 		} else {
-			p.log.Warn("world not found", slog.String("world_id", string(pl.worldId)))
+			p.log.Warn(ctx, "world not found", slog.String("world_id", string(pl.worldId)))
 		}
 		p.onlineCharactersTracker.HandleInactive(pl.characterId)
 	})
 	if count > 0 {
-		p.log.Debug("inactive players removed", slog.Int("queue_size", p.activePlayers.Len()), slog.Int("count", count))
+		p.log.Debug(
+			ctx,
+			"inactive players removed",
+			slog.Int("queue_size", p.activePlayers.Len()),
+			slog.Int("count", count),
+		)
 	}
 }
 
@@ -87,20 +93,20 @@ func (p *CharactersTracker) Start(ctx context.Context) {
 			case <-ctx.Done():
 				return
 			case t := <-ticker.C:
-				p.handleInactive(t)
+				p.handleInactive(ctx, t)
 			}
 		}
 	}()
 }
 
-func (p *CharactersTracker) handleLogin(char ps2.Character) {
+func (p *CharactersTracker) handleLogin(ctx context.Context, char ps2.Character) {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 	p.activePlayers.Push(player{char.Id, char.WorldId})
 	if w, ok := p.worldPopulationTrackers[char.WorldId]; ok {
 		w.HandleLogin(char)
 	} else {
-		p.log.Warn("world not found", slog.String("world_id", string(char.WorldId)))
+		p.log.Warn(ctx, "world not found", slog.String("world_id", string(char.WorldId)))
 	}
 	p.onlineCharactersTracker.HandleLogin(char)
 }
@@ -114,7 +120,7 @@ func (p *CharactersTracker) HandleLoginTask(ctx context.Context, wg *sync.WaitGr
 		while.ErrorIsHere,
 		while.RetryCountIsLessThan(3),
 		perform.Log(
-			p.log,
+			p.log.Logger,
 			slog.LevelDebug,
 			"[ERROR] failed to get character, retrying",
 			slog.String("character_id", string(charId)),

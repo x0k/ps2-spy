@@ -32,7 +32,7 @@ func startNewPs2EventsPublisher(
 	messagesPublisher := publisher.New(ps2messages.CastHandler)
 	rawMessagesPublisher := ps2messages.NewPublisher(messagesPublisher)
 	client := streaming.NewClient(
-		log,
+		log.Logger,
 		cfg.CensusStreamingEndpoint,
 		env,
 		cfg.CensusServiceId,
@@ -56,7 +56,7 @@ func startNewPs2EventsPublisher(
 			ctx,
 			while.ContextIsNotCancelled,
 			perform.RecoverSuspenseDuration(1*time.Second),
-			perform.Log(log, slog.LevelError, "subscription failed, retrying"),
+			perform.Log(log.Logger, slog.LevelError, "subscription failed, retrying"),
 		)
 	}()
 	// Handle events
@@ -79,7 +79,7 @@ func startNewPs2EventsPublisher(
 				return
 			case msg := <-serviceMsg:
 				if err := rawEventsPublisher.Publish(msg.Payload); err != nil {
-					log.Error("failed to publish event", slog.Any("event", msg.Payload), sl.Err(err))
+					log.Error(ctx, "failed to publish event", slog.Any("event", msg.Payload), sl.Err(err))
 				}
 			}
 		}

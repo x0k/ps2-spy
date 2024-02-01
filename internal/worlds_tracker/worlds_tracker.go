@@ -3,7 +3,6 @@ package worlds_tracker
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"strconv"
 	"sync"
 	"time"
@@ -34,14 +33,13 @@ type zoneState struct {
 }
 
 type WorldsTracker struct {
-	log                        *slog.Logger
 	mutex                      sync.RWMutex
 	worlds                     map[ps2.WorldId]map[ps2.ZoneId]zoneState
 	eventsInvalidationInterval time.Duration
 	publisher                  publisher.Abstract[publisher.Event]
 }
 
-func New(log *slog.Logger, eventsInvalidationInterval time.Duration, publisher publisher.Abstract[publisher.Event]) *WorldsTracker {
+func New(eventsInvalidationInterval time.Duration, publisher publisher.Abstract[publisher.Event]) *WorldsTracker {
 	worlds := make(map[ps2.WorldId]map[ps2.ZoneId]zoneState, len(ps2.WorldNames))
 	for worldId := range ps2.WorldNames {
 		world := make(map[ps2.ZoneId]zoneState, len(ps2.ZoneNames))
@@ -54,7 +52,6 @@ func New(log *slog.Logger, eventsInvalidationInterval time.Duration, publisher p
 		worlds[worldId] = world
 	}
 	return &WorldsTracker{
-		log:                        log.With(slog.String("component", "worlds_tracker.WorldsTracker")),
 		worlds:                     worlds,
 		eventsInvalidationInterval: eventsInvalidationInterval,
 		publisher:                  publisher,

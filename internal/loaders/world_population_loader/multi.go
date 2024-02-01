@@ -9,6 +9,7 @@ import (
 
 	"github.com/x0k/ps2-spy/internal/lib/containers"
 	"github.com/x0k/ps2-spy/internal/lib/loaders"
+	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/loaders/multi_loaders"
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
@@ -20,13 +21,13 @@ type MultiLoader struct {
 }
 
 func NewMulti(
-	log *slog.Logger,
+	log *logger.Logger,
 	loadersMap map[string]loaders.KeyedLoader[ps2.WorldId, loaders.Loaded[ps2.DetailedWorldPopulation]],
 	priority []string,
 ) *MultiLoader {
 	loadersWithDefault := maps.Clone(loadersMap)
 	fallbackLoader := loaders.NewKeyedFallbackLoader(
-		log.With(slog.String("component", "loaders.world_population_loader.MultiLoader.fallbackLoader")),
+		log.Logger.With(slog.String("component", "loaders.world_population_loader.MultiLoader.fallbackLoader")),
 		loadersMap,
 		priority,
 	)

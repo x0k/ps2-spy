@@ -98,40 +98,41 @@ func startTrackingManager(
 			case e := <-channelCharacterSaved:
 				tm, ok := tms[e.Platform]
 				if !ok {
-					log.Warn("unknown platform: %s", slog.String("platform", string(e.Platform)))
+					log.Warn(ctx, "unknown platform: %s", slog.String("platform", string(e.Platform)))
 					continue
 				}
 				tm.TrackCharacter(e.CharacterId)
 			case e := <-channelCharacterDeleted:
 				tm, ok := tms[e.Platform]
 				if !ok {
-					log.Warn("unknown platform", slog.String("platform", string(e.Platform)))
+					log.Warn(ctx, "unknown platform", slog.String("platform", string(e.Platform)))
 					continue
 				}
 				tm.UntrackCharacter(e.CharacterId)
 			case e := <-outfitMemberSaved:
 				tm, ok := tms[e.Platform]
 				if !ok {
-					log.Warn("unknown platform", slog.String("platform", string(e.Platform)))
+					log.Warn(ctx, "unknown platform", slog.String("platform", string(e.Platform)))
 					continue
 				}
 				tm.TrackOutfitMember(e.CharacterId, e.OutfitId)
 			case e := <-outfitMemberDeleted:
 				tm, ok := tms[e.Platform]
 				if !ok {
-					log.Warn("unknown platform", slog.String("platform", string(e.Platform)))
+					log.Warn(ctx, "unknown platform", slog.String("platform", string(e.Platform)))
 					continue
 				}
 				tm.UntrackOutfitMember(e.CharacterId, e.OutfitId)
 			case e := <-channelOutfitSaved:
 				tm, ok := tms[e.Platform]
 				if !ok {
-					log.Warn("unknown platform", slog.String("platform", string(e.Platform)))
+					log.Warn(ctx, "unknown platform", slog.String("platform", string(e.Platform)))
 					continue
 				}
 				err := tm.TrackOutfit(ctx, e.OutfitId)
 				if err != nil {
 					log.Error(
+						ctx,
 						"failed to track outfit",
 						slog.String("platform", string(e.Platform)),
 						slog.String("outfit_id", string(e.OutfitId)),
@@ -141,12 +142,13 @@ func startTrackingManager(
 			case e := <-channelOutfitDeleted:
 				tm, ok := tms[e.Platform]
 				if !ok {
-					log.Warn("unknown platform", slog.String("platform", string(e.Platform)))
+					log.Warn(ctx, "unknown platform", slog.String("platform", string(e.Platform)))
 					continue
 				}
 				err := tm.UntrackOutfit(ctx, e.OutfitId)
 				if err != nil {
 					log.Error(
+						ctx,
 						"failed to untrack outfit",
 						slog.String("platform", string(e.Platform)),
 						slog.String("outfit_id", string(e.OutfitId)),

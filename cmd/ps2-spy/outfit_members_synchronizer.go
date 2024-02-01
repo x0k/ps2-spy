@@ -109,7 +109,7 @@ func startOutfitMembersSynchronizers(
 			case saved := <-channelOutfitSaved:
 				os, ok := oss[saved.Platform]
 				if !ok {
-					log.Warn("platform not found", slog.String("platform", string(saved.Platform)))
+					log.Warn(ctx, "platform not found", slog.String("platform", string(saved.Platform)))
 					continue
 				}
 				os.SyncOutfit(ctx, wg, saved.OutfitId)

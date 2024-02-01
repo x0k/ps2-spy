@@ -127,8 +127,8 @@ func start(ctx context.Context, cfg *config.Config) error {
 	saerroClient.Start(ctx, wg)
 	ps2alertsClient := ps2alerts.NewClient("https://api.ps2alerts.com", httpClient)
 	ps2alertsClient.Start(ctx, wg)
-	censusClient := census2.NewClient(log, "https://census.daybreakgames.com", cfg.CensusServiceId, httpClient)
-	sanctuaryClient := census2.NewClient(log, "https://census.lithafalcon.cc", cfg.CensusServiceId, httpClient)
+	censusClient := census2.NewClient(log.Logger, "https://census.daybreakgames.com", cfg.CensusServiceId, httpClient)
+	sanctuaryClient := census2.NewClient(log.Logger, "https://census.lithafalcon.cc", cfg.CensusServiceId, httpClient)
 
 	// TODO: Use MultiKeyedCache
 	pcCharactersLoader := characters_loader.NewCensus(log, censusClient, platforms.PC)
