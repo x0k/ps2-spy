@@ -129,10 +129,11 @@ func startNewCharactersTracker(
 	worldIds []ps2.WorldId,
 	characterLoader loaders.KeyedLoader[ps2.CharacterId, ps2.Character],
 	ps2EventsPublisher *publisher.Publisher,
+	charactersTrackerPublisher *publisher.Publisher,
 ) (*characters_tracker.CharactersTracker, error) {
 	const op = "startNewCharactersTracker"
 	log := infra.OpLogger(ctx, op)
-	charactersTracker := characters_tracker.New(log, worldIds, characterLoader)
+	charactersTracker := characters_tracker.New(log, worldIds, characterLoader, charactersTrackerPublisher)
 	return charactersTracker, startCharactersTracker(
 		ctx,
 		charactersTracker,

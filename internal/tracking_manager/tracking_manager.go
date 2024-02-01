@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/x0k/ps2-spy/internal/characters_tracker"
 	"github.com/x0k/ps2-spy/internal/infra"
-	ps2events "github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
 	"github.com/x0k/ps2-spy/internal/lib/loaders"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/meta"
@@ -179,10 +179,10 @@ func (tm *TrackingManager) channelIdsForOutfit(ctx context.Context, outfitId ps2
 func (tm *TrackingManager) ChannelIds(ctx context.Context, event any) ([]meta.ChannelId, error) {
 	const op = "TrackingManager.ChannelIds"
 	switch e := event.(type) {
-	case ps2events.PlayerLogin:
-		return tm.channelIdsForCharacter(ctx, ps2.CharacterId(e.CharacterID))
-	case ps2events.PlayerLogout:
-		return tm.channelIdsForCharacter(ctx, ps2.CharacterId(e.CharacterID))
+	case characters_tracker.PlayerLogin:
+		return tm.channelIdsForCharacter(ctx, e.CharacterId)
+	case characters_tracker.PlayerLogout:
+		return tm.channelIdsForCharacter(ctx, e.CharacterId)
 	case outfit_members_saver.OutfitMembersUpdate:
 		return tm.channelIdsForOutfit(ctx, e.OutfitId)
 	case worlds_tracker.FacilityControl:

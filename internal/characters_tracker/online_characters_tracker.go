@@ -6,38 +6,50 @@ import (
 )
 
 type onlineCharactersTracker struct {
-	onlineCharacters map[ps2.OutfitId]map[ps2.CharacterId]ps2.Character
-	characterOutfits map[ps2.CharacterId]ps2.OutfitId
+	onlineCharactersByOutfit map[ps2.OutfitId]map[ps2.CharacterId]ps2.Character
+	characterOutfitMap       map[ps2.CharacterId]ps2.OutfitId
 }
 
 func newOnlineCharactersTracker() onlineCharactersTracker {
 	return onlineCharactersTracker{
-		onlineCharacters: make(map[ps2.OutfitId]map[ps2.CharacterId]ps2.Character),
-		characterOutfits: make(map[ps2.CharacterId]ps2.OutfitId),
+		onlineCharactersByOutfit: make(map[ps2.OutfitId]map[ps2.CharacterId]ps2.Character),
+		characterOutfitMap:       make(map[ps2.CharacterId]ps2.OutfitId),
 	}
 }
 
-func (o *onlineCharactersTracker) HandleLogin(char ps2.Character) {
-	outfit, ok := o.onlineCharacters[char.OutfitId]
+// Returns `true` if character was added.
+func (o *onlineCharactersTracker) HandleLogin(char ps2.Character) bool {
+	oldOutfitId, isOldOutfitExists := o.characterOutfitMap[char.Id]
+	if isOldOutfitExists {
+		if oldOutfitId == char.OutfitId {
+			return false
+		}
+		delete(o.onlineCharactersByOutfit[oldOutfitId], char.Id)
+	}
+	outfit, ok := o.onlineCharactersByOutfit[char.OutfitId]
 	if !ok {
 		outfit = make(map[ps2.CharacterId]ps2.Character)
-		o.onlineCharacters[char.OutfitId] = outfit
+		o.onlineCharactersByOutfit[char.OutfitId] = outfit
 	}
 	outfit[char.Id] = char
-	o.characterOutfits[char.Id] = char.OutfitId
+	o.characterOutfitMap[char.Id] = char.OutfitId
+	return !isOldOutfitExists
 }
 
-func (o *onlineCharactersTracker) HandleInactive(charId ps2.CharacterId) {
-	if outfitId, ok := o.characterOutfits[charId]; ok {
-		delete(o.characterOutfits, charId)
-		delete(o.onlineCharacters[outfitId], charId)
+// Returns `true` if character was deleted.
+func (o *onlineCharactersTracker) HandleInactive(charId ps2.CharacterId) bool {
+	if outfitId, ok := o.characterOutfitMap[charId]; ok {
+		delete(o.characterOutfitMap, charId)
+		delete(o.onlineCharactersByOutfit[outfitId], charId)
+		return true
 	}
+	return false
 }
 
 func (o *onlineCharactersTracker) TrackableOnlineEntities(settings meta.SubscriptionSettings) meta.TrackableEntities[map[ps2.OutfitId][]ps2.Character, []ps2.Character] {
 	outfits := make(map[ps2.OutfitId][]ps2.Character, len(settings.Outfits))
 	for _, outfitId := range settings.Outfits {
-		if characters, ok := o.onlineCharacters[outfitId]; ok {
+		if characters, ok := o.onlineCharactersByOutfit[outfitId]; ok {
 			chars := make([]ps2.Character, 0, len(characters))
 			for _, char := range characters {
 				chars = append(chars, char)
@@ -47,8 +59,8 @@ func (o *onlineCharactersTracker) TrackableOnlineEntities(settings meta.Subscrip
 	}
 	characters := make([]ps2.Character, 0, len(settings.Characters))
 	for _, charId := range settings.Characters {
-		if outfitId, ok := o.characterOutfits[charId]; ok {
-			characters = append(characters, o.onlineCharacters[outfitId][charId])
+		if outfitId, ok := o.characterOutfitMap[charId]; ok {
+			characters = append(characters, o.onlineCharactersByOutfit[outfitId][charId])
 		}
 	}
 	return meta.TrackableEntities[map[ps2.OutfitId][]ps2.Character, []ps2.Character]{
