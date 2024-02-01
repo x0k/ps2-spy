@@ -143,29 +143,35 @@ func start(ctx context.Context, cfg *config.Config) error {
 	ps4usBatchedCharacterLoader := character_loader.NewBatch(ps4usCharactersLoader, 10*time.Second)
 	ps4usBatchedCharacterLoader.Start(ctx, wg)
 
+	pcCharactersTrackerPublisher := publisher.New(characters_tracker.CastHandler)
 	pcCharactersTracker, err := startNewCharactersTracker(
 		ctx,
 		ps2.PcPlatformWorldIds,
 		pcBatchedCharacterLoader,
 		pcPs2EventsPublisher,
+		pcCharactersTrackerPublisher,
 	)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
+	ps4euCharactersTrackerPublisher := publisher.New(characters_tracker.CastHandler)
 	ps4euCharactersTracker, err := startNewCharactersTracker(
 		ctx,
 		ps2.Ps4euPlatformWorldIds,
 		ps4euBatchedCharacterLoader,
 		ps4euPs2EventsPublisher,
+		ps4euCharactersTrackerPublisher,
 	)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
+	ps4usCharactersTrackerPublisher := publisher.New(characters_tracker.CastHandler)
 	ps4usCharactersTracker, err := startNewCharactersTracker(
 		ctx,
 		ps2.Ps4usPlatformWorldIds,
 		ps4usBatchedCharacterLoader,
 		ps4usPs2EventsPublisher,
+		ps4usCharactersTrackerPublisher,
 	)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
@@ -391,7 +397,7 @@ func start(ctx context.Context, cfg *config.Config) error {
 		botConfig,
 		event_tracking_channels_loader.New(pcTrackingManager),
 		bot.NewEventHandlers(
-			pcPs2EventsPublisher,
+			pcCharactersTrackerPublisher,
 			pcOutfitMembersSaverPublisher,
 			pcWorldsTrackerPublisher,
 			pcBatchedCharacterLoader,
@@ -401,7 +407,7 @@ func start(ctx context.Context, cfg *config.Config) error {
 		),
 		event_tracking_channels_loader.New(ps4euTrackingManager),
 		bot.NewEventHandlers(
-			ps4euPs2EventsPublisher,
+			ps4euCharactersTrackerPublisher,
 			ps4euOutfitMembersSaverPublisher,
 			ps4euWorldsTrackerPublisher,
 			ps4euBatchedCharacterLoader,
@@ -411,7 +417,7 @@ func start(ctx context.Context, cfg *config.Config) error {
 		),
 		event_tracking_channels_loader.New(ps4usTrackingManager),
 		bot.NewEventHandlers(
-			ps4usPs2EventsPublisher,
+			ps4usCharactersTrackerPublisher,
 			ps4usOutfitMembersSaverPublisher,
 			ps4usWorldsTrackerPublisher,
 			ps4usBatchedCharacterLoader,

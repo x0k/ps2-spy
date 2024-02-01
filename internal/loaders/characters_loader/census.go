@@ -61,13 +61,13 @@ func (l *CensusLoader) toUrl(charIds []census2.Str) string {
 	return l.client.ToURL(l.query)
 }
 
-func (l *CensusLoader) Load(ctx context.Context, charIds []ps2.CharacterId) (map[ps2.CharacterId]ps2.Character, error) {
+func (l *CensusLoader) load(ctx context.Context, charIds []ps2.CharacterId) ([]collections.CharacterItem, error) {
 	strCharIds := make([]census2.Str, len(charIds))
 	for i, charId := range charIds {
 		strCharIds[i] = census2.Str(charId)
 	}
 	url := l.toUrl(strCharIds)
-	chars, err := l.retryableCharactersLoader.Run(
+	return l.retryableCharactersLoader.Run(
 		ctx,
 		url,
 		while.ErrorIsHere,
@@ -79,20 +79,43 @@ func (l *CensusLoader) Load(ctx context.Context, charIds []ps2.CharacterId) (map
 			slog.String("url", url),
 		),
 	)
+}
+
+func (l *CensusLoader) makeCharacter(char collections.CharacterItem) ps2.Character {
+	return ps2.Character{
+		Id:        ps2.CharacterId(char.CharacterId),
+		FactionId: factions.Id(char.FactionId),
+		Name:      char.Name.First,
+		OutfitId:  ps2.OutfitId(char.OutfitMemberExtended.OutfitId),
+		OutfitTag: char.OutfitMemberExtended.Alias,
+		WorldId:   ps2.WorldId(char.CharactersWorld.WorldId),
+		Platform:  l.platform,
+	}
+}
+
+func (l *CensusLoader) Load(ctx context.Context, charIds []ps2.CharacterId) (map[ps2.CharacterId]ps2.Character, error) {
+	chars, err := l.load(ctx, charIds)
 	if err != nil {
 		return nil, err
 	}
-	m := make(map[ps2.CharacterId]ps2.Character, len(chars))
+	m := make(map[ps2.CharacterId]ps2.Character, len(charIds))
 	for _, char := range chars {
-		cId := ps2.CharacterId(char.CharacterId)
-		m[cId] = ps2.Character{
-			Id:        cId,
-			FactionId: factions.Id(char.FactionId),
-			Name:      char.Name.First,
-			OutfitId:  ps2.OutfitId(char.OutfitMemberExtended.OutfitId),
-			OutfitTag: char.OutfitMemberExtended.Alias,
-			WorldId:   ps2.WorldId(char.CharactersWorld.WorldId),
-			Platform:  l.platform,
+		m[ps2.CharacterId(char.CharacterId)] = l.makeCharacter(char)
+	}
+	// If there are missing characters, then load them directly,
+	// otherwise they will be skipped again.
+	diff := len(charIds) - len(chars)
+	if diff > 0 && len(chars) > 0 {
+		missingCharIds := make([]ps2.CharacterId, 0, diff)
+		for _, charId := range charIds {
+			if _, ok := m[charId]; !ok {
+				missingCharIds = append(missingCharIds, charId)
+			}
+		}
+		if chars, err := l.load(ctx, missingCharIds); err == nil && len(chars) == 1 {
+			for _, char := range chars {
+				m[ps2.CharacterId(char.CharacterId)] = l.makeCharacter(char)
+			}
 		}
 	}
 	return m, nil
