@@ -7,6 +7,7 @@ import (
 
 	"github.com/x0k/ps2-spy/internal/lib/census2"
 	collections "github.com/x0k/ps2-spy/internal/lib/census2/collections/ps2"
+	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/retryable"
 	"github.com/x0k/ps2-spy/internal/lib/retryable/perform"
 	"github.com/x0k/ps2-spy/internal/lib/retryable/while"
@@ -16,7 +17,7 @@ import (
 )
 
 type CensusLoader struct {
-	log                       *slog.Logger
+	log                       *logger.Logger
 	client                    *census2.Client
 	operand                   census2.Ptr[census2.List[census2.Str]]
 	queryMu                   sync.Mutex
@@ -25,7 +26,7 @@ type CensusLoader struct {
 	retryableCharactersLoader *retryable.WithArg[string, []collections.CharacterItem]
 }
 
-func NewCensus(log *slog.Logger, client *census2.Client, platform platforms.Platform) *CensusLoader {
+func NewCensus(log *logger.Logger, client *census2.Client, platform platforms.Platform) *CensusLoader {
 	operand := census2.NewPtr(census2.StrList())
 	return &CensusLoader{
 		log: log.With(
@@ -71,8 +72,9 @@ func (l *CensusLoader) load(ctx context.Context, charIds []ps2.CharacterId) ([]c
 		url,
 		while.ErrorIsHere,
 		while.RetryCountIsLessThan(3),
-		perform.Debug(
-			l.log,
+		perform.Log(
+			l.log.Logger,
+			slog.LevelDebug,
 			"[ERROR] failed to load characters, retrying",
 			slog.String("url", url),
 		),

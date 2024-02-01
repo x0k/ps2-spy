@@ -8,23 +8,28 @@ import (
 	"strings"
 	"time"
 
-	"github.com/x0k/ps2-spy/internal/infra"
 	"github.com/x0k/ps2-spy/internal/lib/census2"
 	collections "github.com/x0k/ps2-spy/internal/lib/census2/collections/ps2"
 	"github.com/x0k/ps2-spy/internal/lib/loaders"
+	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
 type CensusLoader struct {
+	log      *logger.Logger
 	client   *census2.Client
 	pcUrl    string
 	ps4euUrl string
 	ps4usUrl string
 }
 
-func NewCensus(client *census2.Client) *CensusLoader {
+func NewCensus(log *logger.Logger, client *census2.Client) *CensusLoader {
 	return &CensusLoader{
+		log: log.With(
+			slog.String("component", "loaders.alerts_loader.CensusLoader"),
+			slog.String("census_endpoint", client.Endpoint()),
+		),
 		client: client,
 		pcUrl: client.ToURL(census2.NewQueryMustBeValid(census2.GetQuery, census2.Ps2_v2_NS, collections.WorldEvent).
 			Where(census2.Cond("type").Equals(census2.Str("METAGAME"))).
@@ -43,7 +48,6 @@ func NewCensus(client *census2.Client) *CensusLoader {
 
 func (l *CensusLoader) load(ctx context.Context, url string) (ps2.Alerts, error) {
 	const op = "loaders.alerts_loader.CensusLoader.load"
-	log := infra.OpLogger(ctx, op).With(slog.String("census_endpoint", l.client.Endpoint()))
 	events, err := census2.ExecutePreparedAndDecode[collections.MetagameWorldEventItem](ctx, l.client, collections.WorldEvent, url)
 	if err != nil {
 		return ps2.Alerts{}, err
@@ -64,7 +68,7 @@ func (l *CensusLoader) load(ctx context.Context, url string) (ps2.Alerts, error)
 		zoneId := ps2.ZoneId(e.ZoneId)
 		timesamp, err := strconv.ParseInt(e.Timestamp, 10, 64)
 		if err != nil {
-			log.Error("failed to parse timestamp", slog.String("timestamp", e.Timestamp), sl.Err(err))
+			l.log.Error(ctx, "failed to parse timestamp", slog.String("timestamp", e.Timestamp), sl.Err(err))
 			continue
 		}
 		eventInfo, ok := ps2.MetagameEventsMap[eventId]

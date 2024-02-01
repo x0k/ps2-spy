@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/x0k/ps2-spy/internal/infra"
 	"github.com/x0k/ps2-spy/internal/lib/loaders"
+	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/meta"
 	"github.com/x0k/ps2-spy/internal/ps2/platforms"
@@ -40,25 +40,19 @@ type Error struct {
 
 type InteractionHandler func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) error
 
-func (handler InteractionHandler) Run(ctx context.Context, timeout time.Duration, s *discordgo.Session, i *discordgo.InteractionCreate) {
+func (handler InteractionHandler) Run(
+	ctx context.Context,
+	log *logger.Logger,
+	timeout time.Duration,
+	s *discordgo.Session,
+	i *discordgo.InteractionCreate,
+) {
 	const op = "bot.handlers.InteractionHandler.Run"
-	var userId string
-	if i.Member != nil {
-		userId = i.Member.User.ID
-	} else {
-		userId = i.User.ID
-	}
-	log := infra.Logger(ctx).With(
-		infra.Op(op),
-		slog.String("guild_id", i.GuildID),
-		slog.String("channel_id", i.ChannelID),
-		slog.String("user_id", userId),
-	)
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
-	log.Debug("run handler")
+	log.Debug(ctx, "run handler")
 	if err := handler(ctx, s, i); err != nil {
-		log.Error("error handling", sl.Err(err))
+		log.Error(ctx, "error handling", sl.Err(err))
 	}
 }
 
@@ -107,36 +101,38 @@ type Ps2EventHandlerConfig struct {
 	EventTrackingChannelsLoader loaders.QueriedLoader[any, []meta.ChannelId]
 }
 
-type Ps2EventHandler[E any] func(ctx context.Context, channelIds []meta.ChannelId, cfg *Ps2EventHandlerConfig, event E) error
+type Ps2EventHandler[E any] func(ctx context.Context, log *logger.Logger, channelIds []meta.ChannelId, cfg *Ps2EventHandlerConfig, event E) error
 
-func (handler Ps2EventHandler[E]) Run(ctx context.Context, cfg *Ps2EventHandlerConfig, event E) {
+func (handler Ps2EventHandler[E]) Run(
+	ctx context.Context,
+	log *logger.Logger,
+	cfg *Ps2EventHandlerConfig,
+	event E,
+) {
 	const op = "bot.handlers.Ps2EventHandler.Run"
-	log := infra.Logger(ctx).With(infra.Op(op), slog.Any("event", event))
 	ctx, cancel := context.WithTimeout(ctx, cfg.Timeout)
 	defer cancel()
 	channels, err := cfg.EventTrackingChannelsLoader.Load(ctx, event)
 	if err != nil {
-		log.Error("error loading tracking channels", sl.Err(err))
+		log.Error(ctx, "error loading tracking channels", sl.Err(err))
 		return
 	}
 	if len(channels) == 0 {
 		return
 	}
-	log.Debug("run handler for", slog.Int("channelsCount", len(channels)))
-	if err := handler(ctx, channels, cfg, event); err != nil {
-		log.Error("error handling", sl.Err(err))
+	log.Debug(ctx, "run handler for", slog.Int("channelsCount", len(channels)))
+	if err := handler(ctx, log, channels, cfg, event); err != nil {
+		log.Error(ctx, "error handling", sl.Err(err))
 	}
 }
 
 // TODO: publisher.Event instead of `any` to use event.Type()
 //       in error message.
-//       Currently it is too painful cause `ps2events` uses
-//		 pointer receivers in `Type()` method.
+//       It is possible now.
 
 func SimpleMessage[E any](handle func(ctx context.Context, cfg *Ps2EventHandlerConfig, event E) (string, *Error)) Ps2EventHandler[E] {
-	return func(ctx context.Context, channelIds []meta.ChannelId, cfg *Ps2EventHandlerConfig, event E) error {
+	return func(ctx context.Context, log *logger.Logger, channelIds []meta.ChannelId, cfg *Ps2EventHandlerConfig, event E) error {
 		const op = "bot.handlers.SimpleMessage"
-		log := infra.OpLogger(ctx, op)
 		msg, err := handle(ctx, cfg, event)
 		if err != nil {
 			msg = err.Msg
@@ -171,6 +167,7 @@ func SimpleMessage[E any](handle func(ctx context.Context, cfg *Ps2EventHandlerC
 				_, err := cfg.Session.ChannelMessageSend(string(channelId), toSend)
 				if err != nil {
 					log.Error(
+						ctx,
 						"error sending message",
 						slog.String("channel", string(channelId)),
 						sl.Err(err),

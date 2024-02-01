@@ -9,8 +9,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/x0k/ps2-spy/internal/infra"
 	"github.com/x0k/ps2-spy/internal/lib/loaders"
+	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/lib/retryable"
 	"github.com/x0k/ps2-spy/internal/lib/retryable/perform"
@@ -23,6 +23,7 @@ type Saver interface {
 }
 
 type OutfitMembersSynchronizer struct {
+	log *logger.Logger
 	// Loaders and saver are platform specific
 	censusMembersLoader    loaders.KeyedLoader[ps2.OutfitId, []ps2.CharacterId]
 	outfitSyncAtLoader     loaders.KeyedLoader[ps2.OutfitId, time.Time]
@@ -34,6 +35,7 @@ type OutfitMembersSynchronizer struct {
 }
 
 func New(
+	log *logger.Logger,
 	trackableOutfitsLoader loaders.Loader[[]ps2.OutfitId],
 	outfitSyncAtLoader loaders.KeyedLoader[ps2.OutfitId, time.Time],
 	censusMembersLoader loaders.KeyedLoader[ps2.OutfitId, []ps2.CharacterId],
@@ -41,6 +43,7 @@ func New(
 	refreshInterval time.Duration,
 ) *OutfitMembersSynchronizer {
 	return &OutfitMembersSynchronizer{
+		log:                    log.With(slog.String("component", "outfit_members_synchronizer.OutfitMembersSynchronizer")),
 		trackableOutfitsLoader: trackableOutfitsLoader,
 		outfitSyncAtLoader:     outfitSyncAtLoader,
 		censusMembersLoader:    censusMembersLoader,
@@ -50,17 +53,20 @@ func New(
 }
 
 func (s *OutfitMembersSynchronizer) saveMembersTask(ctx context.Context, wg *sync.WaitGroup, outfitId ps2.OutfitId, members []ps2.CharacterId) {
-	const op = "outfit_members_synchronizer.OutfitMembersSynchronizer.saveMembersTask"
-	log := infra.OpLogger(ctx, op).With(slog.String("outfit_id", string(outfitId)), slog.Int("members_count", len(members)))
 	defer wg.Done()
 	if err := s.membersSaver.Save(ctx, outfitId, members); err != nil {
-		log.Error("failed to save members", sl.Err(err))
+		s.log.Error(
+			ctx,
+			"failed to save members",
+			slog.String("outfit_id", string(outfitId)),
+			slog.Int("members_count", len(members)),
+			sl.Err(err),
+		)
 	}
 }
 
 func (s *OutfitMembersSynchronizer) SyncOutfit(ctx context.Context, wg *sync.WaitGroup, outfitId ps2.OutfitId) {
-	const op = "outfit_members_synchronizer.OutfitMembersSynchronizer.SyncOutfit"
-	log := infra.Logger(ctx).With(infra.Op(op), slog.String("outfit_id", string(outfitId)))
+	log := s.log.With(slog.String("outfit_id", string(outfitId)))
 	err := retryable.New(func(ctx context.Context) error {
 		syncAt, err := s.outfitSyncAtLoader.Load(ctx, outfitId)
 		isNotFound := errors.Is(err, loaders.ErrNotFound)
@@ -68,11 +74,11 @@ func (s *OutfitMembersSynchronizer) SyncOutfit(ctx context.Context, wg *sync.Wai
 			return fmt.Errorf("failed to load last sync time: %w", err)
 		}
 		if !isNotFound && time.Since(syncAt) < s.refreshInterval {
-			log.Debug("skipping sync")
+			log.Debug(ctx, "skipping sync")
 			return nil
 		}
 		members, err := s.censusMembersLoader.Load(ctx, outfitId)
-		log.Debug("synchronizing", slog.Int("members", len(members)))
+		log.Debug(ctx, "synchronizing", slog.Int("members", len(members)))
 		if err != nil {
 			return fmt.Errorf("failed to load members from census: %w", err)
 		}
@@ -83,20 +89,18 @@ func (s *OutfitMembersSynchronizer) SyncOutfit(ctx context.Context, wg *sync.Wai
 		ctx,
 		while.ErrorIsHere,
 		while.RetryCountIsLessThan(3),
-		perform.Debug(log, "retry to load members"),
+		perform.Log(s.log.Logger, slog.LevelDebug, "members sync failed, retrying"),
 	)
 	if err != nil {
-		log.Error("failed to sync", sl.Err(err))
+		log.Error(ctx, "failed to sync", sl.Err(err))
 	}
 }
 
 func (s *OutfitMembersSynchronizer) sync(ctx context.Context, wg *sync.WaitGroup) {
-	const op = "outfit_members_synchronizer.OutfitMembersSynchronizer.sync"
-	log := infra.OpLogger(ctx, op)
 	outfits, err := s.trackableOutfitsLoader.Load(ctx)
-	log.Info("synchronizing", slog.Int("outfits", len(outfits)))
+	s.log.Info(ctx, "synchronizing", slog.Int("outfits", len(outfits)))
 	if err != nil {
-		log.Error("failed to load trackable outfits", sl.Err(err))
+		s.log.Error(ctx, "failed to load trackable outfits", sl.Err(err))
 		return
 	}
 	for _, outfit := range outfits {
@@ -110,11 +114,9 @@ func (s *OutfitMembersSynchronizer) sync(ctx context.Context, wg *sync.WaitGroup
 }
 
 func (s *OutfitMembersSynchronizer) Start(ctx context.Context, wg *sync.WaitGroup) {
-	const op = "outfit_members_synchronizer.OutfitMembersSynchronizer.Start"
 	if s.started.Swap(true) {
 		return
 	}
-	infra.OpLogger(ctx, op).Info("starting")
 	wg.Add(1)
 	go func() {
 		defer wg.Done()

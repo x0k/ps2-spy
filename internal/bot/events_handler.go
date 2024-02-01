@@ -13,6 +13,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/characters_tracker"
 	"github.com/x0k/ps2-spy/internal/infra"
 	"github.com/x0k/ps2-spy/internal/lib/loaders"
+	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/publisher"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/savers/outfit_members_saver"
@@ -20,6 +21,7 @@ import (
 )
 
 type EventHandlers struct {
+	log                         *logger.Logger
 	charactersTrackerPublisher  *publisher.Publisher
 	playerLoginHandler          handlers.Ps2EventHandler[characters_tracker.PlayerLogin]
 	playerLogoutHandler         handlers.Ps2EventHandler[characters_tracker.PlayerLogout]
@@ -76,15 +78,15 @@ func (eh *EventHandlers) Start(
 				return
 			case e := <-playerLogin:
 				// TODO: add handlers to wait group
-				go eh.playerLoginHandler.Run(ctx, eventHandlersConfig, e)
+				go eh.playerLoginHandler.Run(ctx, eh.log, eventHandlersConfig, e)
 			case e := <-playerLogout:
-				go eh.playerLogoutHandler.Run(ctx, eventHandlersConfig, e)
+				go eh.playerLogoutHandler.Run(ctx, eh.log, eventHandlersConfig, e)
 			case e := <-outfitMembersUpdate:
-				go eh.outfitMembersUpdateHandler.Run(ctx, eventHandlersConfig, e)
+				go eh.outfitMembersUpdateHandler.Run(ctx, eh.log, eventHandlersConfig, e)
 			case e := <-facilityControl:
-				go eh.facilityControlHandler.Run(ctx, eventHandlersConfig, e)
+				go eh.facilityControlHandler.Run(ctx, eh.log, eventHandlersConfig, e)
 			case e := <-facilityLoss:
-				go eh.facilityLossHandler.Run(ctx, eventHandlersConfig, e)
+				go eh.facilityLossHandler.Run(ctx, eh.log, eventHandlersConfig, e)
 			}
 		}
 	}()
@@ -92,6 +94,7 @@ func (eh *EventHandlers) Start(
 }
 
 func NewEventHandlers(
+	log *logger.Logger,
 	charactersTrackerPublisher *publisher.Publisher,
 	outfitMembersSaverPublisher *publisher.Publisher,
 	worldsTrackerPublisher *publisher.Publisher,
@@ -101,12 +104,14 @@ func NewEventHandlers(
 	charactersLoader loaders.QueriedLoader[[]ps2.CharacterId, map[ps2.CharacterId]ps2.Character],
 ) EventHandlers {
 	return EventHandlers{
+		log:                         log,
 		charactersTrackerPublisher:  charactersTrackerPublisher,
 		outfitMembersSaverPublisher: outfitMembersSaverPublisher,
 		worldsTrackerPublisher:      worldsTrackerPublisher,
 		playerLoginHandler:          login_event_handler.New(characterLoader),
 		playerLogoutHandler:         logout_event_handler.New(characterLoader),
 		outfitMembersUpdateHandler: outfit_members_update_event_handler.New(
+			log,
 			outfitLoader,
 			charactersLoader,
 		),

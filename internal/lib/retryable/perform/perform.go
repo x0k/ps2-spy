@@ -1,6 +1,7 @@
 package perform
 
 import (
+	"context"
 	"log/slog"
 	"time"
 
@@ -8,15 +9,20 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/retryable"
 )
 
-func Debug(log *slog.Logger, msg string, args ...any) func(r *retryable.Retryable) {
-	return func(r *retryable.Retryable) {
-		log.Debug(msg, append(args, sl.Err(r.Err), slog.Duration("suspense_duration", r.SuspenseDuration))...)
+func Log(log *slog.Logger, lvl slog.Level, msg string, args ...slog.Attr) func(context.Context, *retryable.Retryable) {
+	return func(ctx context.Context, r *retryable.Retryable) {
+		log.LogAttrs(
+			ctx,
+			lvl,
+			msg,
+			append(args, sl.Err(r.Err), slog.Duration("suspense_duration", r.SuspenseDuration))...,
+		)
 	}
 }
 
-func RecoverSuspenseDuration(recovered time.Duration) func(r *retryable.Retryable) {
+func RecoverSuspenseDuration(recovered time.Duration) func(context.Context, *retryable.Retryable) {
 	startTime := time.Now()
-	return func(r *retryable.Retryable) {
+	return func(_ context.Context, r *retryable.Retryable) {
 		now := time.Now()
 		if now.Sub(startTime) > r.SuspenseDuration {
 			r.SuspenseDuration = recovered

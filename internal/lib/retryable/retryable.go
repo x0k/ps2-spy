@@ -21,12 +21,12 @@ func New(action func(ctx context.Context) error) *Retryable {
 
 func (r Retryable) Run(ctx context.Context, options ...any) error {
 	conditions := make([]func(*Retryable) bool, 0, len(options))
-	beforeSuspense := make([]func(*Retryable), 0, len(options))
+	beforeSuspense := make([]func(context.Context, *Retryable), 0, len(options))
 	for _, option := range options {
 		switch v := option.(type) {
 		case func(*Retryable) bool:
 			conditions = append(conditions, v)
-		case func(*Retryable):
+		case func(context.Context, *Retryable):
 			beforeSuspense = append(beforeSuspense, v)
 		}
 	}
@@ -43,7 +43,7 @@ func (r Retryable) Run(ctx context.Context, options ...any) error {
 			}
 		}
 		for _, beforeSuspense := range beforeSuspense {
-			beforeSuspense(&r)
+			beforeSuspense(ctx, &r)
 		}
 		t.Reset(r.SuspenseDuration)
 		select {

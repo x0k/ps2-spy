@@ -18,15 +18,15 @@ type statement interface {
 	Close() error
 }
 
-type simpleStatement struct {
+type staticStatement struct {
 	*sql.Stmt
 }
 
-func (s simpleStatement) UseTx(ctx context.Context, tx *sql.Tx) statement {
-	return simpleStatement{tx.StmtContext(ctx, s.Stmt)}
+func (s staticStatement) UseTx(ctx context.Context, tx *sql.Tx) statement {
+	return staticStatement{tx.StmtContext(ctx, s.Stmt)}
 }
 
-func (s simpleStatement) QueryRowContext(ctx context.Context, args ...any) row {
+func (s staticStatement) QueryRowContext(ctx context.Context, args ...any) row {
 	return s.Stmt.QueryRowContext(ctx, args...)
 }
 
