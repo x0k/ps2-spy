@@ -172,6 +172,10 @@ func (w *WorldsTracker) HandleFacilityControl(ctx context.Context, event ps2even
 	if err != nil {
 		return fmt.Errorf("%s failed facility state update: %w", op, err)
 	}
+	// Event duplication
+	if oldOutfitId == ps2.OutfitId(event.OutfitID) && oldOutfitId != "" {
+		return nil
+	}
 	err = w.publisher.Publish(FacilityControl{
 		FacilityControl: event,
 		OldOutfitId:     oldOutfitId,
