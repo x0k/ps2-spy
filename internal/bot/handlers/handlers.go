@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -11,6 +12,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/loaders"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
+	"github.com/x0k/ps2-spy/internal/lib/publisher"
 	"github.com/x0k/ps2-spy/internal/meta"
 	"github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
@@ -101,7 +103,7 @@ type Ps2EventHandlerConfig struct {
 	EventTrackingChannelsLoader loaders.QueriedLoader[any, []meta.ChannelId]
 }
 
-type Ps2EventHandler[E any] func(ctx context.Context, log *logger.Logger, channelIds []meta.ChannelId, cfg *Ps2EventHandlerConfig, event E) error
+type Ps2EventHandler[E publisher.Event] func(ctx context.Context, log *logger.Logger, channelIds []meta.ChannelId, cfg *Ps2EventHandlerConfig, event E) error
 
 func (handler Ps2EventHandler[E]) Run(
 	ctx context.Context,
@@ -126,11 +128,7 @@ func (handler Ps2EventHandler[E]) Run(
 	}
 }
 
-// TODO: publisher.Event instead of `any` to use event.Type()
-//       in error message.
-//       It is possible now.
-
-func SimpleMessage[E any](handle func(ctx context.Context, cfg *Ps2EventHandlerConfig, event E) (string, *Error)) Ps2EventHandler[E] {
+func SimpleMessage[E publisher.Event](handle func(ctx context.Context, cfg *Ps2EventHandlerConfig, event E) (string, *Error)) Ps2EventHandler[E] {
 	return func(ctx context.Context, log *logger.Logger, channelIds []meta.ChannelId, cfg *Ps2EventHandlerConfig, event E) error {
 		const op = "bot.handlers.SimpleMessage"
 		msg, err := handle(ctx, cfg, event)
@@ -140,7 +138,7 @@ func SimpleMessage[E any](handle func(ctx context.Context, cfg *Ps2EventHandlerC
 		if msg == "" {
 			return nil
 		}
-		errors := make([]string, 0, len(channelIds))
+		errs := make([]error, 0, len(channelIds))
 		for len(msg) > 0 {
 			toSend := msg
 			if len(toSend) > 4000 {
@@ -172,15 +170,15 @@ func SimpleMessage[E any](handle func(ctx context.Context, cfg *Ps2EventHandlerC
 						slog.String("channel", string(channelId)),
 						sl.Err(err),
 					)
-					errors = append(errors, err.Error())
+					errs = append(errs, err)
 				}
 			}
 		}
 		if err != nil {
-			return fmt.Errorf("%s handling event: %w", op, err.Err)
+			return fmt.Errorf("%s handling event %q: %w", op, event.Type(), err.Err)
 		}
-		if len(errors) > 0 {
-			return fmt.Errorf("%s sending messages: %s", op, strings.Join(errors, ", "))
+		if len(errs) > 0 {
+			return fmt.Errorf("%s sending messages: %s", op, errors.Join(errs...))
 		}
 		return nil
 	}
