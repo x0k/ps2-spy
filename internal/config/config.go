@@ -30,10 +30,9 @@ type StorageConfig struct {
 	Path string `yaml:"path" env:"STORAGE_PATH" env-required:"true"`
 }
 
-const PROFILER_DISABLED = "disabled"
-
 type ProfilerConfig struct {
-	Address string `yaml:"address" env:"PROFILER_ADDRESS" env-default:"disabled"`
+	Enabled bool   `yaml:"enabled" env:"PROFILER_ENABLED"`
+	Address string `yaml:"address" env:"PROFILER_ADDRESS"`
 }
 
 type Config struct {
@@ -46,7 +45,7 @@ type Config struct {
 	HttpClientTimeout       time.Duration  `yaml:"http_client_timeout" env:"HTTP_CLIENT_TIMEOUT" env-default:"12s"`
 	CensusServiceId         string         `yaml:"census_service_id" env:"CENSUS_SERVICE_ID" env-required:"true"`
 	CensusStreamingEndpoint string         `yaml:"census_streaming_endpoint" env:"CENSUS_STREAMING_ENDPOINT" env-default:"wss://push.planetside2.com/streaming"`
-	RemoveCommands          bool           `yaml:"remove_commands" env:"REMOVE_COMMANDS" env-default:"false"`
+	RemoveCommands          bool           `yaml:"remove_commands" env:"REMOVE_COMMANDS"`
 	Profiler                ProfilerConfig `yaml:"profiler"`
 }
 

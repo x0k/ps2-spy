@@ -11,7 +11,7 @@ import (
 )
 
 func startProfiler(ctx context.Context, log *logger.Logger, cfg config.ProfilerConfig) {
-	if cfg.Address == config.PROFILER_DISABLED {
+	if !cfg.Enabled {
 		log.Info(ctx, "profiler disabled")
 		return
 	}
