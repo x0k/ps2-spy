@@ -13,15 +13,15 @@ var ErrUnknownMessageHandler = fmt.Errorf("unknown message handler")
 var ErrUnsupportedMessageService = fmt.Errorf("unsupported message service")
 
 type Publisher struct {
-	publisher                publisher.Abstract[publisher.Event]
+	publisher.Publisher[publisher.Event]
 	msgBaseBuff              core.MessageBase
 	subscriptionSettingsBuff *SubscriptionSettings
 	buffers                  map[string]any
 }
 
-func NewPublisher(publisher publisher.Abstract[publisher.Event]) *Publisher {
+func NewPublisher(publisher publisher.Publisher[publisher.Event]) *Publisher {
 	return &Publisher{
-		publisher:                publisher,
+		Publisher:                publisher,
 		subscriptionSettingsBuff: &SubscriptionSettings{},
 		buffers: map[string]any{
 			ServiceStateChangedType: &ServiceStateChanged{},
@@ -38,7 +38,7 @@ func (p *Publisher) Publish(msg map[string]any) error {
 		if err != nil {
 			return fmt.Errorf("%q decoding: %w", SubscriptionSignatureField, err)
 		}
-		return p.publisher.Publish(p.subscriptionSettingsBuff)
+		return p.Publisher.Publish(p.subscriptionSettingsBuff)
 	}
 	// Ignore help message
 	if _, ok := msg[HelpSignatureField]; ok {
@@ -57,8 +57,12 @@ func (p *Publisher) Publish(msg map[string]any) error {
 			return fmt.Errorf("%q decoding: %w", p.msgBaseBuff.Type, err)
 		}
 		if e, ok := buff.(publisher.Event); ok {
-			return p.publisher.Publish(e)
+			return p.Publisher.Publish(e)
 		}
 	}
 	return fmt.Errorf("%s: %w", p.msgBaseBuff.Type, ErrUnknownMessageType)
+}
+
+func (p *Publisher) AddServiceMessageHandler(c chan<- ServiceMessage[map[string]any]) func() {
+	return p.AddHandler(serviceMessageHandler(c))
 }

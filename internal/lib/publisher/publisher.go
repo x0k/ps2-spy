@@ -15,25 +15,32 @@ type Event interface {
 	Type() string
 }
 
-type Handler interface {
+type Handler[E Event] interface {
 	Type() string
-	Handle(event Event)
+	Handle(event E)
 }
 
-type Publisher struct {
-	handlersMu  sync.RWMutex
-	handlers    map[string][]Handler
-	castHandler func(any) Handler
+type SubscriptionsManager[E Event] interface {
+	AddHandler(h Handler[E]) func()
 }
 
-func New(castHandler func(any) Handler) *Publisher {
-	return &Publisher{
-		handlers:    map[string][]Handler{},
-		castHandler: castHandler,
+type Publisher[E Event] interface {
+	Abstract[E]
+	SubscriptionsManager[E]
+}
+
+type publisher[E Event] struct {
+	handlersMu sync.RWMutex
+	handlers   map[string][]Handler[E]
+}
+
+func New[E Event]() *publisher[E] {
+	return &publisher[E]{
+		handlers: map[string][]Handler[E]{},
 	}
 }
 
-func (p *Publisher) removeHandler(eventType string, h Handler) {
+func (p *publisher[E]) removeHandler(eventType string, h Handler[E]) {
 	p.handlersMu.Lock()
 	defer p.handlersMu.Unlock()
 	for i, v := range p.handlers[eventType] {
@@ -44,7 +51,7 @@ func (p *Publisher) removeHandler(eventType string, h Handler) {
 	}
 }
 
-func (p *Publisher) addHandler(h Handler) func() {
+func (p *publisher[E]) AddHandler(h Handler[E]) func() {
 	p.handlersMu.Lock()
 	defer p.handlersMu.Unlock()
 	p.handlers[h.Type()] = append(p.handlers[h.Type()], h)
@@ -53,15 +60,7 @@ func (p *Publisher) addHandler(h Handler) func() {
 	}
 }
 
-func (p *Publisher) AddHandler(h any) (func(), error) {
-	handler := p.castHandler(h)
-	if handler == nil {
-		return nil, ErrUnknownHandler
-	}
-	return p.addHandler(handler), nil
-}
-
-func (p *Publisher) Publish(event Event) error {
+func (p *publisher[E]) Publish(event E) error {
 	p.handlersMu.RLock()
 	defer p.handlersMu.RUnlock()
 	for _, h := range p.handlers[event.Type()] {

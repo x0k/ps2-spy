@@ -72,36 +72,38 @@ func (h outfitSynchronizedHandler) Handle(e publisher.Event) {
 	h <- e.(OutfitSynchronized)
 }
 
-func CastHandler(handler any) publisher.Handler {
-	switch v := handler.(type) {
-	case chan ChannelOutfitSaved:
-		return channelOutfitSavedHandler(v)
-	case chan<- ChannelOutfitSaved:
-		return channelOutfitSavedHandler(v)
-	case chan ChannelOutfitDeleted:
-		return channelOutfitDeletedHandler(v)
-	case chan<- ChannelOutfitDeleted:
-		return channelOutfitDeletedHandler(v)
-	case chan ChannelCharacterSaved:
-		return channelCharacterSavedHandler(v)
-	case chan<- ChannelCharacterSaved:
-		return channelCharacterSavedHandler(v)
-	case chan ChannelCharacterDeleted:
-		return channelCharacterDeletedHandler(v)
-	case chan<- ChannelCharacterDeleted:
-		return channelCharacterDeletedHandler(v)
-	case chan OutfitMemberSaved:
-		return outfitMemberSavedHandler(v)
-	case chan<- OutfitMemberSaved:
-		return outfitMemberSavedHandler(v)
-	case chan OutfitMemberDeleted:
-		return outfitMemberDeletedHandler(v)
-	case chan<- OutfitMemberDeleted:
-		return outfitMemberDeletedHandler(v)
-	case chan OutfitSynchronized:
-		return outfitSynchronizedHandler(v)
-	case chan<- OutfitSynchronized:
-		return outfitSynchronizedHandler(v)
-	}
-	return nil
+type Publisher struct {
+	publisher.Publisher[publisher.Event]
+}
+
+func NewPublisher(pub publisher.Publisher[publisher.Event]) *Publisher {
+	return &Publisher{pub}
+}
+
+func (p *Publisher) AddChannelOutfitSavedHandler(c chan<- ChannelOutfitSaved) func() {
+	return p.AddHandler(channelOutfitSavedHandler(c))
+}
+
+func (p *Publisher) AddChannelOutfitDeletedHandler(c chan<- ChannelOutfitDeleted) func() {
+	return p.AddHandler(channelOutfitDeletedHandler(c))
+}
+
+func (p *Publisher) AddChannelCharacterSavedHandler(c chan<- ChannelCharacterSaved) func() {
+	return p.AddHandler(channelCharacterSavedHandler(c))
+}
+
+func (p *Publisher) AddChannelCharacterDeletedHandler(c chan<- ChannelCharacterDeleted) func() {
+	return p.AddHandler(channelCharacterDeletedHandler(c))
+}
+
+func (p *Publisher) AddOutfitMemberSavedHandler(c chan<- OutfitMemberSaved) func() {
+	return p.AddHandler(outfitMemberSavedHandler(c))
+}
+
+func (p *Publisher) AddOutfitMemberDeletedHandler(c chan<- OutfitMemberDeleted) func() {
+	return p.AddHandler(outfitMemberDeletedHandler(c))
+}
+
+func (p *Publisher) AddOutfitSynchronizedHandler(c chan<- OutfitSynchronized) func() {
+	return p.AddHandler(outfitSynchronizedHandler(c))
 }

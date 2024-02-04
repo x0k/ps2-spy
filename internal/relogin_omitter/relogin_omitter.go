@@ -18,8 +18,8 @@ import (
 var ErrConvertEvent = fmt.Errorf("failed to convert event")
 
 type ReLoginOmitter struct {
+	publisher.Publisher[publisher.Event]
 	log               *logger.Logger
-	pub               publisher.Abstract[publisher.Event]
 	batchMu           sync.Mutex
 	logoutEventsQueue *containers.ExpirationQueue[ps2.CharacterId]
 	logoutEvents      map[ps2.CharacterId]ps2events.PlayerLogout
@@ -27,10 +27,10 @@ type ReLoginOmitter struct {
 	delayDuration     time.Duration
 }
 
-func New(log *logger.Logger, pub publisher.Abstract[publisher.Event]) *ReLoginOmitter {
+func New(log *logger.Logger, pub publisher.Publisher[publisher.Event]) *ReLoginOmitter {
 	return &ReLoginOmitter{
+		Publisher:         pub,
 		log:               log.With(slog.String("component", "relogin_omitter.ReLoginOmitter")),
-		pub:               pub,
 		logoutEventsQueue: containers.NewExpirationQueue[ps2.CharacterId](),
 		logoutEvents:      make(map[ps2.CharacterId]ps2events.PlayerLogout),
 		flushInterval:     1 * time.Minute,
@@ -63,7 +63,7 @@ func (r *ReLoginOmitter) flushLogOutEvents(ctx context.Context, now time.Time) {
 	defer r.batchMu.Unlock()
 	count := r.logoutEventsQueue.RemoveExpired(now.Add(-r.delayDuration), func(charId ps2.CharacterId) {
 		if e, ok := r.logoutEvents[charId]; ok {
-			r.pub.Publish(&e)
+			r.Publisher.Publish(&e)
 			delete(r.logoutEvents, charId)
 		}
 	})
@@ -116,5 +116,5 @@ func (r *ReLoginOmitter) Publish(event publisher.Event) error {
 			return ErrConvertEvent
 		}
 	}
-	return r.pub.Publish(event)
+	return r.Publisher.Publish(event)
 }

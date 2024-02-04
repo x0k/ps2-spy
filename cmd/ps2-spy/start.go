@@ -62,7 +62,7 @@ func start(ctx context.Context, log *logger.Logger, cfg *config.Config) error {
 	const op = "start"
 	startProfiler(ctx, log, cfg.Profiler)
 	startMetrics(ctx, log, cfg.Metrics)
-	storageEventsPublisher := publisher.New(storage.CastHandler)
+	storageEventsPublisher := storage.NewPublisher(publisher.New[publisher.Event]())
 	sqlStorage, err := startStorage(ctx, log, cfg.Storage, storageEventsPublisher)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
@@ -145,7 +145,7 @@ func start(ctx context.Context, log *logger.Logger, cfg *config.Config) error {
 	ps4usBatchedCharacterLoader := character_loader.NewBatch(log.With(slog.String("platform", string(platforms.PS4_US))), ps4usCharactersLoader, 10*time.Second)
 	ps4usBatchedCharacterLoader.Start(ctx, wg)
 
-	pcCharactersTrackerPublisher := publisher.New(characters_tracker.CastHandler)
+	pcCharactersTrackerPublisher := characters_tracker.NewPublisher(publisher.New[publisher.Event]())
 	pcCharactersTracker, err := startNewCharactersTracker(
 		ctx,
 		log,
@@ -157,7 +157,7 @@ func start(ctx context.Context, log *logger.Logger, cfg *config.Config) error {
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
-	ps4euCharactersTrackerPublisher := publisher.New(characters_tracker.CastHandler)
+	ps4euCharactersTrackerPublisher := characters_tracker.NewPublisher(publisher.New[publisher.Event]())
 	ps4euCharactersTracker, err := startNewCharactersTracker(
 		ctx,
 		log,
@@ -169,7 +169,7 @@ func start(ctx context.Context, log *logger.Logger, cfg *config.Config) error {
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
-	ps4usCharactersTrackerPublisher := publisher.New(characters_tracker.CastHandler)
+	ps4usCharactersTrackerPublisher := characters_tracker.NewPublisher(publisher.New[publisher.Event]())
 	ps4usCharactersTracker, err := startNewCharactersTracker(
 		ctx,
 		log,
@@ -187,17 +187,17 @@ func start(ctx context.Context, log *logger.Logger, cfg *config.Config) error {
 		platforms.PS4_US: ps4usCharactersTracker,
 	}
 
-	pcWorldsTrackerPublisher := publisher.New(worlds_tracker.CastHandler)
+	pcWorldsTrackerPublisher := worlds_tracker.NewPublisher(publisher.New[publisher.Event]())
 	pcWorldsTracker, err := startNewWorldsTracker(ctx, log, pcPs2EventsPublisher, pcWorldsTrackerPublisher)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
-	ps4euWorldsTrackerPublisher := publisher.New(worlds_tracker.CastHandler)
+	ps4euWorldsTrackerPublisher := worlds_tracker.NewPublisher(publisher.New[publisher.Event]())
 	ps4euWorldsTracker, err := startNewWorldsTracker(ctx, log, ps4euPs2EventsPublisher, ps4euWorldsTrackerPublisher)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
-	ps4usWorldsTrackerPublisher := publisher.New(worlds_tracker.CastHandler)
+	ps4usWorldsTrackerPublisher := worlds_tracker.NewPublisher(publisher.New[publisher.Event]())
 	ps4usWorldsTracker, err := startNewWorldsTracker(ctx, log, ps4usPs2EventsPublisher, ps4usWorldsTrackerPublisher)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
@@ -293,16 +293,16 @@ func start(ctx context.Context, log *logger.Logger, cfg *config.Config) error {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
-	pcOutfitMembersSaverPublisher := publisher.New(outfit_members_saver.CastHandler)
-	ps4euOutfitMembersSaverPublisher := publisher.New(outfit_members_saver.CastHandler)
-	ps4usOutfitMembersSaverPublisher := publisher.New(outfit_members_saver.CastHandler)
+	pcOutfitMembersSaverPublisher := outfit_members_saver.NewPublisher(publisher.New[publisher.Event]())
+	ps4euOutfitMembersSaverPublisher := outfit_members_saver.NewPublisher(publisher.New[publisher.Event]())
+	ps4usOutfitMembersSaverPublisher := outfit_members_saver.NewPublisher(publisher.New[publisher.Event]())
 	err = startOutfitMembersSynchronizers(
 		ctx,
 		log,
 		sqlStorage,
 		censusClient,
 		storageEventsPublisher,
-		map[platforms.Platform]publisher.Abstract[publisher.Event]{
+		map[platforms.Platform]*outfit_members_saver.Publisher{
 			platforms.PC:     pcOutfitMembersSaverPublisher,
 			platforms.PS4_EU: ps4euOutfitMembersSaverPublisher,
 			platforms.PS4_US: ps4usOutfitMembersSaverPublisher,

@@ -49,25 +49,3 @@ func (h subscriptionSettingsHandler) Type() string {
 func (h subscriptionSettingsHandler) Handle(msg publisher.Event) {
 	h <- *(msg.(*SubscriptionSettings))
 }
-
-func CastHandler(handler any) publisher.Handler {
-	switch v := handler.(type) {
-	case chan ServiceStateChanged:
-		return serviceStateChangedHandler(v)
-	case chan<- ServiceStateChanged:
-		return serviceStateChangedHandler(v)
-	case chan Heartbeat:
-		return heartbeatHandler(v)
-	case chan<- Heartbeat:
-		return heartbeatHandler(v)
-	case chan ServiceMessage[map[string]any]:
-		return serviceMessageHandler(v)
-	case chan<- ServiceMessage[map[string]any]:
-		return serviceMessageHandler(v)
-	case chan SubscriptionSettings:
-		return subscriptionSettingsHandler(v)
-	case chan<- SubscriptionSettings:
-		return subscriptionSettingsHandler(v)
-	}
-	return nil
-}

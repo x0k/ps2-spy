@@ -22,16 +22,20 @@ func (h playerLogoutHandler) Handle(e publisher.Event) {
 	h <- e.(PlayerLogout)
 }
 
-func CastHandler(handler any) publisher.Handler {
-	switch v := handler.(type) {
-	case chan PlayerLogin:
-		return playerLoginHandler(v)
-	case chan<- PlayerLogin:
-		return playerLoginHandler(v)
-	case chan PlayerLogout:
-		return playerLogoutHandler(v)
-	case chan<- PlayerLogout:
-		return playerLogoutHandler(v)
+type Publisher struct {
+	publisher.Publisher[publisher.Event]
+}
+
+func NewPublisher(pub publisher.Publisher[publisher.Event]) *Publisher {
+	return &Publisher{
+		Publisher: pub,
 	}
-	return nil
+}
+
+func (p *Publisher) AddPlayerLoginHandler(c chan<- PlayerLogin) func() {
+	return p.AddHandler(playerLoginHandler(c))
+}
+
+func (p *Publisher) AddPlayerLogoutHandler(c chan<- PlayerLogout) func() {
+	return p.AddHandler(playerLogoutHandler(c))
 }

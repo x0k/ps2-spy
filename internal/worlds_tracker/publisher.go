@@ -22,16 +22,20 @@ func (h facilityLossHandler) Handle(e publisher.Event) {
 	h <- e.(FacilityLoss)
 }
 
-func CastHandler(handler any) publisher.Handler {
-	switch v := handler.(type) {
-	case chan FacilityControl:
-		return facilityControlHandler(v)
-	case chan<- FacilityControl:
-		return facilityControlHandler(v)
-	case chan FacilityLoss:
-		return facilityLossHandler(v)
-	case chan<- FacilityLoss:
-		return facilityLossHandler(v)
+type Publisher struct {
+	publisher.Publisher[publisher.Event]
+}
+
+func NewPublisher(pub publisher.Publisher[publisher.Event]) *Publisher {
+	return &Publisher{
+		Publisher: pub,
 	}
-	return nil
+}
+
+func (p *Publisher) AddFacilityControlHandler(c chan<- FacilityControl) func() {
+	return p.AddHandler(facilityControlHandler(c))
+}
+
+func (p *Publisher) AddFacilityLossHandler(c chan<- FacilityLoss) func() {
+	return p.AddHandler(facilityLossHandler(c))
 }

@@ -9,7 +9,6 @@ import (
 	"github.com/x0k/ps2-spy/internal/infra"
 	"github.com/x0k/ps2-spy/internal/lib/census2"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
-	"github.com/x0k/ps2-spy/internal/lib/publisher"
 	"github.com/x0k/ps2-spy/internal/loaders/outfit_member_ids_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/outfit_sync_at_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/trackable_outfits_loader"
@@ -26,7 +25,7 @@ func newOutfitMembersSynchronizer(
 	log *logger.Logger,
 	storage *sqlite.Storage,
 	censusClient *census2.Client,
-	membersSaverPublisher publisher.Abstract[publisher.Event],
+	membersSaverPublisher *outfit_members_saver.Publisher,
 	platform platforms.Platform,
 ) *outfit_members_synchronizer.OutfitMembersSynchronizer {
 	const op = "newOutfitMembersSynchronizer"
@@ -50,8 +49,8 @@ func startOutfitMembersSynchronizers(
 	log *logger.Logger,
 	sqlStorage *sqlite.Storage,
 	censusClient *census2.Client,
-	publisher *publisher.Publisher,
-	outfitMembersSaverPublishers map[platforms.Platform]publisher.Abstract[publisher.Event],
+	publisher *storage.Publisher,
+	outfitMembersSaverPublishers map[platforms.Platform]*outfit_members_saver.Publisher,
 ) error {
 	const op = "startOutfitMembersSynchronizer"
 	pcOutfitMembersSaverPublisher, ok := outfitMembersSaverPublishers[platforms.PC]
@@ -100,10 +99,7 @@ func startOutfitMembersSynchronizers(
 		os.Start(ctx, wg)
 	}
 	channelOutfitSaved := make(chan storage.ChannelOutfitSaved)
-	outfitSavedUnSub, err := publisher.AddHandler(channelOutfitSaved)
-	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
-	}
+	outfitSavedUnSub := publisher.AddChannelOutfitSavedHandler(channelOutfitSaved)
 	wg.Add(1)
 	go func() {
 		defer wg.Done()

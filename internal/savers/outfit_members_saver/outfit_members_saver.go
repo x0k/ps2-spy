@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/x0k/ps2-spy/internal/lib/diff"
-	"github.com/x0k/ps2-spy/internal/lib/publisher"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/ps2/platforms"
 	"github.com/x0k/ps2-spy/internal/storage/sqlite"
@@ -13,11 +12,11 @@ import (
 
 type OutfitMembersSaver struct {
 	storage  *sqlite.Storage
-	pub      publisher.Abstract[publisher.Event]
+	pub      *Publisher
 	platform platforms.Platform
 }
 
-func New(storage *sqlite.Storage, pub publisher.Abstract[publisher.Event], platform platforms.Platform) *OutfitMembersSaver {
+func New(storage *sqlite.Storage, pub *Publisher, platform platforms.Platform) *OutfitMembersSaver {
 	return &OutfitMembersSaver{
 		storage:  storage,
 		pub:      pub,

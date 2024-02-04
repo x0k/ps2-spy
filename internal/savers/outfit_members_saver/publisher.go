@@ -22,16 +22,16 @@ func (h outfitMembersUpdateHandler) Handle(e publisher.Event) {
 	h <- e.(OutfitMembersUpdate)
 }
 
-func CastHandler(h any) publisher.Handler {
-	switch v := h.(type) {
-	case chan OutfitMembersInit:
-		return outfitMembersInitHandler(v)
-	case chan<- OutfitMembersInit:
-		return outfitMembersInitHandler(v)
-	case chan OutfitMembersUpdate:
-		return outfitMembersUpdateHandler(v)
-	case chan<- OutfitMembersUpdate:
-		return outfitMembersUpdateHandler(v)
+type Publisher struct {
+	publisher.Publisher[publisher.Event]
+}
+
+func NewPublisher(pub publisher.Publisher[publisher.Event]) *Publisher {
+	return &Publisher{
+		Publisher: pub,
 	}
-	return nil
+}
+
+func (p *Publisher) AddOutfitMembersUpdateHandler(c chan<- OutfitMembersUpdate) func() {
+	return p.AddHandler(outfitMembersUpdateHandler(c))
 }
