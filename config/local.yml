@@ -8,4 +8,4 @@ profiler:
   address: 0.0.0.0:6060
 metrics:
   enabled: true
-  address: 0.0.0.0:9090
+  address: 0.0.0.0:9099
