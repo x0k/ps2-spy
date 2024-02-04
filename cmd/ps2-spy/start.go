@@ -61,6 +61,7 @@ import (
 func start(ctx context.Context, log *logger.Logger, cfg *config.Config) error {
 	const op = "start"
 	startProfiler(ctx, log, cfg.Profiler)
+	startMetrics(ctx, log, cfg.Metrics)
 	storageEventsPublisher := publisher.New(storage.CastHandler)
 	sqlStorage, err := startStorage(ctx, log, cfg.Storage, storageEventsPublisher)
 	if err != nil {

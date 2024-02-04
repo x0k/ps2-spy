@@ -35,6 +35,11 @@ type ProfilerConfig struct {
 	Address string `yaml:"address" env:"PROFILER_ADDRESS"`
 }
 
+type MetricsConfig struct {
+	Enabled bool   `yaml:"enabled" env:"METRICS_ENABLED"`
+	Address string `yaml:"address" env:"METRICS_ADDRESS"`
+}
+
 type Config struct {
 	BotName                 string         `yaml:"bot_name" env:"BOT_NAME" env-default:"PS 2 Spy"`
 	Logger                  LoggerConfig   `yaml:"logger"`
@@ -47,18 +52,21 @@ type Config struct {
 	CensusStreamingEndpoint string         `yaml:"census_streaming_endpoint" env:"CENSUS_STREAMING_ENDPOINT" env-default:"wss://push.planetside2.com/streaming"`
 	RemoveCommands          bool           `yaml:"remove_commands" env:"REMOVE_COMMANDS"`
 	Profiler                ProfilerConfig `yaml:"profiler"`
+	Metrics                 MetricsConfig  `yaml:"metrics"`
 }
 
 func MustLoad(configPath string) *Config {
 	cfg := &Config{}
-	var err error
+	var cfgErr error
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		err = cleanenv.ReadEnv(cfg)
+		cfgErr = cleanenv.ReadEnv(cfg)
+	} else if err == nil {
+		cfgErr = cleanenv.ReadConfig(configPath, cfg)
 	} else {
-		err = cleanenv.ReadConfig(configPath, cfg)
+		cfgErr = err
 	}
-	if err != nil {
-		log.Fatalf("cannot read config: %s", err)
+	if cfgErr != nil {
+		log.Fatalf("cannot read config: %s", cfgErr)
 	}
 	return cfg
 }
