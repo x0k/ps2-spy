@@ -28,7 +28,6 @@ func newOutfitMembersSynchronizer(
 	membersSaverPublisher *outfit_members_saver.Publisher,
 	platform platforms.Platform,
 ) *outfit_members_synchronizer.OutfitMembersSynchronizer {
-	const op = "newOutfitMembersSynchronizer"
 	trackableOutfitsLoader := trackable_outfits_loader.NewStorage(storage, platform)
 	outfitSyncAtLoader := outfit_sync_at_loader.NewStorage(storage, platform)
 	ns := platforms.PlatformNamespace(platform)

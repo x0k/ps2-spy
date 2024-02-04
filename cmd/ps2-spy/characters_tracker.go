@@ -15,8 +15,7 @@ func startCharactersTracker(
 	ctx context.Context,
 	charactersTracker *characters_tracker.CharactersTracker,
 	ps2EventsPublisher *ps2events.Publisher,
-) error {
-	const op = "startCharactersTracker"
+) {
 	charactersTracker.Start(ctx)
 	achievementEarned := make(chan ps2events.AchievementEarned)
 	achievementUnSub := ps2EventsPublisher.AddAchievementEarnedHandler(achievementEarned)
@@ -87,7 +86,6 @@ func startCharactersTracker(
 			}
 		}
 	}()
-	return nil
 }
 
 func startNewCharactersTracker(
@@ -97,11 +95,12 @@ func startNewCharactersTracker(
 	characterLoader loaders.KeyedLoader[ps2.CharacterId, ps2.Character],
 	ps2EventsPublisher *ps2events.Publisher,
 	charactersTrackerPublisher *characters_tracker.Publisher,
-) (*characters_tracker.CharactersTracker, error) {
+) *characters_tracker.CharactersTracker {
 	charactersTracker := characters_tracker.New(log, worldIds, characterLoader, charactersTrackerPublisher)
-	return charactersTracker, startCharactersTracker(
+	startCharactersTracker(
 		ctx,
 		charactersTracker,
 		ps2EventsPublisher,
 	)
+	return charactersTracker
 }

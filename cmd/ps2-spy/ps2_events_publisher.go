@@ -17,6 +17,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/retryable"
 	"github.com/x0k/ps2-spy/internal/lib/retryable/perform"
 	"github.com/x0k/ps2-spy/internal/lib/retryable/while"
+	"github.com/x0k/ps2-spy/internal/metrics"
 	"github.com/x0k/ps2-spy/internal/ps2/platforms"
 	"github.com/x0k/ps2-spy/internal/relogin_omitter"
 )
@@ -24,16 +25,22 @@ import (
 func startNewPs2EventsPublisher(
 	ctx context.Context,
 	logger *logger.Logger,
+	mt metrics.Metrics,
 	cfg *config.Config,
 	platform platforms.Platform,
 	settings ps2commands.SubscriptionSettings,
 ) (*ps2events.Publisher, error) {
-	const op = "startNewPs2EventsPublisher"
 	log := logger.With(
 		slog.String("platform", string(platform)),
 	)
 	// Handle messages
-	messagesPublisher := ps2messages.NewPublisher(publisher.New[publisher.Event]())
+	messagesPublisher := ps2messages.NewPublisher(
+		mt.InstrumentPlatformPublisher(
+			metrics.Ps2MessagesPlatformPublisher,
+			platform,
+			publisher.New[publisher.Event](),
+		),
+	)
 	client := streaming.NewClient(
 		log.Logger,
 		cfg.CensusStreamingEndpoint,
@@ -64,7 +71,13 @@ func startNewPs2EventsPublisher(
 	}()
 	// Handle events
 
-	reLoginOmitter := relogin_omitter.New(log, publisher.New[publisher.Event]())
+	reLoginOmitter := relogin_omitter.New(log,
+		mt.InstrumentPlatformPublisher(
+			metrics.Ps2EventsPlatformPublisher,
+			platform,
+			publisher.New[publisher.Event](),
+		),
+	)
 	reLoginOmitter.Start(ctx)
 	eventsPublisher := ps2events.NewPublisher(reLoginOmitter)
 	serviceMsg := make(chan ps2messages.ServiceMessage[map[string]any])

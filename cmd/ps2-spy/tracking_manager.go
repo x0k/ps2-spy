@@ -47,8 +47,7 @@ func startTrackingManager(
 	log *logger.Logger,
 	tms map[platforms.Platform]*tracking_manager.TrackingManager,
 	publisher *storage.Publisher,
-) error {
-	const op = "startTrackingManager"
+) {
 	wg := infra.Wg(ctx)
 	for _, tm := range tms {
 		tm.Start(ctx, wg)
@@ -141,5 +140,4 @@ func startTrackingManager(
 			}
 		}
 	}()
-	return nil
 }

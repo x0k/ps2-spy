@@ -16,8 +16,7 @@ func startWorldsTracker(
 	log *logger.Logger,
 	worldsTracker *worlds_tracker.WorldsTracker,
 	ps2EventsPublisher *ps2events.Publisher,
-) error {
-	const op = "startWorldsTracker"
+) {
 	worldsTracker.Start(ctx)
 	metagameEvent := make(chan ps2events.MetagameEvent)
 	metagameEventUnSub := ps2EventsPublisher.AddMetagameEventHandler(metagameEvent)
@@ -51,7 +50,6 @@ func startWorldsTracker(
 			}
 		}
 	}()
-	return nil
 }
 
 func startNewWorldsTracker(
@@ -59,7 +57,8 @@ func startNewWorldsTracker(
 	log *logger.Logger,
 	ps2EventsPublisher *ps2events.Publisher,
 	worldsTrackerPublisher *worlds_tracker.Publisher,
-) (*worlds_tracker.WorldsTracker, error) {
+) *worlds_tracker.WorldsTracker {
 	worldsTracker := worlds_tracker.New(5*time.Minute, worldsTrackerPublisher)
-	return worldsTracker, startWorldsTracker(ctx, log, worldsTracker, ps2EventsPublisher)
+	startWorldsTracker(ctx, log, worldsTracker, ps2EventsPublisher)
+	return worldsTracker
 }
