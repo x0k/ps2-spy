@@ -20,10 +20,10 @@ test:
     go test ./...
 
 up:
-    docker-compose -f local/docker-compose.yml up -d
+    USER_ID="$(id -u)" docker-compose -f monitoring/docker-compose.yml up -d
 
 down:
-    docker-compose -f local/docker-compose.yml down
+    docker-compose -f monitoring/docker-compose.yml down
 
 o:
     go run tools/explorer/*.go --resource outfit --query $1 --output tmp

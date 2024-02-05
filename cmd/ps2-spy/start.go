@@ -118,6 +118,10 @@ func start(ctx context.Context, log *logger.Logger, cfg *config.Config) error {
 
 	httpClient := &http.Client{
 		Timeout: cfg.HttpClientTimeout,
+		Transport: mt.InstrumentTransport(
+			metrics.DefaultTransportName,
+			http.DefaultTransport,
+		),
 	}
 	// loaders
 	wg := infra.Wg(ctx)
@@ -137,28 +141,46 @@ func start(ctx context.Context, log *logger.Logger, cfg *config.Config) error {
 	sanctuaryClient := census2.NewClient(log.Logger, "https://census.lithafalcon.cc", cfg.CensusServiceId, httpClient)
 
 	// TODO: Lookup in storage (stale data) after fail?
-	pcCharactersLoader := characters_loader.NewCensus(log, censusClient, platforms.PC)
+	pcCharactersLoader := metrics.InstrumentMultiKeyedLoaderWithSubjectsCounter(
+		mt.PlatformLoaderSubjectsCounterMetric(metrics.CharactersPlatformLoaderName, platforms.PC),
+		characters_loader.NewCensus(log, censusClient, platforms.PC),
+	)
 	// TODO: apply instrumentation to monitor size of batch
 	pcBatchedCharacterLoader := loaders.NewBatchLoader(pcCharactersLoader, 10*time.Second)
 	pcBatchedCharacterLoader.Start(ctx, wg)
 	pcCachedAndBatchedCharacterLoader := loaders.NewCachedQueriedLoader(
-		pcBatchedCharacterLoader,
+		metrics.InstrumentQueriedLoaderCounterMetric(
+			mt.PlatformLoadsCounterMetric(metrics.CharacterPlatformLoaderName, platforms.PC),
+			pcBatchedCharacterLoader,
+		),
 		containers.NewExpiableLRU[ps2.CharacterId, ps2.Character](0, 24*time.Hour),
 	)
 
-	ps4euCharactersLoader := characters_loader.NewCensus(log, censusClient, platforms.PS4_EU)
+	ps4euCharactersLoader := metrics.InstrumentMultiKeyedLoaderWithSubjectsCounter(
+		mt.PlatformLoaderSubjectsCounterMetric(metrics.CharactersPlatformLoaderName, platforms.PS4_EU),
+		characters_loader.NewCensus(log, censusClient, platforms.PS4_EU),
+	)
 	ps4euBatchedCharacterLoader := loaders.NewBatchLoader(ps4euCharactersLoader, 10*time.Second)
 	ps4euBatchedCharacterLoader.Start(ctx, wg)
 	ps4euCachedAndBatchedCharacterLoader := loaders.NewCachedQueriedLoader(
-		ps4euBatchedCharacterLoader,
+		metrics.InstrumentQueriedLoaderCounterMetric(
+			mt.PlatformLoadsCounterMetric(metrics.CharacterPlatformLoaderName, platforms.PS4_EU),
+			ps4euBatchedCharacterLoader,
+		),
 		containers.NewExpiableLRU[ps2.CharacterId, ps2.Character](0, 24*time.Hour),
 	)
 
-	ps4usCharactersLoader := characters_loader.NewCensus(log, censusClient, platforms.PS4_US)
+	ps4usCharactersLoader := metrics.InstrumentMultiKeyedLoaderWithSubjectsCounter(
+		mt.PlatformLoaderSubjectsCounterMetric(metrics.CharactersPlatformLoaderName, platforms.PS4_US),
+		characters_loader.NewCensus(log, censusClient, platforms.PS4_US),
+	)
 	ps4usBatchedCharacterLoader := loaders.NewBatchLoader(ps4usCharactersLoader, 10*time.Second)
 	ps4usBatchedCharacterLoader.Start(ctx, wg)
 	ps4usCachedAndBatchedCharacterLoader := loaders.NewCachedQueriedLoader(
-		ps4usBatchedCharacterLoader,
+		metrics.InstrumentQueriedLoaderCounterMetric(
+			mt.PlatformLoadsCounterMetric(metrics.CharacterPlatformLoaderName, platforms.PS4_US),
+			ps4usBatchedCharacterLoader,
+		),
 		containers.NewExpiableLRU[ps2.CharacterId, ps2.Character](0, 24*time.Hour),
 	)
 

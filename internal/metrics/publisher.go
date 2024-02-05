@@ -12,11 +12,18 @@ type instrumentedPublisher[E publisher.Event] struct {
 
 func (p *instrumentedPublisher[E]) Publish(event E) error {
 	err := p.Publisher.Publish(event)
-	p.counter.With(prometheus.Labels{"event_type": event.Type()}).Inc()
+	labels := prometheus.Labels{
+		"event_type": event.Type(),
+		"status":     string(SuccessStatus),
+	}
+	if err != nil {
+		labels["status"] = string(ErrorStatus)
+	}
+	p.counter.With(labels).Inc()
 	return err
 }
 
-func instrumentPublisherCounter[E publisher.Event](counter *prometheus.CounterVec, publisher publisher.Publisher[E]) publisher.Publisher[E] {
+func instrumentPublisher[E publisher.Event](counter *prometheus.CounterVec, publisher publisher.Publisher[E]) publisher.Publisher[E] {
 	return &instrumentedPublisher[E]{
 		Publisher: publisher,
 		counter:   counter,

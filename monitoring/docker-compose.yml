@@ -10,12 +10,10 @@ services:
   grafana:
     image: grafana/grafana:10.2.3
     network_mode: host
+    user: ${USER_ID}
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
     volumes:
       - ./grafana/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yaml
-      - grafana:/var/lib/grafana
-
-volumes:
-  grafana:
+      - ./grafana-data:/var/lib/grafana
