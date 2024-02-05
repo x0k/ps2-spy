@@ -51,14 +51,23 @@ const (
 	DefaultTransportName TransportName = "default"
 )
 
+type PlatformQueueName string
+
+const (
+	ActivePlayersQueueName PlatformQueueName = "active_players"
+	LogoutEventsQueueName  PlatformQueueName = "logout_events"
+)
+
 type Metrics interface {
 	PlatformLoadsCounterMetric(PlatformLoaderName, platforms.Platform) *prometheus.CounterVec
 	PlatformLoaderInFlightMetric(PlatformLoaderName, platforms.Platform) *prometheus.Gauge
-	PlatformLoaderSubjectsCounterMetric(PlatformLoaderName, platforms.Platform) *prometheus.GaugeVec
+	PlatformLoaderSubjectsCounterMetric(PlatformLoaderName, platforms.Platform) *prometheus.CounterVec
 
 	InstrumentPublisher(PublisherName, publisher.Publisher[publisher.Event]) publisher.Publisher[publisher.Event]
 	InstrumentPlatformPublisher(PlatformPublisherName, platforms.Platform, publisher.Publisher[publisher.Event]) publisher.Publisher[publisher.Event]
 	InstrumentTransport(TransportName, http.RoundTripper) http.RoundTripper
+
+	SetPlatformQueueSize(PlatformQueueName, platforms.Platform, int)
 }
 
 type metrics struct {
@@ -68,10 +77,9 @@ type metrics struct {
 	platformEventsCounter   *prometheus.CounterVec
 	platformLoadsCounter    *prometheus.CounterVec
 	platformLoadersInFlight *prometheus.GaugeVec
-	platformLoadersSubjects *prometheus.GaugeVec
+	platformLoadersSubjects *prometheus.CounterVec
 
 	platformQueueSize *prometheus.GaugeVec
-	platformBatchSize *prometheus.GaugeVec
 	platformCacheSize *prometheus.GaugeVec
 }
 
@@ -117,8 +125,8 @@ func New(ns string) *metrics {
 			},
 			[]string{"loader_name", "platform"},
 		),
-		platformLoadersSubjects: prometheus.NewGaugeVec(
-			prometheus.GaugeOpts{
+		platformLoadersSubjects: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
 				Namespace: ns,
 				Name:      "platform_loaders_subjects",
 				Help:      "Platform loaders subjects",
@@ -128,24 +136,16 @@ func New(ns string) *metrics {
 		platformQueueSize: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Namespace: ns,
-				Name:      "queue_size",
-				Help:      "App queue size",
+				Name:      "platform_queue_size",
+				Help:      "Platform queue size",
 			},
 			[]string{"queue_name", "platform"},
-		),
-		platformBatchSize: prometheus.NewGaugeVec(
-			prometheus.GaugeOpts{
-				Namespace: ns,
-				Name:      "batch_size",
-				Help:      "Batch size",
-			},
-			[]string{"batcher_name", "platform"},
 		),
 		platformCacheSize: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Namespace: ns,
-				Name:      "cache_size",
-				Help:      "Cache size",
+				Name:      "platform_cache_size",
+				Help:      "Platform cache size",
 			},
 			[]string{"cache_name", "platform"},
 		),
@@ -163,7 +163,6 @@ func (m *metrics) Register(reg prometheus.Registerer) {
 		m.platformLoadersSubjects,
 
 		m.platformQueueSize,
-		m.platformBatchSize,
 		m.platformCacheSize,
 	)
 }
@@ -227,9 +226,20 @@ func (m *metrics) PlatformLoaderInFlightMetric(
 func (m *metrics) PlatformLoaderSubjectsCounterMetric(
 	name PlatformLoaderName,
 	platform platforms.Platform,
-) *prometheus.GaugeVec {
+) *prometheus.CounterVec {
 	return m.platformLoadersSubjects.MustCurryWith(prometheus.Labels{
 		"loader_name": string(name),
 		"platform":    string(platform),
 	})
+}
+
+func (m *metrics) SetPlatformQueueSize(
+	name PlatformQueueName,
+	platform platforms.Platform,
+	size int,
+) {
+	m.platformQueueSize.With(prometheus.Labels{
+		"queue_name": string(name),
+		"platform":   string(platform),
+	}).Set(float64(size))
 }

@@ -8,7 +8,9 @@ import (
 	ps2events "github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
 	"github.com/x0k/ps2-spy/internal/lib/loaders"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
+	"github.com/x0k/ps2-spy/internal/metrics"
 	"github.com/x0k/ps2-spy/internal/ps2"
+	"github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
 
 func startCharactersTracker(
@@ -91,12 +93,21 @@ func startCharactersTracker(
 func startNewCharactersTracker(
 	ctx context.Context,
 	log *logger.Logger,
+	mt metrics.Metrics,
+	platform platforms.Platform,
 	worldIds []ps2.WorldId,
 	characterLoader loaders.KeyedLoader[ps2.CharacterId, ps2.Character],
 	ps2EventsPublisher *ps2events.Publisher,
 	charactersTrackerPublisher *characters_tracker.Publisher,
 ) *characters_tracker.CharactersTracker {
-	charactersTracker := characters_tracker.New(log, worldIds, characterLoader, charactersTrackerPublisher)
+	charactersTracker := characters_tracker.New(
+		log,
+		platform,
+		worldIds,
+		characterLoader,
+		charactersTrackerPublisher,
+		mt,
+	)
 	startCharactersTracker(
 		ctx,
 		charactersTracker,

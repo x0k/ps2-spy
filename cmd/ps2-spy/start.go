@@ -149,7 +149,7 @@ func start(ctx context.Context, log *logger.Logger, cfg *config.Config) error {
 	pcBatchedCharacterLoader := loaders.NewBatchLoader(pcCharactersLoader, 10*time.Second)
 	pcBatchedCharacterLoader.Start(ctx, wg)
 	pcCachedAndBatchedCharacterLoader := loaders.NewCachedQueriedLoader(
-		metrics.InstrumentQueriedLoaderCounterMetric(
+		metrics.InstrumentQueriedLoaderWithCounterMetric(
 			mt.PlatformLoadsCounterMetric(metrics.CharacterPlatformLoaderName, platforms.PC),
 			pcBatchedCharacterLoader,
 		),
@@ -163,7 +163,7 @@ func start(ctx context.Context, log *logger.Logger, cfg *config.Config) error {
 	ps4euBatchedCharacterLoader := loaders.NewBatchLoader(ps4euCharactersLoader, 10*time.Second)
 	ps4euBatchedCharacterLoader.Start(ctx, wg)
 	ps4euCachedAndBatchedCharacterLoader := loaders.NewCachedQueriedLoader(
-		metrics.InstrumentQueriedLoaderCounterMetric(
+		metrics.InstrumentQueriedLoaderWithCounterMetric(
 			mt.PlatformLoadsCounterMetric(metrics.CharacterPlatformLoaderName, platforms.PS4_EU),
 			ps4euBatchedCharacterLoader,
 		),
@@ -177,7 +177,7 @@ func start(ctx context.Context, log *logger.Logger, cfg *config.Config) error {
 	ps4usBatchedCharacterLoader := loaders.NewBatchLoader(ps4usCharactersLoader, 10*time.Second)
 	ps4usBatchedCharacterLoader.Start(ctx, wg)
 	ps4usCachedAndBatchedCharacterLoader := loaders.NewCachedQueriedLoader(
-		metrics.InstrumentQueriedLoaderCounterMetric(
+		metrics.InstrumentQueriedLoaderWithCounterMetric(
 			mt.PlatformLoadsCounterMetric(metrics.CharacterPlatformLoaderName, platforms.PS4_US),
 			ps4usBatchedCharacterLoader,
 		),
@@ -194,6 +194,8 @@ func start(ctx context.Context, log *logger.Logger, cfg *config.Config) error {
 	pcCharactersTracker := startNewCharactersTracker(
 		ctx,
 		log,
+		mt,
+		platforms.PC,
 		ps2.PcPlatformWorldIds,
 		pcCachedAndBatchedCharacterLoader,
 		pcPs2EventsPublisher,
@@ -210,6 +212,8 @@ func start(ctx context.Context, log *logger.Logger, cfg *config.Config) error {
 	ps4euCharactersTracker := startNewCharactersTracker(
 		ctx,
 		log,
+		mt,
+		platforms.PS4_EU,
 		ps2.Ps4euPlatformWorldIds,
 		ps4euCachedAndBatchedCharacterLoader,
 		ps4euPs2EventsPublisher,
@@ -226,6 +230,8 @@ func start(ctx context.Context, log *logger.Logger, cfg *config.Config) error {
 	ps4usCharactersTracker := startNewCharactersTracker(
 		ctx,
 		log,
+		mt,
+		platforms.PS4_US,
 		ps2.Ps4usPlatformWorldIds,
 		ps4usCachedAndBatchedCharacterLoader,
 		ps4usPs2EventsPublisher,

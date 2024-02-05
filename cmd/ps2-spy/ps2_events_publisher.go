@@ -71,12 +71,15 @@ func startNewPs2EventsPublisher(
 	}()
 	// Handle events
 
-	reLoginOmitter := relogin_omitter.New(log,
+	reLoginOmitter := relogin_omitter.New(
+		log,
+		platform,
 		mt.InstrumentPlatformPublisher(
 			metrics.Ps2EventsPlatformPublisher,
 			platform,
 			publisher.New[publisher.Event](),
 		),
+		mt,
 	)
 	reLoginOmitter.Start(ctx)
 	eventsPublisher := ps2events.NewPublisher(reLoginOmitter)

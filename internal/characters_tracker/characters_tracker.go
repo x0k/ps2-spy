@@ -19,8 +19,10 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/retryable/perform"
 	"github.com/x0k/ps2-spy/internal/lib/retryable/while"
 	"github.com/x0k/ps2-spy/internal/meta"
+	"github.com/x0k/ps2-spy/internal/metrics"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/ps2/factions"
+	"github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
 
 var ErrWorldPopulationTrackerNotFound = fmt.Errorf("world population tracker not found")
@@ -32,6 +34,7 @@ type player struct {
 
 type CharactersTracker struct {
 	log                      *logger.Logger
+	platform                 platforms.Platform
 	mutex                    sync.RWMutex
 	worldPopulationTrackers  map[ps2.WorldId]worldPopulationTracker
 	onlineCharactersTracker  onlineCharactersTracker
@@ -40,13 +43,16 @@ type CharactersTracker struct {
 	inactiveTimeout          time.Duration
 	retryableCharacterLoader *retryable.WithArg[ps2.CharacterId, ps2.Character]
 	publisher                publisher.Abstract[publisher.Event]
+	mt                       metrics.Metrics
 }
 
 func New(
 	log *logger.Logger,
+	platform platforms.Platform,
 	worldIds []ps2.WorldId,
 	characterLoader loaders.KeyedLoader[ps2.CharacterId, ps2.Character],
 	publisher publisher.Abstract[publisher.Event],
+	mt metrics.Metrics,
 ) *CharactersTracker {
 	trackers := make(map[ps2.WorldId]worldPopulationTracker, len(ps2.WorldNames))
 	for _, worldId := range worldIds {
@@ -55,8 +61,9 @@ func New(
 	return &CharactersTracker{
 		log: log.With(
 			slog.String("component", "characters_tracker.CharactersTracker"),
-			slog.String("world_ids", fmt.Sprintf("%v", worldIds)),
+			slog.String("platform", string(platform)),
 		),
+		platform:                platform,
 		worldPopulationTrackers: trackers,
 		onlineCharactersTracker: newOnlineCharactersTracker(),
 		activePlayers:           containers.NewExpirationQueue[player](),
@@ -66,6 +73,7 @@ func New(
 			characterLoader.Load,
 		),
 		publisher: publisher,
+		mt:        mt,
 	}
 }
 
@@ -83,6 +91,11 @@ func (p *CharactersTracker) handleInactive(ctx context.Context, now time.Time) [
 			removedPlayers = append(removedPlayers, pl)
 		}
 	})
+	p.mt.SetPlatformQueueSize(
+		metrics.ActivePlayersQueueName,
+		p.platform,
+		p.activePlayers.Len(),
+	)
 	if count > 0 {
 		p.log.Debug(
 			ctx,

@@ -24,7 +24,7 @@ func (l *instrumentedQueriedLoaderByCounter[Q, T]) Load(ctx context.Context, que
 	return value, err
 }
 
-func InstrumentQueriedLoaderCounterMetric[Q any, T any](
+func InstrumentQueriedLoaderWithCounterMetric[Q any, T any](
 	counter *prometheus.CounterVec,
 	loader loaders.QueriedLoader[Q, T],
 ) loaders.QueriedLoader[Q, T] {
@@ -63,29 +63,29 @@ func InstrumentQueriedLoaderWithFlightMetric[Q any, T any](
 
 type instrumentedMultiKeyedLoaderBySubjectsCounter[K comparable, T any] struct {
 	loaders.QueriedLoader[[]K, map[K]T]
-	gauge *prometheus.GaugeVec
+	counter *prometheus.CounterVec
 }
 
 func (l *instrumentedMultiKeyedLoaderBySubjectsCounter[K, T]) Load(ctx context.Context, keys []K) (map[K]T, error) {
 	res, err := l.QueriedLoader.Load(ctx, keys)
-	l.gauge.With(prometheus.Labels{
+	l.counter.With(prometheus.Labels{
 		"subject": string(RequestedSubject),
-	}).Set(float64(len(keys)))
-	l.gauge.With(prometheus.Labels{
+	}).Add(float64(len(keys)))
+	l.counter.With(prometheus.Labels{
 		"subject": string(LoadedSubject),
-	}).Set(float64(len(res)))
+	}).Add(float64(len(res)))
 	return res, err
 }
 
 func InstrumentMultiKeyedLoaderWithSubjectsCounter[K comparable, T any](
-	gauge *prometheus.GaugeVec,
+	counter *prometheus.CounterVec,
 	loader loaders.QueriedLoader[[]K, map[K]T],
 ) loaders.QueriedLoader[[]K, map[K]T] {
-	if gauge == nil {
+	if counter == nil {
 		return loader
 	}
 	return &instrumentedMultiKeyedLoaderBySubjectsCounter[K, T]{
 		QueriedLoader: loader,
-		gauge:         gauge,
+		counter:       counter,
 	}
 }

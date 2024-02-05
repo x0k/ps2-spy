@@ -10,13 +10,16 @@ import (
 
 type stub struct{}
 
+// SetQueueSize implements Metrics.
+func (*stub) SetPlatformQueueSize(PlatformQueueName, platforms.Platform, int) {}
+
 // InstrumentTransport implements Metrics.
 func (*stub) InstrumentTransport(_ TransportName, t http.RoundTripper) http.RoundTripper {
 	return t
 }
 
 // PlatformLoaderSubjectsCounterMetric implements Metrics.
-func (*stub) PlatformLoaderSubjectsCounterMetric(PlatformLoaderName, platforms.Platform) *prometheus.GaugeVec {
+func (*stub) PlatformLoaderSubjectsCounterMetric(PlatformLoaderName, platforms.Platform) *prometheus.CounterVec {
 	return nil
 }
 
