@@ -267,7 +267,6 @@ func (s *Storage) Begin(
 	expectedEventsCount int,
 	run func(s *Storage) error,
 ) error {
-	const op = "storage.sqlite.Begin"
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err

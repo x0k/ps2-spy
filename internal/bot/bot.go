@@ -121,7 +121,6 @@ func (b *Bot) StartEventHandlers(
 }
 
 func (b *Bot) Stop(ctx context.Context) error {
-	const op = "bot.Bot.Stop"
 	b.log.Info(ctx, "stopping bot")
 	if b.removeCommands {
 		for _, v := range b.registeredCommands {

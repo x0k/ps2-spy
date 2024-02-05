@@ -32,6 +32,10 @@ func NewPublisher(pub publisher.Publisher[publisher.Event]) *Publisher {
 	}
 }
 
+func (p *Publisher) AddOutfitMembersInitHandler(c chan<- OutfitMembersInit) func() {
+	return p.AddHandler(outfitMembersInitHandler(c))
+}
+
 func (p *Publisher) AddOutfitMembersUpdateHandler(c chan<- OutfitMembersUpdate) func() {
 	return p.AddHandler(outfitMembersUpdateHandler(c))
 }

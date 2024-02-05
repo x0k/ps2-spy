@@ -12,8 +12,9 @@ type queryTree struct {
 
 const treeFieldsSeparator = "^"
 const treeKeyValueSeparator = ":"
-const treeSubElementsSeparator = "'"
 const treeSubTreeSeparator = ","
+
+// const treeSubElementsSeparator = "'"
 
 func Tree(field string) queryTree {
 	return queryTree{

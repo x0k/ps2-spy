@@ -29,7 +29,6 @@ func NewStorage(log *logger.Logger, storage *sqlite.Storage, platform platforms.
 }
 
 func (s *StorageCache) Get(ctx context.Context, outfitIds []ps2.OutfitId) (map[ps2.OutfitId]ps2.Outfit, bool) {
-	const op = "cache.outfits_cache.StorageCache.Get"
 	res := make(map[ps2.OutfitId]ps2.Outfit)
 	if len(outfitIds) == 0 {
 		return res, true

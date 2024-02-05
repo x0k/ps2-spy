@@ -41,6 +41,7 @@ func (p Ptr[V]) Set(v V) {
 type Bool bool
 
 func (b Bool) isEmpty() bool {
+	//lint:ignore S1002 b is not a real bool
 	return b == false
 }
 
@@ -55,6 +56,7 @@ func (b Bool) print(writer io.StringWriter) {
 type Bit bool
 
 func (b Bit) isEmpty() bool {
+	//lint:ignore S1002 b is not a real bool
 	return b == false
 }
 
@@ -89,6 +91,7 @@ func (s Str) print(writer io.StringWriter) {
 type BoolWithDefaultTrue bool
 
 func (b BoolWithDefaultTrue) isEmpty() bool {
+	//lint:ignore S1002 b is not a real bool
 	return b == true
 }
 
@@ -103,6 +106,7 @@ func (b BoolWithDefaultTrue) print(writer io.StringWriter) {
 type BitWithDefaultTrue bool
 
 func (b BitWithDefaultTrue) isEmpty() bool {
+	//lint:ignore S1002 b is not a real bool
 	return b == true
 }
 

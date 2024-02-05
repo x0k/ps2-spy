@@ -94,7 +94,6 @@ func (r *ReLoginOmitter) flushLogOutEvents(ctx context.Context, now time.Time) {
 }
 
 func (r *ReLoginOmitter) flushTask(ctx context.Context, wg *sync.WaitGroup) {
-	const op = "relogin_event_ommiter.ReLoginOmitter.flushTask"
 	defer wg.Done()
 	ticker := time.NewTicker(r.flushInterval)
 	defer ticker.Stop()

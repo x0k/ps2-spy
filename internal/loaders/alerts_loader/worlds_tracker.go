@@ -32,7 +32,6 @@ func NewWorldsTrackerLoader(
 }
 
 func (l *WorldsTrackerLoader) Load(ctx context.Context) (loaders.Loaded[ps2.Alerts], error) {
-	const op = "loaders.alerts_loader.WorldsTrackerLoader.Load"
 	alerts := make(ps2.Alerts, 0)
 	for _, platform := range platforms.Platforms {
 		tracker, ok := l.worldsTrackers[platform]

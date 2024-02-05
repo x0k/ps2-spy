@@ -32,7 +32,6 @@ func NewCharactersTrackerLoader(
 }
 
 func (l *CharactersTrackerLoader) Load(ctx context.Context) (loaders.Loaded[ps2.WorldsPopulation], error) {
-	const op = "loaders.population_loader.CharactersTrackerLoader.Load"
 	total := 0
 	worlds := make([]ps2.WorldPopulation, 0)
 	for _, platform := range platforms.Platforms {

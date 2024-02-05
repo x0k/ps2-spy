@@ -29,7 +29,9 @@ func (p *PS2AlertsLoader) Load(ctx context.Context) (loaders.Loaded[ps2.Alerts],
 	}
 	alerts := make(ps2.Alerts, 0, len(ps2alerts))
 	for _, a := range ps2alerts {
-		alertInfo, ok := ps2.MetagameEventsMap[ps2.MetagameEventId(a.CensusMetagameEventType)]
+		alertInfo, ok := ps2.MetagameEventsMap[ps2.MetagameEventId(
+			strconv.Itoa(a.CensusMetagameEventType),
+		)]
 		if !ok {
 			alertInfo = ps2.MetagameEvent{
 				Name:        fmt.Sprintf("Unknown alert (%d)", a.CensusMetagameEventType),

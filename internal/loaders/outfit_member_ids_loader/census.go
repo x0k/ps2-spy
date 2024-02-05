@@ -19,7 +19,6 @@ type CensusLoader struct {
 }
 
 func NewCensus(client *census2.Client, namespace string) *CensusLoader {
-	const op = "loaders.outfit_member_ids_loader.NewCensus"
 	operand := census2.NewPtr(census2.Str(""))
 	return &CensusLoader{
 		client:  client,

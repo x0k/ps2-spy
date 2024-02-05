@@ -25,7 +25,6 @@ func NewStorage(log *logger.Logger, storage *sqlite.Storage) *StorageCache {
 }
 
 func (s *StorageCache) Get(ctx context.Context, facilityId ps2.FacilityId) (ps2.Facility, bool) {
-	const op = "cache.facility_cache.StorageCache.Get"
 	facility, err := s.storage.Facility(ctx, facilityId)
 	if err != nil && !errors.Is(err, storage.ErrNotFound) {
 		s.log.Error(ctx, "failed to get facility", slog.String("facility_id", string(facilityId)), sl.Err(err))

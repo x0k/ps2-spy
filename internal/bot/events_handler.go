@@ -34,7 +34,6 @@ func (eh *EventHandlers) Start(
 	ctx context.Context,
 	eventHandlersConfig *handlers.Ps2EventHandlerConfig,
 ) error {
-	const op = "bot.EventHandlers.Start"
 	// Register event handlers
 	playerLogin := make(chan characters_tracker.PlayerLogin)
 	playerLoginUnSub := eh.charactersTrackerPublisher.AddPlayerLoginHandler(playerLogin)

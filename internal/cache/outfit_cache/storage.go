@@ -31,7 +31,6 @@ func NewStorage(log *logger.Logger, storage *sqlite.Storage, platform platforms.
 }
 
 func (s *StorageCache) Get(ctx context.Context, id ps2.OutfitId) (ps2.Outfit, bool) {
-	const op = "cache.outfit_cache.StorageCache.Get"
 	outfit, err := s.storage.Outfit(ctx, s.platform, id)
 	if err != nil && !errors.Is(err, storage.ErrNotFound) {
 		s.log.Error(ctx, "failed to get outfit", slog.String("outfit_id", string(id)), sl.Err(err))

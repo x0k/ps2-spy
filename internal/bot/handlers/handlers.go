@@ -49,7 +49,6 @@ func (handler InteractionHandler) Run(
 	s *discordgo.Session,
 	i *discordgo.InteractionCreate,
 ) {
-	const op = "bot.handlers.InteractionHandler.Run"
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	log.Debug(ctx, "run handler")
@@ -111,7 +110,6 @@ func (handler Ps2EventHandler[E]) Run(
 	cfg *Ps2EventHandlerConfig,
 	event E,
 ) {
-	const op = "bot.handlers.Ps2EventHandler.Run"
 	ctx, cancel := context.WithTimeout(ctx, cfg.Timeout)
 	defer cancel()
 	channels, err := cfg.EventTrackingChannelsLoader.Load(ctx, event)

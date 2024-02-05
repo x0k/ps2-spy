@@ -60,7 +60,6 @@ func New(
 }
 
 func (tm *TrackingManager) rebuildCharactersFilterTask(ctx context.Context, wg *sync.WaitGroup) {
-	const op = "tracking_manager.TrackingManager.rebuildCharactersFilterTask"
 	defer wg.Done()
 	chars, err := tm.trackableCharactersLoader.Load(ctx)
 	if err != nil {
@@ -86,7 +85,6 @@ func (tm *TrackingManager) rebuildCharactersFilterTask(ctx context.Context, wg *
 }
 
 func (tm *TrackingManager) rebuildOutfitsFilterTask(ctx context.Context, wg *sync.WaitGroup) {
-	const op = "tracking_manager.TrackingManager.rebuildOutfitsFilterTask"
 	defer wg.Done()
 	outfits, err := tm.trackableOutfitsLoader.Load(ctx)
 	if err != nil {
@@ -112,7 +110,6 @@ func (tm *TrackingManager) rebuildOutfitsFilterTask(ctx context.Context, wg *syn
 }
 
 func (tm *TrackingManager) goRebuildFiltersTasks(ctx context.Context, wg *sync.WaitGroup) {
-	const op = "tracking_manager.TrackingManager.goRebuildFiltersTasks"
 	tm.log.Debug(ctx, "rebuilding filters")
 	wg.Add(2)
 	go tm.rebuildCharactersFilterTask(ctx, wg)
@@ -133,7 +130,6 @@ func (tm *TrackingManager) scheduleFiltersRebuildTasks(ctx context.Context, wg *
 }
 
 func (tm *TrackingManager) Start(ctx context.Context, wg *sync.WaitGroup) {
-	const op = "tracking_manager.TrackingManager.Start"
 	tm.goRebuildFiltersTasks(ctx, wg)
 	wg.Add(1)
 	go tm.scheduleFiltersRebuildTasks(ctx, wg)
@@ -168,7 +164,6 @@ func (tm *TrackingManager) outfitTrackersCount(outfitId ps2.OutfitId) int {
 }
 
 func (tm *TrackingManager) channelIdsForOutfit(ctx context.Context, outfitId ps2.OutfitId) ([]meta.ChannelId, error) {
-	const op = "tracking_manager.TrackingManager.channelIdsForOutfitTag"
 	trackersCount := tm.outfitTrackersCount(outfitId)
 	if trackersCount <= 0 {
 		if trackersCount < 0 {
@@ -211,13 +206,11 @@ func (tm *TrackingManager) UntrackCharacter(charId ps2.CharacterId) {
 }
 
 func (tm *TrackingManager) TrackOutfitMember(charId ps2.CharacterId, outfitId ps2.OutfitId) {
-	const op = "tracking_manager.TrackingManager.TrackOutfitMember"
 	count := tm.outfitTrackersCount(outfitId)
 	tm.considerCharacter(charId, count)
 }
 
 func (tm *TrackingManager) UntrackOutfitMember(charId ps2.CharacterId, outfitId ps2.OutfitId) {
-	const op = "tracking_manager.TrackingManager.UntrackOutfitMember"
 	count := tm.outfitTrackersCount(outfitId)
 	tm.considerCharacter(charId, -count)
 }

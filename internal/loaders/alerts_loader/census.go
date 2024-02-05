@@ -47,7 +47,6 @@ func NewCensus(log *logger.Logger, client *census2.Client) *CensusLoader {
 }
 
 func (l *CensusLoader) load(ctx context.Context, url string) (ps2.Alerts, error) {
-	const op = "loaders.alerts_loader.CensusLoader.load"
 	events, err := census2.ExecutePreparedAndDecode[collections.MetagameWorldEventItem](ctx, l.client, collections.WorldEvent, url)
 	if err != nil {
 		return ps2.Alerts{}, err

@@ -63,6 +63,18 @@ func (p *Publisher) Publish(msg map[string]any) error {
 	return fmt.Errorf("%s: %w", p.msgBaseBuff.Type, ErrUnknownMessageType)
 }
 
+func (p *Publisher) AddServiceStateChangedHandler(c chan<- ServiceStateChanged) func() {
+	return p.AddHandler(serviceStateChangedHandler(c))
+}
+
+func (p *Publisher) AddHeartbeatHandler(c chan<- Heartbeat) func() {
+	return p.AddHandler(heartbeatHandler(c))
+}
+
 func (p *Publisher) AddServiceMessageHandler(c chan<- ServiceMessage[map[string]any]) func() {
 	return p.AddHandler(serviceMessageHandler(c))
+}
+
+func (p *Publisher) AddSubscriptionSettingsHandler(c chan<- SubscriptionSettings) func() {
+	return p.AddHandler(subscriptionSettingsHandler(c))
 }
