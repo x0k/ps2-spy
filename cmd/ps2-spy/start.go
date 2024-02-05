@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"time"
 
@@ -31,7 +30,6 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/voidwell"
 	"github.com/x0k/ps2-spy/internal/loaders/alerts_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/character_ids_loader"
-	"github.com/x0k/ps2-spy/internal/loaders/character_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/character_names_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/character_tracking_channels_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/characters_loader"
@@ -138,19 +136,31 @@ func start(ctx context.Context, log *logger.Logger, cfg *config.Config) error {
 	censusClient := census2.NewClient(log.Logger, "https://census.daybreakgames.com", cfg.CensusServiceId, httpClient)
 	sanctuaryClient := census2.NewClient(log.Logger, "https://census.lithafalcon.cc", cfg.CensusServiceId, httpClient)
 
-	// TODO: Use MultiKeyedCache
+	// TODO: Lookup in storage (stale data) after fail?
 	pcCharactersLoader := characters_loader.NewCensus(log, censusClient, platforms.PC)
-	// TODO: Extract batch logic and apply instrumentation to monitor size of batch
-	pcBatchedCharacterLoader := character_loader.NewBatch(log.With(slog.String("platform", string(platforms.PC))), pcCharactersLoader, 10*time.Second)
+	// TODO: apply instrumentation to monitor size of batch
+	pcBatchedCharacterLoader := loaders.NewBatchLoader(pcCharactersLoader, 10*time.Second)
 	pcBatchedCharacterLoader.Start(ctx, wg)
+	pcCachedAndBatchedCharacterLoader := loaders.NewCachedQueriedLoader(
+		pcBatchedCharacterLoader,
+		containers.NewExpiableLRU[ps2.CharacterId, ps2.Character](0, 24*time.Hour),
+	)
 
 	ps4euCharactersLoader := characters_loader.NewCensus(log, censusClient, platforms.PS4_EU)
-	ps4euBatchedCharacterLoader := character_loader.NewBatch(log.With(slog.String("platform", string(platforms.PS4_EU))), ps4euCharactersLoader, 10*time.Second)
+	ps4euBatchedCharacterLoader := loaders.NewBatchLoader(ps4euCharactersLoader, 10*time.Second)
 	ps4euBatchedCharacterLoader.Start(ctx, wg)
+	ps4euCachedAndBatchedCharacterLoader := loaders.NewCachedQueriedLoader(
+		ps4euBatchedCharacterLoader,
+		containers.NewExpiableLRU[ps2.CharacterId, ps2.Character](0, 24*time.Hour),
+	)
 
 	ps4usCharactersLoader := characters_loader.NewCensus(log, censusClient, platforms.PS4_US)
-	ps4usBatchedCharacterLoader := character_loader.NewBatch(log.With(slog.String("platform", string(platforms.PS4_US))), ps4usCharactersLoader, 10*time.Second)
+	ps4usBatchedCharacterLoader := loaders.NewBatchLoader(ps4usCharactersLoader, 10*time.Second)
 	ps4usBatchedCharacterLoader.Start(ctx, wg)
+	ps4usCachedAndBatchedCharacterLoader := loaders.NewCachedQueriedLoader(
+		ps4usBatchedCharacterLoader,
+		containers.NewExpiableLRU[ps2.CharacterId, ps2.Character](0, 24*time.Hour),
+	)
 
 	pcCharactersTrackerPublisher := characters_tracker.NewPublisher(
 		mt.InstrumentPlatformPublisher(
@@ -163,7 +173,7 @@ func start(ctx context.Context, log *logger.Logger, cfg *config.Config) error {
 		ctx,
 		log,
 		ps2.PcPlatformWorldIds,
-		pcBatchedCharacterLoader,
+		pcCachedAndBatchedCharacterLoader,
 		pcPs2EventsPublisher,
 		pcCharactersTrackerPublisher,
 	)
@@ -179,7 +189,7 @@ func start(ctx context.Context, log *logger.Logger, cfg *config.Config) error {
 		ctx,
 		log,
 		ps2.Ps4euPlatformWorldIds,
-		ps4euBatchedCharacterLoader,
+		ps4euCachedAndBatchedCharacterLoader,
 		ps4euPs2EventsPublisher,
 		ps4euCharactersTrackerPublisher,
 	)
@@ -195,7 +205,7 @@ func start(ctx context.Context, log *logger.Logger, cfg *config.Config) error {
 		ctx,
 		log,
 		ps2.Ps4usPlatformWorldIds,
-		ps4usBatchedCharacterLoader,
+		ps4usCachedAndBatchedCharacterLoader,
 		ps4usPs2EventsPublisher,
 		ps4usCharactersTrackerPublisher,
 	)
@@ -292,21 +302,21 @@ func start(ctx context.Context, log *logger.Logger, cfg *config.Config) error {
 	pcTrackingManager := newTrackingManager(
 		log,
 		sqlStorage,
-		pcBatchedCharacterLoader,
+		pcCachedAndBatchedCharacterLoader,
 		characterTrackingChannelsLoader,
 		platforms.PC,
 	)
 	ps4euTrackingManager := newTrackingManager(
 		log,
 		sqlStorage,
-		ps4euBatchedCharacterLoader,
+		ps4euCachedAndBatchedCharacterLoader,
 		characterTrackingChannelsLoader,
 		platforms.PS4_EU,
 	)
 	ps4usTrackingManager := newTrackingManager(
 		log,
 		sqlStorage,
-		ps4usBatchedCharacterLoader,
+		ps4usCachedAndBatchedCharacterLoader,
 		characterTrackingChannelsLoader,
 		platforms.PS4_US,
 	)
@@ -454,7 +464,7 @@ func start(ctx context.Context, log *logger.Logger, cfg *config.Config) error {
 			pcCharactersTrackerPublisher,
 			pcOutfitMembersSaverPublisher,
 			pcWorldsTrackerPublisher,
-			pcBatchedCharacterLoader,
+			pcCachedAndBatchedCharacterLoader,
 			pcOutfitLoader,
 			pcFacilityLoader,
 			pcCharactersLoader,
@@ -465,7 +475,7 @@ func start(ctx context.Context, log *logger.Logger, cfg *config.Config) error {
 			ps4euCharactersTrackerPublisher,
 			ps4euOutfitMembersSaverPublisher,
 			ps4euWorldsTrackerPublisher,
-			ps4euBatchedCharacterLoader,
+			ps4euCachedAndBatchedCharacterLoader,
 			ps4euOutfitLoader,
 			ps4euFacilityLoader,
 			ps4euCharactersLoader,
@@ -476,7 +486,7 @@ func start(ctx context.Context, log *logger.Logger, cfg *config.Config) error {
 			ps4usCharactersTrackerPublisher,
 			ps4usOutfitMembersSaverPublisher,
 			ps4usWorldsTrackerPublisher,
-			ps4usBatchedCharacterLoader,
+			ps4usCachedAndBatchedCharacterLoader,
 			ps4usOutfitLoader,
 			ps4usFacilityLoader,
 			ps4usCharactersLoader,

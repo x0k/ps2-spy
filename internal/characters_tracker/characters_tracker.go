@@ -158,6 +158,7 @@ func (p *CharactersTracker) HandleLoginTask(ctx context.Context, wg *sync.WaitGr
 		charId,
 		while.ErrorIsHere,
 		while.RetryCountIsLessThan(3),
+		while.ContextIsNotCancelled,
 		perform.Log(
 			p.log.Logger,
 			slog.LevelDebug,

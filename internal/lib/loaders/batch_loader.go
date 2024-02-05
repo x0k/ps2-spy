@@ -24,6 +24,7 @@ func NewBatchLoader[K comparable, T any](
 ) *BatchLoader[K, T] {
 	return &BatchLoader[K, T]{
 		loader:    loader,
+		awaiters:  make(map[K][]chan result[T]),
 		checkRate: checkRate,
 	}
 }
