@@ -4,7 +4,6 @@ import (
 	"context"
 	"flag"
 	"log/slog"
-	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"sync"

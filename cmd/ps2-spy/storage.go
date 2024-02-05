@@ -8,7 +8,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/infra"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
-	"github.com/x0k/ps2-spy/internal/lib/publisher"
+	"github.com/x0k/ps2-spy/internal/storage"
 	"github.com/x0k/ps2-spy/internal/storage/sqlite"
 )
 
@@ -16,7 +16,7 @@ func startStorage(
 	ctx context.Context,
 	log *logger.Logger,
 	cfg config.StorageConfig,
-	publisher publisher.Abstract[publisher.Event],
+	publisher *storage.Publisher,
 ) (*sqlite.Storage, error) {
 	const op = "startStorage"
 	storage, err := sqlite.New(ctx, log, cfg.Path, publisher)

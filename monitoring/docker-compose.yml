@@ -1,0 +1,19 @@
+---
+version: "3.9"
+services:
+  prometheus:
+    image: prom/prometheus:v2.49.1
+    network_mode: host
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+
+  grafana:
+    image: grafana/grafana:10.2.3
+    network_mode: host
+    user: ${USER_ID}
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - ./grafana/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yaml
+      - ./grafana-data:/var/lib/grafana

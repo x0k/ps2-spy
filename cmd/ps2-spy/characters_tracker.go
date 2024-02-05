@@ -2,79 +2,45 @@ package main
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/x0k/ps2-spy/internal/characters_tracker"
 	"github.com/x0k/ps2-spy/internal/infra"
 	ps2events "github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
 	"github.com/x0k/ps2-spy/internal/lib/loaders"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
-	"github.com/x0k/ps2-spy/internal/lib/publisher"
+	"github.com/x0k/ps2-spy/internal/metrics"
 	"github.com/x0k/ps2-spy/internal/ps2"
+	"github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
 
 func startCharactersTracker(
 	ctx context.Context,
 	charactersTracker *characters_tracker.CharactersTracker,
-	ps2EventsPublisher *publisher.Publisher,
-) error {
-	const op = "startCharactersTracker"
+	ps2EventsPublisher *ps2events.Publisher,
+) {
 	charactersTracker.Start(ctx)
 	achievementEarned := make(chan ps2events.AchievementEarned)
-	achievementUnSub, err := ps2EventsPublisher.AddHandler(achievementEarned)
-	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
-	}
+	achievementUnSub := ps2EventsPublisher.AddAchievementEarnedHandler(achievementEarned)
 	battleRankUp := make(chan ps2events.BattleRankUp)
-	battleRankUpUnSub, err := ps2EventsPublisher.AddHandler(battleRankUp)
-	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
-	}
+	battleRankUpUnSub := ps2EventsPublisher.AddBattleRankUpHandler(battleRankUp)
 	death := make(chan ps2events.Death)
-	deathUnSub, err := ps2EventsPublisher.AddHandler(death)
-	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
-	}
+	deathUnSub := ps2EventsPublisher.AddDeathHandler(death)
 	gainExperience := make(chan ps2events.GainExperience)
-	gainExperienceUnSub, err := ps2EventsPublisher.AddHandler(gainExperience)
-	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
-	}
+	gainExperienceUnSub := ps2EventsPublisher.AddGainExperienceHandler(gainExperience)
 	itemAdded := make(chan ps2events.ItemAdded)
-	itemAddedUnSub, err := ps2EventsPublisher.AddHandler(itemAdded)
-	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
-	}
+	itemAddedUnSub := ps2EventsPublisher.AddItemAddedHandler(itemAdded)
 	playerFacilityCapture := make(chan ps2events.PlayerFacilityCapture)
-	playerFacilityCaptureUnSub, err := ps2EventsPublisher.AddHandler(playerFacilityCapture)
-	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
-	}
+	playerFacilityCaptureUnSub := ps2EventsPublisher.AddPlayerFacilityCaptureHandler(playerFacilityCapture)
 	playerFacilityDefend := make(chan ps2events.PlayerFacilityDefend)
-	playerFacilityDefendUnSub, err := ps2EventsPublisher.AddHandler(playerFacilityDefend)
-	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
-	}
+	playerFacilityDefendUnSub := ps2EventsPublisher.AddPlayerFacilityDefendHandler(playerFacilityDefend)
 	playerLogin := make(chan ps2events.PlayerLogin)
-	playerLoginUnSub, err := ps2EventsPublisher.AddHandler(playerLogin)
-	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
-	}
+	playerLoginUnSub := ps2EventsPublisher.AddPlayerLoginHandler(playerLogin)
 	playerLogout := make(chan ps2events.PlayerLogout)
-	playerLogoutUnSub, err := ps2EventsPublisher.AddHandler(playerLogout)
-	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
-	}
+	playerLogoutUnSub := ps2EventsPublisher.AddPlayerLogoutHandler(playerLogout)
 	skillAdded := make(chan ps2events.SkillAdded)
-	skillAddedUnSub, err := ps2EventsPublisher.AddHandler(skillAdded)
-	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
-	}
+	skillAddedUnSub := ps2EventsPublisher.AddSkillAddedHandler(skillAdded)
 	vehicleDestroy := make(chan ps2events.VehicleDestroy)
-	vehicleDestroyUnSub, err := ps2EventsPublisher.AddHandler(vehicleDestroy)
-	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
-	}
+	vehicleDestroyUnSub := ps2EventsPublisher.AddVehicleDestroyHandler(vehicleDestroy)
 	wg := infra.Wg(ctx)
 	wg.Add(1)
 	go func() {
@@ -122,21 +88,30 @@ func startCharactersTracker(
 			}
 		}
 	}()
-	return nil
 }
 
 func startNewCharactersTracker(
 	ctx context.Context,
 	log *logger.Logger,
+	mt metrics.Metrics,
+	platform platforms.Platform,
 	worldIds []ps2.WorldId,
 	characterLoader loaders.KeyedLoader[ps2.CharacterId, ps2.Character],
-	ps2EventsPublisher *publisher.Publisher,
-	charactersTrackerPublisher *publisher.Publisher,
-) (*characters_tracker.CharactersTracker, error) {
-	charactersTracker := characters_tracker.New(log, worldIds, characterLoader, charactersTrackerPublisher)
-	return charactersTracker, startCharactersTracker(
+	ps2EventsPublisher *ps2events.Publisher,
+	charactersTrackerPublisher *characters_tracker.Publisher,
+) *characters_tracker.CharactersTracker {
+	charactersTracker := characters_tracker.New(
+		log,
+		platform,
+		worldIds,
+		characterLoader,
+		charactersTrackerPublisher,
+		mt,
+	)
+	startCharactersTracker(
 		ctx,
 		charactersTracker,
 		ps2EventsPublisher,
 	)
+	return charactersTracker
 }

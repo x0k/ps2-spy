@@ -77,7 +77,7 @@ type Storage struct {
 	db         *sql.DB
 	statements [statementsCount]statement
 	tx         *sql.Tx
-	pub        publisher.Abstract[publisher.Event]
+	pub        publisher.Publisher[publisher.Event]
 }
 
 func (s *Storage) migrate(ctx context.Context) error {
@@ -155,7 +155,7 @@ func New(
 	ctx context.Context,
 	log *logger.Logger,
 	storagePath string,
-	pub publisher.Abstract[publisher.Event],
+	pub *storage.Publisher,
 ) (*Storage, error) {
 	const op = "storage.sqlite.New"
 	db, err := sql.Open("sqlite3", storagePath)

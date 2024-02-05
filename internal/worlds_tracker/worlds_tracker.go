@@ -9,7 +9,6 @@ import (
 
 	"github.com/x0k/ps2-spy/internal/infra"
 	ps2events "github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
-	"github.com/x0k/ps2-spy/internal/lib/publisher"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/ps2/factions"
 )
@@ -36,10 +35,10 @@ type WorldsTracker struct {
 	mutex                      sync.RWMutex
 	worlds                     map[ps2.WorldId]map[ps2.ZoneId]zoneState
 	eventsInvalidationInterval time.Duration
-	publisher                  publisher.Abstract[publisher.Event]
+	publisher                  *Publisher
 }
 
-func New(eventsInvalidationInterval time.Duration, publisher publisher.Abstract[publisher.Event]) *WorldsTracker {
+func New(eventsInvalidationInterval time.Duration, publisher *Publisher) *WorldsTracker {
 	worlds := make(map[ps2.WorldId]map[ps2.ZoneId]zoneState, len(ps2.WorldNames))
 	for worldId := range ps2.WorldNames {
 		world := make(map[ps2.ZoneId]zoneState, len(ps2.ZoneNames))

@@ -6,9 +6,11 @@ import (
 	"sync"
 )
 
+type ContextKey string
+
 const (
-	LoggerKey = "log"
-	WgKey     = "wg"
+	LoggerKey ContextKey = "log"
+	WgKey     ContextKey = "wg"
 )
 
 func Wg(ctx context.Context) *sync.WaitGroup {

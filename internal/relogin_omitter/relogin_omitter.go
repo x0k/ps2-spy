@@ -12,29 +12,40 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/containers"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/publisher"
+	"github.com/x0k/ps2-spy/internal/metrics"
 	"github.com/x0k/ps2-spy/internal/ps2"
+	"github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
 
 var ErrConvertEvent = fmt.Errorf("failed to convert event")
 
 type ReLoginOmitter struct {
+	publisher.Publisher[publisher.Event]
+	platform          platforms.Platform
 	log               *logger.Logger
-	pub               publisher.Abstract[publisher.Event]
 	batchMu           sync.Mutex
 	logoutEventsQueue *containers.ExpirationQueue[ps2.CharacterId]
 	logoutEvents      map[ps2.CharacterId]ps2events.PlayerLogout
 	flushInterval     time.Duration
 	delayDuration     time.Duration
+	mt                metrics.Metrics
 }
 
-func New(log *logger.Logger, pub publisher.Abstract[publisher.Event]) *ReLoginOmitter {
+func New(
+	log *logger.Logger,
+	platform platforms.Platform,
+	pub publisher.Publisher[publisher.Event],
+	mt metrics.Metrics,
+) *ReLoginOmitter {
 	return &ReLoginOmitter{
+		Publisher:         pub,
+		platform:          platform,
 		log:               log.With(slog.String("component", "relogin_omitter.ReLoginOmitter")),
-		pub:               pub,
 		logoutEventsQueue: containers.NewExpirationQueue[ps2.CharacterId](),
 		logoutEvents:      make(map[ps2.CharacterId]ps2events.PlayerLogout),
 		flushInterval:     1 * time.Minute,
 		delayDuration:     3 * time.Minute,
+		mt:                mt,
 	}
 }
 
@@ -63,10 +74,15 @@ func (r *ReLoginOmitter) flushLogOutEvents(ctx context.Context, now time.Time) {
 	defer r.batchMu.Unlock()
 	count := r.logoutEventsQueue.RemoveExpired(now.Add(-r.delayDuration), func(charId ps2.CharacterId) {
 		if e, ok := r.logoutEvents[charId]; ok {
-			r.pub.Publish(&e)
+			r.Publisher.Publish(&e)
 			delete(r.logoutEvents, charId)
 		}
 	})
+	r.mt.SetPlatformQueueSize(
+		metrics.LogoutEventsQueueName,
+		r.platform,
+		r.logoutEventsQueue.Len(),
+	)
 	if count > 0 {
 		r.log.Debug(
 			ctx,
@@ -116,5 +132,5 @@ func (r *ReLoginOmitter) Publish(event publisher.Event) error {
 			return ErrConvertEvent
 		}
 	}
-	return r.pub.Publish(event)
+	return r.Publisher.Publish(event)
 }

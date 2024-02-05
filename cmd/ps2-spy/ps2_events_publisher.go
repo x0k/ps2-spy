@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"time"
 
@@ -18,6 +17,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/retryable"
 	"github.com/x0k/ps2-spy/internal/lib/retryable/perform"
 	"github.com/x0k/ps2-spy/internal/lib/retryable/while"
+	"github.com/x0k/ps2-spy/internal/metrics"
 	"github.com/x0k/ps2-spy/internal/ps2/platforms"
 	"github.com/x0k/ps2-spy/internal/relogin_omitter"
 )
@@ -25,23 +25,28 @@ import (
 func startNewPs2EventsPublisher(
 	ctx context.Context,
 	logger *logger.Logger,
+	mt metrics.Metrics,
 	cfg *config.Config,
 	platform platforms.Platform,
 	settings ps2commands.SubscriptionSettings,
-) (*publisher.Publisher, error) {
-	const op = "startNewPs2EventsPublisher"
+) (*ps2events.Publisher, error) {
 	log := logger.With(
 		slog.String("platform", string(platform)),
 	)
 	// Handle messages
-	messagesPublisher := publisher.New(ps2messages.CastHandler)
-	rawMessagesPublisher := ps2messages.NewPublisher(messagesPublisher)
+	messagesPublisher := ps2messages.NewPublisher(
+		mt.InstrumentPlatformPublisher(
+			metrics.Ps2MessagesPlatformPublisher,
+			platform,
+			publisher.New[publisher.Event](),
+		),
+	)
 	client := streaming.NewClient(
 		log.Logger,
 		cfg.CensusStreamingEndpoint,
 		platforms.PlatformEnvironment(platform),
 		cfg.CensusServiceId,
-		rawMessagesPublisher,
+		messagesPublisher,
 	)
 	wg := infra.Wg(ctx)
 	wg.Add(1)
@@ -65,15 +70,21 @@ func startNewPs2EventsPublisher(
 		)
 	}()
 	// Handle events
-	eventsPublisher := publisher.New(ps2events.CastHandler)
-	reLoginOmitter := relogin_omitter.New(log, eventsPublisher)
+
+	reLoginOmitter := relogin_omitter.New(
+		log,
+		platform,
+		mt.InstrumentPlatformPublisher(
+			metrics.Ps2EventsPlatformPublisher,
+			platform,
+			publisher.New[publisher.Event](),
+		),
+		mt,
+	)
 	reLoginOmitter.Start(ctx)
-	rawEventsPublisher := ps2events.NewPublisher(reLoginOmitter)
+	eventsPublisher := ps2events.NewPublisher(reLoginOmitter)
 	serviceMsg := make(chan ps2messages.ServiceMessage[map[string]any])
-	serviceMsgUnSub, err := messagesPublisher.AddHandler(serviceMsg)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
-	}
+	serviceMsgUnSub := messagesPublisher.AddServiceMessageHandler(serviceMsg)
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -83,7 +94,7 @@ func startNewPs2EventsPublisher(
 			case <-ctx.Done():
 				return
 			case msg := <-serviceMsg:
-				if err := rawEventsPublisher.Publish(msg.Payload); err != nil {
+				if err := eventsPublisher.Publish(msg.Payload); err != nil {
 					log.Error(ctx, "failed to publish event", slog.Any("event", msg.Payload), sl.Err(err))
 				}
 			}

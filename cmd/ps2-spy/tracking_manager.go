@@ -2,14 +2,12 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 
 	"github.com/x0k/ps2-spy/internal/infra"
 	"github.com/x0k/ps2-spy/internal/lib/loaders"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
-	"github.com/x0k/ps2-spy/internal/lib/publisher"
 	"github.com/x0k/ps2-spy/internal/loaders/outfit_member_ids_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/outfit_tracking_channels_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/trackable_character_ids_loader"
@@ -48,43 +46,24 @@ func startTrackingManager(
 	ctx context.Context,
 	log *logger.Logger,
 	tms map[platforms.Platform]*tracking_manager.TrackingManager,
-	publisher *publisher.Publisher,
-) error {
-	const op = "startTrackingManager"
+	publisher *storage.Publisher,
+) {
 	wg := infra.Wg(ctx)
 	for _, tm := range tms {
 		tm.Start(ctx, wg)
 	}
 	channelCharacterSaved := make(chan storage.ChannelCharacterSaved)
-	charSavedUnSub, err := publisher.AddHandler(channelCharacterSaved)
-	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
-	}
+	charSavedUnSub := publisher.AddChannelCharacterSavedHandler(channelCharacterSaved)
 	channelCharacterDeleted := make(chan storage.ChannelCharacterDeleted)
-	charDeletedUnSub, err := publisher.AddHandler(channelCharacterDeleted)
-	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
-	}
+	charDeletedUnSub := publisher.AddChannelCharacterDeletedHandler(channelCharacterDeleted)
 	outfitMemberSaved := make(chan storage.OutfitMemberSaved)
-	outfitMemberSavedUnSub, err := publisher.AddHandler(outfitMemberSaved)
-	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
-	}
+	outfitMemberSavedUnSub := publisher.AddOutfitMemberSavedHandler(outfitMemberSaved)
 	outfitMemberDeleted := make(chan storage.OutfitMemberDeleted)
-	outfitMemberDeletedUnSub, err := publisher.AddHandler(outfitMemberDeleted)
-	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
-	}
+	outfitMemberDeletedUnSub := publisher.AddOutfitMemberDeletedHandler(outfitMemberDeleted)
 	channelOutfitSaved := make(chan storage.ChannelOutfitSaved)
-	channelOutfitSavedUnSub, err := publisher.AddHandler(channelOutfitSaved)
-	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
-	}
+	channelOutfitSavedUnSub := publisher.AddChannelOutfitSavedHandler(channelOutfitSaved)
 	channelOutfitDeleted := make(chan storage.ChannelOutfitDeleted)
-	channelOutfitDeletedUnSub, err := publisher.AddHandler(channelOutfitDeleted)
-	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
-	}
+	channelOutfitDeletedUnSub := publisher.AddChannelOutfitDeletedHandler(channelOutfitDeleted)
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -161,5 +140,4 @@ func startTrackingManager(
 			}
 		}
 	}()
-	return nil
 }

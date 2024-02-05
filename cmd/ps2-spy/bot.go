@@ -26,8 +26,7 @@ func startNewBot(
 	ps4euEventHandlers bot.EventHandlers,
 	ps4usEventTrackingChannelsLoader loaders.QueriedLoader[any, []meta.ChannelId],
 	ps4usEventHandlers bot.EventHandlers,
-) error {
-	const op = "startBot"
+) {
 	wg := infra.Wg(ctx)
 	wg.Add(1)
 	go func() {
@@ -62,5 +61,4 @@ func startNewBot(
 			perform.Log(log.Logger, slog.LevelError, "bot failed, restarting"),
 		)
 	}()
-	return nil
 }
