@@ -4,21 +4,15 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"time"
+	"sync"
 
 	"github.com/x0k/ps2-spy/internal/bot"
-	"github.com/x0k/ps2-spy/internal/bot/handlers"
-	"github.com/x0k/ps2-spy/internal/bot/handlers/submit/channel_setup_submit_handler"
 	"github.com/x0k/ps2-spy/internal/cache/facility_cache"
-	"github.com/x0k/ps2-spy/internal/cache/outfit_cache"
-	"github.com/x0k/ps2-spy/internal/cache/outfits_cache"
 	"github.com/x0k/ps2-spy/internal/characters_tracker"
 	"github.com/x0k/ps2-spy/internal/config"
-	"github.com/x0k/ps2-spy/internal/infra"
 	"github.com/x0k/ps2-spy/internal/lib/census2"
 	ps2commands "github.com/x0k/ps2-spy/internal/lib/census2/streaming/commands"
 	ps2events "github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
-	"github.com/x0k/ps2-spy/internal/lib/containers"
 	"github.com/x0k/ps2-spy/internal/lib/fisu"
 	"github.com/x0k/ps2-spy/internal/lib/honu"
 	"github.com/x0k/ps2-spy/internal/lib/loaders"
@@ -29,89 +23,74 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/publisher"
 	"github.com/x0k/ps2-spy/internal/lib/voidwell"
 	"github.com/x0k/ps2-spy/internal/loaders/alerts_loader"
-	"github.com/x0k/ps2-spy/internal/loaders/character_ids_loader"
-	"github.com/x0k/ps2-spy/internal/loaders/character_names_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/character_tracking_channels_loader"
-	"github.com/x0k/ps2-spy/internal/loaders/characters_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/event_tracking_channels_loader"
-	"github.com/x0k/ps2-spy/internal/loaders/facility_loader"
-	"github.com/x0k/ps2-spy/internal/loaders/outfit_ids_loader"
-	"github.com/x0k/ps2-spy/internal/loaders/outfit_loader"
-	"github.com/x0k/ps2-spy/internal/loaders/outfit_tags_loader"
-	"github.com/x0k/ps2-spy/internal/loaders/platform_character_names_loader"
-	"github.com/x0k/ps2-spy/internal/loaders/platform_outfit_tags_loader"
-	"github.com/x0k/ps2-spy/internal/loaders/platform_outfits_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/population_loader"
-	"github.com/x0k/ps2-spy/internal/loaders/subscription_settings_loader"
-	"github.com/x0k/ps2-spy/internal/loaders/trackable_online_entities_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/world_alerts_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/world_population_loader"
-	"github.com/x0k/ps2-spy/internal/meta"
 	"github.com/x0k/ps2-spy/internal/metrics"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/ps2/platforms"
 	"github.com/x0k/ps2-spy/internal/savers/outfit_members_saver"
-	"github.com/x0k/ps2-spy/internal/savers/subscription_settings_saver"
 	"github.com/x0k/ps2-spy/internal/storage"
 	"github.com/x0k/ps2-spy/internal/tracking_manager"
 	"github.com/x0k/ps2-spy/internal/worlds_tracker"
 )
 
-func start(ctx context.Context, log *logger.Logger, cfg *config.Config) error {
+func start(
+	ctx context.Context,
+	wg *sync.WaitGroup,
+	log *logger.Logger,
+	cfg *config.Config,
+) error {
 	const op = "start"
-	startProfiler(ctx, log, cfg.Profiler)
-	mt := startMetrics(ctx, log, cfg.Metrics)
+	startProfiler(ctx, wg, log, cfg.Profiler)
+	mt := startMetrics(ctx, wg, log, cfg.Metrics)
 	storageEventsPublisher := storage.NewPublisher(
-		mt.InstrumentPublisher(metrics.StoragePublisher, publisher.New[publisher.Event]()),
+		mt.InstrumentPublisher(
+			metrics.StoragePublisher,
+			publisher.New[publisher.Event](),
+		),
 	)
 	sqlStorage, err := startStorage(ctx, log, cfg.Storage, storageEventsPublisher)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
-	All := []string{"all"}
-	EventName := []string{
-		ps2events.PlayerLoginEventName,
-		ps2events.PlayerLogoutEventName,
-		ps2events.AchievementEarnedEventName,
-		ps2events.BattleRankUpEventName,
-		ps2events.DeathEventName,
-		ps2events.GainExperienceEventName,
-		ps2events.ItemAddedEventName,
-		ps2events.PlayerFacilityCaptureEventName,
-		ps2events.PlayerFacilityDefendEventName,
-		ps2events.SkillAddedEventName,
-		ps2events.VehicleDestroyEventName,
-		ps2events.FacilityControlEventName,
-		ps2events.MetagameEventEventName,
-		ps2events.ContinentLockEventName,
+	subscriptionSettings := ps2commands.SubscriptionSettings{
+		Worlds:     []string{"all"},
+		Characters: []string{"all"},
+		EventNames: []string{
+			ps2events.PlayerLoginEventName,
+			ps2events.PlayerLogoutEventName,
+			ps2events.AchievementEarnedEventName,
+			ps2events.BattleRankUpEventName,
+			ps2events.DeathEventName,
+			ps2events.GainExperienceEventName,
+			ps2events.ItemAddedEventName,
+			ps2events.PlayerFacilityCaptureEventName,
+			ps2events.PlayerFacilityDefendEventName,
+			ps2events.SkillAddedEventName,
+			ps2events.VehicleDestroyEventName,
+			ps2events.FacilityControlEventName,
+			ps2events.MetagameEventEventName,
+			ps2events.ContinentLockEventName,
+		},
 	}
 	pcPs2EventsPublisher, err := startNewPs2EventsPublisher(
-		ctx, log, mt, cfg, platforms.PC, ps2commands.SubscriptionSettings{
-			Worlds:     All,
-			Characters: All,
-			EventNames: EventName,
-		})
+		ctx, log, mt, cfg, platforms.PC, subscriptionSettings)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
 	ps4euPs2EventsPublisher, err := startNewPs2EventsPublisher(
-		ctx, log, mt, cfg, platforms.PS4_EU, ps2commands.SubscriptionSettings{
-			Worlds:     All,
-			Characters: All,
-			EventNames: EventName,
-		})
+		ctx, log, mt, cfg, platforms.PS4_EU, subscriptionSettings)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
 	ps4usPs2EventsPublisher, err := startNewPs2EventsPublisher(
-		ctx, log, mt, cfg, platforms.PS4_US, ps2commands.SubscriptionSettings{
-			Worlds:     All,
-			Characters: All,
-			EventNames: EventName,
-		})
+		ctx, log, mt, cfg, platforms.PS4_US, subscriptionSettings)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
@@ -124,7 +103,7 @@ func start(ctx context.Context, log *logger.Logger, cfg *config.Config) error {
 		),
 	}
 	// loaders
-	wg := infra.Wg(ctx)
+	// TODO: extract cache from clients
 	honuClient := honu.NewClient("https://wt.honu.pw", httpClient)
 	honuClient.Start(ctx, wg)
 	fisuClient := fisu.NewClient("https://ps2.fisu.pw", httpClient)
@@ -141,50 +120,34 @@ func start(ctx context.Context, log *logger.Logger, cfg *config.Config) error {
 	sanctuaryClient := census2.NewClient(log.Logger, "https://census.lithafalcon.cc", cfg.CensusServiceId, httpClient)
 
 	// TODO: Lookup in storage (stale data) after fail?
-	pcCharactersLoader := metrics.InstrumentMultiKeyedLoaderWithSubjectsCounter(
-		mt.PlatformLoaderSubjectsCounterMetric(metrics.CharactersPlatformLoaderName, platforms.PC),
-		characters_loader.NewCensus(log, censusClient, platforms.PC),
+	pcCharactersLoader := newCharactersLoader(
+		log, mt, platforms.PC,
+		censusClient,
 	)
-	// TODO: apply instrumentation to monitor size of batch
-	pcBatchedCharacterLoader := loaders.NewBatchLoader(pcCharactersLoader, 10*time.Second)
-	pcBatchedCharacterLoader.Start(ctx, wg)
-	pcCachedAndBatchedCharacterLoader := loaders.NewCachedQueriedLoader(
-		log.Logger,
-		metrics.InstrumentQueriedLoaderWithCounterMetric(
-			mt.PlatformLoadsCounterMetric(metrics.CharacterPlatformLoaderName, platforms.PC),
-			pcBatchedCharacterLoader,
-		),
-		containers.NewExpiableLRU[ps2.CharacterId, ps2.Character](0, 24*time.Hour),
+	pcBatchedCharacterLoader := startNewBatchedCharacterLoader(
+		ctx, wg, log, mt, platforms.PC,
+		censusClient,
+		pcCharactersLoader,
 	)
 
-	ps4euCharactersLoader := metrics.InstrumentMultiKeyedLoaderWithSubjectsCounter(
-		mt.PlatformLoaderSubjectsCounterMetric(metrics.CharactersPlatformLoaderName, platforms.PS4_EU),
-		characters_loader.NewCensus(log, censusClient, platforms.PS4_EU),
+	ps4euCharactersLoader := newCharactersLoader(
+		log, mt, platforms.PS4_EU,
+		censusClient,
 	)
-	ps4euBatchedCharacterLoader := loaders.NewBatchLoader(ps4euCharactersLoader, 10*time.Second)
-	ps4euBatchedCharacterLoader.Start(ctx, wg)
-	ps4euCachedAndBatchedCharacterLoader := loaders.NewCachedQueriedLoader(
-		log.Logger,
-		metrics.InstrumentQueriedLoaderWithCounterMetric(
-			mt.PlatformLoadsCounterMetric(metrics.CharacterPlatformLoaderName, platforms.PS4_EU),
-			ps4euBatchedCharacterLoader,
-		),
-		containers.NewExpiableLRU[ps2.CharacterId, ps2.Character](0, 24*time.Hour),
+	ps4euBatchedCharacterLoader := startNewBatchedCharacterLoader(
+		ctx, wg, log, mt, platforms.PS4_EU,
+		censusClient,
+		ps4euCharactersLoader,
 	)
 
-	ps4usCharactersLoader := metrics.InstrumentMultiKeyedLoaderWithSubjectsCounter(
-		mt.PlatformLoaderSubjectsCounterMetric(metrics.CharactersPlatformLoaderName, platforms.PS4_US),
-		characters_loader.NewCensus(log, censusClient, platforms.PS4_US),
+	ps4usCharactersLoader := newCharactersLoader(
+		log, mt, platforms.PS4_US,
+		censusClient,
 	)
-	ps4usBatchedCharacterLoader := loaders.NewBatchLoader(ps4usCharactersLoader, 10*time.Second)
-	ps4usBatchedCharacterLoader.Start(ctx, wg)
-	ps4usCachedAndBatchedCharacterLoader := loaders.NewCachedQueriedLoader(
-		log.Logger,
-		metrics.InstrumentQueriedLoaderWithCounterMetric(
-			mt.PlatformLoadsCounterMetric(metrics.CharacterPlatformLoaderName, platforms.PS4_US),
-			ps4usBatchedCharacterLoader,
-		),
-		containers.NewExpiableLRU[ps2.CharacterId, ps2.Character](0, 24*time.Hour),
+	ps4usBatchedCharacterLoader := startNewBatchedCharacterLoader(
+		ctx, wg, log, mt, platforms.PS4_US,
+		censusClient,
+		ps4usCharactersLoader,
 	)
 
 	pcCharactersTrackerPublisher := characters_tracker.NewPublisher(
@@ -194,17 +157,6 @@ func start(ctx context.Context, log *logger.Logger, cfg *config.Config) error {
 			publisher.New[publisher.Event](),
 		),
 	)
-	pcCharactersTracker := startNewCharactersTracker(
-		ctx,
-		log,
-		mt,
-		platforms.PC,
-		ps2.PcPlatformWorldIds,
-		pcCachedAndBatchedCharacterLoader,
-		pcPs2EventsPublisher,
-		pcCharactersTrackerPublisher,
-	)
-
 	ps4euCharactersTrackerPublisher := characters_tracker.NewPublisher(
 		mt.InstrumentPlatformPublisher(
 			metrics.CharactersTrackerPlatformPublisher,
@@ -212,17 +164,6 @@ func start(ctx context.Context, log *logger.Logger, cfg *config.Config) error {
 			publisher.New[publisher.Event](),
 		),
 	)
-	ps4euCharactersTracker := startNewCharactersTracker(
-		ctx,
-		log,
-		mt,
-		platforms.PS4_EU,
-		ps2.Ps4euPlatformWorldIds,
-		ps4euCachedAndBatchedCharacterLoader,
-		ps4euPs2EventsPublisher,
-		ps4euCharactersTrackerPublisher,
-	)
-
 	ps4usCharactersTrackerPublisher := characters_tracker.NewPublisher(
 		mt.InstrumentPlatformPublisher(
 			metrics.CharactersTrackerPlatformPublisher,
@@ -230,21 +171,29 @@ func start(ctx context.Context, log *logger.Logger, cfg *config.Config) error {
 			publisher.New[publisher.Event](),
 		),
 	)
-	ps4usCharactersTracker := startNewCharactersTracker(
-		ctx,
-		log,
-		mt,
-		platforms.PS4_US,
-		ps2.Ps4usPlatformWorldIds,
-		ps4usCachedAndBatchedCharacterLoader,
-		ps4usPs2EventsPublisher,
-		ps4usCharactersTrackerPublisher,
-	)
 
 	platformCharactersTrackers := map[platforms.Platform]*characters_tracker.CharactersTracker{
-		platforms.PC:     pcCharactersTracker,
-		platforms.PS4_EU: ps4euCharactersTracker,
-		platforms.PS4_US: ps4usCharactersTracker,
+		platforms.PC: startNewCharactersTracker(
+			ctx, log, mt, platforms.PC,
+			ps2.PcPlatformWorldIds,
+			pcBatchedCharacterLoader,
+			pcPs2EventsPublisher,
+			pcCharactersTrackerPublisher,
+		),
+		platforms.PS4_EU: startNewCharactersTracker(
+			ctx, log, mt, platforms.PS4_EU,
+			ps2.Ps4euPlatformWorldIds,
+			ps4euBatchedCharacterLoader,
+			ps4euPs2EventsPublisher,
+			ps4euCharactersTrackerPublisher,
+		),
+		platforms.PS4_US: startNewCharactersTracker(
+			ctx, log, mt, platforms.PS4_US,
+			ps2.Ps4usPlatformWorldIds,
+			ps4usBatchedCharacterLoader,
+			ps4usPs2EventsPublisher,
+			ps4usCharactersTrackerPublisher,
+		),
 	}
 
 	pcWorldsTrackerPublisher := worlds_tracker.NewPublisher(
@@ -254,8 +203,6 @@ func start(ctx context.Context, log *logger.Logger, cfg *config.Config) error {
 			publisher.New[publisher.Event](),
 		),
 	)
-	pcWorldsTracker := startNewWorldsTracker(ctx, log, pcPs2EventsPublisher, pcWorldsTrackerPublisher)
-
 	ps4euWorldsTrackerPublisher := worlds_tracker.NewPublisher(
 		mt.InstrumentPlatformPublisher(
 			metrics.WorldsTrackerPlatformPublisher,
@@ -263,8 +210,6 @@ func start(ctx context.Context, log *logger.Logger, cfg *config.Config) error {
 			publisher.New[publisher.Event](),
 		),
 	)
-	ps4euWorldsTracker := startNewWorldsTracker(ctx, log, ps4euPs2EventsPublisher, ps4euWorldsTrackerPublisher)
-
 	ps4usWorldsTrackerPublisher := worlds_tracker.NewPublisher(
 		mt.InstrumentPlatformPublisher(
 			metrics.WorldsTrackerPlatformPublisher,
@@ -272,13 +217,6 @@ func start(ctx context.Context, log *logger.Logger, cfg *config.Config) error {
 			publisher.New[publisher.Event](),
 		),
 	)
-	ps4usWorldsTracker := startNewWorldsTracker(ctx, log, ps4usPs2EventsPublisher, ps4usWorldsTrackerPublisher)
-
-	platformWorldsTrackers := map[platforms.Platform]*worlds_tracker.WorldsTracker{
-		platforms.PC:     pcWorldsTracker,
-		platforms.PS4_EU: ps4euWorldsTracker,
-		platforms.PS4_US: ps4usWorldsTracker,
-	}
 
 	// multi loaders
 	popLoader := population_loader.NewMulti(
@@ -317,7 +255,24 @@ func start(ctx context.Context, log *logger.Logger, cfg *config.Config) error {
 	alertsLoader := alerts_loader.NewMulti(
 		log,
 		map[string]loaders.Loader[loaders.Loaded[ps2.Alerts]]{
-			"spy":       alerts_loader.NewWorldsTrackerLoader(log, cfg.BotName, platformWorldsTrackers),
+			"spy": alerts_loader.NewWorldsTrackerLoader(log, cfg.BotName,
+				map[platforms.Platform]*worlds_tracker.WorldsTracker{
+					platforms.PC: startNewWorldsTracker(
+						ctx, log,
+						pcPs2EventsPublisher,
+						pcWorldsTrackerPublisher,
+					),
+					platforms.PS4_EU: startNewWorldsTracker(
+						ctx, log,
+						ps4euPs2EventsPublisher,
+						ps4euWorldsTrackerPublisher,
+					),
+					platforms.PS4_US: startNewWorldsTracker(
+						ctx, log,
+						ps4usPs2EventsPublisher,
+						ps4usWorldsTrackerPublisher,
+					),
+				}),
 			"ps2alerts": alerts_loader.NewPS2Alerts(ps2alertsClient),
 			"honu":      alerts_loader.NewHonu(honuClient),
 			"census":    alerts_loader.NewCensus(log, censusClient),
@@ -333,21 +288,21 @@ func start(ctx context.Context, log *logger.Logger, cfg *config.Config) error {
 	pcTrackingManager := newTrackingManager(
 		log,
 		sqlStorage,
-		pcCachedAndBatchedCharacterLoader,
+		pcBatchedCharacterLoader,
 		characterTrackingChannelsLoader,
 		platforms.PC,
 	)
 	ps4euTrackingManager := newTrackingManager(
 		log,
 		sqlStorage,
-		ps4euCachedAndBatchedCharacterLoader,
+		ps4euBatchedCharacterLoader,
 		characterTrackingChannelsLoader,
 		platforms.PS4_EU,
 	)
 	ps4usTrackingManager := newTrackingManager(
 		log,
 		sqlStorage,
-		ps4usCachedAndBatchedCharacterLoader,
+		ps4usBatchedCharacterLoader,
 		characterTrackingChannelsLoader,
 		platforms.PS4_US,
 	)
@@ -362,24 +317,29 @@ func start(ctx context.Context, log *logger.Logger, cfg *config.Config) error {
 		storageEventsPublisher,
 	)
 
-	pcOutfitMembersSaverPublisher := outfit_members_saver.NewPublisher(mt.InstrumentPlatformPublisher(
-		metrics.OutfitsMembersSaverPlatformPublisher,
-		platforms.PC,
-		publisher.New[publisher.Event](),
-	))
-	ps4euOutfitMembersSaverPublisher := outfit_members_saver.NewPublisher(mt.InstrumentPlatformPublisher(
-		metrics.OutfitsMembersSaverPlatformPublisher,
-		platforms.PS4_EU,
-		publisher.New[publisher.Event](),
-	))
-	ps4usOutfitMembersSaverPublisher := outfit_members_saver.NewPublisher(mt.InstrumentPlatformPublisher(
-		metrics.OutfitsMembersSaverPlatformPublisher,
-		platforms.PS4_US,
-		publisher.New[publisher.Event](),
-	))
-	err = startOutfitMembersSynchronizers(
-		ctx,
-		log,
+	pcOutfitMembersSaverPublisher := outfit_members_saver.NewPublisher(
+		mt.InstrumentPlatformPublisher(
+			metrics.OutfitsMembersSaverPlatformPublisher,
+			platforms.PC,
+			publisher.New[publisher.Event](),
+		),
+	)
+	ps4euOutfitMembersSaverPublisher := outfit_members_saver.NewPublisher(
+		mt.InstrumentPlatformPublisher(
+			metrics.OutfitsMembersSaverPlatformPublisher,
+			platforms.PS4_EU,
+			publisher.New[publisher.Event](),
+		),
+	)
+	ps4usOutfitMembersSaverPublisher := outfit_members_saver.NewPublisher(
+		mt.InstrumentPlatformPublisher(
+			metrics.OutfitsMembersSaverPlatformPublisher,
+			platforms.PS4_US,
+			publisher.New[publisher.Event](),
+		),
+	)
+	if err = startNewOutfitMembersSynchronizers(
+		ctx, wg, log,
 		sqlStorage,
 		censusClient,
 		storageEventsPublisher,
@@ -388,145 +348,61 @@ func start(ctx context.Context, log *logger.Logger, cfg *config.Config) error {
 			platforms.PS4_EU: ps4euOutfitMembersSaverPublisher,
 			platforms.PS4_US: ps4usOutfitMembersSaverPublisher,
 		},
-	)
-	if err != nil {
+	); err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
-	platformCharacterNamesLoader := platform_character_names_loader.NewCensus(censusClient)
-	platformOutfitTagsLoader := platform_outfit_tags_loader.NewCensus(censusClient)
-	subSettingsLoader := subscription_settings_loader.New(sqlStorage)
-
-	pcOutfitLoader := loaders.NewCachedQueriedLoader(
-		log.Logger,
-		outfit_loader.NewCensus(censusClient, platforms.PC),
-		outfit_cache.NewStorage(log, sqlStorage, platforms.PC),
-	)
-	ps4euOutfitLoader := loaders.NewCachedQueriedLoader(
-		log.Logger,
-		outfit_loader.NewCensus(censusClient, platforms.PS4_EU),
-		outfit_cache.NewStorage(log, sqlStorage, platforms.PS4_EU),
-	)
-	ps4usOutfitLoader := loaders.NewCachedQueriedLoader(
-		log.Logger,
-		outfit_loader.NewCensus(censusClient, platforms.PS4_US),
-		outfit_cache.NewStorage(log, sqlStorage, platforms.PS4_US),
-	)
-
 	facilityCache := facility_cache.NewStorage(log, sqlStorage)
-	pcFacilityLoader := loaders.NewCachedQueriedLoader(
-		log.Logger,
-		facility_loader.NewCensus(censusClient, census2.Ps2_v2_NS),
-		facilityCache,
-	)
-	ps4euFacilityLoader := loaders.NewCachedQueriedLoader(
-		log.Logger,
-		facility_loader.NewCensus(censusClient, census2.Ps2ps4eu_v2_NS),
-		facilityCache,
-	)
-	ps4usFacilityLoader := loaders.NewCachedQueriedLoader(
-		log.Logger,
-		facility_loader.NewCensus(censusClient, census2.Ps2ps4us_v2_NS),
-		facilityCache,
-	)
 
 	// bot
-	botConfig := &bot.BotConfig{
-		DiscordToken:           cfg.DiscordToken,
-		RemoveCommands:         cfg.RemoveCommands,
-		CommandHandlerTimeout:  cfg.CommandHandlerTimeout,
-		Ps2EventHandlerTimeout: cfg.Ps2EventHandlerTimeout,
-		Commands: bot.NewCommands(
-			popLoader,
-			worldPopLoader,
-			alertsLoader,
-		),
-		CommandHandlers: bot.NewCommandHandlers(
-			log,
+	startNewBot(
+		ctx,
+		log,
+		bot.NewConfig(
+			log, cfg,
+			sqlStorage,
+			censusClient,
+			facilityCache,
 			popLoader,
 			worldPopLoader,
 			alertsLoader,
 			worldAlertsLoader,
-			subSettingsLoader,
-			platformCharacterNamesLoader,
-			platformOutfitTagsLoader,
-			trackable_online_entities_loader.New(
-				subSettingsLoader,
-				map[platforms.Platform]*characters_tracker.CharactersTracker{
-					platforms.PC:     pcCharactersTracker,
-					platforms.PS4_EU: ps4euCharactersTracker,
-					platforms.PS4_US: ps4usCharactersTracker,
-				},
-			),
-			loaders.NewCachedQueriedLoader(
-				log.Logger,
-				platform_outfits_loader.NewCensus(censusClient),
-				meta.NewPlatformsCache(map[platforms.Platform]containers.MultiKeyedCache[ps2.OutfitId, ps2.Outfit]{
-					platforms.PC:     outfits_cache.NewStorage(log, sqlStorage, platforms.PC),
-					platforms.PS4_EU: outfits_cache.NewStorage(log, sqlStorage, platforms.PS4_EU),
-					platforms.PS4_US: outfits_cache.NewStorage(log, sqlStorage, platforms.PS4_US),
-				}),
-			),
+			platformCharactersTrackers,
 		),
-		SubmitHandlers: map[string]handlers.InteractionHandler{
-			handlers.CHANNEL_SETUP_PC_MODAL: channel_setup_submit_handler.New(
-				character_ids_loader.NewCensus(censusClient, census2.Ps2_v2_NS),
-				character_names_loader.NewCensus(censusClient, census2.Ps2_v2_NS),
-				outfit_ids_loader.NewCensus(censusClient, census2.Ps2_v2_NS),
-				outfit_tags_loader.NewCensus(censusClient, census2.Ps2_v2_NS),
-				subscription_settings_saver.New(sqlStorage, subSettingsLoader, platforms.PC),
-			),
-			handlers.CHANNEL_SETUP_PS4_EU_MODAL: channel_setup_submit_handler.New(
-				character_ids_loader.NewCensus(censusClient, census2.Ps2ps4eu_v2_NS),
-				character_names_loader.NewCensus(censusClient, census2.Ps2ps4eu_v2_NS),
-				outfit_ids_loader.NewCensus(censusClient, census2.Ps2ps4eu_v2_NS),
-				outfit_tags_loader.NewCensus(censusClient, census2.Ps2ps4eu_v2_NS),
-				subscription_settings_saver.New(sqlStorage, subSettingsLoader, platforms.PS4_EU),
-			),
-			handlers.CHANNEL_SETUP_PS4_US_MODAL: channel_setup_submit_handler.New(
-				character_ids_loader.NewCensus(censusClient, census2.Ps2ps4us_v2_NS),
-				character_names_loader.NewCensus(censusClient, census2.Ps2ps4us_v2_NS),
-				outfit_ids_loader.NewCensus(censusClient, census2.Ps2ps4us_v2_NS),
-				outfit_tags_loader.NewCensus(censusClient, census2.Ps2ps4us_v2_NS),
-				subscription_settings_saver.New(sqlStorage, subSettingsLoader, platforms.PS4_US),
-			),
-		},
-	}
-	startNewBot(
-		ctx,
-		log,
-		botConfig,
 		event_tracking_channels_loader.New(pcTrackingManager),
-		bot.NewEventHandlers(
-			log,
+		newEventHandler(
+			log, mt, platforms.PC,
 			pcCharactersTrackerPublisher,
 			pcOutfitMembersSaverPublisher,
 			pcWorldsTrackerPublisher,
-			pcCachedAndBatchedCharacterLoader,
-			pcOutfitLoader,
-			pcFacilityLoader,
+			sqlStorage,
+			censusClient,
+			facilityCache,
+			pcBatchedCharacterLoader,
 			pcCharactersLoader,
 		),
 		event_tracking_channels_loader.New(ps4euTrackingManager),
-		bot.NewEventHandlers(
-			log,
+		newEventHandler(
+			log, mt, platforms.PS4_EU,
 			ps4euCharactersTrackerPublisher,
 			ps4euOutfitMembersSaverPublisher,
 			ps4euWorldsTrackerPublisher,
-			ps4euCachedAndBatchedCharacterLoader,
-			ps4euOutfitLoader,
-			ps4euFacilityLoader,
+			sqlStorage,
+			censusClient,
+			facilityCache,
+			ps4euBatchedCharacterLoader,
 			ps4euCharactersLoader,
 		),
 		event_tracking_channels_loader.New(ps4usTrackingManager),
-		bot.NewEventHandlers(
-			log,
+		newEventHandler(
+			log, mt, platforms.PS4_US,
 			ps4usCharactersTrackerPublisher,
 			ps4usOutfitMembersSaverPublisher,
 			ps4usWorldsTrackerPublisher,
-			ps4usCachedAndBatchedCharacterLoader,
-			ps4usOutfitLoader,
-			ps4usFacilityLoader,
+			sqlStorage,
+			censusClient,
+			facilityCache,
+			ps4usBatchedCharacterLoader,
 			ps4usCharactersLoader,
 		),
 	)

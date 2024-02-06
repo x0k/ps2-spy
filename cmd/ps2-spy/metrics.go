@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
@@ -14,7 +15,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/metrics"
 )
 
-func startMetrics(ctx context.Context, log *logger.Logger, cfg config.MetricsConfig) metrics.Metrics {
+func startMetrics(ctx context.Context, wg *sync.WaitGroup, log *logger.Logger, cfg config.MetricsConfig) metrics.Metrics {
 	if !cfg.Enabled {
 		log.Info(ctx, "metrics disabled")
 		return metrics.NewStub()
@@ -26,7 +27,9 @@ func startMetrics(ctx context.Context, log *logger.Logger, cfg config.MetricsCon
 	m.Register(reg)
 	reg.MustRegister(collectors.NewGoCollector())
 	mux.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		if err := http.ListenAndServe(cfg.Address, mux); err != nil {
 			log.Error(ctx, "failed to start metrics", sl.Err(err))
 		}

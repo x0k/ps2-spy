@@ -27,16 +27,6 @@ type Bot struct {
 	registeredCommands  []*discordgo.ApplicationCommand
 }
 
-type BotConfig struct {
-	DiscordToken           string
-	RemoveCommands         bool
-	CommandHandlerTimeout  time.Duration
-	Ps2EventHandlerTimeout time.Duration
-	Commands               []*discordgo.ApplicationCommand
-	CommandHandlers        map[string]handlers.InteractionHandler
-	SubmitHandlers         map[string]handlers.InteractionHandler
-}
-
 func New(
 	ctx context.Context,
 	log *logger.Logger,
@@ -112,12 +102,11 @@ func (b *Bot) StartEventHandlers(
 	eventTrackingChannelsLoader loaders.QueriedLoader[any, []meta.ChannelId],
 	eventHandlers EventHandlers,
 ) error {
-	eventHandlersConfig := &handlers.Ps2EventHandlerConfig{
+	return eventHandlers.Start(ctx, &handlers.Ps2EventHandlerConfig{
 		Session:                     b.session,
 		Timeout:                     b.eventHandlerTimeout,
 		EventTrackingChannelsLoader: eventTrackingChannelsLoader,
-	}
-	return eventHandlers.Start(ctx, eventHandlersConfig)
+	})
 }
 
 func (b *Bot) Stop(ctx context.Context) error {

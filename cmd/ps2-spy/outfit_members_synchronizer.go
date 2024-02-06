@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"sync"
 	"time"
 
-	"github.com/x0k/ps2-spy/internal/infra"
 	"github.com/x0k/ps2-spy/internal/lib/census2"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/loaders/outfit_member_ids_loader"
@@ -44,8 +44,9 @@ func newOutfitMembersSynchronizer(
 	)
 }
 
-func startOutfitMembersSynchronizers(
+func startNewOutfitMembersSynchronizers(
 	ctx context.Context,
+	wg *sync.WaitGroup,
 	log *logger.Logger,
 	sqlStorage *sqlite.Storage,
 	censusClient *census2.Client,
@@ -94,7 +95,6 @@ func startOutfitMembersSynchronizers(
 		platforms.PS4_EU: ps4euOutfitMembersSynchronizer,
 		platforms.PS4_US: ps4usOutfitMembersSynchronizer,
 	}
-	wg := infra.Wg(ctx)
 	for _, os := range oss {
 		os.Start(ctx, wg)
 	}

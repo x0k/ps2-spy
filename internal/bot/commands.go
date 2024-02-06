@@ -29,7 +29,7 @@ func providerChoices(providers []string) []*discordgo.ApplicationCommandOptionCh
 	return choices
 }
 
-func NewCommands(
+func newCommands(
 	popMultiLoader multi_loaders.MultiLoader,
 	worldPopMultiLoader multi_loaders.MultiLoader,
 	alertsMultiLoader multi_loaders.MultiLoader,
