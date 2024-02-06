@@ -102,12 +102,11 @@ func (b *Bot) StartEventHandlers(
 	eventTrackingChannelsLoader loaders.QueriedLoader[any, []meta.ChannelId],
 	eventHandlers EventHandlers,
 ) error {
-	eventHandlersConfig := &handlers.Ps2EventHandlerConfig{
+	return eventHandlers.Start(ctx, &handlers.Ps2EventHandlerConfig{
 		Session:                     b.session,
 		Timeout:                     b.eventHandlerTimeout,
 		EventTrackingChannelsLoader: eventTrackingChannelsLoader,
-	}
-	return eventHandlers.Start(ctx, eventHandlersConfig)
+	})
 }
 
 func (b *Bot) Stop(ctx context.Context) error {

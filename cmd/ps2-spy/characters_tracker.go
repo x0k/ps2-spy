@@ -13,11 +13,24 @@ import (
 	"github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
 
-func startCharactersTracker(
+func startNewCharactersTracker(
 	ctx context.Context,
-	charactersTracker *characters_tracker.CharactersTracker,
+	log *logger.Logger,
+	mt metrics.Metrics,
+	platform platforms.Platform,
+	worldIds []ps2.WorldId,
+	characterLoader loaders.KeyedLoader[ps2.CharacterId, ps2.Character],
 	ps2EventsPublisher *ps2events.Publisher,
-) {
+	charactersTrackerPublisher *characters_tracker.Publisher,
+) *characters_tracker.CharactersTracker {
+	charactersTracker := characters_tracker.New(
+		log,
+		platform,
+		worldIds,
+		characterLoader,
+		charactersTrackerPublisher,
+		mt,
+	)
 	charactersTracker.Start(ctx)
 	achievementEarned := make(chan ps2events.AchievementEarned)
 	achievementUnSub := ps2EventsPublisher.AddAchievementEarnedHandler(achievementEarned)
@@ -88,30 +101,5 @@ func startCharactersTracker(
 			}
 		}
 	}()
-}
-
-func startNewCharactersTracker(
-	ctx context.Context,
-	log *logger.Logger,
-	mt metrics.Metrics,
-	platform platforms.Platform,
-	worldIds []ps2.WorldId,
-	characterLoader loaders.KeyedLoader[ps2.CharacterId, ps2.Character],
-	ps2EventsPublisher *ps2events.Publisher,
-	charactersTrackerPublisher *characters_tracker.Publisher,
-) *characters_tracker.CharactersTracker {
-	charactersTracker := characters_tracker.New(
-		log,
-		platform,
-		worldIds,
-		characterLoader,
-		charactersTrackerPublisher,
-		mt,
-	)
-	startCharactersTracker(
-		ctx,
-		charactersTracker,
-		ps2EventsPublisher,
-	)
 	return charactersTracker
 }

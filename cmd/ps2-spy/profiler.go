@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"sync"
 
 	"net/http/pprof"
 
@@ -12,7 +13,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 )
 
-func startProfiler(ctx context.Context, log *logger.Logger, cfg config.ProfilerConfig) {
+func startProfiler(ctx context.Context, wg *sync.WaitGroup, log *logger.Logger, cfg config.ProfilerConfig) {
 	if !cfg.Enabled {
 		log.Info(ctx, "profiler disabled")
 		return
@@ -24,7 +25,9 @@ func startProfiler(ctx context.Context, log *logger.Logger, cfg config.ProfilerC
 	mux.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
 	mux.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
 	mux.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		if err := http.ListenAndServe(cfg.Address, mux); err != nil {
 			log.Error(ctx, "failed to start profiler", sl.Err(err))
 		}

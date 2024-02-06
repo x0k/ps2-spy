@@ -11,12 +11,13 @@ import (
 	"github.com/x0k/ps2-spy/internal/worlds_tracker"
 )
 
-func startWorldsTracker(
+func startNewWorldsTracker(
 	ctx context.Context,
 	log *logger.Logger,
-	worldsTracker *worlds_tracker.WorldsTracker,
 	ps2EventsPublisher *ps2events.Publisher,
-) {
+	worldsTrackerPublisher *worlds_tracker.Publisher,
+) *worlds_tracker.WorldsTracker {
+	worldsTracker := worlds_tracker.New(5*time.Minute, worldsTrackerPublisher)
 	worldsTracker.Start(ctx)
 	metagameEvent := make(chan ps2events.MetagameEvent)
 	metagameEventUnSub := ps2EventsPublisher.AddMetagameEventHandler(metagameEvent)
@@ -50,15 +51,5 @@ func startWorldsTracker(
 			}
 		}
 	}()
-}
-
-func startNewWorldsTracker(
-	ctx context.Context,
-	log *logger.Logger,
-	ps2EventsPublisher *ps2events.Publisher,
-	worldsTrackerPublisher *worlds_tracker.Publisher,
-) *worlds_tracker.WorldsTracker {
-	worldsTracker := worlds_tracker.New(5*time.Minute, worldsTrackerPublisher)
-	startWorldsTracker(ctx, log, worldsTracker, ps2EventsPublisher)
 	return worldsTracker
 }
