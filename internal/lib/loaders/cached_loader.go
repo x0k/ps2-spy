@@ -2,8 +2,10 @@ package loaders
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/x0k/ps2-spy/internal/lib/containers"
+	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 )
 
 type CachedLoader[T any] struct {
@@ -35,15 +37,18 @@ func (v *CachedLoader[T]) Load(ctx context.Context) (T, error) {
 }
 
 type CachedQueryLoader[Q any, T any] struct {
+	log    *slog.Logger
 	cache  containers.QueryCache[Q, T]
 	loader QueriedLoader[Q, T]
 }
 
 func NewCachedQueriedLoader[Q any, T any](
+	log *slog.Logger,
 	loader QueriedLoader[Q, T],
 	cache containers.QueryCache[Q, T],
 ) *CachedQueryLoader[Q, T] {
 	return &CachedQueryLoader[Q, T]{
+		log:    log.With(slog.String("component", "loaders.CachedQueryLoader")),
 		cache:  cache,
 		loader: loader,
 	}
@@ -62,20 +67,30 @@ func (v *CachedQueryLoader[Q, T]) Load(ctx context.Context, query Q) (T, error) 
 	if err != nil {
 		return loaded, err
 	}
-	v.cache.Add(ctx, query, loaded)
+	if err := v.cache.Add(ctx, query, loaded); err != nil {
+		v.log.LogAttrs(
+			ctx,
+			slog.LevelError,
+			"failed to cache loader result",
+			sl.Err(err),
+		)
+	}
 	return loaded, nil
 }
 
 type CachedMultiKeyedLoader[K comparable, T any] struct {
+	log    *slog.Logger
 	cache  containers.MultiKeyedCache[K, T]
 	loader QueriedLoader[[]K, map[K]T]
 }
 
 func NewCtxCachedMultiKeyedLoader[K comparable, T any](
+	log *slog.Logger,
 	loader QueriedLoader[[]K, map[K]T],
 	cache containers.MultiKeyedCache[K, T],
 ) *CachedMultiKeyedLoader[K, T] {
 	return &CachedMultiKeyedLoader[K, T]{
+		log:    log.With(slog.String("component", "loaders.CachedMultiKeyedLoader")),
 		cache:  cache,
 		loader: loader,
 	}
@@ -104,7 +119,14 @@ func (l *CachedMultiKeyedLoader[K, T]) Load(ctx context.Context, keys []K) (map[
 	if err != nil {
 		return cached, err
 	}
-	l.cache.Add(ctx, loaded)
+	if err := l.cache.Add(ctx, loaded); err != nil {
+		l.log.LogAttrs(
+			ctx,
+			slog.LevelError,
+			"failed to cache loader result",
+			sl.Err(err),
+		)
+	}
 	for k, v := range cached {
 		loaded[k] = v
 	}

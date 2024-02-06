@@ -373,8 +373,10 @@ func query[T any](
 	return results, rows.Err()
 }
 
-func (s *Storage) publish(event publisher.Event) {
-	s.pub.Publish(event)
+func (s *Storage) publish(ctx context.Context, event publisher.Event) {
+	if err := s.pub.Publish(event); err != nil {
+		s.log.Error(ctx, "cannot publish event", sl.Err(err))
+	}
 }
 
 func (s *Storage) SaveChannelOutfit(ctx context.Context, channelId meta.ChannelId, platform platforms.Platform, outfitId ps2.OutfitId) error {
@@ -383,7 +385,7 @@ func (s *Storage) SaveChannelOutfit(ctx context.Context, channelId meta.ChannelI
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
-	s.publish(storage.ChannelOutfitSaved{
+	s.publish(ctx, storage.ChannelOutfitSaved{
 		ChannelId: channelId,
 		Platform:  platform,
 		OutfitId:  outfitId,
@@ -397,7 +399,7 @@ func (s *Storage) DeleteChannelOutfit(ctx context.Context, channelId meta.Channe
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
-	s.publish(storage.ChannelOutfitDeleted{
+	s.publish(ctx, storage.ChannelOutfitDeleted{
 		ChannelId: channelId,
 		Platform:  platform,
 		OutfitId:  outfitId,
@@ -411,7 +413,7 @@ func (s *Storage) SaveChannelCharacter(ctx context.Context, channelId meta.Chann
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
-	s.publish(storage.ChannelCharacterSaved{
+	s.publish(ctx, storage.ChannelCharacterSaved{
 		ChannelId:   channelId,
 		Platform:    platform,
 		CharacterId: characterId,
@@ -425,7 +427,7 @@ func (s *Storage) DeleteChannelCharacter(ctx context.Context, channelId meta.Cha
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
-	s.publish(storage.ChannelCharacterDeleted{
+	s.publish(ctx, storage.ChannelCharacterDeleted{
 		ChannelId:   channelId,
 		Platform:    platform,
 		CharacterId: characterId,
@@ -439,7 +441,7 @@ func (s *Storage) SaveOutfitMember(ctx context.Context, platform platforms.Platf
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
-	s.publish(storage.OutfitMemberSaved{
+	s.publish(ctx, storage.OutfitMemberSaved{
 		Platform:    platform,
 		OutfitId:    outfitId,
 		CharacterId: characterId,
@@ -453,7 +455,7 @@ func (s *Storage) DeleteOutfitMember(ctx context.Context, platform platforms.Pla
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
-	s.publish(storage.OutfitMemberDeleted{
+	s.publish(ctx, storage.OutfitMemberDeleted{
 		Platform:    platform,
 		OutfitId:    outfitId,
 		CharacterId: characterId,
@@ -467,7 +469,7 @@ func (s *Storage) SaveOutfitSynchronizedAt(ctx context.Context, platform platfor
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
-	s.publish(storage.OutfitSynchronized{
+	s.publish(ctx, storage.OutfitSynchronized{
 		Platform:       platform,
 		OutfitId:       outfitId,
 		SynchronizedAt: at,

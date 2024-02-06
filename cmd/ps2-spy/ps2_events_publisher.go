@@ -52,7 +52,7 @@ func startNewPs2EventsPublisher(
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		retryable.New(
+		_ = retryable.New(
 			func(ctx context.Context) error {
 				err := client.Connect(ctx)
 				if err != nil {

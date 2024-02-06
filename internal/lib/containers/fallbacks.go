@@ -21,7 +21,7 @@ type Fallbacks[T any] struct {
 
 func NewFallbacks[T any](log *slog.Logger, entities map[string]T, priority []string, ttl time.Duration) *Fallbacks[T] {
 	return &Fallbacks[T]{
-		log:                  log,
+		log:                  log.With(slog.String("component", "containers.Fallbacks")),
 		entities:             entities,
 		priority:             priority,
 		lastSuccessfulEntity: NewExpiable[string](ttl),

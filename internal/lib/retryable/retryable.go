@@ -74,7 +74,7 @@ func NewWithReturn[R any](
 }
 
 func (r *WithReturn[R]) Run(ctx context.Context, options ...any) (R, error) {
-	r.ret.Run(ctx, options...)
+	_ = r.ret.Run(ctx, options...) // error saved in r.err
 	return r.res, r.err
 }
 
@@ -99,6 +99,6 @@ func NewWithArg[A any, R any](
 
 func (r *WithArg[A, R]) Run(ctx context.Context, arg A, options ...any) (R, error) {
 	r.arg = arg
-	r.ret.Run(ctx, options...)
+	_ = r.ret.Run(ctx, options...) // error saved in r.err
 	return r.res, r.err
 }

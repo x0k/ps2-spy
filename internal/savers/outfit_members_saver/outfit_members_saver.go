@@ -2,22 +2,27 @@ package outfit_members_saver
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
 	"github.com/x0k/ps2-spy/internal/lib/diff"
+	"github.com/x0k/ps2-spy/internal/lib/logger"
+	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/ps2/platforms"
 	"github.com/x0k/ps2-spy/internal/storage/sqlite"
 )
 
 type OutfitMembersSaver struct {
+	log      *logger.Logger
 	storage  *sqlite.Storage
 	pub      *Publisher
 	platform platforms.Platform
 }
 
-func New(storage *sqlite.Storage, pub *Publisher, platform platforms.Platform) *OutfitMembersSaver {
+func New(log *logger.Logger, storage *sqlite.Storage, pub *Publisher, platform platforms.Platform) *OutfitMembersSaver {
 	return &OutfitMembersSaver{
+		log:      log.With(slog.String("component", "savers.outfit_members_saver.OutfitMembersSaver")),
 		storage:  storage,
 		pub:      pub,
 		platform: platform,
@@ -50,16 +55,20 @@ func (s *OutfitMembersSaver) Save(ctx context.Context, outfitId ps2.OutfitId, me
 	if err != nil {
 		return err
 	}
+	var pErr error
 	if len(old) == 0 {
-		s.pub.Publish(OutfitMembersInit{
+		pErr = s.pub.Publish(OutfitMembersInit{
 			OutfitId: outfitId,
 			Members:  members,
 		})
 	} else {
-		s.pub.Publish(OutfitMembersUpdate{
+		pErr = s.pub.Publish(OutfitMembersUpdate{
 			OutfitId: outfitId,
 			Members:  membersDiff,
 		})
+	}
+	if pErr != nil {
+		s.log.Error(ctx, "failed to publish event", sl.Err(pErr))
 	}
 	return s.storage.SaveOutfitSynchronizedAt(ctx, s.platform, outfitId, time.Now())
 }

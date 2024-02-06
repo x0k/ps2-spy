@@ -11,6 +11,7 @@ import (
 	ps2events "github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
 	"github.com/x0k/ps2-spy/internal/lib/containers"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
+	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/lib/publisher"
 	"github.com/x0k/ps2-spy/internal/metrics"
 	"github.com/x0k/ps2-spy/internal/ps2"
@@ -74,7 +75,9 @@ func (r *ReLoginOmitter) flushLogOutEvents(ctx context.Context, now time.Time) {
 	defer r.batchMu.Unlock()
 	count := r.logoutEventsQueue.RemoveExpired(now.Add(-r.delayDuration), func(charId ps2.CharacterId) {
 		if e, ok := r.logoutEvents[charId]; ok {
-			r.Publisher.Publish(&e)
+			if err := r.Publisher.Publish(&e); err != nil {
+				r.log.Error(ctx, "failed to publish logout event", sl.Err(err))
+			}
 			delete(r.logoutEvents, charId)
 		}
 	})
