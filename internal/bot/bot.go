@@ -27,16 +27,6 @@ type Bot struct {
 	registeredCommands  []*discordgo.ApplicationCommand
 }
 
-type BotConfig struct {
-	DiscordToken           string
-	RemoveCommands         bool
-	CommandHandlerTimeout  time.Duration
-	Ps2EventHandlerTimeout time.Duration
-	Commands               []*discordgo.ApplicationCommand
-	CommandHandlers        map[string]handlers.InteractionHandler
-	SubmitHandlers         map[string]handlers.InteractionHandler
-}
-
 func New(
 	ctx context.Context,
 	log *logger.Logger,

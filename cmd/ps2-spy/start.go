@@ -7,11 +7,7 @@ import (
 	"time"
 
 	"github.com/x0k/ps2-spy/internal/bot"
-	"github.com/x0k/ps2-spy/internal/bot/handlers"
-	"github.com/x0k/ps2-spy/internal/bot/handlers/submit/channel_setup_submit_handler"
 	"github.com/x0k/ps2-spy/internal/cache/facility_cache"
-	"github.com/x0k/ps2-spy/internal/cache/outfit_cache"
-	"github.com/x0k/ps2-spy/internal/cache/outfits_cache"
 	"github.com/x0k/ps2-spy/internal/characters_tracker"
 	"github.com/x0k/ps2-spy/internal/config"
 	"github.com/x0k/ps2-spy/internal/infra"
@@ -29,29 +25,16 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/publisher"
 	"github.com/x0k/ps2-spy/internal/lib/voidwell"
 	"github.com/x0k/ps2-spy/internal/loaders/alerts_loader"
-	"github.com/x0k/ps2-spy/internal/loaders/character_ids_loader"
-	"github.com/x0k/ps2-spy/internal/loaders/character_names_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/character_tracking_channels_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/characters_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/event_tracking_channels_loader"
-	"github.com/x0k/ps2-spy/internal/loaders/facility_loader"
-	"github.com/x0k/ps2-spy/internal/loaders/outfit_ids_loader"
-	"github.com/x0k/ps2-spy/internal/loaders/outfit_loader"
-	"github.com/x0k/ps2-spy/internal/loaders/outfit_tags_loader"
-	"github.com/x0k/ps2-spy/internal/loaders/platform_character_names_loader"
-	"github.com/x0k/ps2-spy/internal/loaders/platform_outfit_tags_loader"
-	"github.com/x0k/ps2-spy/internal/loaders/platform_outfits_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/population_loader"
-	"github.com/x0k/ps2-spy/internal/loaders/subscription_settings_loader"
-	"github.com/x0k/ps2-spy/internal/loaders/trackable_online_entities_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/world_alerts_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/world_population_loader"
-	"github.com/x0k/ps2-spy/internal/meta"
 	"github.com/x0k/ps2-spy/internal/metrics"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/ps2/platforms"
 	"github.com/x0k/ps2-spy/internal/savers/outfit_members_saver"
-	"github.com/x0k/ps2-spy/internal/savers/subscription_settings_saver"
 	"github.com/x0k/ps2-spy/internal/storage"
 	"github.com/x0k/ps2-spy/internal/tracking_manager"
 	"github.com/x0k/ps2-spy/internal/worlds_tracker"
@@ -254,8 +237,6 @@ func start(ctx context.Context, log *logger.Logger, cfg *config.Config) error {
 			publisher.New[publisher.Event](),
 		),
 	)
-	pcWorldsTracker := startNewWorldsTracker(ctx, log, pcPs2EventsPublisher, pcWorldsTrackerPublisher)
-
 	ps4euWorldsTrackerPublisher := worlds_tracker.NewPublisher(
 		mt.InstrumentPlatformPublisher(
 			metrics.WorldsTrackerPlatformPublisher,
@@ -263,8 +244,6 @@ func start(ctx context.Context, log *logger.Logger, cfg *config.Config) error {
 			publisher.New[publisher.Event](),
 		),
 	)
-	ps4euWorldsTracker := startNewWorldsTracker(ctx, log, ps4euPs2EventsPublisher, ps4euWorldsTrackerPublisher)
-
 	ps4usWorldsTrackerPublisher := worlds_tracker.NewPublisher(
 		mt.InstrumentPlatformPublisher(
 			metrics.WorldsTrackerPlatformPublisher,
@@ -272,12 +251,22 @@ func start(ctx context.Context, log *logger.Logger, cfg *config.Config) error {
 			publisher.New[publisher.Event](),
 		),
 	)
-	ps4usWorldsTracker := startNewWorldsTracker(ctx, log, ps4usPs2EventsPublisher, ps4usWorldsTrackerPublisher)
-
 	platformWorldsTrackers := map[platforms.Platform]*worlds_tracker.WorldsTracker{
-		platforms.PC:     pcWorldsTracker,
-		platforms.PS4_EU: ps4euWorldsTracker,
-		platforms.PS4_US: ps4usWorldsTracker,
+		platforms.PC: startNewWorldsTracker(
+			ctx, log,
+			pcPs2EventsPublisher,
+			pcWorldsTrackerPublisher,
+		),
+		platforms.PS4_EU: startNewWorldsTracker(
+			ctx, log,
+			ps4euPs2EventsPublisher,
+			ps4euWorldsTrackerPublisher,
+		),
+		platforms.PS4_US: startNewWorldsTracker(
+			ctx, log,
+			ps4usPs2EventsPublisher,
+			ps4usWorldsTrackerPublisher,
+		),
 	}
 
 	// multi loaders
@@ -393,140 +382,57 @@ func start(ctx context.Context, log *logger.Logger, cfg *config.Config) error {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
-	platformCharacterNamesLoader := platform_character_names_loader.NewCensus(censusClient)
-	platformOutfitTagsLoader := platform_outfit_tags_loader.NewCensus(censusClient)
-	subSettingsLoader := subscription_settings_loader.New(sqlStorage)
-
-	pcOutfitLoader := loaders.NewCachedQueriedLoader(
-		log.Logger,
-		outfit_loader.NewCensus(censusClient, platforms.PC),
-		outfit_cache.NewStorage(log, sqlStorage, platforms.PC),
-	)
-	ps4euOutfitLoader := loaders.NewCachedQueriedLoader(
-		log.Logger,
-		outfit_loader.NewCensus(censusClient, platforms.PS4_EU),
-		outfit_cache.NewStorage(log, sqlStorage, platforms.PS4_EU),
-	)
-	ps4usOutfitLoader := loaders.NewCachedQueriedLoader(
-		log.Logger,
-		outfit_loader.NewCensus(censusClient, platforms.PS4_US),
-		outfit_cache.NewStorage(log, sqlStorage, platforms.PS4_US),
-	)
-
 	facilityCache := facility_cache.NewStorage(log, sqlStorage)
-	pcFacilityLoader := loaders.NewCachedQueriedLoader(
-		log.Logger,
-		facility_loader.NewCensus(censusClient, census2.Ps2_v2_NS),
-		facilityCache,
-	)
-	ps4euFacilityLoader := loaders.NewCachedQueriedLoader(
-		log.Logger,
-		facility_loader.NewCensus(censusClient, census2.Ps2ps4eu_v2_NS),
-		facilityCache,
-	)
-	ps4usFacilityLoader := loaders.NewCachedQueriedLoader(
-		log.Logger,
-		facility_loader.NewCensus(censusClient, census2.Ps2ps4us_v2_NS),
-		facilityCache,
-	)
 
 	// bot
-	botConfig := &bot.BotConfig{
-		DiscordToken:           cfg.DiscordToken,
-		RemoveCommands:         cfg.RemoveCommands,
-		CommandHandlerTimeout:  cfg.CommandHandlerTimeout,
-		Ps2EventHandlerTimeout: cfg.Ps2EventHandlerTimeout,
-		Commands: bot.NewCommands(
-			popLoader,
-			worldPopLoader,
-			alertsLoader,
-		),
-		CommandHandlers: bot.NewCommandHandlers(
-			log,
+	startNewBot(
+		ctx,
+		log,
+		bot.NewConfig(
+			log, cfg,
+			sqlStorage,
+			censusClient,
+			facilityCache,
 			popLoader,
 			worldPopLoader,
 			alertsLoader,
 			worldAlertsLoader,
-			subSettingsLoader,
-			platformCharacterNamesLoader,
-			platformOutfitTagsLoader,
-			trackable_online_entities_loader.New(
-				subSettingsLoader,
-				map[platforms.Platform]*characters_tracker.CharactersTracker{
-					platforms.PC:     pcCharactersTracker,
-					platforms.PS4_EU: ps4euCharactersTracker,
-					platforms.PS4_US: ps4usCharactersTracker,
-				},
-			),
-			loaders.NewCachedQueriedLoader(
-				log.Logger,
-				platform_outfits_loader.NewCensus(censusClient),
-				meta.NewPlatformsCache(map[platforms.Platform]containers.MultiKeyedCache[ps2.OutfitId, ps2.Outfit]{
-					platforms.PC:     outfits_cache.NewStorage(log, sqlStorage, platforms.PC),
-					platforms.PS4_EU: outfits_cache.NewStorage(log, sqlStorage, platforms.PS4_EU),
-					platforms.PS4_US: outfits_cache.NewStorage(log, sqlStorage, platforms.PS4_US),
-				}),
-			),
+			platformCharactersTrackers,
 		),
-		SubmitHandlers: map[string]handlers.InteractionHandler{
-			handlers.CHANNEL_SETUP_PC_MODAL: channel_setup_submit_handler.New(
-				character_ids_loader.NewCensus(censusClient, census2.Ps2_v2_NS),
-				character_names_loader.NewCensus(censusClient, census2.Ps2_v2_NS),
-				outfit_ids_loader.NewCensus(censusClient, census2.Ps2_v2_NS),
-				outfit_tags_loader.NewCensus(censusClient, census2.Ps2_v2_NS),
-				subscription_settings_saver.New(sqlStorage, subSettingsLoader, platforms.PC),
-			),
-			handlers.CHANNEL_SETUP_PS4_EU_MODAL: channel_setup_submit_handler.New(
-				character_ids_loader.NewCensus(censusClient, census2.Ps2ps4eu_v2_NS),
-				character_names_loader.NewCensus(censusClient, census2.Ps2ps4eu_v2_NS),
-				outfit_ids_loader.NewCensus(censusClient, census2.Ps2ps4eu_v2_NS),
-				outfit_tags_loader.NewCensus(censusClient, census2.Ps2ps4eu_v2_NS),
-				subscription_settings_saver.New(sqlStorage, subSettingsLoader, platforms.PS4_EU),
-			),
-			handlers.CHANNEL_SETUP_PS4_US_MODAL: channel_setup_submit_handler.New(
-				character_ids_loader.NewCensus(censusClient, census2.Ps2ps4us_v2_NS),
-				character_names_loader.NewCensus(censusClient, census2.Ps2ps4us_v2_NS),
-				outfit_ids_loader.NewCensus(censusClient, census2.Ps2ps4us_v2_NS),
-				outfit_tags_loader.NewCensus(censusClient, census2.Ps2ps4us_v2_NS),
-				subscription_settings_saver.New(sqlStorage, subSettingsLoader, platforms.PS4_US),
-			),
-		},
-	}
-	startNewBot(
-		ctx,
-		log,
-		botConfig,
 		event_tracking_channels_loader.New(pcTrackingManager),
-		bot.NewEventHandlers(
-			log,
+		newEventHandler(
+			log, mt, platforms.PC,
 			pcCharactersTrackerPublisher,
 			pcOutfitMembersSaverPublisher,
 			pcWorldsTrackerPublisher,
+			sqlStorage,
+			censusClient,
+			facilityCache,
 			pcCachedAndBatchedCharacterLoader,
-			pcOutfitLoader,
-			pcFacilityLoader,
 			pcCharactersLoader,
 		),
 		event_tracking_channels_loader.New(ps4euTrackingManager),
-		bot.NewEventHandlers(
-			log,
+		newEventHandler(
+			log, mt, platforms.PS4_EU,
 			ps4euCharactersTrackerPublisher,
 			ps4euOutfitMembersSaverPublisher,
 			ps4euWorldsTrackerPublisher,
+			sqlStorage,
+			censusClient,
+			facilityCache,
 			ps4euCachedAndBatchedCharacterLoader,
-			ps4euOutfitLoader,
-			ps4euFacilityLoader,
 			ps4euCharactersLoader,
 		),
 		event_tracking_channels_loader.New(ps4usTrackingManager),
-		bot.NewEventHandlers(
-			log,
+		newEventHandler(
+			log, mt, platforms.PS4_US,
 			ps4usCharactersTrackerPublisher,
 			ps4usOutfitMembersSaverPublisher,
 			ps4usWorldsTrackerPublisher,
+			sqlStorage,
+			censusClient,
+			facilityCache,
 			ps4usCachedAndBatchedCharacterLoader,
-			ps4usOutfitLoader,
-			ps4usFacilityLoader,
 			ps4usCharactersLoader,
 		),
 	)

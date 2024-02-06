@@ -14,7 +14,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
-func NewCommandHandlers(
+func newCommandHandlers(
 	log *logger.Logger,
 	popLoader loaders.KeyedLoader[string, loaders.Loaded[ps2.WorldsPopulation]],
 	worldPopLoader loaders.QueriedLoader[loaders.MultiLoaderQuery[ps2.WorldId], loaders.Loaded[ps2.DetailedWorldPopulation]],
