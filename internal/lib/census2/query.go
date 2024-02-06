@@ -301,13 +301,23 @@ func (q *Query) fields() []optionalPrinter {
 	}
 }
 
-func (q *Query) print(writer io.StringWriter) {
-	writer.WriteString(q.queryType)
-	writer.WriteString("/")
-	writer.WriteString(q.namespace)
-	writer.WriteString("/")
-	writer.WriteString(q.collection)
-	printList(writer, queryFirstFieldsSeparator, queryFieldsSeparator, q.fields())
+func (q *Query) print(writer io.StringWriter) error {
+	if _, err := writer.WriteString(q.queryType); err != nil {
+		return err
+	}
+	if _, err := writer.WriteString("/"); err != nil {
+		return err
+	}
+	if _, err := writer.WriteString(q.namespace); err != nil {
+		return err
+	}
+	if _, err := writer.WriteString("/"); err != nil {
+		return err
+	}
+	if _, err := writer.WriteString(q.collection); err != nil {
+		return err
+	}
+	return printList(writer, queryFirstFieldsSeparator, queryFieldsSeparator, q.fields())
 }
 
 func (q *Query) String() string {

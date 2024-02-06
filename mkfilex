@@ -19,8 +19,8 @@ prof:
 test:
     go test ./...
 
-vet:
-    go vet ./... && staticcheck ./...
+lint:
+    golangci-lint run ./...
 
 up:
     USER_ID="$(id -u)" docker-compose -f monitoring/docker-compose.yml up -d

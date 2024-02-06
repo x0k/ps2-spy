@@ -107,12 +107,14 @@ func (p *CharactersTracker) handleInactive(ctx context.Context, now time.Time) [
 	return removedPlayers
 }
 
-func (p *CharactersTracker) publishPlayerLogout(t time.Time, pl player) {
-	p.publisher.Publish(PlayerLogout{
+func (p *CharactersTracker) publishPlayerLogout(ctx context.Context, t time.Time, pl player) {
+	if err := p.publisher.Publish(PlayerLogout{
 		Time:        t,
 		CharacterId: pl.characterId,
 		WorldId:     pl.worldId,
-	})
+	}); err != nil {
+		p.log.Error(ctx, "cannot publish event", sl.Err(err))
+	}
 }
 
 func (p *CharactersTracker) Start(ctx context.Context) {
@@ -129,7 +131,7 @@ func (p *CharactersTracker) Start(ctx context.Context) {
 			case t := <-ticker.C:
 				removedPlayers := p.handleInactive(ctx, t)
 				for _, pl := range removedPlayers {
-					p.publishPlayerLogout(t, pl)
+					p.publishPlayerLogout(ctx, t, pl)
 				}
 			}
 		}
@@ -148,7 +150,7 @@ func (p *CharactersTracker) handleLogin(ctx context.Context, char ps2.Character)
 	return p.onlineCharactersTracker.HandleLogin(char)
 }
 
-func (p *CharactersTracker) publishPlayerLogin(event ps2events.PlayerLogin) {
+func (p *CharactersTracker) publishPlayerLogin(ctx context.Context, event ps2events.PlayerLogin) {
 	var t time.Time
 	// TODO: extract this somewhere
 	if timestamp, err := strconv.ParseInt(event.Timestamp, 10, 64); err == nil {
@@ -156,11 +158,13 @@ func (p *CharactersTracker) publishPlayerLogin(event ps2events.PlayerLogin) {
 	} else {
 		t = time.Now()
 	}
-	p.publisher.Publish(PlayerLogin{
+	if err := p.publisher.Publish(PlayerLogin{
 		Time:        t,
 		CharacterId: ps2.CharacterId(event.CharacterID),
 		WorldId:     ps2.WorldId(event.WorldID),
-	})
+	}); err != nil {
+		p.log.Error(ctx, "cannot publish event", sl.Err(err))
+	}
 }
 
 func (p *CharactersTracker) HandleLoginTask(ctx context.Context, wg *sync.WaitGroup, event ps2events.PlayerLogin) {
@@ -184,7 +188,7 @@ func (p *CharactersTracker) HandleLoginTask(ctx context.Context, wg *sync.WaitGr
 		return
 	}
 	if p.handleLogin(ctx, char) {
-		p.publishPlayerLogin(event)
+		p.publishPlayerLogin(ctx, event)
 	}
 }
 
@@ -210,7 +214,7 @@ func (p *CharactersTracker) HandleLogout(ctx context.Context, event ps2events.Pl
 		} else {
 			t = time.Now()
 		}
-		p.publishPlayerLogout(t, player{charId, worldId})
+		p.publishPlayerLogout(ctx, t, player{charId, worldId})
 	}
 }
 

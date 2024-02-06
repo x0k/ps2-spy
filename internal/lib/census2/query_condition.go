@@ -28,8 +28,8 @@ func (c queryCondition) isEmpty() bool {
 	return len(c.conditions.values) == 0
 }
 
-func (c queryCondition) print(writer io.StringWriter) {
-	c.conditions.print(writer)
+func (c queryCondition) print(writer io.StringWriter) error {
+	return c.conditions.print(writer)
 }
 
 func (c queryCondition) appendCondition(operator string, value optionalPrinter) queryCondition {

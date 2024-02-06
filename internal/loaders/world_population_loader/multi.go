@@ -2,7 +2,6 @@ package world_population_loader
 
 import (
 	"context"
-	"log/slog"
 	"maps"
 	"sync"
 	"time"
@@ -27,13 +26,14 @@ func NewMulti(
 ) *MultiLoader {
 	loadersWithDefault := maps.Clone(loadersMap)
 	fallbackLoader := loaders.NewKeyedFallbackLoader(
-		log.Logger.With(slog.String("component", "loaders.world_population_loader.MultiLoader.fallbackLoader")),
+		log.Logger,
 		loadersMap,
 		priority,
 	)
 	loadersWithDefault[multi_loaders.DefaultLoader] = fallbackLoader
 	multiLoader := loaders.NewKeyedMultiLoader(loadersWithDefault)
 	value := loaders.NewCachedQueriedLoader[loaders.MultiLoaderQuery[ps2.WorldId], loaders.Loaded[ps2.DetailedWorldPopulation]](
+		log.Logger,
 		multiLoader,
 		containers.NewExpiableLRU[loaders.MultiLoaderQuery[ps2.WorldId], loaders.Loaded[ps2.DetailedWorldPopulation]]((len(priority)+1)*len(ps2.ZoneNames), time.Minute),
 	)

@@ -2,7 +2,6 @@ package alerts_loader
 
 import (
 	"context"
-	"log/slog"
 	"maps"
 	"sync"
 	"time"
@@ -27,13 +26,14 @@ func NewMulti(
 ) *MultiLoader {
 	loadersWithDefault := maps.Clone(loadersMap)
 	fallbackLoader := loaders.NewFallbackLoader[loaders.Loaded[ps2.Alerts]](
-		log.Logger.With(slog.String("component", "loaders.alerts_loader.MultiLoader.fallbackLoader")),
+		log.Logger,
 		loadersMap,
 		priority,
 	)
 	loadersWithDefault[multi_loaders.DefaultLoader] = fallbackLoader
 	multiLoader := loaders.NewMultiLoader(loadersWithDefault)
 	alerts := loaders.NewCachedQueriedLoader(
+		log.Logger,
 		multiLoader,
 		containers.NewExpiableLRU[string, loaders.Loaded[ps2.Alerts]](len(priority)+1, time.Minute),
 	)

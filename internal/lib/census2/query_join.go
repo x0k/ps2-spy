@@ -71,9 +71,11 @@ func Join(collection string) queryJoin {
 	}
 }
 
-func (j queryJoin) print(writer io.StringWriter) {
-	writer.WriteString(j.collection)
-	printList(writer, joinFieldsSeparator, joinFieldsSeparator, []optionalPrinter{
+func (j queryJoin) print(writer io.StringWriter) error {
+	if _, err := writer.WriteString(j.collection); err != nil {
+		return err
+	}
+	if err := printList(writer, joinFieldsSeparator, joinFieldsSeparator, []optionalPrinter{
 		j.on,
 		j.to,
 		j.list,
@@ -82,13 +84,20 @@ func (j queryJoin) print(writer io.StringWriter) {
 		j.injectAt,
 		j.terms,
 		j.outer,
-	})
-	if j.subJoins.isEmpty() {
-		return
+	}); err != nil {
+		return err
 	}
-	writer.WriteString("(")
-	j.subJoins.print(writer)
-	writer.WriteString(")")
+	if j.subJoins.isEmpty() {
+		return nil
+	}
+	if _, err := writer.WriteString("("); err != nil {
+		return err
+	}
+	if err := j.subJoins.print(writer); err != nil {
+		return err
+	}
+	_, err := writer.WriteString(")")
+	return err
 }
 
 func (j queryJoin) isEmpty() bool {

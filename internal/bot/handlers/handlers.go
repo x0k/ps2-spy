@@ -40,7 +40,7 @@ type Error struct {
 	Err error
 }
 
-type InteractionHandler func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) error
+type InteractionHandler func(ctx context.Context, log *logger.Logger, s *discordgo.Session, i *discordgo.InteractionCreate) error
 
 func (handler InteractionHandler) Run(
 	ctx context.Context,
@@ -52,13 +52,13 @@ func (handler InteractionHandler) Run(
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	log.Debug(ctx, "run handler")
-	if err := handler(ctx, s, i); err != nil {
+	if err := handler(ctx, log, s, i); err != nil {
 		log.Error(ctx, "error handling", sl.Err(err))
 	}
 }
 
 func DeferredEphemeralResponse(handle func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.WebhookEdit, *Error)) InteractionHandler {
-	return func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) error {
+	return func(ctx context.Context, log *logger.Logger, s *discordgo.Session, i *discordgo.InteractionCreate) error {
 		err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
@@ -70,9 +70,11 @@ func DeferredEphemeralResponse(handle func(ctx context.Context, s *discordgo.Ses
 		}
 		data, customErr := handle(ctx, s, i)
 		if customErr != nil {
-			s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
+			if _, err := s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
 				Content: customErr.Msg,
-			})
+			}); err != nil {
+				log.Error(ctx, "error sending followup message", sl.Err(err))
+			}
 			return customErr.Err
 		}
 		_, err = s.InteractionResponseEdit(i.Interaction, data)
@@ -81,13 +83,15 @@ func DeferredEphemeralResponse(handle func(ctx context.Context, s *discordgo.Ses
 }
 
 func ShowModal(handle func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.InteractionResponseData, *Error)) InteractionHandler {
-	return func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) error {
-		data, err := handle(ctx, s, i)
-		if err != nil {
-			s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
-				Content: err.Msg,
-			})
-			return err.Err
+	return func(ctx context.Context, log *logger.Logger, s *discordgo.Session, i *discordgo.InteractionCreate) error {
+		data, customErr := handle(ctx, s, i)
+		if customErr != nil {
+			if _, err := s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
+				Content: customErr.Msg,
+			}); err != nil {
+				log.Error(ctx, "error sending followup message", sl.Err(err))
+			}
+			return customErr.Err
 		}
 		return s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseModal,

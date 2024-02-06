@@ -158,7 +158,11 @@ func (q *Query) validateEventThing() error {
 			if cond.name != "type" {
 				continue
 			}
-			types := strings.Split(printerToString(cond.value), ",")
+			condStr, err := printerToString(cond.value)
+			if err != nil {
+				return err
+			}
+			types := strings.Split(condStr, ",")
 			for _, tp := range types {
 				if _, ok := eventTypes[strings.ToLower(tp)]; !ok {
 					return fmt.Errorf("invalid field %q for collection %q", t.field, q.collection)
@@ -258,7 +262,11 @@ func (q *Query) Validate() error {
 				if cond.name != "type" {
 					continue
 				}
-				types := strings.Split(printerToString(cond.value), ",")
+				condStr, err := printerToString(cond.value)
+				if err != nil {
+					return err
+				}
+				types := strings.Split(condStr, ",")
 				for _, tp := range types {
 					if _, ok := groupedEventTypes[strings.ToLower(tp)]; !ok {
 						return fmt.Errorf("invalid field %q for collection %q", t.field, q.collection)

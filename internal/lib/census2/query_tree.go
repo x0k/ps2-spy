@@ -41,19 +41,28 @@ func (t queryTree) isEmpty() bool {
 	return false
 }
 
-func (t queryTree) print(writer io.StringWriter) {
-	writer.WriteString(t.field)
-	printList(writer, treeFieldsSeparator, treeFieldsSeparator, []optionalPrinter{
+func (t queryTree) print(writer io.StringWriter) error {
+	if _, err := writer.WriteString(t.field); err != nil {
+		return err
+	}
+	if err := printList(writer, treeFieldsSeparator, treeFieldsSeparator, []optionalPrinter{
 		t.list,
 		t.prefix,
 		t.start,
-	})
-	if t.subTrees.isEmpty() {
-		return
+	}); err != nil {
+		return err
 	}
-	writer.WriteString("(")
-	t.subTrees.print(writer)
-	writer.WriteString(")")
+	if t.subTrees.isEmpty() {
+		return nil
+	}
+	if _, err := writer.WriteString("("); err != nil {
+		return err
+	}
+	if err := t.subTrees.print(writer); err != nil {
+		return err
+	}
+	_, err := writer.WriteString(")")
+	return err
 }
 
 func (t queryTree) IsList(isList bool) queryTree {

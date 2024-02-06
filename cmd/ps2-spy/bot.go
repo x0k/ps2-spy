@@ -31,7 +31,7 @@ func startNewBot(
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		retryable.New(
+		_ = retryable.New(
 			func(ctx context.Context) error {
 				b, err := bot.New(ctx, log, cfg)
 				if err != nil {

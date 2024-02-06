@@ -28,13 +28,14 @@ func newOutfitMembersSynchronizer(
 	membersSaverPublisher *outfit_members_saver.Publisher,
 	platform platforms.Platform,
 ) *outfit_members_synchronizer.OutfitMembersSynchronizer {
+	pLog := log.With(slog.String("platform", string(platform)))
 	trackableOutfitsLoader := trackable_outfits_loader.NewStorage(storage, platform)
 	outfitSyncAtLoader := outfit_sync_at_loader.NewStorage(storage, platform)
 	ns := platforms.PlatformNamespace(platform)
 	outfitMembersLoader := outfit_member_ids_loader.NewCensus(censusClient, ns)
-	outfitMembersSaver := outfit_members_saver.New(storage, membersSaverPublisher, platform)
+	outfitMembersSaver := outfit_members_saver.New(pLog, storage, membersSaverPublisher, platform)
 	return outfit_members_synchronizer.New(
-		log.With(slog.String("platform", string(platform))),
+		pLog,
 		trackableOutfitsLoader,
 		outfitSyncAtLoader,
 		outfitMembersLoader,

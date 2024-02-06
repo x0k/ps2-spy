@@ -149,6 +149,7 @@ func start(ctx context.Context, log *logger.Logger, cfg *config.Config) error {
 	pcBatchedCharacterLoader := loaders.NewBatchLoader(pcCharactersLoader, 10*time.Second)
 	pcBatchedCharacterLoader.Start(ctx, wg)
 	pcCachedAndBatchedCharacterLoader := loaders.NewCachedQueriedLoader(
+		log.Logger,
 		metrics.InstrumentQueriedLoaderWithCounterMetric(
 			mt.PlatformLoadsCounterMetric(metrics.CharacterPlatformLoaderName, platforms.PC),
 			pcBatchedCharacterLoader,
@@ -163,6 +164,7 @@ func start(ctx context.Context, log *logger.Logger, cfg *config.Config) error {
 	ps4euBatchedCharacterLoader := loaders.NewBatchLoader(ps4euCharactersLoader, 10*time.Second)
 	ps4euBatchedCharacterLoader.Start(ctx, wg)
 	ps4euCachedAndBatchedCharacterLoader := loaders.NewCachedQueriedLoader(
+		log.Logger,
 		metrics.InstrumentQueriedLoaderWithCounterMetric(
 			mt.PlatformLoadsCounterMetric(metrics.CharacterPlatformLoaderName, platforms.PS4_EU),
 			ps4euBatchedCharacterLoader,
@@ -177,6 +179,7 @@ func start(ctx context.Context, log *logger.Logger, cfg *config.Config) error {
 	ps4usBatchedCharacterLoader := loaders.NewBatchLoader(ps4usCharactersLoader, 10*time.Second)
 	ps4usBatchedCharacterLoader.Start(ctx, wg)
 	ps4usCachedAndBatchedCharacterLoader := loaders.NewCachedQueriedLoader(
+		log.Logger,
 		metrics.InstrumentQueriedLoaderWithCounterMetric(
 			mt.PlatformLoadsCounterMetric(metrics.CharacterPlatformLoaderName, platforms.PS4_US),
 			ps4usBatchedCharacterLoader,
@@ -395,28 +398,34 @@ func start(ctx context.Context, log *logger.Logger, cfg *config.Config) error {
 	subSettingsLoader := subscription_settings_loader.New(sqlStorage)
 
 	pcOutfitLoader := loaders.NewCachedQueriedLoader(
+		log.Logger,
 		outfit_loader.NewCensus(censusClient, platforms.PC),
 		outfit_cache.NewStorage(log, sqlStorage, platforms.PC),
 	)
 	ps4euOutfitLoader := loaders.NewCachedQueriedLoader(
+		log.Logger,
 		outfit_loader.NewCensus(censusClient, platforms.PS4_EU),
 		outfit_cache.NewStorage(log, sqlStorage, platforms.PS4_EU),
 	)
 	ps4usOutfitLoader := loaders.NewCachedQueriedLoader(
+		log.Logger,
 		outfit_loader.NewCensus(censusClient, platforms.PS4_US),
 		outfit_cache.NewStorage(log, sqlStorage, platforms.PS4_US),
 	)
 
 	facilityCache := facility_cache.NewStorage(log, sqlStorage)
 	pcFacilityLoader := loaders.NewCachedQueriedLoader(
+		log.Logger,
 		facility_loader.NewCensus(censusClient, census2.Ps2_v2_NS),
 		facilityCache,
 	)
 	ps4euFacilityLoader := loaders.NewCachedQueriedLoader(
+		log.Logger,
 		facility_loader.NewCensus(censusClient, census2.Ps2ps4eu_v2_NS),
 		facilityCache,
 	)
 	ps4usFacilityLoader := loaders.NewCachedQueriedLoader(
+		log.Logger,
 		facility_loader.NewCensus(censusClient, census2.Ps2ps4us_v2_NS),
 		facilityCache,
 	)
@@ -450,6 +459,7 @@ func start(ctx context.Context, log *logger.Logger, cfg *config.Config) error {
 				},
 			),
 			loaders.NewCachedQueriedLoader(
+				log.Logger,
 				platform_outfits_loader.NewCensus(censusClient),
 				meta.NewPlatformsCache(map[platforms.Platform]containers.MultiKeyedCache[ps2.OutfitId, ps2.Outfit]{
 					platforms.PC:     outfits_cache.NewStorage(log, sqlStorage, platforms.PC),
