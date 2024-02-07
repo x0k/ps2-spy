@@ -224,8 +224,9 @@ func (w *WorldsTracker) Alerts() ps2.Alerts {
 			// After continent unlocks, every faction has some facilities,
 			// so this calculation is not valid
 			// TODO: invalidate facilities states by some ticker
-			territoryControl := ps2.StatsByFactions{}
+			territoryControl := ps2.StatPerFactions{}
 			for _, facility := range zone.Facilities {
+				territoryControl.All++
 				switch facility.FactionId {
 				case factions.NC:
 					territoryControl.NC++
