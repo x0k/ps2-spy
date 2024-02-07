@@ -255,7 +255,7 @@ func (p *CharactersTracker) WorldsPopulation() ps2.WorldsPopulation {
 		worlds = append(worlds, ps2.WorldPopulation{
 			Id:   worldId,
 			Name: ps2.WorldNames[worldId],
-			StatsByFactions: ps2.StatsByFactions{
+			StatPerFactions: ps2.StatPerFactions{
 				All:   all,
 				VS:    vs,
 				NC:    nc,
@@ -294,7 +294,7 @@ func (p *CharactersTracker) DetailedWorldPopulation(worldId ps2.WorldId) (ps2.De
 			Name: ps2.ZoneNames[zoneId],
 			// TODO: Track this
 			IsOpen: all > 0,
-			StatsByFactions: ps2.StatsByFactions{
+			StatPerFactions: ps2.StatPerFactions{
 				All:   all,
 				VS:    vs,
 				NC:    nc,

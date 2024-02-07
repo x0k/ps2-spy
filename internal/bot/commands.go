@@ -75,11 +75,24 @@ func newCommands(
 			},
 		},
 		{
+			Name:        "territories",
+			Description: "Returns the server territories control.",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "server",
+					Description: "Server name",
+					Choices:     serverNames(),
+					Required:    true,
+				},
+			},
+		},
+		{
 			Name:        "alerts",
 			Description: "Returns the alerts.",
 			Options: []*discordgo.ApplicationCommandOption{
 				{
-					Type:        discordgo.ApplicationCommandOptionInteger,
+					Type:        discordgo.ApplicationCommandOptionString,
 					Name:        "server",
 					Description: "Server name",
 					Choices:     serverNames(),

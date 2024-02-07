@@ -211,6 +211,26 @@ func (w *WorldsTracker) HandleContinentLock(ctx context.Context, event ps2events
 	return nil
 }
 
+func zoneTerritoryControl(facilities map[ps2.FacilityId]facilityState) ps2.StatPerFactions {
+	stat := ps2.StatPerFactions{}
+	for _, facility := range facilities {
+		stat.All++
+		switch facility.FactionId {
+		case factions.NC:
+			stat.NC++
+		case factions.TR:
+			stat.TR++
+		case factions.VS:
+			stat.VS++
+		case factions.NSO:
+			stat.NS++
+		case factions.None:
+			stat.Other++
+		}
+	}
+	return stat
+}
+
 func (w *WorldsTracker) Alerts() ps2.Alerts {
 	w.mutex.RLock()
 	defer w.mutex.RUnlock()
@@ -224,22 +244,6 @@ func (w *WorldsTracker) Alerts() ps2.Alerts {
 			// After continent unlocks, every faction has some facilities,
 			// so this calculation is not valid
 			// TODO: invalidate facilities states by some ticker
-			territoryControl := ps2.StatPerFactions{}
-			for _, facility := range zone.Facilities {
-				territoryControl.All++
-				switch facility.FactionId {
-				case factions.NC:
-					territoryControl.NC++
-				case factions.TR:
-					territoryControl.TR++
-				case factions.VS:
-					territoryControl.VS++
-				case factions.NSO:
-					territoryControl.NS++
-				case factions.None:
-					territoryControl.Other++
-				}
-			}
 			for _, event := range zone.Events {
 				if event.StartedAt.Add(event.Duration).Before(now) {
 					continue
@@ -253,10 +257,38 @@ func (w *WorldsTracker) Alerts() ps2.Alerts {
 					AlertDescription: event.Description,
 					StartedAt:        event.StartedAt,
 					Duration:         event.Duration,
-					TerritoryControl: territoryControl,
+					TerritoryControl: zoneTerritoryControl(zone.Facilities),
 				})
 			}
 		}
 	}
 	return alerts
+}
+
+func (w *WorldsTracker) WorldTerritoryControl(
+	worldId ps2.WorldId,
+) (ps2.WorldTerritoryControl, error) {
+	const op = "worlds_tracker.WorldsTracker.WorldTerritoryControl"
+	w.mutex.RLock()
+	defer w.mutex.RUnlock()
+	world, ok := w.worlds[worldId]
+	if !ok {
+		return ps2.WorldTerritoryControl{}, fmt.Errorf("%s world %q: %w", op, worldId, ErrWorldNotFound)
+	}
+	zones := make([]ps2.ZoneTerritoryControl, 0, len(world))
+	for zoneId, zone := range world {
+		zones = append(zones, ps2.ZoneTerritoryControl{
+			Id:     zoneId,
+			IsOpen: len(zone.Facilities) > 0,
+			// Since:           zone.Since,
+			// ControlledBy:    zone.ControlledBy,
+			// IsStable:        zone.IsStable,
+			HasAlerts:       len(zone.Events) > 0,
+			StatPerFactions: zoneTerritoryControl(zone.Facilities),
+		})
+	}
+	return ps2.WorldTerritoryControl{
+		Id:    worldId,
+		Zones: zones,
+	}, nil
 }

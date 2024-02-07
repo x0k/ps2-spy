@@ -22,10 +22,12 @@ import (
 	"github.com/x0k/ps2-spy/internal/loaders/trackable_online_entities_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/world_alerts_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/world_population_loader"
+	"github.com/x0k/ps2-spy/internal/loaders/world_territory_control_loader"
 	"github.com/x0k/ps2-spy/internal/meta"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/ps2/platforms"
 	"github.com/x0k/ps2-spy/internal/storage/sqlite"
+	"github.com/x0k/ps2-spy/internal/worlds_tracker"
 )
 
 type BotConfig struct {
@@ -48,8 +50,8 @@ func NewConfig(
 	worldPopLoader *world_population_loader.MultiLoader,
 	alertsLoader *alerts_loader.MultiLoader,
 	worldAlertsLoader *world_alerts_loader.MultiLoader,
+	platformWorldsTrackers map[platforms.Platform]*worlds_tracker.WorldsTracker,
 	platformCharactersTrackers map[platforms.Platform]*characters_tracker.CharactersTracker,
-
 ) *BotConfig {
 	subSettingsLoader := subscription_settings_loader.New(sqlStorage)
 	return &BotConfig{
@@ -66,12 +68,17 @@ func NewConfig(
 			log,
 			popLoader,
 			worldPopLoader,
+			world_territory_control_loader.NewWorldsTrackerLoader(
+				log,
+				cfg.BotName,
+				platformWorldsTrackers,
+			),
 			alertsLoader,
 			worldAlertsLoader,
 			subSettingsLoader,
 			platform_character_names_loader.NewCensus(censusClient),
 			platform_outfit_tags_loader.NewCensus(censusClient),
-			trackable_online_entities_loader.New(
+			trackable_online_entities_loader.NewCharactersTrackerLoader(
 				subSettingsLoader,
 				platformCharactersTrackers,
 			),

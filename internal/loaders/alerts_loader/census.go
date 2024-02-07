@@ -90,7 +90,7 @@ func (l *CensusLoader) load(ctx context.Context, url string) (ps2.Alerts, error)
 			AlertDescription: eventInfo.Description,
 			StartedAt:        startedAt,
 			Duration:         eventInfo.Duration,
-			TerritoryControl: ps2.StatsByFactions{
+			TerritoryControl: ps2.StatPerFactions{
 				All: 100,
 				NC:  int(nc),
 				VS:  int(vs),
