@@ -37,32 +37,40 @@ func newCommands(
 	return []*discordgo.ApplicationCommand{
 		{
 			Name:        "population",
-			Description: "Returns the global population.",
+			Description: "Returns the population.",
 			Options: []*discordgo.ApplicationCommandOption{
 				{
-					Type:        discordgo.ApplicationCommandOptionString,
-					Name:        "provider",
-					Description: "Provider name",
-					Choices:     providerChoices(popMultiLoader.Loaders()),
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "global",
+					Description: "Returns the global population.",
+					Options: []*discordgo.ApplicationCommandOption{
+						{
+							Type:        discordgo.ApplicationCommandOptionString,
+							Name:        "provider",
+							Description: "Provider name",
+							Choices:     providerChoices(popMultiLoader.Loaders()),
+						},
+					},
 				},
-			},
-		},
-		{
-			Name:        "server-population",
-			Description: "Returns the server population.",
-			Options: []*discordgo.ApplicationCommandOption{
 				{
-					Type:        discordgo.ApplicationCommandOptionString,
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
 					Name:        "server",
-					Description: "Server name",
-					Choices:     serverNames(),
-					Required:    true,
-				},
-				{
-					Type:        discordgo.ApplicationCommandOptionString,
-					Name:        "provider",
-					Description: "Provider name",
-					Choices:     providerChoices(worldPopMultiLoader.Loaders()),
+					Description: "Returns the server population.",
+					Options: []*discordgo.ApplicationCommandOption{
+						{
+							Type:        discordgo.ApplicationCommandOptionString,
+							Name:        "server",
+							Description: "Server name",
+							Choices:     serverNames(),
+							Required:    true,
+						},
+						{
+							Type:        discordgo.ApplicationCommandOptionString,
+							Name:        "provider",
+							Description: "Provider name",
+							Choices:     providerChoices(worldPopMultiLoader.Loaders()),
+						},
+					},
 				},
 			},
 		},

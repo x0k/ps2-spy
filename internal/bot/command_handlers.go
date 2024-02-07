@@ -7,7 +7,6 @@ import (
 	"github.com/x0k/ps2-spy/internal/bot/handlers/command/channel_setup_command_handler"
 	"github.com/x0k/ps2-spy/internal/bot/handlers/command/online_command_handler"
 	"github.com/x0k/ps2-spy/internal/bot/handlers/command/population_command_handler"
-	serverpopulation "github.com/x0k/ps2-spy/internal/bot/handlers/command/server_population_command_handler"
 	"github.com/x0k/ps2-spy/internal/lib/loaders"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/meta"
@@ -30,8 +29,7 @@ func newCommandHandlers(
 	outfitsLoader loaders.QueriedLoader[meta.PlatformQuery[ps2.OutfitId], map[ps2.OutfitId]ps2.Outfit],
 ) map[string]handlers.InteractionHandler {
 	return map[string]handlers.InteractionHandler{
-		"population":        population_command_handler.New(log, popLoader),
-		"server-population": serverpopulation.New(log, worldPopLoader),
+		"population": population_command_handler.New(log, popLoader, worldPopLoader),
 		"alerts": alerts_command_handler.New(
 			log,
 			alertsLoader,
