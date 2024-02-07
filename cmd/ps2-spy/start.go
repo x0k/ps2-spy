@@ -53,7 +53,7 @@ func start(
 			publisher.New[publisher.Event](),
 		),
 	)
-	sqlStorage, err := startStorage(ctx, log, cfg.Storage, storageEventsPublisher)
+	sqlStorage, err := startStorage(ctx, wg, log, cfg.Storage, storageEventsPublisher)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}

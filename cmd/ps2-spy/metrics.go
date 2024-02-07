@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"net/http"
 	"sync"
@@ -21,18 +22,28 @@ func startMetrics(ctx context.Context, wg *sync.WaitGroup, log *logger.Logger, c
 		return metrics.NewStub()
 	}
 	log.Info(ctx, "starting metrics", slog.String("address", cfg.Address))
-	m := metrics.New("ps2spy")
-	reg := prometheus.NewRegistry()
 	mux := http.NewServeMux()
-	m.Register(reg)
+	mt := metrics.New("ps2spy")
+	reg := prometheus.NewRegistry()
+	mt.Register(reg)
 	reg.MustRegister(collectors.NewGoCollector())
 	mux.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
-	wg.Add(1)
+	srv := &http.Server{
+		Addr:    cfg.Address,
+		Handler: mux,
+	}
+	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		if err := http.ListenAndServe(cfg.Address, mux); err != nil {
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Error(ctx, "failed to start metrics", sl.Err(err))
 		}
 	}()
-	return m
+	context.AfterFunc(ctx, func() {
+		defer wg.Done()
+		if err := srv.Shutdown(ctx); err != nil {
+			log.Error(ctx, "failed to shutdown metrics", sl.Err(err))
+		}
+	})
+	return mt
 }
