@@ -27,6 +27,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/loaders/event_tracking_channels_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/population_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/world_alerts_loader"
+	"github.com/x0k/ps2-spy/internal/loaders/world_map_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/world_population_loader"
 	"github.com/x0k/ps2-spy/internal/metrics"
 	"github.com/x0k/ps2-spy/internal/ps2"
@@ -254,19 +255,22 @@ func start(
 	worldPopLoader.Start(ctx, wg)
 	platformWorldTrackers := map[platforms.Platform]*worlds_tracker.WorldsTracker{
 		platforms.PC: startNewWorldsTracker(
-			ctx, log,
+			ctx, log, platforms.PC,
 			pcPs2EventsPublisher,
 			pcWorldsTrackerPublisher,
+			world_map_loader.NewCensus(censusClient, platforms.PC),
 		),
 		platforms.PS4_EU: startNewWorldsTracker(
-			ctx, log,
+			ctx, log, platforms.PS4_EU,
 			ps4euPs2EventsPublisher,
 			ps4euWorldsTrackerPublisher,
+			world_map_loader.NewCensus(censusClient, platforms.PS4_EU),
 		),
 		platforms.PS4_US: startNewWorldsTracker(
-			ctx, log,
+			ctx, log, platforms.PS4_US,
 			ps4usPs2EventsPublisher,
 			ps4usWorldsTrackerPublisher,
+			world_map_loader.NewCensus(censusClient, platforms.PS4_US),
 		),
 	}
 	alertsLoader := alerts_loader.NewMulti(

@@ -3,14 +3,20 @@ package worlds_tracker
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strconv"
 	"sync"
 	"time"
 
 	"github.com/x0k/ps2-spy/internal/infra"
 	ps2events "github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
+	"github.com/x0k/ps2-spy/internal/lib/loaders"
+	"github.com/x0k/ps2-spy/internal/lib/logger"
+	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
+	"github.com/x0k/ps2-spy/internal/lib/retryable"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/ps2/factions"
+	"github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
 
 var ErrWorldNotFound = fmt.Errorf("world not found")
@@ -27,22 +33,36 @@ type facilityState struct {
 }
 
 type zoneState struct {
-	Events     map[ps2.InstanceId]metagameEvent
-	Facilities map[ps2.FacilityId]facilityState
+	IsLocked     bool
+	Since        time.Time
+	ControlledBy factions.Id
+	IsUnstable   bool
+	Events       map[ps2.InstanceId]metagameEvent
+	Facilities   map[ps2.FacilityId]facilityState
 }
 
 type WorldsTracker struct {
-	mutex                      sync.RWMutex
-	worlds                     map[ps2.WorldId]map[ps2.ZoneId]zoneState
-	eventsInvalidationInterval time.Duration
-	publisher                  *Publisher
+	log                     *logger.Logger
+	retryableWorldMapLoader *retryable.WithArg[ps2.WorldId, ps2.WorldMap]
+	worldIds                []ps2.WorldId
+	mutex                   sync.RWMutex
+	worlds                  map[ps2.WorldId]map[ps2.ZoneId]zoneState
+	invalidationInterval    time.Duration
+	publisher               *Publisher
 }
 
-func New(eventsInvalidationInterval time.Duration, publisher *Publisher) *WorldsTracker {
-	worlds := make(map[ps2.WorldId]map[ps2.ZoneId]zoneState, len(ps2.WorldNames))
-	for worldId := range ps2.WorldNames {
-		world := make(map[ps2.ZoneId]zoneState, len(ps2.ZoneNames))
-		for zoneId := range ps2.ZoneNames {
+func New(
+	log *logger.Logger,
+	platform platforms.Platform,
+	invalidationInterval time.Duration,
+	publisher *Publisher,
+	worldMapLoader loaders.KeyedLoader[ps2.WorldId, ps2.WorldMap],
+) *WorldsTracker {
+	worldIds := ps2.PlatformWorldIds[platform]
+	worlds := make(map[ps2.WorldId]map[ps2.ZoneId]zoneState, len(worldIds))
+	for _, worldId := range worldIds {
+		world := make(map[ps2.ZoneId]zoneState, len(ps2.ZoneIds))
+		for _, zoneId := range ps2.ZoneIds {
 			world[zoneId] = zoneState{
 				Events:     make(map[ps2.InstanceId]metagameEvent, 2),
 				Facilities: make(map[ps2.FacilityId]facilityState, ps2.ZoneFacilitiesCount[zoneId]),
@@ -51,16 +71,20 @@ func New(eventsInvalidationInterval time.Duration, publisher *Publisher) *Worlds
 		worlds[worldId] = world
 	}
 	return &WorldsTracker{
-		worlds:                     worlds,
-		eventsInvalidationInterval: eventsInvalidationInterval,
-		publisher:                  publisher,
+		log: log.With(
+			slog.String("component", "worlds_tracker.WorldsTracker"),
+		),
+		worldIds:                worldIds,
+		retryableWorldMapLoader: retryable.NewWithArg(worldMapLoader.Load),
+		worlds:                  worlds,
+		invalidationInterval:    invalidationInterval,
+		publisher:               publisher,
 	}
 }
 
-func (w *WorldsTracker) invalidateEvents() {
+func (w *WorldsTracker) invalidateEvents(now time.Time) {
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
-	now := time.Now()
 	toRemove := make([]ps2.InstanceId, 0, len(w.worlds))
 	for _, world := range w.worlds {
 		for _, zone := range world {
@@ -77,19 +101,113 @@ func (w *WorldsTracker) invalidateEvents() {
 	}
 }
 
+func (w *WorldsTracker) invalidateWorldTask(
+	ctx context.Context,
+	wg *sync.WaitGroup,
+	now time.Time,
+	worldMap ps2.WorldMap,
+) {
+	defer wg.Done()
+	w.mutex.Lock()
+	defer w.mutex.Unlock()
+	world, ok := w.worlds[worldMap.Id]
+	if !ok {
+		w.log.Error(ctx, "world not found", slog.String("world_id", string(worldMap.Id)))
+		return
+	}
+	for zoneId, zoneMap := range worldMap.Zones {
+		if zoneState, ok := world[zoneId]; ok {
+			isNotChanged := true
+			lastFactionId := factions.None
+			for facilityId, factionId := range zoneMap.Facilities {
+				// Some Oshur and Esamir regions have no associated facilities and as such are ignored
+				if facilityId == "" {
+					continue
+				}
+				if factionId == factions.None {
+					zoneState.IsUnstable = true
+					continue
+				}
+				if isNotChanged {
+					if lastFactionId == factions.None {
+						lastFactionId = factionId
+					} else if lastFactionId != factionId {
+						isNotChanged = false
+					}
+				}
+				if facility, ok := zoneState.Facilities[facilityId]; (ok && facility.FactionId != factionId) || !ok {
+					zoneState.Facilities[facilityId] = facilityState{
+						FactionId:  factionId,
+						CapturedAt: now,
+					}
+				}
+			}
+			if isNotChanged {
+				if zoneState.IsLocked {
+					continue
+				}
+				zoneState.IsLocked = isNotChanged
+				zoneState.Since = now
+				zoneState.ControlledBy = lastFactionId
+				zoneState.IsUnstable = false
+				clear(zoneState.Events)
+				clear(zoneState.Facilities)
+				// TODO: Check for unlocked continent
+			}
+		} else {
+			w.log.Error(
+				ctx, "zone not found",
+				slog.String("world_id", string(worldMap.Id)),
+				slog.String("zone_id", string(zoneId)),
+			)
+			continue
+		}
+	}
+}
+
+func (w *WorldsTracker) invalidateWorld(
+	ctx context.Context,
+	wg *sync.WaitGroup,
+	now time.Time,
+	worldId ps2.WorldId,
+) {
+	log := w.log.With(slog.String("world_id", string(worldId)))
+	worldMap, err := w.retryableWorldMapLoader.Run(ctx, worldId)
+	if err != nil {
+		log.Error(ctx, "failed to invalidate world facilities", sl.Err(err))
+		return
+	}
+	wg.Add(1)
+	go w.invalidateWorldTask(ctx, wg, now, worldMap)
+}
+
+func (w *WorldsTracker) invalidateFacilities(ctx context.Context, wg *sync.WaitGroup, now time.Time) {
+	w.log.Info(ctx, "facilities invalidation started", slog.Int("worlds_count", len(w.worldIds)))
+	for _, worldId := range w.worldIds {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			w.invalidateWorld(ctx, wg, now, worldId)
+		}
+	}
+}
+
 func (w *WorldsTracker) Start(ctx context.Context) {
 	wg := infra.Wg(ctx)
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		ticker := time.NewTicker(w.eventsInvalidationInterval)
+		w.invalidateFacilities(ctx, wg, time.Now())
+		ticker := time.NewTicker(w.invalidationInterval)
 		defer ticker.Stop()
 		for {
 			select {
 			case <-ctx.Done():
 				return
-			case <-ticker.C:
-				w.invalidateEvents()
+			case now := <-ticker.C:
+				w.invalidateEvents(now)
+				w.invalidateFacilities(ctx, wg, now)
 			}
 		}
 	}()
@@ -205,6 +323,14 @@ func (w *WorldsTracker) HandleContinentLock(ctx context.Context, event ps2events
 	if !ok {
 		return nil
 	}
+	zone.IsLocked = true
+	if timestamp, err := strconv.ParseInt(event.Timestamp, 10, 64); err == nil {
+		zone.Since = time.Unix(timestamp, 0)
+	} else {
+		zone.Since = time.Now()
+	}
+	zone.ControlledBy = factions.Id(event.TriggeringFaction)
+	zone.IsUnstable = false
 	// TODO: Consider continent lock, check unlocked continents
 	clear(zone.Events)
 	clear(zone.Facilities)
@@ -278,11 +404,11 @@ func (w *WorldsTracker) WorldTerritoryControl(
 	zones := make([]ps2.ZoneTerritoryControl, 0, len(world))
 	for zoneId, zone := range world {
 		zones = append(zones, ps2.ZoneTerritoryControl{
-			Id:     zoneId,
-			IsOpen: len(zone.Facilities) > 0,
-			// Since:           zone.Since,
-			// ControlledBy:    zone.ControlledBy,
-			// IsStable:        zone.IsStable,
+			Id:              zoneId,
+			IsOpen:          !zone.IsLocked,
+			Since:           zone.Since,
+			ControlledBy:    zone.ControlledBy,
+			IsStable:        !zone.IsUnstable,
 			HasAlerts:       len(zone.Events) > 0,
 			StatPerFactions: zoneTerritoryControl(zone.Facilities),
 		})

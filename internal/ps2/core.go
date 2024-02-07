@@ -145,7 +145,18 @@ type Facility struct {
 	ZoneId ZoneId
 }
 
+type ZoneMap struct {
+	Id         ZoneId
+	Facilities map[FacilityId]factions.Id
+}
+
+type WorldMap struct {
+	Id    WorldId
+	Zones map[ZoneId]ZoneMap
+}
+
 var ErrWorldNotFound = fmt.Errorf("world not found")
+var ZoneIds = []ZoneId{"2", "4", "6", "8", "344"}
 var ZoneNames = map[ZoneId]string{
 	"2":   "Indar",
 	"4":   "Hossin",
@@ -200,3 +211,8 @@ var WorldPlatforms = map[WorldId]platforms.Platform{
 var PcPlatformWorldIds = []WorldId{"1", "10", "13", "17", "19", "24", "40"}
 var Ps4euPlatformWorldIds = []WorldId{"2000"}
 var Ps4usPlatformWorldIds = []WorldId{"1000"}
+var PlatformWorldIds = map[platforms.Platform][]WorldId{
+	platforms.PC:     PcPlatformWorldIds,
+	platforms.PS4_EU: Ps4euPlatformWorldIds,
+	platforms.PS4_US: Ps4usPlatformWorldIds,
+}

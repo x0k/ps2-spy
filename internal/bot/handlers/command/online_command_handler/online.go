@@ -17,7 +17,7 @@ func New(
 		map[ps2.OutfitId][]ps2.Character,
 		[]ps2.Character,
 	]],
-	outfitsLoader loaders.QueriedLoader[meta.PlatformQuery[ps2.OutfitId], map[ps2.OutfitId]ps2.Outfit],
+	outfitsLoader loaders.QueriedLoader[meta.PlatformQuery[[]ps2.OutfitId], map[ps2.OutfitId]ps2.Outfit],
 ) handlers.InteractionHandler {
 	return handlers.DeferredEphemeralResponse(func(
 		ctx context.Context,
@@ -39,9 +39,9 @@ func New(
 		for id := range onlineMembers.Outfits {
 			outfitIds = append(outfitIds, id)
 		}
-		outfits, err := outfitsLoader.Load(ctx, meta.PlatformQuery[ps2.OutfitId]{
+		outfits, err := outfitsLoader.Load(ctx, meta.PlatformQuery[[]ps2.OutfitId]{
 			Platform: platform,
-			Items:    outfitIds,
+			Value:    outfitIds,
 		})
 		if err != nil {
 			return nil, &handlers.Error{
