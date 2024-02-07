@@ -14,6 +14,8 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/lib/retryable"
+	"github.com/x0k/ps2-spy/internal/lib/retryable/perform"
+	"github.com/x0k/ps2-spy/internal/lib/retryable/while"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/ps2/factions"
 	"github.com/x0k/ps2-spy/internal/ps2/platforms"
@@ -60,12 +62,15 @@ func New(
 ) *WorldsTracker {
 	worldIds := ps2.PlatformWorldIds[platform]
 	worlds := make(map[ps2.WorldId]map[ps2.ZoneId]zoneState, len(worldIds))
+	now := time.Now()
 	for _, worldId := range worldIds {
 		world := make(map[ps2.ZoneId]zoneState, len(ps2.ZoneIds))
 		for _, zoneId := range ps2.ZoneIds {
 			world[zoneId] = zoneState{
-				Events:     make(map[ps2.InstanceId]metagameEvent, 2),
-				Facilities: make(map[ps2.FacilityId]facilityState, ps2.ZoneFacilitiesCount[zoneId]),
+				Since:        now,
+				ControlledBy: factions.None,
+				Events:       make(map[ps2.InstanceId]metagameEvent, 2),
+				Facilities:   make(map[ps2.FacilityId]facilityState, ps2.ZoneFacilitiesCount[zoneId]),
 			}
 		}
 		worlds[worldId] = world
@@ -118,7 +123,7 @@ func (w *WorldsTracker) invalidateWorldTask(
 	for zoneId, zoneMap := range worldMap.Zones {
 		if zoneState, ok := world[zoneId]; ok {
 			isNotChanged := true
-			lastFactionId := factions.None
+			zoneState.IsUnstable = false
 			for facilityId, factionId := range zoneMap.Facilities {
 				// Some Oshur and Esamir regions have no associated facilities and as such are ignored
 				if facilityId == "" {
@@ -129,9 +134,9 @@ func (w *WorldsTracker) invalidateWorldTask(
 					continue
 				}
 				if isNotChanged {
-					if lastFactionId == factions.None {
-						lastFactionId = factionId
-					} else if lastFactionId != factionId {
+					if zoneState.ControlledBy == factions.None {
+						zoneState.ControlledBy = factionId
+					} else if zoneState.ControlledBy != factionId {
 						isNotChanged = false
 					}
 				}
@@ -146,14 +151,19 @@ func (w *WorldsTracker) invalidateWorldTask(
 				if zoneState.IsLocked {
 					continue
 				}
-				zoneState.IsLocked = isNotChanged
 				zoneState.Since = now
-				zoneState.ControlledBy = lastFactionId
 				zoneState.IsUnstable = false
 				clear(zoneState.Events)
 				clear(zoneState.Facilities)
 				// TODO: Check for unlocked continent
+			} else {
+				if zoneState.IsLocked {
+					zoneState.Since = now
+				}
+				zoneState.ControlledBy = factions.None
 			}
+			zoneState.IsLocked = isNotChanged
+			world[zoneId] = zoneState
 		} else {
 			w.log.Error(
 				ctx, "zone not found",
@@ -172,7 +182,19 @@ func (w *WorldsTracker) invalidateWorld(
 	worldId ps2.WorldId,
 ) {
 	log := w.log.With(slog.String("world_id", string(worldId)))
-	worldMap, err := w.retryableWorldMapLoader.Run(ctx, worldId)
+	worldMap, err := w.retryableWorldMapLoader.Run(
+		ctx,
+		worldId,
+		while.ErrorIsHere,
+		while.RetryCountIsLessThan(3),
+		while.ContextIsNotCancelled,
+		perform.Log(
+			w.log.Logger,
+			slog.LevelDebug,
+			"[ERROR] failed to get world map, retrying",
+			slog.String("world_id", string(worldId)),
+		),
+	)
 	if err != nil {
 		log.Error(ctx, "failed to invalidate world facilities", sl.Err(err))
 		return
@@ -367,9 +389,6 @@ func (w *WorldsTracker) Alerts() ps2.Alerts {
 			if len(zone.Events) == 0 {
 				continue
 			}
-			// After continent unlocks, every faction has some facilities,
-			// so this calculation is not valid
-			// TODO: invalidate facilities states by some ticker
 			for _, event := range zone.Events {
 				if event.StartedAt.Add(event.Duration).Before(now) {
 					continue
@@ -392,6 +411,7 @@ func (w *WorldsTracker) Alerts() ps2.Alerts {
 }
 
 func (w *WorldsTracker) WorldTerritoryControl(
+	ctx context.Context,
 	worldId ps2.WorldId,
 ) (ps2.WorldTerritoryControl, error) {
 	const op = "worlds_tracker.WorldsTracker.WorldTerritoryControl"
@@ -402,7 +422,12 @@ func (w *WorldsTracker) WorldTerritoryControl(
 		return ps2.WorldTerritoryControl{}, fmt.Errorf("%s world %q: %w", op, worldId, ErrWorldNotFound)
 	}
 	zones := make([]ps2.ZoneTerritoryControl, 0, len(world))
-	for zoneId, zone := range world {
+	for _, zoneId := range ps2.ZoneIds {
+		zone, ok := world[zoneId]
+		if !ok {
+			w.log.Warn(ctx, "zone not found", slog.String("world_id", string(worldId)), slog.String("zone_id", string(zoneId)))
+			continue
+		}
 		zones = append(zones, ps2.ZoneTerritoryControl{
 			Id:              zoneId,
 			IsOpen:          !zone.IsLocked,

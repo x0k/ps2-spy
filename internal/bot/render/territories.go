@@ -21,31 +21,31 @@ func renderZoneTerritoryControl(zone ps2.ZoneTerritoryControl) string {
 	b.WriteString(renderTime(zone.Since))
 	b.WriteString(" (")
 	b.WriteString(renderRelativeTime(zone.Since))
-	if zone.ControlledBy == "" {
+	if zone.ControlledBy == factions.None {
 		b.WriteByte(')')
 	} else {
-		b.WriteString(")\nBy ")
+		b.WriteString(") by `")
 		b.WriteString(factions.FactionNameById(zone.ControlledBy))
-		b.WriteString("with this benefit:\n")
+		b.WriteString("`\nBenefit: _")
 		b.WriteString(ps2.ZoneBenefitById(zone.Id))
+		b.WriteString("_")
 	}
 	if !zone.IsOpen {
 		return b.String()
 	}
-	b.WriteString("\n Status: ")
+	b.WriteString("\nStatus: _")
 	if zone.IsStable {
 		b.WriteString("Stable")
 	} else {
 		b.WriteString("Unstable")
 	}
-	b.WriteByte('\n')
-	b.WriteString("Alerts: ")
+	b.WriteString("_\nAlerts: _")
 	if zone.HasAlerts {
 		b.WriteString("Yes")
 	} else {
 		b.WriteString("No")
 	}
-	b.WriteByte('\n')
+	b.WriteString("_\n")
 	RenderStatPerFactions(&b, zone.StatPerFactions)
 	return b.String()
 }

@@ -3,7 +3,7 @@
 all:
     DISCORD_TOKEN=$(cat ~/Sync/ps2-spy/test-token) \
       CENSUS_SERVICE_ID=$(cat ~/Sync/ps2-spy/test-service) \
-      go run cmd/ps2-spy/*.go --config config/local.yml
+      go run cmd/ps2-spy/*.go --config config/dev.yml
 
 build:
     CGO_ENABLED=1 go build -o bin/app cmd/ps2-spy/*.go
@@ -11,7 +11,7 @@ build:
 run:
     DISCORD_TOKEN=$(cat ~/Sync/ps2-spy/test-token) \
       CENSUS_SERVICE_ID=$(cat ~/Sync/ps2-spy/test-service) \
-      .bin/app --config config/local.yml
+      .bin/app --config config/dev.yml
 
 prof:
     go tool pprof -http :8081 "$(cat ~/Sync/ps2-spy/prof-address)/debug/pprof/$1"

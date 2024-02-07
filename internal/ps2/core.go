@@ -156,12 +156,12 @@ type WorldMap struct {
 }
 
 var ErrWorldNotFound = fmt.Errorf("world not found")
-var ZoneIds = []ZoneId{"2", "4", "6", "8", "344"}
+var ZoneIds = []ZoneId{"2", "6", "8", "4", "344"}
 var ZoneNames = map[ZoneId]string{
 	"2":   "Indar",
-	"4":   "Hossin",
 	"6":   "Amerish",
 	"8":   "Esamir",
+	"4":   "Hossin",
 	"344": "Oshur",
 }
 var ZoneFacilitiesCount = map[ZoneId]int{

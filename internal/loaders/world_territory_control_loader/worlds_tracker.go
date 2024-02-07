@@ -48,7 +48,7 @@ func (l *WorldsTrackerLoader) Load(
 	if !ok {
 		return loaders.Loaded[ps2.WorldTerritoryControl]{}, fmt.Errorf("%s: no worlds tracker for platform %s", op, platform)
 	}
-	territoryControl, err := tracker.WorldTerritoryControl(worldId)
+	territoryControl, err := tracker.WorldTerritoryControl(ctx, worldId)
 	if err != nil {
 		return loaders.Loaded[ps2.WorldTerritoryControl]{}, fmt.Errorf("%s: getting territory control: %w", op, err)
 	}
