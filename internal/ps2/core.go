@@ -12,7 +12,7 @@ type ZoneId string
 
 type WorldId string
 
-type StatsByFactions struct {
+type StatPerFactions struct {
 	All   int
 	VS    int
 	NC    int
@@ -25,7 +25,7 @@ type ZonePopulation struct {
 	Id     ZoneId
 	Name   string
 	IsOpen bool
-	StatsByFactions
+	StatPerFactions
 }
 
 type DetailedWorldPopulation struct {
@@ -52,7 +52,7 @@ func ZoneNameById(id ZoneId) string {
 type WorldPopulation struct {
 	Id   WorldId
 	Name string
-	StatsByFactions
+	StatPerFactions
 }
 
 func NewWorldPopulation(id WorldId, name string) WorldPopulation {
@@ -86,6 +86,21 @@ type InstanceId string
 
 const StartedMetagameEventStateName = "started"
 
+type ZoneTerritoryControl struct {
+	Id           ZoneId
+	IsOpen       bool
+	Since        time.Time
+	ControlledBy factions.Id
+	IsStable     bool
+	HasAlerts    bool
+	StatPerFactions
+}
+
+type WorldTerritoryControl struct {
+	Id    WorldId
+	Zones []ZoneTerritoryControl
+}
+
 type Alert struct {
 	WorldId          WorldId
 	WorldName        string
@@ -95,7 +110,7 @@ type Alert struct {
 	AlertDescription string
 	StartedAt        time.Time
 	Duration         time.Duration
-	TerritoryControl StatsByFactions
+	TerritoryControl StatPerFactions
 }
 
 type Alerts []Alert
@@ -130,12 +145,23 @@ type Facility struct {
 	ZoneId ZoneId
 }
 
+type ZoneMap struct {
+	Id         ZoneId
+	Facilities map[FacilityId]factions.Id
+}
+
+type WorldMap struct {
+	Id    WorldId
+	Zones map[ZoneId]ZoneMap
+}
+
 var ErrWorldNotFound = fmt.Errorf("world not found")
+var ZoneIds = []ZoneId{"2", "6", "8", "4", "344"}
 var ZoneNames = map[ZoneId]string{
 	"2":   "Indar",
-	"4":   "Hossin",
 	"6":   "Amerish",
 	"8":   "Esamir",
+	"4":   "Hossin",
 	"344": "Oshur",
 }
 var ZoneFacilitiesCount = map[ZoneId]int{
@@ -145,6 +171,21 @@ var ZoneFacilitiesCount = map[ZoneId]int{
 	"8":   51,
 	"344": 75,
 }
+var ZoneBenefits = map[ZoneId]string{
+	"2":   "Increases heat efficiency of base Phalanx turrets",
+	"4":   "Vehicle/Aircraft repair at ammo resupply towers/pads",
+	"6":   "Base generators auto-repair over time",
+	"8":   "Allied control points increase shield capacity",
+	"344": "-20% Air Vehicle Nanite cost",
+}
+
+func ZoneBenefitById(id ZoneId) string {
+	if benefit, ok := ZoneBenefits[id]; ok {
+		return benefit
+	}
+	return "No benefit"
+}
+
 var WorldNames = map[WorldId]string{
 	"1":    "Connery",
 	"10":   "Miller",
@@ -170,3 +211,8 @@ var WorldPlatforms = map[WorldId]platforms.Platform{
 var PcPlatformWorldIds = []WorldId{"1", "10", "13", "17", "19", "24", "40"}
 var Ps4euPlatformWorldIds = []WorldId{"2000"}
 var Ps4usPlatformWorldIds = []WorldId{"1000"}
+var PlatformWorldIds = map[platforms.Platform][]WorldId{
+	platforms.PC:     PcPlatformWorldIds,
+	platforms.PS4_EU: Ps4euPlatformWorldIds,
+	platforms.PS4_US: Ps4usPlatformWorldIds,
+}

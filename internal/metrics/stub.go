@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -9,6 +10,11 @@ import (
 )
 
 type stub struct{}
+
+// Shutdown implements Metrics.
+func (*stub) Shutdown(ctx context.Context) error {
+	return nil
+}
 
 // SetQueueSize implements Metrics.
 func (*stub) SetPlatformQueueSize(PlatformQueueName, platforms.Platform, int) {}

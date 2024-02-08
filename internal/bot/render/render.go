@@ -12,8 +12,15 @@ import (
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
-func RenderStatsByFactions(p ps2.StatsByFactions) string {
-	builder := strings.Builder{}
+func renderTime(t time.Time) string {
+	return fmt.Sprintf("<t:%d:t>", t.Unix())
+}
+
+func renderRelativeTime(t time.Time) string {
+	return fmt.Sprintf("<t:%d:R>", t.Unix())
+}
+
+func RenderStatPerFactions(builder *strings.Builder, p ps2.StatPerFactions) string {
 	builder.Grow(60) // 16 characters per line
 	if p.All == 0 {
 		builder.WriteString("TR:   0 | 0.0%\nNC:   0 | 0.0%\nVS:   0 | 0.0%\n")
@@ -33,7 +40,7 @@ func RenderWorldDetailedPopulation(loaded loaders.Loaded[ps2.DetailedWorldPopula
 		if zonePopulation.IsOpen {
 			zones = append(zones, &discordgo.MessageEmbedField{
 				Name:   fmt.Sprintf("%s - %d", zonePopulation.Name, zonePopulation.All),
-				Value:  RenderStatsByFactions(zonePopulation.StatsByFactions),
+				Value:  RenderStatPerFactions(&strings.Builder{}, zonePopulation.StatPerFactions),
 				Inline: true,
 			})
 		}
@@ -51,8 +58,8 @@ func RenderWorldDetailedPopulation(loaded loaders.Loaded[ps2.DetailedWorldPopula
 
 func RenderWorldTotalPopulation(worldPopulation ps2.WorldPopulation) *discordgo.MessageEmbedField {
 	return &discordgo.MessageEmbedField{
-		Name:   fmt.Sprintf("%s - %d", worldPopulation.Name, worldPopulation.StatsByFactions.All),
-		Value:  RenderStatsByFactions(worldPopulation.StatsByFactions),
+		Name:   fmt.Sprintf("%s - %d", worldPopulation.Name, worldPopulation.StatPerFactions.All),
+		Value:  RenderStatPerFactions(&strings.Builder{}, worldPopulation.StatPerFactions),
 		Inline: true,
 	}
 }
@@ -89,10 +96,10 @@ func RenderAlertTiming(alert ps2.Alert) *discordgo.MessageEmbedField {
 	return &discordgo.MessageEmbedField{
 		Name: "Period",
 		Value: fmt.Sprintf(
-			"<t:%d:t> - <t:%d:t> (Ends <t:%d:R>)",
-			alert.StartedAt.Unix(),
-			alert.StartedAt.Add(alert.Duration).Unix(),
-			alert.StartedAt.Add(alert.Duration).Unix(),
+			"%s - %s (Ends %s)",
+			renderTime(alert.StartedAt),
+			renderTime(alert.StartedAt.Add(alert.Duration)),
+			renderRelativeTime(alert.StartedAt.Add(alert.Duration)),
 		),
 	}
 }
@@ -100,7 +107,7 @@ func RenderAlertTiming(alert ps2.Alert) *discordgo.MessageEmbedField {
 func RenderAlertTerritoryControl(alert ps2.Alert) *discordgo.MessageEmbedField {
 	return &discordgo.MessageEmbedField{
 		Name:  "Territory Control",
-		Value: RenderStatsByFactions(alert.TerritoryControl),
+		Value: RenderStatPerFactions(&strings.Builder{}, alert.TerritoryControl),
 	}
 }
 

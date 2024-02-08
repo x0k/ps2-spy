@@ -48,7 +48,7 @@ func (p *HonuLoader) Load(ctx context.Context) (loaders.Loaded[ps2.Alerts], erro
 					AlertDescription: z.AlertInfo.Description,
 					StartedAt:        startedAt,
 					Duration:         time.Duration(z.AlertInfo.DurationMinutes) * time.Minute,
-					TerritoryControl: ps2.StatsByFactions{
+					TerritoryControl: ps2.StatPerFactions{
 						All:   z.Players.All,
 						VS:    z.Players.VS,
 						NC:    z.Players.NC,

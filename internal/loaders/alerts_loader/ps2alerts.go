@@ -54,7 +54,7 @@ func (p *PS2AlertsLoader) Load(ctx context.Context) (loaders.Loaded[ps2.Alerts],
 			AlertDescription: alertInfo.Description,
 			StartedAt:        startedAt,
 			Duration:         time.Duration(a.Duration) * time.Millisecond,
-			TerritoryControl: ps2.StatsByFactions{
+			TerritoryControl: ps2.StatPerFactions{
 				All:   100,
 				VS:    a.Result.VS,
 				NC:    a.Result.NC,

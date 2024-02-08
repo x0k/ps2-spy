@@ -15,8 +15,8 @@ import (
 
 func New(
 	settingsLoader loaders.KeyedLoader[meta.SettingsQuery, meta.SubscriptionSettings],
-	namesLoader loaders.QueriedLoader[meta.PlatformQuery[ps2.CharacterId], []string],
-	outfitTagsLoader loaders.QueriedLoader[meta.PlatformQuery[ps2.OutfitId], []string],
+	namesLoader loaders.QueriedLoader[meta.PlatformQuery[[]ps2.CharacterId], []string],
+	outfitTagsLoader loaders.QueriedLoader[meta.PlatformQuery[[]ps2.OutfitId], []string],
 ) handlers.InteractionHandler {
 	return handlers.ShowModal(func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.InteractionResponseData, *handlers.Error) {
 		const op = "bot.handlers.command.channel_setup_command_handler"
@@ -31,9 +31,9 @@ func New(
 				Err: fmt.Errorf("%s getting settings: %w", op, err),
 			}
 		}
-		tags, err := outfitTagsLoader.Load(ctx, meta.PlatformQuery[ps2.OutfitId]{
+		tags, err := outfitTagsLoader.Load(ctx, meta.PlatformQuery[[]ps2.OutfitId]{
 			Platform: platform,
-			Items:    settings.Outfits,
+			Value:    settings.Outfits,
 		})
 		if err != nil {
 			return nil, &handlers.Error{
@@ -41,9 +41,9 @@ func New(
 				Err: fmt.Errorf("%s getting outfit tags: %w", op, err),
 			}
 		}
-		names, err := namesLoader.Load(ctx, meta.PlatformQuery[ps2.CharacterId]{
+		names, err := namesLoader.Load(ctx, meta.PlatformQuery[[]ps2.CharacterId]{
 			Platform: platform,
-			Items:    settings.Characters,
+			Value:    settings.Characters,
 		})
 		if err != nil {
 			return nil, &handlers.Error{

@@ -18,7 +18,7 @@ type PopulationTrackerLoader struct {
 	populationTrackers map[platforms.Platform]*characters_tracker.CharactersTracker
 }
 
-func New(
+func NewCharactersTrackerLoader(
 	settingsLoader loaders.KeyedLoader[meta.SettingsQuery, meta.SubscriptionSettings],
 	populationTrackers map[platforms.Platform]*characters_tracker.CharactersTracker,
 ) *PopulationTrackerLoader {

@@ -7,7 +7,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/bot/handlers/command/channel_setup_command_handler"
 	"github.com/x0k/ps2-spy/internal/bot/handlers/command/online_command_handler"
 	"github.com/x0k/ps2-spy/internal/bot/handlers/command/population_command_handler"
-	serverpopulation "github.com/x0k/ps2-spy/internal/bot/handlers/command/server_population_command_handler"
+	"github.com/x0k/ps2-spy/internal/bot/handlers/command/territories_command_handler"
 	"github.com/x0k/ps2-spy/internal/lib/loaders"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/meta"
@@ -18,20 +18,21 @@ func newCommandHandlers(
 	log *logger.Logger,
 	popLoader loaders.KeyedLoader[string, loaders.Loaded[ps2.WorldsPopulation]],
 	worldPopLoader loaders.QueriedLoader[loaders.MultiLoaderQuery[ps2.WorldId], loaders.Loaded[ps2.DetailedWorldPopulation]],
+	worldTerrControlLoader loaders.KeyedLoader[ps2.WorldId, loaders.Loaded[ps2.WorldTerritoryControl]],
 	alertsLoader loaders.KeyedLoader[string, loaders.Loaded[ps2.Alerts]],
 	worldAlertsLoader loaders.QueriedLoader[loaders.MultiLoaderQuery[ps2.WorldId], loaders.Loaded[ps2.Alerts]],
 	settingsLoader loaders.KeyedLoader[meta.SettingsQuery, meta.SubscriptionSettings],
-	charNamesLoader loaders.QueriedLoader[meta.PlatformQuery[ps2.CharacterId], []string],
-	outfitTagsLoader loaders.QueriedLoader[meta.PlatformQuery[ps2.OutfitId], []string],
+	charNamesLoader loaders.QueriedLoader[meta.PlatformQuery[[]ps2.CharacterId], []string],
+	outfitTagsLoader loaders.QueriedLoader[meta.PlatformQuery[[]ps2.OutfitId], []string],
 	trackableOnlineEntitiesLoader loaders.KeyedLoader[meta.SettingsQuery, meta.TrackableEntities[
 		map[ps2.OutfitId][]ps2.Character,
 		[]ps2.Character,
 	]],
-	outfitsLoader loaders.QueriedLoader[meta.PlatformQuery[ps2.OutfitId], map[ps2.OutfitId]ps2.Outfit],
+	outfitsLoader loaders.QueriedLoader[meta.PlatformQuery[[]ps2.OutfitId], map[ps2.OutfitId]ps2.Outfit],
 ) map[string]handlers.InteractionHandler {
 	return map[string]handlers.InteractionHandler{
-		"population":        population_command_handler.New(log, popLoader),
-		"server-population": serverpopulation.New(log, worldPopLoader),
+		"population":  population_command_handler.New(log, popLoader, worldPopLoader),
+		"territories": territories_command_handler.New(worldTerrControlLoader),
 		"alerts": alerts_command_handler.New(
 			log,
 			alertsLoader,

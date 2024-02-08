@@ -27,6 +27,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/loaders/event_tracking_channels_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/population_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/world_alerts_loader"
+	"github.com/x0k/ps2-spy/internal/loaders/world_map_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/world_population_loader"
 	"github.com/x0k/ps2-spy/internal/metrics"
 	"github.com/x0k/ps2-spy/internal/ps2"
@@ -52,7 +53,7 @@ func start(
 			publisher.New[publisher.Event](),
 		),
 	)
-	sqlStorage, err := startStorage(ctx, log, cfg.Storage, storageEventsPublisher)
+	sqlStorage, err := startStorage(ctx, wg, log, cfg.Storage, storageEventsPublisher)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
@@ -252,27 +253,34 @@ func start(
 		[]string{"spy", "honu", "saerro", "voidwell"},
 	)
 	worldPopLoader.Start(ctx, wg)
+	platformWorldTrackers := map[platforms.Platform]*worlds_tracker.WorldsTracker{
+		platforms.PC: startNewWorldsTracker(
+			ctx, log, platforms.PC,
+			pcPs2EventsPublisher,
+			pcWorldsTrackerPublisher,
+			world_map_loader.NewCensus(censusClient, platforms.PC),
+		),
+		platforms.PS4_EU: startNewWorldsTracker(
+			ctx, log, platforms.PS4_EU,
+			ps4euPs2EventsPublisher,
+			ps4euWorldsTrackerPublisher,
+			world_map_loader.NewCensus(censusClient, platforms.PS4_EU),
+		),
+		platforms.PS4_US: startNewWorldsTracker(
+			ctx, log, platforms.PS4_US,
+			ps4usPs2EventsPublisher,
+			ps4usWorldsTrackerPublisher,
+			world_map_loader.NewCensus(censusClient, platforms.PS4_US),
+		),
+	}
 	alertsLoader := alerts_loader.NewMulti(
 		log,
 		map[string]loaders.Loader[loaders.Loaded[ps2.Alerts]]{
-			"spy": alerts_loader.NewWorldsTrackerLoader(log, cfg.BotName,
-				map[platforms.Platform]*worlds_tracker.WorldsTracker{
-					platforms.PC: startNewWorldsTracker(
-						ctx, log,
-						pcPs2EventsPublisher,
-						pcWorldsTrackerPublisher,
-					),
-					platforms.PS4_EU: startNewWorldsTracker(
-						ctx, log,
-						ps4euPs2EventsPublisher,
-						ps4euWorldsTrackerPublisher,
-					),
-					platforms.PS4_US: startNewWorldsTracker(
-						ctx, log,
-						ps4usPs2EventsPublisher,
-						ps4usWorldsTrackerPublisher,
-					),
-				}),
+			"spy": alerts_loader.NewWorldsTrackerLoader(
+				log,
+				cfg.BotName,
+				platformWorldTrackers,
+			),
 			"ps2alerts": alerts_loader.NewPS2Alerts(ps2alertsClient),
 			"honu":      alerts_loader.NewHonu(honuClient),
 			"census":    alerts_loader.NewCensus(log, censusClient),
@@ -367,6 +375,7 @@ func start(
 			worldPopLoader,
 			alertsLoader,
 			worldAlertsLoader,
+			platformWorldTrackers,
 			platformCharactersTrackers,
 		),
 		event_tracking_channels_loader.New(pcTrackingManager),

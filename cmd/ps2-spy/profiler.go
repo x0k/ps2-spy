@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"net/http"
 	"sync"
@@ -25,11 +26,21 @@ func startProfiler(ctx context.Context, wg *sync.WaitGroup, log *logger.Logger, 
 	mux.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
 	mux.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
 	mux.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
-	wg.Add(1)
+	srv := &http.Server{
+		Addr:    cfg.Address,
+		Handler: mux,
+	}
+	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		if err := http.ListenAndServe(cfg.Address, mux); err != nil {
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Error(ctx, "failed to start profiler", sl.Err(err))
 		}
 	}()
+	context.AfterFunc(ctx, func() {
+		defer wg.Done()
+		if err := srv.Shutdown(ctx); err != nil {
+			log.Error(ctx, "failed to shutdown profiler", sl.Err(err))
+		}
+	})
 }

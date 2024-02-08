@@ -37,13 +37,13 @@ func (l *CensusLoader) toUrl(ns string, values []census2.Str) string {
 	return l.client.ToURL(l.query)
 }
 
-func (l *CensusLoader) Load(ctx context.Context, query meta.PlatformQuery[ps2.OutfitId]) ([]string, error) {
-	if len(query.Items) == 0 {
+func (l *CensusLoader) Load(ctx context.Context, query meta.PlatformQuery[[]ps2.OutfitId]) ([]string, error) {
+	if len(query.Value) == 0 {
 		return nil, nil
 	}
 	ns := platforms.PlatformNamespace(query.Platform)
-	values := make([]census2.Str, len(query.Items))
-	for i, outfitId := range query.Items {
+	values := make([]census2.Str, len(query.Value))
+	for i, outfitId := range query.Value {
 		values[i] = census2.Str(outfitId)
 	}
 	url := l.toUrl(ns, values)

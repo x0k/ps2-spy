@@ -44,7 +44,7 @@ func (p *HonuLoader) Load(ctx context.Context, worldId ps2.WorldId) (loaders.Loa
 				Id:     zoneId,
 				Name:   ps2.ZoneNameById(zoneId),
 				IsOpen: z.IsOpened,
-				StatsByFactions: ps2.StatsByFactions{
+				StatPerFactions: ps2.StatPerFactions{
 					All:   z.Players.All,
 					VS:    z.Players.VS,
 					NC:    z.Players.NC,

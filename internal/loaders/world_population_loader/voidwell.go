@@ -40,7 +40,7 @@ func (p *VoidWellLoader) Load(ctx context.Context, worldId ps2.WorldId) (loaders
 				Id:     zoneId,
 				Name:   zoneState.Name,
 				IsOpen: zoneState.LockState.State == "UNLOCKED",
-				StatsByFactions: ps2.StatsByFactions{
+				StatPerFactions: ps2.StatPerFactions{
 					All: zoneState.Population.NC + zoneState.Population.TR + zoneState.Population.VS + zoneState.Population.NS,
 					VS:  zoneState.Population.VS,
 					NC:  zoneState.Population.NC,
@@ -48,7 +48,7 @@ func (p *VoidWellLoader) Load(ctx context.Context, worldId ps2.WorldId) (loaders
 					NS:  zoneState.Population.NS,
 				},
 			}
-			world.Total += world.Zones[i].StatsByFactions.All
+			world.Total += world.Zones[i].StatPerFactions.All
 		}
 		return loaders.LoadedNow(p.client.Endpoint(), world), nil
 	}

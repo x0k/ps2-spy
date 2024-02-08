@@ -32,5 +32,5 @@ type SettingsQuery struct {
 
 type PlatformQuery[T any] struct {
 	Platform platforms.Platform
-	Items    []T
+	Value    T
 }

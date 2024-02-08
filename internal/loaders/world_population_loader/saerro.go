@@ -41,7 +41,7 @@ func (p *SaerroLoader) Load(ctx context.Context, worldId ps2.WorldId) (loaders.L
 				Name: ps2.ZoneNameById(zoneId),
 				// TODO: fix this by loading additional data
 				IsOpen: z.Population.Total != 0,
-				StatsByFactions: ps2.StatsByFactions{
+				StatPerFactions: ps2.StatPerFactions{
 					All: z.Population.Total,
 					VS:  z.Population.VS,
 					NC:  z.Population.NC,
