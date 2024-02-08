@@ -58,6 +58,7 @@ func (z zoneState) update(
 		}
 		z.IsLocked = true
 		z.Since = since
+		z.ControlledBy = controlledBy
 		// Reset to false, cause zone is locked
 		z.IsUnstable = false
 		// This changes modifies original state
