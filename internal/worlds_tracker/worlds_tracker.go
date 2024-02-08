@@ -43,6 +43,39 @@ type zoneState struct {
 	Facilities   map[ps2.FacilityId]facilityState
 }
 
+// Returns modified state if `locked` status is changed
+func (z zoneState) update(
+	isLocked bool,
+	since time.Time,
+	controlledBy factions.Id,
+	isUnstable bool,
+) zoneState {
+	// Lock state
+	if isLocked {
+		// Ignore lock of locked zone to keep original data
+		if z.IsLocked {
+			return z
+		}
+		z.IsLocked = true
+		z.Since = since
+		// Reset to false, cause zone is locked
+		z.IsUnstable = false
+		// This changes modifies original state
+		clear(z.Events)
+		clear(z.Facilities)
+	} else {
+		// Unlock state
+		if z.IsLocked {
+			z.IsLocked = false
+			z.Since = since
+			z.ControlledBy = factions.None
+		}
+		// This status may be changed during the `unlocked` state
+		z.IsUnstable = isUnstable
+	}
+	return z
+}
+
 type WorldsTracker struct {
 	log                     *logger.Logger
 	retryableWorldMapLoader *retryable.WithArg[ps2.WorldId, ps2.WorldMap]
@@ -106,7 +139,7 @@ func (w *WorldsTracker) invalidateEvents(now time.Time) {
 	}
 }
 
-func (w *WorldsTracker) invalidateWorldTask(
+func (w *WorldsTracker) invalidateWorldFacilitiesTask(
 	ctx context.Context,
 	wg *sync.WaitGroup,
 	now time.Time,
@@ -122,22 +155,23 @@ func (w *WorldsTracker) invalidateWorldTask(
 	}
 	for zoneId, zoneMap := range worldMap.Zones {
 		if zoneState, ok := world[zoneId]; ok {
-			isNotChanged := true
-			zoneState.IsUnstable = false
+			isLocked := true
+			isUnstable := false
+			controlledBy := zoneState.ControlledBy
 			for facilityId, factionId := range zoneMap.Facilities {
 				// Some Oshur and Esamir regions have no associated facilities and as such are ignored
 				if facilityId == "" {
 					continue
 				}
 				if factionId == factions.None {
-					zoneState.IsUnstable = true
+					isUnstable = true
 					continue
 				}
-				if isNotChanged {
-					if zoneState.ControlledBy == factions.None {
-						zoneState.ControlledBy = factionId
-					} else if zoneState.ControlledBy != factionId {
-						isNotChanged = false
+				if isLocked {
+					if controlledBy == factions.None {
+						controlledBy = factionId
+					} else if controlledBy != factionId {
+						isLocked = false
 					}
 				}
 				if facility, ok := zoneState.Facilities[facilityId]; (ok && facility.FactionId != factionId) || !ok {
@@ -147,23 +181,12 @@ func (w *WorldsTracker) invalidateWorldTask(
 					}
 				}
 			}
-			if isNotChanged {
-				if zoneState.IsLocked {
-					continue
-				}
-				zoneState.Since = now
-				zoneState.IsUnstable = false
-				clear(zoneState.Events)
-				clear(zoneState.Facilities)
-				// TODO: Check for unlocked continent
-			} else {
-				if zoneState.IsLocked {
-					zoneState.Since = now
-				}
-				zoneState.ControlledBy = factions.None
-			}
-			zoneState.IsLocked = isNotChanged
-			world[zoneId] = zoneState
+			world[zoneId] = zoneState.update(
+				isLocked,
+				now,
+				controlledBy,
+				isUnstable,
+			)
 		} else {
 			w.log.Error(
 				ctx, "zone not found",
@@ -175,7 +198,7 @@ func (w *WorldsTracker) invalidateWorldTask(
 	}
 }
 
-func (w *WorldsTracker) invalidateWorld(
+func (w *WorldsTracker) invalidateWorldFacilities(
 	ctx context.Context,
 	wg *sync.WaitGroup,
 	now time.Time,
@@ -200,7 +223,7 @@ func (w *WorldsTracker) invalidateWorld(
 		return
 	}
 	wg.Add(1)
-	go w.invalidateWorldTask(ctx, wg, now, worldMap)
+	go w.invalidateWorldFacilitiesTask(ctx, wg, now, worldMap)
 }
 
 func (w *WorldsTracker) invalidateFacilities(ctx context.Context, wg *sync.WaitGroup, now time.Time) {
@@ -210,7 +233,7 @@ func (w *WorldsTracker) invalidateFacilities(ctx context.Context, wg *sync.WaitG
 		case <-ctx.Done():
 			return
 		default:
-			w.invalidateWorld(ctx, wg, now, worldId)
+			w.invalidateWorldFacilities(ctx, wg, now, worldId)
 		}
 	}
 }
@@ -229,6 +252,7 @@ func (w *WorldsTracker) Start(ctx context.Context) {
 				return
 			case now := <-ticker.C:
 				w.invalidateEvents(now)
+				// To maintain `unstable` status
 				w.invalidateFacilities(ctx, wg, now)
 			}
 		}
@@ -298,6 +322,15 @@ func (w *WorldsTracker) updateFacilityState(event ps2events.FacilityControl) (ps
 		OutfitId:   ps2.OutfitId(event.OutfitID),
 		CapturedAt: capturedAt,
 	}
+	// Unlock zone
+	if zone.IsLocked {
+		world[zoneId] = zone.update(
+			false,
+			capturedAt,
+			factions.None,
+			zone.IsUnstable,
+		)
+	}
 	return oldOutfitId, nil
 }
 
@@ -340,22 +373,25 @@ func (w *WorldsTracker) HandleContinentLock(ctx context.Context, event ps2events
 	if !ok {
 		return fmt.Errorf("%s world %q: %w", op, event.WorldID, ErrWorldNotFound)
 	}
-	zone, ok := world[ps2.ZoneId(event.ZoneID)]
+	zoneId := ps2.ZoneId(event.ZoneID)
+	zone, ok := world[zoneId]
 	// Non interesting zone
 	if !ok {
 		return nil
 	}
-	zone.IsLocked = true
+	var since time.Time
 	if timestamp, err := strconv.ParseInt(event.Timestamp, 10, 64); err == nil {
-		zone.Since = time.Unix(timestamp, 0)
+		since = time.Unix(timestamp, 0)
 	} else {
-		zone.Since = time.Now()
+		since = time.Now()
 	}
-	zone.ControlledBy = factions.Id(event.TriggeringFaction)
-	zone.IsUnstable = false
-	// TODO: Consider continent lock, check unlocked continents
-	clear(zone.Events)
-	clear(zone.Facilities)
+	// Lock zone
+	world[zoneId] = zone.update(
+		true,
+		since,
+		factions.Id(event.TriggeringFaction),
+		false,
+	)
 	return nil
 }
 
