@@ -26,9 +26,7 @@ func renderZoneTerritoryControl(zone ps2.ZoneTerritoryControl) string {
 	} else {
 		b.WriteString(") by `")
 		b.WriteString(factions.FactionNameById(zone.ControlledBy))
-		b.WriteString("`\nBenefit: _")
-		b.WriteString(ps2.ZoneBenefitById(zone.Id))
-		b.WriteString("_")
+		b.WriteByte('`')
 	}
 	if !zone.IsOpen {
 		return b.String()
