@@ -69,7 +69,7 @@ func New(
 		activePlayers:           containers.NewExpirationQueue[player](),
 		inactivityCheckInterval: time.Minute,
 		inactiveTimeout:         10 * time.Minute,
-		retryableCharacterLoader: retryable.NewWithArg[ps2.CharacterId, ps2.Character](
+		retryableCharacterLoader: retryable.NewWithArg(
 			characterLoader.Load,
 		),
 		publisher: publisher,

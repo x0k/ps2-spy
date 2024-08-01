@@ -39,7 +39,7 @@ func (b *BatchLoader[K, T]) batch() []K {
 	return batch
 }
 
-func (b *BatchLoader[K, T]) releaseAwaiters(ctx context.Context, batch []K, results map[K]T) {
+func (b *BatchLoader[K, T]) releaseAwaiters(_ context.Context, batch []K, results map[K]T) {
 	b.awaitersMu.Lock()
 	defer b.awaitersMu.Unlock()
 	for _, key := range batch {

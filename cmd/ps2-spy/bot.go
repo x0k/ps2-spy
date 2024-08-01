@@ -77,7 +77,7 @@ func startNewBot(
 
 func newEventHandler(
 	log *logger.Logger,
-	mt metrics.Metrics,
+	_ metrics.Metrics,
 	platform platforms.Platform,
 	charactersTrackerPublisher *characters_tracker.Publisher,
 	outfitMembersSaverPublisher *outfit_members_saver.Publisher,
