@@ -24,7 +24,9 @@ func New(
 		s *discordgo.Session,
 		i *discordgo.InteractionCreate,
 	) (*discordgo.WebhookEdit, *handlers.Error) {
-		platform := platforms.Platform(i.ApplicationCommandData().Options[0].Name)
+		platformOption := i.ApplicationCommandData().Options[0]
+		platform := platforms.Platform(platformOption.Name)
+
 		onlineMembers, err := onlineTrackableEntitiesLoader.Load(ctx, meta.SettingsQuery{
 			ChannelId: meta.ChannelId(i.ChannelID),
 			Platform:  platform,
