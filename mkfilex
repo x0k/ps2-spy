@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-all:
+d:
     DISCORD_TOKEN=$(cat ~/Sync/ps2-spy/test-token) \
       CENSUS_SERVICE_ID=$(cat ~/Sync/ps2-spy/test-service) \
       go run cmd/ps2-spy/*.go --config config/dev.yml

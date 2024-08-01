@@ -2,4 +2,6 @@
 /storage
 /tmp
 
+.direnv/
+
 *.local.*
