@@ -228,7 +228,7 @@ func (w *WorldsTracker) invalidateWorldFacilities(
 }
 
 func (w *WorldsTracker) invalidateFacilities(ctx context.Context, wg *sync.WaitGroup, now time.Time) {
-	w.log.Info(ctx, "facilities invalidation started", slog.Int("worlds_count", len(w.worldIds)))
+	w.log.Debug(ctx, "facilities invalidation started", slog.Int("worlds_count", len(w.worldIds)))
 	for _, worldId := range w.worldIds {
 		select {
 		case <-ctx.Done():
