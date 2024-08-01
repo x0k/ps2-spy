@@ -127,7 +127,6 @@ func start(
 	)
 	pcBatchedCharacterLoader := startNewBatchedCharacterLoader(
 		ctx, wg, log, mt, platforms.PC,
-		censusClient,
 		pcCharactersLoader,
 	)
 
@@ -137,7 +136,6 @@ func start(
 	)
 	ps4euBatchedCharacterLoader := startNewBatchedCharacterLoader(
 		ctx, wg, log, mt, platforms.PS4_EU,
-		censusClient,
 		ps4euCharactersLoader,
 	)
 
@@ -147,7 +145,6 @@ func start(
 	)
 	ps4usBatchedCharacterLoader := startNewBatchedCharacterLoader(
 		ctx, wg, log, mt, platforms.PS4_US,
-		censusClient,
 		ps4usCharactersLoader,
 	)
 

@@ -33,7 +33,6 @@ func startNewBatchedCharacterLoader(
 	log *logger.Logger,
 	mt metrics.Metrics,
 	platform platforms.Platform,
-	censusClient *census2.Client,
 	loader loaders.QueriedLoader[[]ps2.CharacterId, map[ps2.CharacterId]ps2.Character],
 ) loaders.KeyedLoader[ps2.CharacterId, ps2.Character] {
 	batched := loaders.NewBatchLoader(loader, 10*time.Second)

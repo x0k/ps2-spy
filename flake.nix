@@ -19,6 +19,7 @@
           buildInputs = [
             mk.packages.${system}.default
             pkgs.go
+            pkgs.golangci-lint
           ];
         };
       };
