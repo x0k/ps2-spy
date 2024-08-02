@@ -184,7 +184,7 @@ func (p *CharactersTracker) HandleLoginTask(ctx context.Context, wg *sync.WaitGr
 		),
 	)
 	if err != nil {
-		p.log.Error(ctx, "failed to get character", slog.String("character_id", string(charId)), sl.Err(err))
+		p.log.Debug(ctx, "failed to get character", slog.String("character_id", string(charId)), sl.Err(err))
 		return
 	}
 	if p.handleLogin(ctx, char) {
