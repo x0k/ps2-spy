@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"sync"
 	"time"
 
 	"github.com/x0k/ps2-spy/internal/lib/census2"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
+	"github.com/x0k/ps2-spy/internal/lib/module"
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
 	"github.com/x0k/ps2-spy/internal/loaders/outfit_member_ids_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/outfit_sync_at_loader"
@@ -46,77 +46,74 @@ func newOutfitMembersSynchronizer(
 }
 
 func startNewOutfitMembersSynchronizers(
-	ctx context.Context,
-	wg *sync.WaitGroup,
 	log *logger.Logger,
 	sqlStorage *sqlite.Storage,
 	censusClient *census2.Client,
 	subs pubsub.SubscriptionsManager[storage.EventType],
 	outfitMembersSaverPublishers map[platforms.Platform]*outfit_members_saver.Publisher,
-) error {
-	const op = "startOutfitMembersSynchronizer"
-	pcOutfitMembersSaverPublisher, ok := outfitMembersSaverPublishers[platforms.PC]
-	if !ok {
-		return fmt.Errorf("%s %s: %w", op, platforms.PC, ErrPublisherNotFound)
-	}
-	pcOutfitMembersSynchronizer := newOutfitMembersSynchronizer(
-		log,
-		sqlStorage,
-		censusClient,
-		pcOutfitMembersSaverPublisher,
-		platforms.PC,
-	)
+	preStopper module.PreStopper,
+) module.Service {
+	return module.NewService(
+		"OutfitMembersSynchronizer",
+		func(ctx context.Context) error {
+			op := "startNewOutfitMembersSynchronizers"
+			pcOutfitMembersSaverPublisher, ok := outfitMembersSaverPublishers[platforms.PC]
+			if !ok {
+				return fmt.Errorf("%s %s: %w", op, platforms.PC, ErrPublisherNotFound)
+			}
+			pcOutfitMembersSynchronizer := newOutfitMembersSynchronizer(
+				log,
+				sqlStorage,
+				censusClient,
+				pcOutfitMembersSaverPublisher,
+				platforms.PC,
+			)
 
-	ps4euOutfitMembersSaverPublisher, ok := outfitMembersSaverPublishers[platforms.PS4_EU]
-	if !ok {
-		return fmt.Errorf("%s %s: %w", op, platforms.PS4_EU, ErrPublisherNotFound)
-	}
-	ps4euOutfitMembersSynchronizer := newOutfitMembersSynchronizer(
-		log,
-		sqlStorage,
-		censusClient,
-		ps4euOutfitMembersSaverPublisher,
-		platforms.PS4_EU,
-	)
+			ps4euOutfitMembersSaverPublisher, ok := outfitMembersSaverPublishers[platforms.PS4_EU]
+			if !ok {
+				return fmt.Errorf("%s %s: %w", op, platforms.PS4_EU, ErrPublisherNotFound)
+			}
+			ps4euOutfitMembersSynchronizer := newOutfitMembersSynchronizer(
+				log,
+				sqlStorage,
+				censusClient,
+				ps4euOutfitMembersSaverPublisher,
+				platforms.PS4_EU,
+			)
 
-	ps4usOutfitMembersSaverPublisher, ok := outfitMembersSaverPublishers[platforms.PS4_US]
-	if !ok {
-		return fmt.Errorf("%s %s: %w", op, platforms.PS4_US, ErrPublisherNotFound)
-	}
-	ps4usOutfitMembersSynchronizer := newOutfitMembersSynchronizer(
-		log,
-		sqlStorage,
-		censusClient,
-		ps4usOutfitMembersSaverPublisher,
-		platforms.PS4_US,
-	)
+			ps4usOutfitMembersSaverPublisher, ok := outfitMembersSaverPublishers[platforms.PS4_US]
+			if !ok {
+				return fmt.Errorf("%s %s: %w", op, platforms.PS4_US, ErrPublisherNotFound)
+			}
+			ps4usOutfitMembersSynchronizer := newOutfitMembersSynchronizer(
+				log,
+				sqlStorage,
+				censusClient,
+				ps4usOutfitMembersSaverPublisher,
+				platforms.PS4_US,
+			)
 
-	oss := map[platforms.Platform]*outfit_members_synchronizer.OutfitMembersSynchronizer{
-		platforms.PC:     pcOutfitMembersSynchronizer,
-		platforms.PS4_EU: ps4euOutfitMembersSynchronizer,
-		platforms.PS4_US: ps4usOutfitMembersSynchronizer,
-	}
-	for _, os := range oss {
-		os.Start(ctx, wg)
-	}
-	channelOutfitSaved := make(chan storage.ChannelOutfitSaved)
-	outfitSavedUnSub := subs.AddChannelOutfitSavedHandler(channelOutfitSaved)
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		defer outfitSavedUnSub()
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case saved := <-channelOutfitSaved:
-				if os, ok := oss[saved.Platform]; ok {
-					os.SyncOutfit(ctx, wg, saved.OutfitId)
-				} else {
-					log.Warn(ctx, "platform not found", slog.String("platform", string(saved.Platform)))
+			oss := map[platforms.Platform]*outfit_members_synchronizer.OutfitMembersSynchronizer{
+				platforms.PC:     pcOutfitMembersSynchronizer,
+				platforms.PS4_EU: ps4euOutfitMembersSynchronizer,
+				platforms.PS4_US: ps4usOutfitMembersSynchronizer,
+			}
+			for _, os := range oss {
+				os.Start(ctx, wg)
+			}
+			channelOutfitSaved := storage.Subscribe[storage.ChannelOutfitSaved](subs, preStopper)
+			for {
+				select {
+				case <-ctx.Done():
+					return nil
+				case saved := <-channelOutfitSaved:
+					if os, ok := oss[saved.Platform]; ok {
+						os.SyncOutfit(ctx, wg, saved.OutfitId)
+					} else {
+						log.Warn(ctx, "platform not found", slog.String("platform", string(saved.Platform)))
+					}
 				}
 			}
-		}
-	}()
-	return nil
+		},
+	)
 }
