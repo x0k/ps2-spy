@@ -19,7 +19,10 @@
           buildInputs = [
             mk.packages.${system}.default
             pkgs.go
+            pkgs.air
+            pkgs.go-migrate
             pkgs.golangci-lint
+            pkgs.sqlc
           ];
           shellHook = ''
             source <(COMPLETE=bash mk)

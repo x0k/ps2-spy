@@ -1,51 +1,78 @@
 #!/bin/bash -e
 
+env:
+  if [ -f .env.local ]
+  then
+    export $(cat .env.local | xargs)
+  fi
+  if [ -d ~/Sync/ps2-spy ]
+  then
+    export DISCORD_TOKEN=$(cat ~/Sync/ps2-spy/test-token)
+    export CENSUS_SERVICE_ID=$(cat ~/Sync/ps2-spy/test-service)
+  fi
+  export STORAGE_PATH=storage/storage.db
+  export STORAGE_MIGRATIONS_PATH=db/migrations
+
 # Dev
-d:
-    DISCORD_TOKEN=$(cat ~/Sync/ps2-spy/test-token) \
-      CENSUS_SERVICE_ID=$(cat ~/Sync/ps2-spy/test-service) \
-      go run cmd/ps2-spy/*.go --config config/dev.yml
+d: env
+  go run cmd/ps2-spy/*.go --config config/dev.yml
 
 # Build bin
 b:
-    CGO_ENABLED=1 go build -o bin/app cmd/ps2-spy/*.go
+  go build -o bin/app cmd/ps2-spy/main.go
+
+## DATABASE
+
+db:
+  sqlc generate
+
+# Database queries lint
+qlint:
+  sqlc vet
+
+# Migration create
+mc: env
+  migrate create -ext sql -dir $STORAGE_MIGRATIONS_PATH -seq $1
+
+migrate: env
+  go run -tags migrate cmd/migrate/main.go
 
 # Preview
 # Run compiled binary
 p:
-    DISCORD_TOKEN=$(cat ~/Sync/ps2-spy/test-token) \
-      CENSUS_SERVICE_ID=$(cat ~/Sync/ps2-spy/test-service) \
-      .bin/app --config config/dev.yml
+  DISCORD_TOKEN=$(cat ~/Sync/ps2-spy/test-token) \
+    CENSUS_SERVICE_ID=$(cat ~/Sync/ps2-spy/test-service) \
+    .bin/app --config config/dev.yml
 
 prof:
-    go tool pprof -http :8081 "$(cat ~/Sync/ps2-spy/prof-address)/debug/pprof/$1"
+  go tool pprof -http :8081 "$(cat ~/Sync/ps2-spy/prof-address)/debug/pprof/$1"
 
 test:
-    go test ./...
+  go test ./...
 
 lint:
-    golangci-lint run ./...
+  golangci-lint run ./...
 
 up:
-    USER_ID="$(id -u)" docker-compose -f monitoring/docker-compose.yml up -d
+  USER_ID="$(id -u)" docker-compose -f monitoring/docker-compose.yml up -d
 
 down:
-    docker-compose -f monitoring/docker-compose.yml down
+  docker-compose -f monitoring/docker-compose.yml down
 
 o:
-    go run tools/explorer/*.go --resource outfit --query $1 --output tmp
+  go run tools/explorer/*.go --resource outfit --query $1 --output tmp
 
 os:
-    go run tools/explorer/*.go --resource outfits --query $1 --output tmp
+  go run tools/explorer/*.go --resource outfits --query $1 --output tmp
 
 c:
-    go run tools/explorer/*.go --resource character --query $1 --output tmp
+  go run tools/explorer/*.go --resource character --query $1 --output tmp
 
 cs:
-    go run tools/explorer/*.go --resource characters --query $1 --output tmp
+  go run tools/explorer/*.go --resource characters --query $1 --output tmp
 
 ms:
-    go run tools/explorer/*.go --resource members --query $1 --output tmp
+  go run tools/explorer/*.go --resource members --query $1 --output tmp
 
 ws:
-    go run tools/explorer/*.go --resource world --query $1 --output tmp
+  go run tools/explorer/*.go --resource world --query $1 --output tmp
