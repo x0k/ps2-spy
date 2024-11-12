@@ -6,13 +6,13 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/coder/websocket"
+	"github.com/coder/websocket/wsjson"
 	"github.com/mitchellh/mapstructure"
 	ps2commands "github.com/x0k/ps2-spy/internal/lib/census2/streaming/commands"
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/core"
 	ps2messages "github.com/x0k/ps2-spy/internal/lib/census2/streaming/messages"
-	"github.com/x0k/ps2-spy/internal/lib/publisher"
-	"nhooyr.io/websocket"
-	"nhooyr.io/websocket/wsjson"
+	"github.com/x0k/ps2-spy/internal/lib/pubsub"
 )
 
 // wss://push.planetside2.com/streaming?environment=[ps2|ps2ps4us|ps2ps4eu]&service-id=s:[your service id]
@@ -28,6 +28,20 @@ var ErrInvalidConnectionMessage = fmt.Errorf("invalid connection message")
 var ErrConnectionFailed = fmt.Errorf("failed to connect")
 var ErrDisconnectedByServer = fmt.Errorf("disconnected by server")
 
+type EventType string
+
+type Event pubsub.Event[EventType]
+
+const (
+	MessageReceivedEventType EventType = "messageReceived"
+)
+
+type MessageReceived map[string]any
+
+func (MessageReceived) Type() EventType {
+	return MessageReceivedEventType
+}
+
 type Client struct {
 	log                      *slog.Logger
 	endpoint                 string
@@ -37,10 +51,10 @@ type Client struct {
 	msgBuffer                core.MessageBase
 	connStateChangeMsgBuffer ps2messages.ConnectionStateChanged
 	connectionTimeout        time.Duration
-	publisher                publisher.Abstract[map[string]any]
+	publisher                pubsub.Publisher[EventType]
 }
 
-func NewClient(log *slog.Logger, endpoint string, env string, serviceId string, publisher publisher.Abstract[map[string]any]) *Client {
+func NewClient(log *slog.Logger, endpoint string, env string, serviceId string, publisher pubsub.Publisher[EventType]) *Client {
 	return &Client{
 		log: log.With(
 			slog.String("component", "census2.streaming.Client"),
@@ -118,7 +132,7 @@ func (c *Client) Connect(ctx context.Context) error {
 }
 
 func (c *Client) onMessage(msg any) error {
-	m, ok := msg.(map[string]any)
+	m, ok := msg.(MessageReceived)
 	if !ok {
 		c.log.Warn("unexpected message type", slog.Any("msg", msg))
 		return nil

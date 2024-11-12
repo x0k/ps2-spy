@@ -1,12 +1,19 @@
-package ps2messages
+package messages
 
-import "github.com/x0k/ps2-spy/internal/lib/census2/streaming/core"
+import (
+	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/core"
+	"github.com/x0k/ps2-spy/internal/lib/pubsub"
+)
+
+type EventType string
+
+type Event pubsub.Event[EventType]
 
 const (
-	ConnectionStateChangedType = "connectionStateChanged"
-	ServiceStateChangedType    = "serviceStateChanged"
-	HeartbeatType              = "heartbeat"
-	ServiceMessageType         = "serviceMessage"
+	ConnectionStateChangedType EventType = "connectionStateChanged"
+	ServiceStateChangedType    EventType = "serviceStateChanged"
+	HeartbeatType              EventType = "heartbeat"
+	ServiceMessageType         EventType = "serviceMessage"
 )
 
 type ConnectionStateChanged struct {
@@ -15,7 +22,7 @@ type ConnectionStateChanged struct {
 }
 
 func IsConnectionStateChangedMessage(msg core.MessageBase) bool {
-	return msg.Service == core.PushService && msg.Type == ConnectionStateChangedType
+	return msg.Service == core.PushService && EventType(msg.Type) == ConnectionStateChangedType
 }
 
 type ServiceStateChanged struct {
@@ -24,7 +31,7 @@ type ServiceStateChanged struct {
 	Online           core.StrBool `json:"online" mapstructure:"online"`
 }
 
-func (s *ServiceStateChanged) Type() string {
+func (s *ServiceStateChanged) Type() EventType {
 	return ServiceStateChangedType
 }
 
@@ -34,7 +41,7 @@ type Heartbeat struct {
 	Online           map[string]core.StrBool `json:"online" mapstructure:"online"`
 }
 
-func (h *Heartbeat) Type() string {
+func (h *Heartbeat) Type() EventType {
 	return HeartbeatType
 }
 
@@ -43,7 +50,7 @@ type ServiceMessage[T any] struct {
 	Payload          T `json:"payload" mapstructure:"payload"`
 }
 
-func (s *ServiceMessage[T]) Type() string {
+func (s *ServiceMessage[T]) Type() EventType {
 	return ServiceMessageType
 }
 
@@ -55,7 +62,7 @@ type SubscriptionSettings struct {
 	LogicalAndCharactersWithWorlds bool     `json:"logicalAndCharactersWithWorlds" mapstructure:"logicalAndCharactersWithWorlds"`
 }
 
-func (s *SubscriptionSettings) Type() string {
+func (s *SubscriptionSettings) Type() EventType {
 	return SubscriptionSignatureField
 }
 

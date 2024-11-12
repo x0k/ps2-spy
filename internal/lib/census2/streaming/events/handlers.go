@@ -1,4 +1,4 @@
-package ps2events
+package events
 
 type achievementEarnedHandler chan<- AchievementEarned
 
