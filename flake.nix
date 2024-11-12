@@ -21,6 +21,9 @@
             pkgs.go
             pkgs.golangci-lint
           ];
+          shellHook = ''
+            source <(COMPLETE=bash mk)
+          '';
         };
       };
     };
