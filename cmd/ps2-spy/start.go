@@ -21,6 +21,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/ps2live/population"
 	"github.com/x0k/ps2-spy/internal/lib/ps2live/saerro"
 	"github.com/x0k/ps2-spy/internal/lib/publisher"
+	"github.com/x0k/ps2-spy/internal/lib/pubsub"
 	"github.com/x0k/ps2-spy/internal/lib/voidwell"
 	"github.com/x0k/ps2-spy/internal/loaders/alerts_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/character_tracking_channels_loader"
@@ -47,13 +48,14 @@ func start(
 	const op = "start"
 	startProfiler(ctx, wg, log, cfg.Profiler)
 	mt := startMetrics(ctx, wg, log, cfg.Metrics)
-	storageEventsPublisher := storage.NewPublisher(
-		mt.InstrumentPublisher(
-			metrics.StoragePublisher,
-			publisher.New[publisher.Event](),
-		),
-	)
-	sqlStorage, err := startStorage(ctx, wg, log, cfg.Storage, storageEventsPublisher)
+	storagePubSub := pubsub.New[storage.EventType]()
+	// storageEventsPublisher := storage.NewPublisher(
+	// 	mt.InstrumentPublisher(
+	// 		metrics.StoragePublisher,
+	// 		publisher.New[publisher.Event](),
+	// 	),
+	// )
+	sqlStorage, err := startStorage(ctx, wg, log, cfg.Storage, storagePubSub)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}

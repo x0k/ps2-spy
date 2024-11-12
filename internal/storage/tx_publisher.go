@@ -4,22 +4,22 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/x0k/ps2-spy/internal/lib/publisher"
+	"github.com/x0k/ps2-spy/internal/lib/pubsub"
 )
 
 type TxPublisher struct {
-	publisher.Publisher[publisher.Event]
-	buffer []publisher.Event
+	pubsub.Publisher[EventType]
+	buffer []Event
 }
 
-func NewTxPublisher(pub publisher.Publisher[publisher.Event], estimatedEventsCount int) *TxPublisher {
+func NewTxPublisher(pub pubsub.Publisher[EventType], estimatedEventsCount int) *TxPublisher {
 	return &TxPublisher{
 		Publisher: pub,
-		buffer:    make([]publisher.Event, 0, estimatedEventsCount),
+		buffer:    make([]Event, 0, estimatedEventsCount),
 	}
 }
 
-func (b *TxPublisher) Publish(event publisher.Event) error {
+func (b *TxPublisher) Publish(event pubsub.Event[EventType]) error {
 	b.buffer = append(b.buffer, event)
 	return nil
 }

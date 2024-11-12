@@ -9,6 +9,7 @@ import (
 
 	"github.com/x0k/ps2-spy/internal/lib/census2"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
+	"github.com/x0k/ps2-spy/internal/lib/pubsub"
 	"github.com/x0k/ps2-spy/internal/loaders/outfit_member_ids_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/outfit_sync_at_loader"
 	"github.com/x0k/ps2-spy/internal/loaders/trackable_outfits_loader"
@@ -50,7 +51,7 @@ func startNewOutfitMembersSynchronizers(
 	log *logger.Logger,
 	sqlStorage *sqlite.Storage,
 	censusClient *census2.Client,
-	publisher *storage.Publisher,
+	subs pubsub.SubscriptionsManager[storage.EventType],
 	outfitMembersSaverPublishers map[platforms.Platform]*outfit_members_saver.Publisher,
 ) error {
 	const op = "startOutfitMembersSynchronizer"
@@ -99,7 +100,7 @@ func startNewOutfitMembersSynchronizers(
 		os.Start(ctx, wg)
 	}
 	channelOutfitSaved := make(chan storage.ChannelOutfitSaved)
-	outfitSavedUnSub := publisher.AddChannelOutfitSavedHandler(channelOutfitSaved)
+	outfitSavedUnSub := subs.AddChannelOutfitSavedHandler(channelOutfitSaved)
 	wg.Add(1)
 	go func() {
 		defer wg.Done()

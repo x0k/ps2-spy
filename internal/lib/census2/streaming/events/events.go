@@ -1,23 +1,30 @@
 package ps2events
 
-import "github.com/x0k/ps2-spy/internal/lib/census2/streaming/core"
+import (
+	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/core"
+	"github.com/x0k/ps2-spy/internal/lib/pubsub"
+)
+
+type EventType string
 
 const (
-	AchievementEarnedEventName     = "AchievementEarned"
-	BattleRankUpEventName          = "BattleRankUp"
-	DeathEventName                 = "Death"
-	GainExperienceEventName        = "GainExperience"
-	ItemAddedEventName             = "ItemAdded"
-	PlayerFacilityCaptureEventName = "PlayerFacilityCapture"
-	PlayerFacilityDefendEventName  = "PlayerFacilityDefend"
-	PlayerLoginEventName           = "PlayerLogin"
-	PlayerLogoutEventName          = "PlayerLogout"
-	SkillAddedEventName            = "SkillAdded"
-	VehicleDestroyEventName        = "VehicleDestroy"
-	ContinentLockEventName         = "ContinentLock"
-	FacilityControlEventName       = "FacilityControl"
-	MetagameEventEventName         = "MetagameEvent"
+	AchievementEarnedEventName     EventType = "AchievementEarned"
+	BattleRankUpEventName          EventType = "BattleRankUp"
+	DeathEventName                 EventType = "Death"
+	GainExperienceEventName        EventType = "GainExperience"
+	ItemAddedEventName             EventType = "ItemAdded"
+	PlayerFacilityCaptureEventName EventType = "PlayerFacilityCapture"
+	PlayerFacilityDefendEventName  EventType = "PlayerFacilityDefend"
+	PlayerLoginEventName           EventType = "PlayerLogin"
+	PlayerLogoutEventName          EventType = "PlayerLogout"
+	SkillAddedEventName            EventType = "SkillAdded"
+	VehicleDestroyEventName        EventType = "VehicleDestroy"
+	ContinentLockEventName         EventType = "ContinentLock"
+	FacilityControlEventName       EventType = "FacilityControl"
+	MetagameEventEventName         EventType = "MetagameEvent"
 )
+
+type Event pubsub.Event[EventType]
 
 type AchievementEarned struct {
 	core.EventBase `mapstructure:",squash"`
@@ -27,7 +34,7 @@ type AchievementEarned struct {
 	ZoneID         string `json:"zone_id" mapstructure:"zone_id"`
 }
 
-func (*AchievementEarned) Type() string {
+func (*AchievementEarned) Type() EventType {
 	return AchievementEarnedEventName
 }
 
@@ -39,7 +46,7 @@ type BattleRankUp struct {
 	ZoneID         string `json:"zone_id" mapstructure:"zone_id"`
 }
 
-func (*BattleRankUp) Type() string {
+func (*BattleRankUp) Type() EventType {
 	return BattleRankUpEventName
 }
 
@@ -60,7 +67,7 @@ type Death struct {
 	ZoneID              string `json:"zone_id" mapstructure:"zone_id"`
 }
 
-func (*Death) Type() string {
+func (*Death) Type() EventType {
 	return DeathEventName
 }
 
@@ -76,7 +83,7 @@ type GainExperience struct {
 	ZoneID         string `json:"zone_id" mapstructure:"zone_id"`
 }
 
-func (*GainExperience) Type() string {
+func (*GainExperience) Type() EventType {
 	return GainExperienceEventName
 }
 
@@ -90,7 +97,7 @@ type ItemAdded struct {
 	ZoneID         string `json:"zone_id" mapstructure:"zone_id"`
 }
 
-func (*ItemAdded) Type() string {
+func (*ItemAdded) Type() EventType {
 	return ItemAddedEventName
 }
 
@@ -103,7 +110,7 @@ type PlayerFacilityCapture struct {
 	ZoneID         string `json:"zone_id" mapstructure:"zone_id"`
 }
 
-func (*PlayerFacilityCapture) Type() string {
+func (*PlayerFacilityCapture) Type() EventType {
 	return PlayerFacilityCaptureEventName
 }
 
@@ -116,7 +123,7 @@ type PlayerFacilityDefend struct {
 	ZoneID         string `json:"zone_id" mapstructure:"zone_id"`
 }
 
-func (*PlayerFacilityDefend) Type() string {
+func (*PlayerFacilityDefend) Type() EventType {
 	return PlayerFacilityDefendEventName
 }
 
@@ -128,7 +135,7 @@ type PlayerLogin struct {
 	WorldID        string `json:"world_id" mapstructure:"world_id"`
 }
 
-func (*PlayerLogin) Type() string {
+func (*PlayerLogin) Type() EventType {
 	return PlayerLoginEventName
 }
 
@@ -138,7 +145,7 @@ type PlayerLogout struct {
 	WorldID        string `json:"world_id" mapstructure:"world_id"`
 }
 
-func (*PlayerLogout) Type() string {
+func (*PlayerLogout) Type() EventType {
 	return PlayerLogoutEventName
 }
 
@@ -150,7 +157,7 @@ type SkillAdded struct {
 	ZoneID         string `json:"zone_id" mapstructure:"zone_id"`
 }
 
-func (*SkillAdded) Type() string {
+func (*SkillAdded) Type() EventType {
 	return SkillAddedEventName
 }
 
@@ -170,7 +177,7 @@ type VehicleDestroy struct {
 	ZoneID              string `json:"zone_id" mapstructure:"zone_id"`
 }
 
-func (*VehicleDestroy) Type() string {
+func (*VehicleDestroy) Type() EventType {
 	return VehicleDestroyEventName
 }
 
@@ -187,7 +194,7 @@ type ContinentLock struct {
 	ZoneID            string `json:"zone_id" mapstructure:"zone_id"`
 }
 
-func (*ContinentLock) Type() string {
+func (*ContinentLock) Type() EventType {
 	return ContinentLockEventName
 }
 
@@ -202,7 +209,7 @@ type FacilityControl struct {
 	ZoneID         string `json:"zone_id" mapstructure:"zone_id"`
 }
 
-func (*FacilityControl) Type() string {
+func (*FacilityControl) Type() EventType {
 	return FacilityControlEventName
 }
 
@@ -220,6 +227,6 @@ type MetagameEvent struct {
 	ZoneID                 string `json:"zone_id" mapstructure:"zone_id"`
 }
 
-func (*MetagameEvent) Type() string {
+func (*MetagameEvent) Type() EventType {
 	return MetagameEventEventName
 }

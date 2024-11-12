@@ -13,6 +13,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/loaders"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
+	"github.com/x0k/ps2-spy/internal/lib/pubsub"
 	"github.com/x0k/ps2-spy/internal/lib/retryable"
 	"github.com/x0k/ps2-spy/internal/lib/retryable/perform"
 	"github.com/x0k/ps2-spy/internal/lib/retryable/while"
@@ -84,14 +85,14 @@ type WorldsTracker struct {
 	mutex                   sync.RWMutex
 	worlds                  map[ps2.WorldId]map[ps2.ZoneId]zoneState
 	invalidationInterval    time.Duration
-	publisher               *Publisher
+	publisher               pubsub.Publisher[EventType]
 }
 
 func New(
 	log *logger.Logger,
 	platform platforms.Platform,
 	invalidationInterval time.Duration,
-	publisher *Publisher,
+	publisher pubsub.Publisher[EventType],
 	worldMapLoader loaders.KeyedLoader[ps2.WorldId, ps2.WorldMap],
 ) *WorldsTracker {
 	worldIds := ps2.PlatformWorldIds[platform]

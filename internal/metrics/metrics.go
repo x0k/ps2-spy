@@ -63,7 +63,7 @@ type Metrics interface {
 	PlatformLoaderInFlightMetric(PlatformLoaderName, platforms.Platform) *prometheus.Gauge
 	PlatformLoaderSubjectsCounterMetric(PlatformLoaderName, platforms.Platform) *prometheus.CounterVec
 
-	InstrumentPublisher(PublisherName, publisher.Publisher[publisher.Event]) publisher.Publisher[publisher.Event]
+	// InstrumentPublisher(PublisherName, pubsub.Publisher[pubsub.EventType]) publisher.Publisher[publisher.Event]
 	InstrumentPlatformPublisher(PlatformPublisherName, platforms.Platform, publisher.Publisher[publisher.Event]) publisher.Publisher[publisher.Event]
 	InstrumentTransport(TransportName, http.RoundTripper) http.RoundTripper
 

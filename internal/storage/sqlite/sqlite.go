@@ -12,7 +12,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
-	"github.com/x0k/ps2-spy/internal/lib/publisher"
+	"github.com/x0k/ps2-spy/internal/lib/pubsub"
 	"github.com/x0k/ps2-spy/internal/meta"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/ps2/platforms"
@@ -77,7 +77,7 @@ type Storage struct {
 	db         *sql.DB
 	statements [statementsCount]statement
 	tx         *sql.Tx
-	pub        publisher.Publisher[publisher.Event]
+	pub        pubsub.Publisher[storage.EventType]
 }
 
 func (s *Storage) migrate(ctx context.Context) error {
@@ -155,7 +155,7 @@ func New(
 	ctx context.Context,
 	log *logger.Logger,
 	storagePath string,
-	pub *storage.Publisher,
+	pub pubsub.Publisher[storage.EventType],
 ) (*Storage, error) {
 	const op = "storage.sqlite.New"
 	db, err := sql.Open("sqlite3", storagePath)
@@ -373,7 +373,7 @@ func query[T any](
 	return results, rows.Err()
 }
 
-func (s *Storage) publish(ctx context.Context, event publisher.Event) {
+func (s *Storage) publish(ctx context.Context, event pubsub.Event[storage.EventType]) {
 	if err := s.pub.Publish(event); err != nil {
 		s.log.Error(ctx, "cannot publish event", sl.Err(err))
 	}
