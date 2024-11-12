@@ -3,9 +3,12 @@ package httpx
 import (
 	"context"
 	"encoding/json"
-	"io"
+	"errors"
+	"fmt"
 	"net/http"
 )
+
+var ErrUnexpectedStatusCode = errors.New("unexpected HTTP status code")
 
 func GetJson[T any](ctx context.Context, client *http.Client, url string) (T, error) {
 	req, err := http.NewRequest("GET", url, nil)
@@ -19,10 +22,13 @@ func GetJson[T any](ctx context.Context, client *http.Client, url string) (T, er
 		return v, err
 	}
 	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return v, err
+
+	// Check the HTTP status code
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return v, fmt.Errorf("%w: %s", ErrUnexpectedStatusCode, resp.Status)
 	}
-	err = json.Unmarshal(body, &v)
+
+	decoder := json.NewDecoder(resp.Body)
+	err = decoder.Decode(&v)
 	return v, err
 }
