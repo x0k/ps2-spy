@@ -19,7 +19,7 @@ d: env
 
 # Build bin
 b:
-  go build -o bin/app cmd/ps2-spy/main.go
+  go build -tags "migrate" -o bin/app cmd/ps2-spy/main.go
 
 ## DATABASE
 

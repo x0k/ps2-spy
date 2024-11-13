@@ -17,7 +17,7 @@ RUN go mod download
 COPY . .
 
 # Build the Go application
-RUN CGO_ENABLED=1 go build -o app ./cmd/ps2-spy/
+RUN go build -tags "migrate" -o app ./cmd/ps2-spy/main.go
 
 # Create a minimal runtime image
 FROM alpine:3.20.0
