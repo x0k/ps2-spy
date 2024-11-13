@@ -1,6 +1,8 @@
 package module
 
-import "context"
+import (
+	"context"
+)
 
 type Hook interface {
 	Name() string

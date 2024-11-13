@@ -20,8 +20,8 @@ func (h handler[T, E]) Handle(event pubsub.Event[T]) {
 }
 
 func Subscribe[T pubsub.EventType, E pubsub.Event[T]](
-	subs pubsub.SubscriptionsManager[T],
 	preStopper module.PreStopper,
+	subs pubsub.SubscriptionsManager[T],
 ) <-chan E {
 	channel := make(chan E)
 	h := handler[T, E](channel)
