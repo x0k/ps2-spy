@@ -3,15 +3,14 @@ package streaming
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"time"
 
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
 	"github.com/mitchellh/mapstructure"
-	ps2commands "github.com/x0k/ps2-spy/internal/lib/census2/streaming/commands"
+	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/commands"
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/core"
-	ps2messages "github.com/x0k/ps2-spy/internal/lib/census2/streaming/messages"
+	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/messages"
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
 )
 
@@ -43,24 +42,18 @@ func (MessageReceived) Type() EventType {
 }
 
 type Client struct {
-	log                      *slog.Logger
 	endpoint                 string
 	env                      string
 	serviceId                string
 	conn                     *websocket.Conn
 	msgBuffer                core.MessageBase
-	connStateChangeMsgBuffer ps2messages.ConnectionStateChanged
+	connStateChangeMsgBuffer messages.ConnectionStateChanged
 	connectionTimeout        time.Duration
 	publisher                pubsub.Publisher[EventType]
 }
 
-func NewClient(log *slog.Logger, endpoint string, env string, serviceId string, publisher pubsub.Publisher[EventType]) *Client {
+func NewClient(endpoint string, env string, serviceId string, publisher pubsub.Publisher[EventType]) *Client {
 	return &Client{
-		log: log.With(
-			slog.String("component", "census2.streaming.Client"),
-			slog.String("endpoint", endpoint),
-			slog.String("env", env),
-		),
 		endpoint:          endpoint,
 		env:               env,
 		serviceId:         serviceId,
@@ -73,24 +66,26 @@ func (c *Client) Environment() string {
 	return c.env
 }
 
-func (c *Client) fillConnectionStateChangedBuffer(msg map[string]any) error {
+func (c *Client) checkConnectionStateChanged(msg MessageReceived) error {
 	err := core.AsMessageBase(msg, &c.msgBuffer)
 	if err != nil {
 		return err
 	}
-	if !ps2messages.IsConnectionStateChangedMessage(c.msgBuffer) {
+	if !messages.IsConnectionStateChangedMessage(c.msgBuffer) {
 		return ErrInvalidConnectionMessage
 	}
 	err = mapstructure.Decode(msg, &c.connStateChangeMsgBuffer)
 	if err != nil {
 		return err
 	}
+	if c.connStateChangeMsgBuffer.Connected != core.True {
+		return ErrDisconnectedByServer
+	}
 	return nil
 }
 
 func (c *Client) Connect(ctx context.Context) error {
 	const op = "census2.streaming.Client.Connect"
-	c.log.Info("connecting to websocket")
 	conn, _, err := websocket.Dial(ctx, c.endpoint+fmt.Sprintf("?environment=%s&service-id=s:%s", c.env, c.serviceId), nil)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
@@ -101,23 +96,16 @@ func (c *Client) Connect(ctx context.Context) error {
 		}
 		conn.Close(websocket.StatusNormalClosure, "connection failed")
 	}()
-	timeout := time.AfterFunc(c.connectionTimeout, func() {
-		conn.Close(websocket.StatusNormalClosure, "connection timeout")
-	})
-	defer timeout.Stop()
+
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, c.connectionTimeout)
+	defer cancel()
+
 	var data map[string]any
-	err = wsjson.Read(ctx, conn, &data)
-	if err != nil {
+	if err = wsjson.Read(ctxWithTimeout, conn, &data); err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
-	// TODO: check that timeout was not triggered before assigning connection
-	timeout.Stop()
-	err = c.fillConnectionStateChangedBuffer(data)
-	if err != nil {
+	if err = c.checkConnectionStateChanged(data); err != nil {
 		return fmt.Errorf("%s: %w", op, err)
-	}
-	if c.connStateChangeMsgBuffer.Connected != core.True {
-		return fmt.Errorf("%s: %w", op, ErrConnectionFailed)
 	}
 	c.conn = conn
 	// Skip the write of connection message cause this write
@@ -127,44 +115,35 @@ func (c *Client) Connect(ctx context.Context) error {
 	// is the same as no write at all.
 	//
 	// c.Msg <- data
-	c.log.Info("connected")
 	return nil
 }
 
-func (c *Client) onMessage(msg any) error {
-	m, ok := msg.(MessageReceived)
-	if !ok {
-		c.log.Warn("unexpected message type", slog.Any("msg", msg))
-		return nil
-	}
-	if c.fillConnectionStateChangedBuffer(m) == nil && c.connStateChangeMsgBuffer.Connected == core.False {
-		c.log.Info("disconnected by server")
-		return ErrDisconnectedByServer
-	}
-	return c.publisher.Publish(m)
-}
-
-func (c *Client) Subscribe(ctx context.Context, settings ps2commands.SubscriptionSettings) error {
+func (c *Client) Subscribe(ctx context.Context, settings commands.SubscriptionSettings) error {
 	const op = "census2.streaming.Client.Subscribe"
-	err := wsjson.Write(ctx, c.conn, ps2commands.Subscribe(settings))
+	err := wsjson.Write(ctx, c.conn, commands.Subscribe(settings))
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 	for {
 		var data interface{}
-		err := wsjson.Read(ctx, c.conn, &data)
-		if err != nil {
+		if err := wsjson.Read(ctx, c.conn, &data); err != nil {
 			return fmt.Errorf("%s: %w", op, err)
 		}
-		err = c.onMessage(data)
-		if err != nil {
+		msg, ok := data.(MessageReceived)
+		if !ok {
+			// TODO: Use optional unknown message publisher
+			continue
+		}
+		if err := c.checkConnectionStateChanged(msg); err != nil {
+			return fmt.Errorf("%s: %w", op, err)
+		}
+		if err = c.publisher.Publish(msg); err != nil {
 			return fmt.Errorf("%s: %w", op, err)
 		}
 	}
 }
 
 func (c *Client) Close() error {
-	c.log.Info("closing websocket connection")
 	defer func() {
 		c.conn = nil
 	}()

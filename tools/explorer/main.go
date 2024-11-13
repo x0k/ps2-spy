@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"log/slog"
 	"net/http"
 	"os"
 	"path"
@@ -165,8 +164,7 @@ var handlers = map[string]func(c *census2.Client, query string) (any, error){
 
 func main() {
 	httpClient := &http.Client{}
-	l := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
-	censusClient := census2.NewClient(l, "https://census.daybreakgames.com", "", httpClient)
+	censusClient := census2.NewClient("https://census.daybreakgames.com", "", httpClient)
 	handler, ok := handlers[resource]
 	if !ok {
 		log.Fatalf("unknown resource: %s", resource)
