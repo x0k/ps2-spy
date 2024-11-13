@@ -1,12 +1,10 @@
-package sqlite
+package sql_storage
 
 import (
 	"context"
 	"database/sql"
 	"errors"
 	"time"
-
-	_ "modernc.org/sqlite"
 
 	"github.com/x0k/ps2-spy/internal/lib/db"
 	"github.com/x0k/ps2-spy/internal/lib/logger"

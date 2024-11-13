@@ -1,4 +1,4 @@
-package platform_module
+package events_module
 
 import (
 	"context"

@@ -1,4 +1,4 @@
-package platform_module
+package events_module
 
 import (
 	"fmt"
@@ -18,17 +18,15 @@ type Config struct {
 	CensusServiceId   string
 }
 
-func New(log *logger.Logger, cfg *Config) (*module.Module, error) {
+func New(log *logger.Logger, cfg *Config, eventsPublisher pubsub.Publisher[events.Event]) (*module.Module, error) {
 	m := module.New(log.Logger, fmt.Sprintf("platform.%s", cfg.Platform))
 
-	cleanEventsPubSub := pubsub.New[events.EventType]()
-
-	reLoginOmitter := relogin_omitter.NewReLoginOmitter(log, cleanEventsPubSub)
+	reLoginOmitter := relogin_omitter.NewReLoginOmitter(log, eventsPublisher)
 	m.Append(NewReLoginOmitterService(cfg.Platform, reLoginOmitter))
 
-	eventsPublisher := events.NewPublisher(reLoginOmitter)
+	rawEventsPublisher := events.NewPublisher(reLoginOmitter)
 
-	serviceMessagePayloadPublisher := newServiceMessagePayloadPublisher(eventsPublisher)
+	serviceMessagePayloadPublisher := newServiceMessagePayloadPublisher(rawEventsPublisher)
 
 	streamingPublisher := streaming.NewPublisher(serviceMessagePayloadPublisher)
 

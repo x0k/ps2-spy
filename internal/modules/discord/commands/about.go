@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/x0k/ps2-spy/internal/discord_module"
+	discord_module "github.com/x0k/ps2-spy/internal/modules/discord"
 )
 
 func NewAbout() *discord_module.Command {

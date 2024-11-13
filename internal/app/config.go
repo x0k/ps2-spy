@@ -19,7 +19,7 @@ type ProfilerConfig struct {
 }
 
 type DiscordConfig struct {
-	Token                 string        `yaml:"token" env:"DISCORD_TOKEN"`
+	Token                 string        `yaml:"token" env:"DISCORD_TOKEN" env-required:"true"`
 	RemoveCommands        bool          `yaml:"remove_commands" env:"DISCORD_REMOVE_COMMANDS"`
 	CommandHandlerTimeout time.Duration `yaml:"command_handler_timeout" env:"DISCORD_COMMAND_HANDLER_TIMEOUT" env-default:"25s"`
 	EventHandlerTimeout   time.Duration `yaml:"event_handler_timeout" env:"DISCORD_EVENT_HANDLER_TIMEOUT" env-default:"5m"`
@@ -33,6 +33,11 @@ type HttpClientConfig struct {
 	Timeout time.Duration `yaml:"timeout" env:"HTTP_CLIENT_TIMEOUT" env-default:"12s"`
 }
 
+type Ps2Config struct {
+	StreamingEndpoint string `yaml:"streaming_endpoint" env:"PS2_STREAMING_ENDPOINT" env-default:"wss://push.planetside2.com/streaming"`
+	CensusServiceId   string `yaml:"census_service_id" env:"PS2_CENSUS_SERVICE_ID" env-required:"true"`
+}
+
 type Config struct {
 	Logger     LoggerConfig     `yaml:"logger"`
 	Profiler   ProfilerConfig   `yaml:"profiler"`
@@ -40,6 +45,7 @@ type Config struct {
 	Metrics    MetricsConfig    `yaml:"metrics"`
 	Storage    StorageConfig    `yaml:"storage"`
 	HttpClient HttpClientConfig `yaml:"http_client"`
+	Ps2        Ps2Config        `yaml:"ps2"`
 }
 
 func MustLoadConfig(configPath string) *Config {

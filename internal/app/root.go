@@ -3,14 +3,15 @@ package app
 import (
 	"net/http"
 
-	"github.com/x0k/ps2-spy/internal/discord_module"
-	"github.com/x0k/ps2-spy/internal/discord_module/commands"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/module"
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
-	"github.com/x0k/ps2-spy/internal/profiler_module"
+	discord_module "github.com/x0k/ps2-spy/internal/modules/discord"
+	"github.com/x0k/ps2-spy/internal/modules/discord/commands"
+	profiler_module "github.com/x0k/ps2-spy/internal/modules/profiler"
+	ps2_module "github.com/x0k/ps2-spy/internal/modules/ps2"
+	"github.com/x0k/ps2-spy/internal/ps2/platforms"
 	"github.com/x0k/ps2-spy/internal/storage"
-	"github.com/x0k/ps2-spy/internal/storage/sqlite"
 )
 
 func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
@@ -35,13 +36,25 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	m.Append(discordModule)
 
 	storagePubSub := pubsub.New[storage.EventType]()
-	storageService := sqlite.NewService(log, cfg.Storage.Path, storagePubSub)
+	storageService := newSqliteStorageService(log, cfg.Storage.Path, storagePubSub)
 	m.Append(storageService)
 
 	httpClient := &http.Client{
 		Timeout: cfg.HttpClient.Timeout,
 	}
 	_ = httpClient
+
+	ps2Module, err := ps2_module.New(log, &ps2_module.Config{
+		Platform:          platforms.PC,
+		StreamingEndpoint: cfg.Ps2.StreamingEndpoint,
+		CensusServiceId:   cfg.Ps2.CensusServiceId,
+	})
+	if err != nil {
+		return nil, err
+	}
+	m.Append(ps2Module)
+
+	_ = ps2Module
 
 	return m, nil
 }
