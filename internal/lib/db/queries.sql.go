@@ -26,7 +26,7 @@ type DeleteChannelCharacterParams struct {
 }
 
 func (q *Queries) DeleteChannelCharacter(ctx context.Context, arg DeleteChannelCharacterParams) error {
-	_, err := q.db.ExecContext(ctx, deleteChannelCharacter, arg.ChannelID, arg.Platform, arg.CharacterID)
+	_, err := q.exec(ctx, q.deleteChannelCharacterStmt, deleteChannelCharacter, arg.ChannelID, arg.Platform, arg.CharacterID)
 	return err
 }
 
@@ -45,7 +45,7 @@ type DeleteChannelOutfitParams struct {
 }
 
 func (q *Queries) DeleteChannelOutfit(ctx context.Context, arg DeleteChannelOutfitParams) error {
-	_, err := q.db.ExecContext(ctx, deleteChannelOutfit, arg.ChannelID, arg.Platform, arg.OutfitID)
+	_, err := q.exec(ctx, q.deleteChannelOutfitStmt, deleteChannelOutfit, arg.ChannelID, arg.Platform, arg.OutfitID)
 	return err
 }
 
@@ -64,7 +64,7 @@ type DeleteOutfitMemberParams struct {
 }
 
 func (q *Queries) DeleteOutfitMember(ctx context.Context, arg DeleteOutfitMemberParams) error {
-	_, err := q.db.ExecContext(ctx, deleteOutfitMember, arg.Platform, arg.OutfitID, arg.CharacterID)
+	_, err := q.exec(ctx, q.deleteOutfitMemberStmt, deleteOutfitMember, arg.Platform, arg.OutfitID, arg.CharacterID)
 	return err
 }
 
@@ -78,7 +78,7 @@ WHERE
 `
 
 func (q *Queries) GetFacility(ctx context.Context, facilityID string) (Facility, error) {
-	row := q.db.QueryRowContext(ctx, getFacility, facilityID)
+	row := q.queryRow(ctx, q.getFacilityStmt, getFacility, facilityID)
 	var i Facility
 	err := row.Scan(
 		&i.FacilityID,
@@ -105,7 +105,7 @@ type GetPlatformOutfitParams struct {
 }
 
 func (q *Queries) GetPlatformOutfit(ctx context.Context, arg GetPlatformOutfitParams) (Outfit, error) {
-	row := q.db.QueryRowContext(ctx, getPlatformOutfit, arg.Platform, arg.OutfitID)
+	row := q.queryRow(ctx, q.getPlatformOutfitStmt, getPlatformOutfit, arg.Platform, arg.OutfitID)
 	var i Outfit
 	err := row.Scan(
 		&i.Platform,
@@ -132,7 +132,7 @@ type GetPlatformOutfitSynchronizedAtParams struct {
 }
 
 func (q *Queries) GetPlatformOutfitSynchronizedAt(ctx context.Context, arg GetPlatformOutfitSynchronizedAtParams) (time.Time, error) {
-	row := q.db.QueryRowContext(ctx, getPlatformOutfitSynchronizedAt, arg.Platform, arg.OutfitID)
+	row := q.queryRow(ctx, q.getPlatformOutfitSynchronizedAtStmt, getPlatformOutfitSynchronizedAt, arg.Platform, arg.OutfitID)
 	var synchronized_at time.Time
 	err := row.Scan(&synchronized_at)
 	return synchronized_at, err
@@ -152,7 +152,7 @@ type InsertChannelCharacterParams struct {
 }
 
 func (q *Queries) InsertChannelCharacter(ctx context.Context, arg InsertChannelCharacterParams) error {
-	_, err := q.db.ExecContext(ctx, insertChannelCharacter, arg.ChannelID, arg.Platform, arg.CharacterID)
+	_, err := q.exec(ctx, q.insertChannelCharacterStmt, insertChannelCharacter, arg.ChannelID, arg.Platform, arg.CharacterID)
 	return err
 }
 
@@ -170,7 +170,7 @@ type InsertChannelOutfitParams struct {
 }
 
 func (q *Queries) InsertChannelOutfit(ctx context.Context, arg InsertChannelOutfitParams) error {
-	_, err := q.db.ExecContext(ctx, insertChannelOutfit, arg.ChannelID, arg.Platform, arg.OutfitID)
+	_, err := q.exec(ctx, q.insertChannelOutfitStmt, insertChannelOutfit, arg.ChannelID, arg.Platform, arg.OutfitID)
 	return err
 }
 
@@ -189,7 +189,7 @@ type InsertFacilityParams struct {
 }
 
 func (q *Queries) InsertFacility(ctx context.Context, arg InsertFacilityParams) error {
-	_, err := q.db.ExecContext(ctx, insertFacility,
+	_, err := q.exec(ctx, q.insertFacilityStmt, insertFacility,
 		arg.FacilityID,
 		arg.FacilityName,
 		arg.FacilityType,
@@ -213,7 +213,7 @@ type InsertOutfitParams struct {
 }
 
 func (q *Queries) InsertOutfit(ctx context.Context, arg InsertOutfitParams) error {
-	_, err := q.db.ExecContext(ctx, insertOutfit,
+	_, err := q.exec(ctx, q.insertOutfitStmt, insertOutfit,
 		arg.Platform,
 		arg.OutfitID,
 		arg.OutfitName,
@@ -236,7 +236,7 @@ type InsertOutfitMemberParams struct {
 }
 
 func (q *Queries) InsertOutfitMember(ctx context.Context, arg InsertOutfitMemberParams) error {
-	_, err := q.db.ExecContext(ctx, insertOutfitMember, arg.Platform, arg.OutfitID, arg.CharacterID)
+	_, err := q.exec(ctx, q.insertOutfitMemberStmt, insertOutfitMember, arg.Platform, arg.OutfitID, arg.CharacterID)
 	return err
 }
 
@@ -256,7 +256,7 @@ type ListChannelCharacterIdsForPlatformParams struct {
 }
 
 func (q *Queries) ListChannelCharacterIdsForPlatform(ctx context.Context, arg ListChannelCharacterIdsForPlatformParams) ([]string, error) {
-	rows, err := q.db.QueryContext(ctx, listChannelCharacterIdsForPlatform, arg.ChannelID, arg.Platform)
+	rows, err := q.query(ctx, q.listChannelCharacterIdsForPlatformStmt, listChannelCharacterIdsForPlatform, arg.ChannelID, arg.Platform)
 	if err != nil {
 		return nil, err
 	}
@@ -294,7 +294,7 @@ type ListChannelOutfitIdsForPlatformParams struct {
 }
 
 func (q *Queries) ListChannelOutfitIdsForPlatform(ctx context.Context, arg ListChannelOutfitIdsForPlatformParams) ([]string, error) {
-	rows, err := q.db.QueryContext(ctx, listChannelOutfitIdsForPlatform, arg.ChannelID, arg.Platform)
+	rows, err := q.query(ctx, q.listChannelOutfitIdsForPlatformStmt, listChannelOutfitIdsForPlatform, arg.ChannelID, arg.Platform)
 	if err != nil {
 		return nil, err
 	}
@@ -332,7 +332,7 @@ type ListPlatformOutfitMembersParams struct {
 }
 
 func (q *Queries) ListPlatformOutfitMembers(ctx context.Context, arg ListPlatformOutfitMembersParams) ([]string, error) {
-	rows, err := q.db.QueryContext(ctx, listPlatformOutfitMembers, arg.Platform, arg.OutfitID)
+	rows, err := q.query(ctx, q.listPlatformOutfitMembersStmt, listPlatformOutfitMembers, arg.Platform, arg.OutfitID)
 	if err != nil {
 		return nil, err
 	}
@@ -381,7 +381,7 @@ func (q *Queries) ListPlatformOutfits(ctx context.Context, arg ListPlatformOutfi
 	} else {
 		query = strings.Replace(query, "/*SLICE:outfit_ids*/?", "NULL", 1)
 	}
-	rows, err := q.db.QueryContext(ctx, query, queryParams...)
+	rows, err := q.query(ctx, nil, query, queryParams...)
 	if err != nil {
 		return nil, err
 	}
@@ -433,7 +433,7 @@ type ListPlatformTrackingChannelIdsForCharacterParams struct {
 }
 
 func (q *Queries) ListPlatformTrackingChannelIdsForCharacter(ctx context.Context, arg ListPlatformTrackingChannelIdsForCharacterParams) ([]string, error) {
-	rows, err := q.db.QueryContext(ctx, listPlatformTrackingChannelIdsForCharacter, arg.Platform, arg.CharacterID, arg.OutfitID)
+	rows, err := q.query(ctx, q.listPlatformTrackingChannelIdsForCharacterStmt, listPlatformTrackingChannelIdsForCharacter, arg.Platform, arg.CharacterID, arg.OutfitID)
 	if err != nil {
 		return nil, err
 	}
@@ -471,7 +471,7 @@ type ListPlatformTrackingChannelIdsForOutfitParams struct {
 }
 
 func (q *Queries) ListPlatformTrackingChannelIdsForOutfit(ctx context.Context, arg ListPlatformTrackingChannelIdsForOutfitParams) ([]string, error) {
-	rows, err := q.db.QueryContext(ctx, listPlatformTrackingChannelIdsForOutfit, arg.Platform, arg.OutfitID)
+	rows, err := q.query(ctx, q.listPlatformTrackingChannelIdsForOutfitStmt, listPlatformTrackingChannelIdsForOutfit, arg.Platform, arg.OutfitID)
 	if err != nil {
 		return nil, err
 	}
@@ -512,7 +512,7 @@ WHERE
 `
 
 func (q *Queries) ListTrackableCharacterIdsWithDuplicationForPlatform(ctx context.Context, platform string) ([]string, error) {
-	rows, err := q.db.QueryContext(ctx, listTrackableCharacterIdsWithDuplicationForPlatform, platform)
+	rows, err := q.query(ctx, q.listTrackableCharacterIdsWithDuplicationForPlatformStmt, listTrackableCharacterIdsWithDuplicationForPlatform, platform)
 	if err != nil {
 		return nil, err
 	}
@@ -544,7 +544,7 @@ WHERE
 `
 
 func (q *Queries) ListTrackableOutfitIdsWithDuplicationForPlatform(ctx context.Context, platform string) ([]string, error) {
-	rows, err := q.db.QueryContext(ctx, listTrackableOutfitIdsWithDuplicationForPlatform, platform)
+	rows, err := q.query(ctx, q.listTrackableOutfitIdsWithDuplicationForPlatformStmt, listTrackableOutfitIdsWithDuplicationForPlatform, platform)
 	if err != nil {
 		return nil, err
 	}
@@ -576,7 +576,7 @@ WHERE
 `
 
 func (q *Queries) ListUniqueTrackableOutfitIdsForPlatform(ctx context.Context, platform string) ([]string, error) {
-	rows, err := q.db.QueryContext(ctx, listUniqueTrackableOutfitIdsForPlatform, platform)
+	rows, err := q.query(ctx, q.listUniqueTrackableOutfitIdsForPlatformStmt, listUniqueTrackableOutfitIdsForPlatform, platform)
 	if err != nil {
 		return nil, err
 	}
@@ -615,6 +615,6 @@ type UpsertPlatformOutfitSynchronizedAtParams struct {
 }
 
 func (q *Queries) UpsertPlatformOutfitSynchronizedAt(ctx context.Context, arg UpsertPlatformOutfitSynchronizedAtParams) error {
-	_, err := q.db.ExecContext(ctx, upsertPlatformOutfitSynchronizedAt, arg.Platform, arg.OutfitID, arg.SynchronizedAt)
+	_, err := q.exec(ctx, q.upsertPlatformOutfitSynchronizedAtStmt, upsertPlatformOutfitSynchronizedAt, arg.Platform, arg.OutfitID, arg.SynchronizedAt)
 	return err
 }
