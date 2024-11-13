@@ -1,6 +1,8 @@
 package app
 
 import (
+	"net/http"
+
 	"github.com/x0k/ps2-spy/internal/discord_module"
 	"github.com/x0k/ps2-spy/internal/discord_module/commands"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
@@ -35,6 +37,10 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	storagePubSub := pubsub.New[storage.EventType]()
 	storageService := sqlite.NewService(log, cfg.Storage.Path, storagePubSub)
 	m.Append(storageService)
+
+	httpClient := &http.Client{
+		Timeout: cfg.HttpClient.Timeout,
+	}
 
 	return m, nil
 }
