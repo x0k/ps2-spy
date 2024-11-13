@@ -10,8 +10,8 @@ import (
 )
 
 type Config struct {
-	Enabled bool   `yaml:"enabled" env:"PROFILER_ENABLED"`
-	Address string `yaml:"address" env:"PROFILER_ADDRESS"`
+	Enabled bool
+	Address string
 }
 
 func UseHttpRouter(mux *http.ServeMux) *http.ServeMux {

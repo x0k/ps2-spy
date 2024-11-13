@@ -62,7 +62,7 @@ func (m *Module) awaiter(ctx context.Context) error {
 }
 
 func (m *Module) start(ctx context.Context, awaiter func(context.Context) error) error {
-	if len(m.services) == 0 {
+	if len(m.services) == 0 && len(m.postStart) == 0 && len(m.preStop) == 0 {
 		return nil
 	}
 
