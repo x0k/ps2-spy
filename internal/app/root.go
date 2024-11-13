@@ -2,6 +2,7 @@ package app
 
 import (
 	"github.com/x0k/ps2-spy/internal/discord_module"
+	"github.com/x0k/ps2-spy/internal/discord_module/commands"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/module"
 	"github.com/x0k/ps2-spy/internal/profiler_module"
@@ -21,6 +22,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		RemoveCommands:        cfg.Discord.RemoveCommands,
 		CommandHandlerTimeout: cfg.Discord.CommandHandlerTimeout,
 		EventHandlerTimeout:   cfg.Discord.EventHandlerTimeout,
+		Commands:              commands.New(),
 	})
 	if err != nil {
 		return nil, err

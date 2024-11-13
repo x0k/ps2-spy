@@ -15,6 +15,6 @@ func New(
 	if err != nil {
 		return nil, err
 	}
-	m.PostStart(NewSessionService(session, m))
+	m.PostStart(NewSessionService(log, cfg, m, session))
 	return m, nil
 }
