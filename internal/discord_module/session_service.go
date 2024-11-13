@@ -19,22 +19,8 @@ func NewSessionService(
 	cfg *Config,
 	fataler module.Fataler,
 	session *discordgo.Session,
-) module.Hook {
-	var registeredCommands []*discordgo.ApplicationCommand
-	return module.NewHook("discord_session", func(ctx context.Context) error {
-		context.AfterFunc(ctx, func() {
-			if cfg.RemoveCommands {
-				for _, v := range registeredCommands {
-					if err := session.ApplicationCommandDelete(session.State.User.ID, "", v.ID); err != nil {
-						log.Error(ctx, "cannot delete command", slog.String("command", v.Name), sl.Err(err))
-					}
-				}
-			}
-			if err := session.Close(); err != nil {
-				fataler.Fatal(ctx, err)
-			}
-		})
-
+) module.Service {
+	return module.NewService("discord_session", func(ctx context.Context) error {
 		handlers := make(map[string]InteractionHandler, len(cfg.Commands))
 		commands := make([]*discordgo.ApplicationCommand, 0, len(cfg.Commands))
 		submitHandlers := make(map[string]InteractionHandler, len(cfg.Commands))
@@ -95,8 +81,20 @@ func NewSessionService(
 			return err
 		}
 
-		var err error
-		registeredCommands, err = session.ApplicationCommandBulkOverwrite(session.State.User.ID, "", commands)
-		return err
+		registeredCommands, err := session.ApplicationCommandBulkOverwrite(session.State.User.ID, "", commands)
+		if err != nil {
+			return err
+		}
+
+		<-ctx.Done()
+
+		if cfg.RemoveCommands {
+			for _, v := range registeredCommands {
+				if err := session.ApplicationCommandDelete(session.State.User.ID, "", v.ID); err != nil {
+					log.Error(ctx, "cannot delete command", slog.String("command", v.Name), sl.Err(err))
+				}
+			}
+		}
+		return session.Close()
 	})
 }

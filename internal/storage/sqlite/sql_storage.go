@@ -4,59 +4,53 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"time"
 
 	_ "modernc.org/sqlite"
 
-	"github.com/x0k/ps2-spy/internal/event"
 	"github.com/x0k/ps2-spy/internal/lib/db"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
+	"github.com/x0k/ps2-spy/internal/lib/pubsub"
 	"github.com/x0k/ps2-spy/internal/meta"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/ps2/platforms"
 	"github.com/x0k/ps2-spy/internal/storage"
 )
 
-type SqliteStorage struct {
+type SqlStorage struct {
 	log       *logger.Logger
-	sqlite    *sql.DB
+	db        *sql.DB
 	queries   *db.Queries
-	publisher event.Publisher
+	publisher pubsub.Publisher[storage.EventType]
 }
 
-func New(ctx context.Context, log *logger.Logger, storagePath string, publisher event.Publisher) (*SqliteStorage, error) {
-	const op = "storage.sqlite.New"
-	sqlite, err := sql.Open("sqlite", storagePath)
+func New(ctx context.Context, log *logger.Logger, database *sql.DB, publisher pubsub.Publisher[storage.EventType]) (*SqlStorage, error) {
+	queries, err := db.Prepare(ctx, database)
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
+		return nil, err
 	}
-	queries, err := db.Prepare(ctx, sqlite)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
-	}
-	return &SqliteStorage{
-		log:       log.With(sl.Component("storage.sqlite.Storage")),
-		sqlite:    sqlite,
+	return &SqlStorage{
+		log:       log.With(sl.Component("storage.SqlStorage")),
+		db:        database,
 		queries:   queries,
 		publisher: publisher,
 	}, nil
 }
 
-func (s *SqliteStorage) Close() error {
+func (s *SqlStorage) Close() error {
 	return errors.Join(
 		s.queries.Close(),
-		s.sqlite.Close(),
+		s.db.Close(),
 	)
 }
 
-func (s *SqliteStorage) Begin(
+func (s *SqlStorage) Begin(
 	ctx context.Context,
 	expectedEventsCount int,
-	run func(s *SqliteStorage) error,
+	run func(s *SqlStorage) error,
 ) error {
-	tx, err := s.sqlite.BeginTx(ctx, nil)
+	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
@@ -65,10 +59,10 @@ func (s *SqliteStorage) Begin(
 			s.log.Error(ctx, "failed to rollback transaction", sl.Err(err))
 		}
 	}()
-	bufferedPublisher := event.NewBufferedPublisher(s.publisher, expectedEventsCount)
-	tmp := &SqliteStorage{
+	bufferedPublisher := pubsub.NewBufferedPublisher(s.publisher, expectedEventsCount)
+	tmp := &SqlStorage{
 		log:       s.log,
-		sqlite:    s.sqlite,
+		db:        s.db,
 		queries:   s.queries.WithTx(tx),
 		publisher: bufferedPublisher,
 	}
@@ -83,7 +77,7 @@ func (s *SqliteStorage) Begin(
 	return bufferedPublisher.Flush()
 }
 
-func (s *SqliteStorage) SaveChannelOutfit(ctx context.Context, channelId meta.ChannelId, platform platforms.Platform, outfitId ps2.OutfitId) error {
+func (s *SqlStorage) SaveChannelOutfit(ctx context.Context, channelId meta.ChannelId, platform platforms.Platform, outfitId ps2.OutfitId) error {
 	err := s.queries.InsertChannelOutfit(ctx, db.InsertChannelOutfitParams{
 		ChannelID: string(channelId),
 		OutfitID:  string(outfitId),
@@ -96,7 +90,7 @@ func (s *SqliteStorage) SaveChannelOutfit(ctx context.Context, channelId meta.Ch
 	})
 }
 
-func (s *SqliteStorage) DeleteChannelOutfit(ctx context.Context, channelId meta.ChannelId, platform platforms.Platform, outfitId ps2.OutfitId) error {
+func (s *SqlStorage) DeleteChannelOutfit(ctx context.Context, channelId meta.ChannelId, platform platforms.Platform, outfitId ps2.OutfitId) error {
 	err := s.queries.DeleteChannelOutfit(ctx, db.DeleteChannelOutfitParams{
 		ChannelID: string(channelId),
 		OutfitID:  string(outfitId),
@@ -109,7 +103,7 @@ func (s *SqliteStorage) DeleteChannelOutfit(ctx context.Context, channelId meta.
 	})
 }
 
-func (s *SqliteStorage) SaveChannelCharacter(ctx context.Context, channelId meta.ChannelId, platform platforms.Platform, characterId ps2.CharacterId) error {
+func (s *SqlStorage) SaveChannelCharacter(ctx context.Context, channelId meta.ChannelId, platform platforms.Platform, characterId ps2.CharacterId) error {
 	err := s.queries.InsertChannelCharacter(ctx, db.InsertChannelCharacterParams{
 		ChannelID:   string(channelId),
 		CharacterID: string(characterId),
@@ -122,7 +116,7 @@ func (s *SqliteStorage) SaveChannelCharacter(ctx context.Context, channelId meta
 	})
 }
 
-func (s *SqliteStorage) DeleteChannelCharacter(ctx context.Context, channelId meta.ChannelId, platform platforms.Platform, characterId ps2.CharacterId) error {
+func (s *SqlStorage) DeleteChannelCharacter(ctx context.Context, channelId meta.ChannelId, platform platforms.Platform, characterId ps2.CharacterId) error {
 	err := s.queries.DeleteChannelCharacter(ctx, db.DeleteChannelCharacterParams{
 		ChannelID:   string(channelId),
 		CharacterID: string(characterId),
@@ -135,7 +129,7 @@ func (s *SqliteStorage) DeleteChannelCharacter(ctx context.Context, channelId me
 	})
 }
 
-func (s *SqliteStorage) SaveOutfitMember(ctx context.Context, platform platforms.Platform, outfitId ps2.OutfitId, characterId ps2.CharacterId) error {
+func (s *SqlStorage) SaveOutfitMember(ctx context.Context, platform platforms.Platform, outfitId ps2.OutfitId, characterId ps2.CharacterId) error {
 	err := s.queries.InsertOutfitMember(ctx, db.InsertOutfitMemberParams{
 		OutfitID:    string(outfitId),
 		CharacterID: string(characterId),
@@ -148,7 +142,7 @@ func (s *SqliteStorage) SaveOutfitMember(ctx context.Context, platform platforms
 	})
 }
 
-func (s *SqliteStorage) DeleteOutfitMember(ctx context.Context, platform platforms.Platform, outfitId ps2.OutfitId, characterId ps2.CharacterId) error {
+func (s *SqlStorage) DeleteOutfitMember(ctx context.Context, platform platforms.Platform, outfitId ps2.OutfitId, characterId ps2.CharacterId) error {
 	err := s.queries.DeleteOutfitMember(ctx, db.DeleteOutfitMemberParams{
 		OutfitID:    string(outfitId),
 		CharacterID: string(characterId),
@@ -161,7 +155,7 @@ func (s *SqliteStorage) DeleteOutfitMember(ctx context.Context, platform platfor
 	})
 }
 
-func (s *SqliteStorage) SaveOutfitSynchronizedAt(ctx context.Context, platform platforms.Platform, outfitId ps2.OutfitId, synchronizedAt time.Time) error {
+func (s *SqlStorage) SaveOutfitSynchronizedAt(ctx context.Context, platform platforms.Platform, outfitId ps2.OutfitId, synchronizedAt time.Time) error {
 	err := s.queries.UpsertPlatformOutfitSynchronizedAt(ctx, db.UpsertPlatformOutfitSynchronizedAtParams{
 		Platform:       string(platform),
 		OutfitID:       string(outfitId),
@@ -174,14 +168,14 @@ func (s *SqliteStorage) SaveOutfitSynchronizedAt(ctx context.Context, platform p
 	})
 }
 
-func (s *SqliteStorage) OutfitSynchronizedAt(ctx context.Context, platform platforms.Platform, outfitId ps2.OutfitId) (time.Time, error) {
+func (s *SqlStorage) OutfitSynchronizedAt(ctx context.Context, platform platforms.Platform, outfitId ps2.OutfitId) (time.Time, error) {
 	return s.queries.GetPlatformOutfitSynchronizedAt(ctx, db.GetPlatformOutfitSynchronizedAtParams{
 		Platform: string(platform),
 		OutfitID: string(outfitId),
 	})
 }
 
-func (s *SqliteStorage) TrackingChannelIdsForCharacter(ctx context.Context, platform platforms.Platform, characterId ps2.CharacterId, outfitId ps2.OutfitId) ([]meta.ChannelId, error) {
+func (s *SqlStorage) TrackingChannelIdsForCharacter(ctx context.Context, platform platforms.Platform, characterId ps2.CharacterId, outfitId ps2.OutfitId) ([]meta.ChannelId, error) {
 	list, err := s.queries.ListPlatformTrackingChannelIdsForCharacter(ctx, db.ListPlatformTrackingChannelIdsForCharacterParams{
 		Platform:    string(platform),
 		CharacterID: string(characterId),
@@ -197,7 +191,7 @@ func (s *SqliteStorage) TrackingChannelIdsForCharacter(ctx context.Context, plat
 	return ids, nil
 }
 
-func (s *SqliteStorage) TrackingChannelIdsForOutfit(ctx context.Context, platform platforms.Platform, outfitId ps2.OutfitId) ([]meta.ChannelId, error) {
+func (s *SqlStorage) TrackingChannelIdsForOutfit(ctx context.Context, platform platforms.Platform, outfitId ps2.OutfitId) ([]meta.ChannelId, error) {
 	list, err := s.queries.ListPlatformTrackingChannelIdsForOutfit(ctx, db.ListPlatformTrackingChannelIdsForOutfitParams{
 		Platform: string(platform),
 		OutfitID: string(outfitId),
@@ -212,7 +206,7 @@ func (s *SqliteStorage) TrackingChannelIdsForOutfit(ctx context.Context, platfor
 	return ids, nil
 }
 
-func (s *SqliteStorage) TrackingOutfitIdsForPlatform(ctx context.Context, channelId meta.ChannelId, platform platforms.Platform) ([]ps2.OutfitId, error) {
+func (s *SqlStorage) TrackingOutfitIdsForPlatform(ctx context.Context, channelId meta.ChannelId, platform platforms.Platform) ([]ps2.OutfitId, error) {
 	list, err := s.queries.ListChannelOutfitIdsForPlatform(ctx, db.ListChannelOutfitIdsForPlatformParams{
 		ChannelID: string(channelId),
 		Platform:  string(platform),
@@ -227,7 +221,7 @@ func (s *SqliteStorage) TrackingOutfitIdsForPlatform(ctx context.Context, channe
 	return ids, nil
 }
 
-func (s *SqliteStorage) TrackingCharacterIdsForPlatform(ctx context.Context, channelId meta.ChannelId, platform platforms.Platform) ([]ps2.CharacterId, error) {
+func (s *SqlStorage) TrackingCharacterIdsForPlatform(ctx context.Context, channelId meta.ChannelId, platform platforms.Platform) ([]ps2.CharacterId, error) {
 	list, err := s.queries.ListChannelCharacterIdsForPlatform(ctx, db.ListChannelCharacterIdsForPlatformParams{
 		ChannelID: string(channelId),
 		Platform:  string(platform),
@@ -242,7 +236,7 @@ func (s *SqliteStorage) TrackingCharacterIdsForPlatform(ctx context.Context, cha
 	return ids, nil
 }
 
-func (s *SqliteStorage) AllTrackableCharacterIdsWithDuplicationsForPlatform(ctx context.Context, platform platforms.Platform) ([]ps2.CharacterId, error) {
+func (s *SqlStorage) AllTrackableCharacterIdsWithDuplicationsForPlatform(ctx context.Context, platform platforms.Platform) ([]ps2.CharacterId, error) {
 	list, err := s.queries.ListTrackableCharacterIdsWithDuplicationForPlatform(ctx, string(platform))
 	if err != nil {
 		return nil, err
@@ -254,7 +248,7 @@ func (s *SqliteStorage) AllTrackableCharacterIdsWithDuplicationsForPlatform(ctx 
 	return ids, nil
 }
 
-func (s *SqliteStorage) AllTrackableOutfitIdsWithDuplicationsForPlatform(ctx context.Context, platform platforms.Platform) ([]ps2.OutfitId, error) {
+func (s *SqlStorage) AllTrackableOutfitIdsWithDuplicationsForPlatform(ctx context.Context, platform platforms.Platform) ([]ps2.OutfitId, error) {
 	list, err := s.queries.ListTrackableOutfitIdsWithDuplicationForPlatform(ctx, string(platform))
 	if err != nil {
 		return nil, err
@@ -266,7 +260,7 @@ func (s *SqliteStorage) AllTrackableOutfitIdsWithDuplicationsForPlatform(ctx con
 	return ids, nil
 }
 
-func (s *SqliteStorage) AllUniqueTrackableOutfitIdsForPlatform(ctx context.Context, platform platforms.Platform) ([]ps2.OutfitId, error) {
+func (s *SqlStorage) AllUniqueTrackableOutfitIdsForPlatform(ctx context.Context, platform platforms.Platform) ([]ps2.OutfitId, error) {
 	list, err := s.queries.ListUniqueTrackableOutfitIdsForPlatform(ctx, string(platform))
 	if err != nil {
 		return nil, err
@@ -278,7 +272,7 @@ func (s *SqliteStorage) AllUniqueTrackableOutfitIdsForPlatform(ctx context.Conte
 	return ids, nil
 }
 
-func (s *SqliteStorage) OutfitMembers(ctx context.Context, platform platforms.Platform, outfitId ps2.OutfitId) ([]ps2.CharacterId, error) {
+func (s *SqlStorage) OutfitMembers(ctx context.Context, platform platforms.Platform, outfitId ps2.OutfitId) ([]ps2.CharacterId, error) {
 	list, err := s.queries.ListPlatformOutfitMembers(ctx, db.ListPlatformOutfitMembersParams{
 		Platform: string(platform),
 		OutfitID: string(outfitId),
@@ -293,7 +287,7 @@ func (s *SqliteStorage) OutfitMembers(ctx context.Context, platform platforms.Pl
 	return ids, nil
 }
 
-func (s *SqliteStorage) Outfit(ctx context.Context, platform platforms.Platform, outfitId ps2.OutfitId) (ps2.Outfit, error) {
+func (s *SqlStorage) Outfit(ctx context.Context, platform platforms.Platform, outfitId ps2.OutfitId) (ps2.Outfit, error) {
 	outfit, err := s.queries.GetPlatformOutfit(ctx, db.GetPlatformOutfitParams{
 		Platform: string(platform),
 		OutfitID: string(outfitId),
@@ -309,7 +303,7 @@ func (s *SqliteStorage) Outfit(ctx context.Context, platform platforms.Platform,
 	}, nil
 }
 
-func (s *SqliteStorage) SaveOutfit(ctx context.Context, outfit ps2.Outfit) error {
+func (s *SqlStorage) SaveOutfit(ctx context.Context, outfit ps2.Outfit) error {
 	return s.queries.InsertOutfit(ctx, db.InsertOutfitParams{
 		Platform:   string(outfit.Platform),
 		OutfitID:   string(outfit.Id),
@@ -318,7 +312,7 @@ func (s *SqliteStorage) SaveOutfit(ctx context.Context, outfit ps2.Outfit) error
 	})
 }
 
-func (s *SqliteStorage) Outfits(ctx context.Context, platform platforms.Platform, outfitIds []ps2.OutfitId) ([]ps2.Outfit, error) {
+func (s *SqlStorage) Outfits(ctx context.Context, platform platforms.Platform, outfitIds []ps2.OutfitId) ([]ps2.Outfit, error) {
 	ids := make([]string, 0, len(outfitIds))
 	for _, id := range outfitIds {
 		ids = append(ids, string(id))
@@ -342,7 +336,7 @@ func (s *SqliteStorage) Outfits(ctx context.Context, platform platforms.Platform
 	return outfits, nil
 }
 
-func (s *SqliteStorage) Facility(ctx context.Context, facilityId ps2.FacilityId) (ps2.Facility, error) {
+func (s *SqlStorage) Facility(ctx context.Context, facilityId ps2.FacilityId) (ps2.Facility, error) {
 	facility, err := s.queries.GetFacility(ctx, string(facilityId))
 	if err != nil {
 		return ps2.Facility{}, err
@@ -355,7 +349,7 @@ func (s *SqliteStorage) Facility(ctx context.Context, facilityId ps2.FacilityId)
 	}, nil
 }
 
-func (s *SqliteStorage) SaveFacility(ctx context.Context, facility ps2.Facility) error {
+func (s *SqlStorage) SaveFacility(ctx context.Context, facility ps2.Facility) error {
 	return s.queries.InsertFacility(ctx, db.InsertFacilityParams{
 		FacilityID:   string(facility.Id),
 		FacilityName: facility.Name,
@@ -364,7 +358,7 @@ func (s *SqliteStorage) SaveFacility(ctx context.Context, facility ps2.Facility)
 	})
 }
 
-func (s *SqliteStorage) publish(err error, event event.Event) error {
+func (s *SqlStorage) publish(err error, event storage.Event) error {
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return storage.ErrNotFound

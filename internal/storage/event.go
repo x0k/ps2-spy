@@ -3,20 +3,24 @@ package storage
 import (
 	"time"
 
-	"github.com/x0k/ps2-spy/internal/event"
+	"github.com/x0k/ps2-spy/internal/lib/pubsub"
 	"github.com/x0k/ps2-spy/internal/meta"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
 
+type EventType string
+
+type Event pubsub.Event[EventType]
+
 const (
-	ChannelOutfitSavedType      event.Type = "channel_outfit_saved"
-	ChannelOutfitDeletedType    event.Type = "channel_outfit_deleted"
-	ChannelCharacterSavedType   event.Type = "channel_character_saved"
-	ChannelCharacterDeletedType event.Type = "channel_character_deleted"
-	OutfitMemberSavedType       event.Type = "outfit_member_saved"
-	OutfitMemberDeletedType     event.Type = "outfit_member_deleted"
-	OutfitSynchronizedType      event.Type = "outfit_synchronized"
+	ChannelOutfitSavedType      EventType = "channel_outfit_saved"
+	ChannelOutfitDeletedType    EventType = "channel_outfit_deleted"
+	ChannelCharacterSavedType   EventType = "channel_character_saved"
+	ChannelCharacterDeletedType EventType = "channel_character_deleted"
+	OutfitMemberSavedType       EventType = "outfit_member_saved"
+	OutfitMemberDeletedType     EventType = "outfit_member_deleted"
+	OutfitSynchronizedType      EventType = "outfit_synchronized"
 )
 
 type ChannelOutfitSaved struct {
@@ -25,7 +29,7 @@ type ChannelOutfitSaved struct {
 	OutfitId  ps2.OutfitId
 }
 
-func (e ChannelOutfitSaved) Type() event.Type {
+func (e ChannelOutfitSaved) Type() EventType {
 	return ChannelOutfitSavedType
 }
 
@@ -35,7 +39,7 @@ type ChannelOutfitDeleted struct {
 	OutfitId  ps2.OutfitId
 }
 
-func (e ChannelOutfitDeleted) Type() event.Type {
+func (e ChannelOutfitDeleted) Type() EventType {
 	return ChannelOutfitDeletedType
 }
 
@@ -45,7 +49,7 @@ type ChannelCharacterSaved struct {
 	CharacterId ps2.CharacterId
 }
 
-func (e ChannelCharacterSaved) Type() event.Type {
+func (e ChannelCharacterSaved) Type() EventType {
 	return ChannelCharacterSavedType
 }
 
@@ -55,7 +59,7 @@ type ChannelCharacterDeleted struct {
 	CharacterId ps2.CharacterId
 }
 
-func (e ChannelCharacterDeleted) Type() event.Type {
+func (e ChannelCharacterDeleted) Type() EventType {
 	return ChannelCharacterDeletedType
 }
 
@@ -65,7 +69,7 @@ type OutfitMemberSaved struct {
 	CharacterId ps2.CharacterId
 }
 
-func (e OutfitMemberSaved) Type() event.Type {
+func (e OutfitMemberSaved) Type() EventType {
 	return OutfitMemberSavedType
 }
 
@@ -75,7 +79,7 @@ type OutfitMemberDeleted struct {
 	CharacterId ps2.CharacterId
 }
 
-func (e OutfitMemberDeleted) Type() event.Type {
+func (e OutfitMemberDeleted) Type() EventType {
 	return OutfitMemberDeletedType
 }
 
@@ -85,6 +89,6 @@ type OutfitSynchronized struct {
 	SynchronizedAt time.Time
 }
 
-func (e OutfitSynchronized) Type() event.Type {
+func (e OutfitSynchronized) Type() EventType {
 	return OutfitSynchronizedType
 }

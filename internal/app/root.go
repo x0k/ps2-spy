@@ -5,7 +5,10 @@ import (
 	"github.com/x0k/ps2-spy/internal/discord_module/commands"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/module"
+	"github.com/x0k/ps2-spy/internal/lib/pubsub"
 	"github.com/x0k/ps2-spy/internal/profiler_module"
+	"github.com/x0k/ps2-spy/internal/storage"
+	"github.com/x0k/ps2-spy/internal/storage/sqlite"
 )
 
 func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
@@ -28,6 +31,10 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		return nil, err
 	}
 	m.Append(discordModule)
+
+	storagePubSub := pubsub.New[storage.EventType]()
+	storageService := sqlite.NewService(log, cfg.Storage.Path, storagePubSub)
+	m.Append(storageService)
 
 	return m, nil
 }

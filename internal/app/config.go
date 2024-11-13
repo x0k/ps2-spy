@@ -25,11 +25,16 @@ type DiscordConfig struct {
 	EventHandlerTimeout   time.Duration `yaml:"event_handler_timeout" env:"DISCORD_EVENT_HANDLER_TIMEOUT"`
 }
 
+type StorageConfig struct {
+	Path string `yaml:"path" env:"STORAGE_PATH"`
+}
+
 type Config struct {
 	Logger   LoggerConfig   `yaml:"logger"`
 	Profiler ProfilerConfig `yaml:"profiler"`
 	Discord  DiscordConfig  `yaml:"discord"`
 	Metrics  MetricsConfig  `yaml:"metrics"`
+	Storage  StorageConfig  `yaml:"storage"`
 }
 
 func MustLoadConfig(configPath string) *Config {
