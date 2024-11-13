@@ -1,6 +1,6 @@
 -- name: InsertChannelOutfit :exec
 INSERT INTO
-  channel_to_outfit
+  channel_to_outfit (channel_id, platform, outfit_id)
 VALUES
   (?, ?, ?);
 
@@ -13,7 +13,7 @@ WHERE
 
 -- name: InsertChannelCharacter :exec
 INSERT INTO
-  channel_to_character
+  channel_to_character (channel_id, platform, character_id)
 VALUES
   (?, ?, ?);
 
@@ -26,7 +26,7 @@ WHERE
 
 -- name: InsertOutfitMember :exec
 INSERT INTO
-  outfit_to_character
+  outfit_to_character (platform, outfit_id, character_id)
 VALUES
   (?, ?, ?);
 
@@ -39,7 +39,7 @@ WHERE
 
 -- name: UpsertPlatformOutfitSynchronizedAt :exec
 INSERT INTO
-  outfit_synchronization
+  outfit_synchronization (platform, outfit_id, synchronized_at)
 VALUES
   (?, ?, ?) ON CONFLICT (platform, outfit_id) DO
 UPDATE
@@ -61,7 +61,7 @@ SELECT
 FROM
   channel_to_character
 WHERE
-  platform = ?
+  channel_to_character.platform = sqlc.arg(platform)
   AND character_id = ?
 UNION
 SELECT
@@ -69,7 +69,7 @@ SELECT
 FROM
   channel_to_outfit
 WHERE
-  platform = ?
+  channel_to_outfit.platform = sqlc.arg(platform)
   AND outfit_id = ?;
 
 -- name: ListPlatformTrackingChannelIdsForOutfit :many
@@ -105,7 +105,7 @@ SELECT
 FROM
   channel_to_character
 WHERE
-  platform = ?
+  channel_to_character.platform = sqlc.arg(platform)
 UNION ALL
 SELECT
   character_id
@@ -114,7 +114,7 @@ FROM
   JOIN outfit_to_character ON channel_to_outfit.outfit_id = outfit_to_character.outfit_id
   AND channel_to_outfit.platform = outfit_to_character.platform
 WHERE
-  channel_to_outfit.platform = ?;
+  channel_to_outfit.platform = sqlc.arg(platform);
 
 -- name: ListTrackableOutfitIdsWithDuplicationForPlatform :many
 SELECT
@@ -152,7 +152,7 @@ WHERE
 
 -- name: InsertOutfit :exec
 INSERT INTO
-  outfit
+  outfit (platform, outfit_id, outfit_name, outfit_tag)
 VALUES
   (?, ?, ?, ?);
 
@@ -166,7 +166,7 @@ WHERE
 
 -- name: InsertFacility :exec
 INSERT INTO
-  facility
+  facility (facility_id, facility_name, facility_type, zone_id)
 VALUES
   (?, ?, ?, ?);
 
@@ -177,4 +177,4 @@ FROM
   outfit
 WHERE
   platform = ?
-  AND outfit_id IN (sqlc.slice("outfitIds"));
+  AND outfit_id IN (sqlc.slice(outfit_ids));
