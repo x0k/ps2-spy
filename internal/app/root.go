@@ -41,6 +41,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	httpClient := &http.Client{
 		Timeout: cfg.HttpClient.Timeout,
 	}
+	_ = httpClient
 
 	return m, nil
 }

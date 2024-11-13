@@ -10,7 +10,6 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/commands"
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/core"
-	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/messages"
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
 )
 
@@ -27,32 +26,18 @@ var ErrInvalidConnectionMessage = fmt.Errorf("invalid connection message")
 var ErrConnectionFailed = fmt.Errorf("failed to connect")
 var ErrDisconnectedByServer = fmt.Errorf("disconnected by server")
 
-type EventType string
-
-type Event pubsub.Event[EventType]
-
-const (
-	MessageReceivedEventType EventType = "messageReceived"
-)
-
-type MessageReceived map[string]any
-
-func (MessageReceived) Type() EventType {
-	return MessageReceivedEventType
-}
-
 type Client struct {
 	endpoint                 string
 	env                      string
 	serviceId                string
 	conn                     *websocket.Conn
 	msgBuffer                core.MessageBase
-	connStateChangeMsgBuffer messages.ConnectionStateChanged
+	connStateChangeMsgBuffer ConnectionStateChanged
 	connectionTimeout        time.Duration
-	publisher                pubsub.Publisher[EventType]
+	publisher                pubsub.Publisher[map[string]any]
 }
 
-func NewClient(endpoint string, env string, serviceId string, publisher pubsub.Publisher[EventType]) *Client {
+func NewClient(endpoint string, env string, serviceId string, publisher pubsub.Publisher[map[string]any]) *Client {
 	return &Client{
 		endpoint:          endpoint,
 		env:               env,
@@ -66,12 +51,12 @@ func (c *Client) Environment() string {
 	return c.env
 }
 
-func (c *Client) checkConnectionStateChanged(msg MessageReceived) error {
+func (c *Client) checkConnectionStateChanged(msg map[string]any) error {
 	err := core.AsMessageBase(msg, &c.msgBuffer)
 	if err != nil {
 		return err
 	}
-	if !messages.IsConnectionStateChangedMessage(c.msgBuffer) {
+	if !IsConnectionStateChangedMessage(c.msgBuffer) {
 		return ErrInvalidConnectionMessage
 	}
 	err = mapstructure.Decode(msg, &c.connStateChangeMsgBuffer)
@@ -129,7 +114,7 @@ func (c *Client) Subscribe(ctx context.Context, settings commands.SubscriptionSe
 		if err := wsjson.Read(ctx, c.conn, &data); err != nil {
 			return fmt.Errorf("%s: %w", op, err)
 		}
-		msg, ok := data.(MessageReceived)
+		msg, ok := data.(map[string]any)
 		if !ok {
 			// TODO: Use optional unknown message publisher
 			continue

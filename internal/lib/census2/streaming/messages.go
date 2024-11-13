@@ -1,19 +1,19 @@
-package messages
+package streaming
 
 import (
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/core"
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
 )
 
-type EventType string
+type MessageType string
 
-type Event pubsub.Event[EventType]
+type Message = pubsub.Event[MessageType]
 
 const (
-	ConnectionStateChangedType EventType = "connectionStateChanged"
-	ServiceStateChangedType    EventType = "serviceStateChanged"
-	HeartbeatType              EventType = "heartbeat"
-	ServiceMessageType         EventType = "serviceMessage"
+	ConnectionStateChangedType MessageType = "connectionStateChanged"
+	ServiceStateChangedType    MessageType = "serviceStateChanged"
+	HeartbeatType              MessageType = "heartbeat"
+	ServiceMessageType         MessageType = "serviceMessage"
 )
 
 type ConnectionStateChanged struct {
@@ -22,7 +22,7 @@ type ConnectionStateChanged struct {
 }
 
 func IsConnectionStateChangedMessage(msg core.MessageBase) bool {
-	return msg.Service == core.PushService && EventType(msg.Type) == ConnectionStateChangedType
+	return msg.Service == core.PushService && MessageType(msg.Type) == ConnectionStateChangedType
 }
 
 type ServiceStateChanged struct {
@@ -31,7 +31,7 @@ type ServiceStateChanged struct {
 	Online           core.StrBool `json:"online" mapstructure:"online"`
 }
 
-func (s *ServiceStateChanged) Type() EventType {
+func (s *ServiceStateChanged) Type() MessageType {
 	return ServiceStateChangedType
 }
 
@@ -41,7 +41,7 @@ type Heartbeat struct {
 	Online           map[string]core.StrBool `json:"online" mapstructure:"online"`
 }
 
-func (h *Heartbeat) Type() EventType {
+func (h *Heartbeat) Type() MessageType {
 	return HeartbeatType
 }
 
@@ -50,7 +50,7 @@ type ServiceMessage[T any] struct {
 	Payload          T `json:"payload" mapstructure:"payload"`
 }
 
-func (s *ServiceMessage[T]) Type() EventType {
+func (s *ServiceMessage[T]) Type() MessageType {
 	return ServiceMessageType
 }
 
@@ -62,7 +62,7 @@ type SubscriptionSettings struct {
 	LogicalAndCharactersWithWorlds bool     `json:"logicalAndCharactersWithWorlds" mapstructure:"logicalAndCharactersWithWorlds"`
 }
 
-func (s *SubscriptionSettings) Type() EventType {
+func (s *SubscriptionSettings) Type() MessageType {
 	return SubscriptionSignatureField
 }
 

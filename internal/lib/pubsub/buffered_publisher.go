@@ -4,24 +4,24 @@ import (
 	"errors"
 )
 
-type BufferedPublisher[T EventType] struct {
-	Publisher[T]
-	buffer []Event[T]
+type BufferedPublisher[E any] struct {
+	Publisher[E]
+	buffer []E
 }
 
-func NewBufferedPublisher[T EventType](pub Publisher[T], estimatedEventsCount int) *BufferedPublisher[T] {
-	return &BufferedPublisher[T]{
+func NewBufferedPublisher[E any](pub Publisher[E], estimatedEventsCount int) *BufferedPublisher[E] {
+	return &BufferedPublisher[E]{
 		Publisher: pub,
-		buffer:    make([]Event[T], 0, estimatedEventsCount),
+		buffer:    make([]E, 0, estimatedEventsCount),
 	}
 }
 
-func (p *BufferedPublisher[T]) Publish(event Event[T]) error {
+func (p *BufferedPublisher[E]) Publish(event E) error {
 	p.buffer = append(p.buffer, event)
 	return nil
 }
 
-func (p *BufferedPublisher[T]) Flush() error {
+func (p *BufferedPublisher[E]) Flush() error {
 	errs := make([]error, 0, len(p.buffer))
 	for _, event := range p.buffer {
 		err := p.Publisher.Publish(event)

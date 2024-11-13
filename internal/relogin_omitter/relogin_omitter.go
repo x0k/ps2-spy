@@ -18,7 +18,7 @@ import (
 var ErrConvertEvent = fmt.Errorf("failed to convert event")
 
 type ReLoginOmitter struct {
-	pubsub.Publisher[events.EventType]
+	pubsub.Publisher[events.Event]
 	log               *logger.Logger
 	batchMu           sync.Mutex
 	logoutEventsQueue *containers.ExpirationQueue[ps2.CharacterId]
@@ -30,7 +30,7 @@ type ReLoginOmitter struct {
 
 func NewReLoginOmitter(
 	log *logger.Logger,
-	pub pubsub.Publisher[events.EventType],
+	pub pubsub.Publisher[events.Event],
 	// mt metrics.Metrics,
 ) *ReLoginOmitter {
 	return &ReLoginOmitter{

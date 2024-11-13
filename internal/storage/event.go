@@ -11,7 +11,7 @@ import (
 
 type EventType string
 
-type Event pubsub.Event[EventType]
+type Event = pubsub.Event[EventType]
 
 const (
 	ChannelOutfitSavedType      EventType = "channel_outfit_saved"

@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/mitchellh/mapstructure"
-	"github.com/x0k/ps2-spy/internal/lib/census2/streaming"
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/core"
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
 )
@@ -14,11 +13,11 @@ var ErrEventNameNotFound = fmt.Errorf("event name not found")
 var ErrUnknownEventName = fmt.Errorf("unknown event name")
 
 type bufferedPublisher struct {
-	pubsub.Publisher[EventType]
+	pubsub.Publisher[Event]
 	buffers map[EventType]Event
 }
 
-func NewPublisher(publisher pubsub.Publisher[EventType]) *bufferedPublisher {
+func NewPublisher(publisher pubsub.Publisher[Event]) *bufferedPublisher {
 	return &bufferedPublisher{
 		Publisher: publisher,
 		buffers: map[EventType]Event{
@@ -40,12 +39,8 @@ func NewPublisher(publisher pubsub.Publisher[EventType]) *bufferedPublisher {
 	}
 }
 
-func (p *bufferedPublisher) Publish(event streaming.Event) error {
-	msg, ok := event.(streaming.MessageReceived)
-	if !ok {
-		return ErrInvalidEvent
-	}
-	name, ok := msg[core.EventNameField].(string)
+func (p *bufferedPublisher) Publish(event map[string]any) error {
+	name, ok := event[core.EventNameField].(string)
 	if !ok {
 		return ErrEventNameNotFound
 	}

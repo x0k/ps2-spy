@@ -24,8 +24,8 @@ type SubscriptionsManager[T EventType] interface {
 	AddHandler(h Handler[T]) func()
 }
 
-type Publisher[T EventType] interface {
-	Publish(event Event[T]) error
+type Publisher[E any] interface {
+	Publish(event E) error
 }
 
 type pubSub[T EventType] struct {

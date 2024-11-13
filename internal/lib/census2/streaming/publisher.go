@@ -1,4 +1,4 @@
-package messages
+package streaming
 
 import (
 	"fmt"
@@ -8,22 +8,23 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
 )
 
+var ErrUnknownEventType = fmt.Errorf("unknown event type")
 var ErrUnknownMessageType = fmt.Errorf("unknown message type")
 var ErrUnknownMessageHandler = fmt.Errorf("unknown message handler")
 var ErrUnsupportedMessageService = fmt.Errorf("unsupported message service")
 
 type Publisher struct {
-	pubsub.Publisher[EventType]
+	pubsub.Publisher[Message]
 	msgBaseBuff              core.MessageBase
 	subscriptionSettingsBuff *SubscriptionSettings
-	buffers                  map[EventType]Event
+	buffers                  map[MessageType]pubsub.Event[MessageType]
 }
 
-func NewPublisher(publisher pubsub.Publisher[EventType]) *Publisher {
+func NewPublisher(publisher pubsub.Publisher[Message]) *Publisher {
 	return &Publisher{
 		Publisher:                publisher,
 		subscriptionSettingsBuff: &SubscriptionSettings{},
-		buffers: map[EventType]Event{
+		buffers: map[MessageType]pubsub.Event[MessageType]{
 			ServiceStateChangedType: &ServiceStateChanged{},
 			HeartbeatType:           &Heartbeat{},
 			ServiceMessageType:      &ServiceMessage[map[string]any]{},
@@ -51,7 +52,7 @@ func (p *Publisher) Publish(msg map[string]any) error {
 	if p.msgBaseBuff.Service != core.EventService {
 		return fmt.Errorf("%s: %w", p.msgBaseBuff.Service, ErrUnsupportedMessageService)
 	}
-	if buff, ok := p.buffers[EventType(p.msgBaseBuff.Type)]; ok {
+	if buff, ok := p.buffers[MessageType(p.msgBaseBuff.Type)]; ok {
 		err = mapstructure.Decode(msg, buff)
 		if err != nil {
 			return fmt.Errorf("%q decoding: %w", p.msgBaseBuff.Type, err)

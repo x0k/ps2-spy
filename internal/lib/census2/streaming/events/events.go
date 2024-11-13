@@ -7,6 +7,8 @@ import (
 
 type EventType string
 
+type Event = pubsub.Event[EventType]
+
 const (
 	AchievementEarnedEventName     EventType = "AchievementEarned"
 	BattleRankUpEventName          EventType = "BattleRankUp"
@@ -23,8 +25,6 @@ const (
 	FacilityControlEventName       EventType = "FacilityControl"
 	MetagameEventEventName         EventType = "MetagameEvent"
 )
-
-type Event pubsub.Event[EventType]
 
 type AchievementEarned struct {
 	core.EventBase `mapstructure:",squash"`

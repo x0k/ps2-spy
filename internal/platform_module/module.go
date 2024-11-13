@@ -21,18 +21,22 @@ type Config struct {
 func New(log *logger.Logger, cfg *Config) (*module.Module, error) {
 	m := module.New(log.Logger, fmt.Sprintf("platform.%s", cfg.Platform))
 
-	eventsPubSub := pubsub.New[events.EventType]()
+	cleanEventsPubSub := pubsub.New[events.EventType]()
 
-	reLoginOmitter := relogin_omitter.NewReLoginOmitter(log, eventsPubSub)
+	reLoginOmitter := relogin_omitter.NewReLoginOmitter(log, cleanEventsPubSub)
 	m.Append(NewReLoginOmitterService(cfg.Platform, reLoginOmitter))
 
-	streamingPubSub := pubsub.New[streaming.EventType]()
+	eventsPublisher := events.NewPublisher(reLoginOmitter)
+
+	serviceMessagePayloadPublisher := newServiceMessagePayloadPublisher(eventsPublisher)
+
+	streamingPublisher := streaming.NewPublisher(serviceMessagePayloadPublisher)
 
 	streamingClient := streaming.NewClient(
 		cfg.StreamingEndpoint,
 		platforms.PlatformEnvironment(cfg.Platform),
 		cfg.CensusServiceId,
-		streamingPubSub,
+		streamingPublisher,
 	)
 	m.Append(newStreamingClientService(log, cfg.Platform, streamingClient))
 

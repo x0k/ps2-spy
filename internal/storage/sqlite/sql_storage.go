@@ -22,10 +22,10 @@ type SqlStorage struct {
 	log       *logger.Logger
 	db        *sql.DB
 	queries   *db.Queries
-	publisher pubsub.Publisher[storage.EventType]
+	publisher pubsub.Publisher[storage.Event]
 }
 
-func New(ctx context.Context, log *logger.Logger, database *sql.DB, publisher pubsub.Publisher[storage.EventType]) (*SqlStorage, error) {
+func New(ctx context.Context, log *logger.Logger, database *sql.DB, publisher pubsub.Publisher[storage.Event]) (*SqlStorage, error) {
 	queries, err := db.Prepare(ctx, database)
 	if err != nil {
 		return nil, err
