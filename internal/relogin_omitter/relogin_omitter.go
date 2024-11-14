@@ -44,15 +44,15 @@ func NewReLoginOmitter(
 	}
 }
 
-func (r *ReLoginOmitter) addLogoutEvent(event *events.PlayerLogout) {
+func (r *ReLoginOmitter) addLogoutEvent(event events.PlayerLogout) {
 	r.batchMu.Lock()
 	defer r.batchMu.Unlock()
 	charId := ps2.CharacterId(event.CharacterID)
 	r.logoutEventsQueue.Push(charId)
-	r.logoutEvents[charId] = *event
+	r.logoutEvents[charId] = event
 }
 
-func (r *ReLoginOmitter) shouldPublishLoginEvent(event *events.PlayerLogin) bool {
+func (r *ReLoginOmitter) shouldPublishLoginEvent(event events.PlayerLogin) bool {
 	r.batchMu.Lock()
 	defer r.batchMu.Unlock()
 	charId := ps2.CharacterId(event.CharacterID)
@@ -105,14 +105,14 @@ func (r *ReLoginOmitter) Start(ctx context.Context) {
 
 func (r *ReLoginOmitter) Publish(event pubsub.Event[events.EventType]) error {
 	if event.Type() == events.PlayerLogoutEventName {
-		if e, ok := event.(*events.PlayerLogout); ok {
+		if e, ok := event.(events.PlayerLogout); ok {
 			r.addLogoutEvent(e)
 			return nil
 		}
 		return ErrConvertEvent
 	}
 	if event.Type() == events.PlayerLoginEventName {
-		if e, ok := event.(*events.PlayerLogin); ok {
+		if e, ok := event.(events.PlayerLogin); ok {
 			if !r.shouldPublishLoginEvent(e) {
 				return nil
 			}

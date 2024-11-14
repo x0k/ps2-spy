@@ -34,7 +34,7 @@ type AchievementEarned struct {
 	ZoneID         string `json:"zone_id" mapstructure:"zone_id"`
 }
 
-func (*AchievementEarned) Type() EventType {
+func (AchievementEarned) Type() EventType {
 	return AchievementEarnedEventName
 }
 
@@ -46,7 +46,7 @@ type BattleRankUp struct {
 	ZoneID         string `json:"zone_id" mapstructure:"zone_id"`
 }
 
-func (*BattleRankUp) Type() EventType {
+func (BattleRankUp) Type() EventType {
 	return BattleRankUpEventName
 }
 
@@ -67,7 +67,7 @@ type Death struct {
 	ZoneID              string `json:"zone_id" mapstructure:"zone_id"`
 }
 
-func (*Death) Type() EventType {
+func (Death) Type() EventType {
 	return DeathEventName
 }
 
@@ -83,7 +83,7 @@ type GainExperience struct {
 	ZoneID         string `json:"zone_id" mapstructure:"zone_id"`
 }
 
-func (*GainExperience) Type() EventType {
+func (GainExperience) Type() EventType {
 	return GainExperienceEventName
 }
 
@@ -97,7 +97,7 @@ type ItemAdded struct {
 	ZoneID         string `json:"zone_id" mapstructure:"zone_id"`
 }
 
-func (*ItemAdded) Type() EventType {
+func (ItemAdded) Type() EventType {
 	return ItemAddedEventName
 }
 
@@ -110,7 +110,7 @@ type PlayerFacilityCapture struct {
 	ZoneID         string `json:"zone_id" mapstructure:"zone_id"`
 }
 
-func (*PlayerFacilityCapture) Type() EventType {
+func (PlayerFacilityCapture) Type() EventType {
 	return PlayerFacilityCaptureEventName
 }
 
@@ -123,7 +123,7 @@ type PlayerFacilityDefend struct {
 	ZoneID         string `json:"zone_id" mapstructure:"zone_id"`
 }
 
-func (*PlayerFacilityDefend) Type() EventType {
+func (PlayerFacilityDefend) Type() EventType {
 	return PlayerFacilityDefendEventName
 }
 
@@ -135,7 +135,7 @@ type PlayerLogin struct {
 	WorldID        string `json:"world_id" mapstructure:"world_id"`
 }
 
-func (*PlayerLogin) Type() EventType {
+func (PlayerLogin) Type() EventType {
 	return PlayerLoginEventName
 }
 
@@ -145,7 +145,7 @@ type PlayerLogout struct {
 	WorldID        string `json:"world_id" mapstructure:"world_id"`
 }
 
-func (*PlayerLogout) Type() EventType {
+func (PlayerLogout) Type() EventType {
 	return PlayerLogoutEventName
 }
 
@@ -157,7 +157,7 @@ type SkillAdded struct {
 	ZoneID         string `json:"zone_id" mapstructure:"zone_id"`
 }
 
-func (*SkillAdded) Type() EventType {
+func (SkillAdded) Type() EventType {
 	return SkillAddedEventName
 }
 
@@ -177,7 +177,7 @@ type VehicleDestroy struct {
 	ZoneID              string `json:"zone_id" mapstructure:"zone_id"`
 }
 
-func (*VehicleDestroy) Type() EventType {
+func (VehicleDestroy) Type() EventType {
 	return VehicleDestroyEventName
 }
 
@@ -194,7 +194,7 @@ type ContinentLock struct {
 	ZoneID            string `json:"zone_id" mapstructure:"zone_id"`
 }
 
-func (*ContinentLock) Type() EventType {
+func (ContinentLock) Type() EventType {
 	return ContinentLockEventName
 }
 
@@ -209,7 +209,7 @@ type FacilityControl struct {
 	ZoneID         string `json:"zone_id" mapstructure:"zone_id"`
 }
 
-func (*FacilityControl) Type() EventType {
+func (FacilityControl) Type() EventType {
 	return FacilityControlEventName
 }
 
@@ -227,6 +227,6 @@ type MetagameEvent struct {
 	ZoneID                 string `json:"zone_id" mapstructure:"zone_id"`
 }
 
-func (*MetagameEvent) Type() EventType {
+func (MetagameEvent) Type() EventType {
 	return MetagameEventEventName
 }

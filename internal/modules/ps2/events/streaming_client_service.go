@@ -2,6 +2,7 @@ package events_module
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"time"
@@ -45,7 +46,7 @@ func newStreamingClientService(
 	client *streaming.Client,
 ) module.Service {
 	return module.NewService(fmt.Sprintf("platform.%s.streaming_client", platform), func(ctx context.Context) error {
-		return retryable.New(func(ctx context.Context) error {
+		err := retryable.New(func(ctx context.Context) error {
 			err := client.Connect(ctx)
 			if err != nil {
 				log.Error(ctx, "failed to connect to streaming service", sl.Err(err))
@@ -58,5 +59,9 @@ func newStreamingClientService(
 			perform.RecoverSuspenseDuration(1*time.Second),
 			perform.Log(log.Logger, slog.LevelError, "subscription failed, retrying"),
 		)
+		if errors.Is(err, context.Canceled) {
+			return nil
+		}
+		return err
 	})
 }

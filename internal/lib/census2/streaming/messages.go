@@ -31,7 +31,7 @@ type ServiceStateChanged struct {
 	Online           core.StrBool `json:"online" mapstructure:"online"`
 }
 
-func (s *ServiceStateChanged) Type() MessageType {
+func (s ServiceStateChanged) Type() MessageType {
 	return ServiceStateChangedType
 }
 
@@ -41,7 +41,7 @@ type Heartbeat struct {
 	Online           map[string]core.StrBool `json:"online" mapstructure:"online"`
 }
 
-func (h *Heartbeat) Type() MessageType {
+func (h Heartbeat) Type() MessageType {
 	return HeartbeatType
 }
 
@@ -50,7 +50,7 @@ type ServiceMessage[T any] struct {
 	Payload          T `json:"payload" mapstructure:"payload"`
 }
 
-func (s *ServiceMessage[T]) Type() MessageType {
+func (s ServiceMessage[T]) Type() MessageType {
 	return ServiceMessageType
 }
 
@@ -62,7 +62,7 @@ type SubscriptionSettings struct {
 	LogicalAndCharactersWithWorlds bool     `json:"logicalAndCharactersWithWorlds" mapstructure:"logicalAndCharactersWithWorlds"`
 }
 
-func (s *SubscriptionSettings) Type() MessageType {
+func (s SubscriptionSettings) Type() MessageType {
 	return SubscriptionSignatureField
 }
 

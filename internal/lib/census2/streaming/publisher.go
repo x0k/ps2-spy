@@ -17,17 +17,17 @@ type Publisher struct {
 	pubsub.Publisher[Message]
 	msgBaseBuff              core.MessageBase
 	subscriptionSettingsBuff *SubscriptionSettings
-	buffers                  map[MessageType]pubsub.Event[MessageType]
+	buffers                  map[MessageType]Message
 }
 
 func NewPublisher(publisher pubsub.Publisher[Message]) *Publisher {
 	return &Publisher{
 		Publisher:                publisher,
 		subscriptionSettingsBuff: &SubscriptionSettings{},
-		buffers: map[MessageType]pubsub.Event[MessageType]{
-			ServiceStateChangedType: &ServiceStateChanged{},
-			HeartbeatType:           &Heartbeat{},
-			ServiceMessageType:      &ServiceMessage[map[string]any]{},
+		buffers: map[MessageType]Message{
+			ServiceStateChangedType: ServiceStateChanged{},
+			HeartbeatType:           Heartbeat{},
+			ServiceMessageType:      ServiceMessage[map[string]any]{},
 		},
 	}
 }
@@ -39,7 +39,7 @@ func (p *Publisher) Publish(msg map[string]any) error {
 		if err != nil {
 			return fmt.Errorf("%q decoding: %w", SubscriptionSignatureField, err)
 		}
-		return p.Publisher.Publish(p.subscriptionSettingsBuff)
+		return p.Publisher.Publish(*p.subscriptionSettingsBuff)
 	}
 	// Ignore help message
 	if _, ok := msg[HelpSignatureField]; ok {
@@ -53,7 +53,7 @@ func (p *Publisher) Publish(msg map[string]any) error {
 		return fmt.Errorf("%s: %w", p.msgBaseBuff.Service, ErrUnsupportedMessageService)
 	}
 	if buff, ok := p.buffers[MessageType(p.msgBaseBuff.Type)]; ok {
-		err = mapstructure.Decode(msg, buff)
+		err = mapstructure.Decode(msg, &buff)
 		if err != nil {
 			return fmt.Errorf("%q decoding: %w", p.msgBaseBuff.Type, err)
 		}

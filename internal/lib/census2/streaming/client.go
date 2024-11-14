@@ -93,13 +93,6 @@ func (c *Client) Connect(ctx context.Context) error {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 	c.conn = conn
-	// Skip the write of connection message cause this write
-	// can lock the execution in unexpected place.
-	//
-	// Non blocking write (drop msg if buffer is full)
-	// is the same as no write at all.
-	//
-	// c.Msg <- data
 	return nil
 }
 
@@ -119,7 +112,7 @@ func (c *Client) Subscribe(ctx context.Context, settings commands.SubscriptionSe
 			// TODO: Use optional unknown message publisher
 			continue
 		}
-		if err := c.checkConnectionStateChanged(msg); err != nil {
+		if err := c.checkConnectionStateChanged(msg); err == ErrDisconnectedByServer {
 			return fmt.Errorf("%s: %w", op, err)
 		}
 		if err = c.publisher.Publish(msg); err != nil {

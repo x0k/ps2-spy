@@ -42,12 +42,12 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	httpClient := &http.Client{
 		Timeout: cfg.HttpClient.Timeout,
 	}
-	_ = httpClient
 
 	ps2Module, err := ps2_module.New(log, &ps2_module.Config{
 		Platform:          platforms.PC,
 		StreamingEndpoint: cfg.Ps2.StreamingEndpoint,
 		CensusServiceId:   cfg.Ps2.CensusServiceId,
+		HttpClient:        httpClient,
 	})
 	if err != nil {
 		return nil, err

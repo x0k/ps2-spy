@@ -12,6 +12,7 @@ env:
   fi
   export STORAGE_PATH=storage/storage.db
   export STORAGE_MIGRATIONS_PATH=db/migrations
+  export PS2_STREAMING_ENDPOINT=wss://push.nanite-systems.net/streaming
 
 # Dev
 d: env
