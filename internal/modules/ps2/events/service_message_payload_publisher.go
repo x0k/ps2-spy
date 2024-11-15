@@ -1,4 +1,4 @@
-package events_module
+package ps2_events_module
 
 import (
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming"

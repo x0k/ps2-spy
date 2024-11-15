@@ -3,7 +3,7 @@ package meta
 import (
 	"github.com/x0k/ps2-spy/internal/lib/diff"
 	"github.com/x0k/ps2-spy/internal/ps2"
-	"github.com/x0k/ps2-spy/internal/ps2/platforms"
+	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
 
 type ChannelId string
@@ -27,10 +27,10 @@ func CalculateSubscriptionSettingsDiff(
 
 type SettingsQuery struct {
 	ChannelId ChannelId
-	Platform  platforms.Platform
+	Platform  ps2_platforms.Platform
 }
 
 type PlatformQuery[T any] struct {
-	Platform platforms.Platform
+	Platform ps2_platforms.Platform
 	Value    T
 }

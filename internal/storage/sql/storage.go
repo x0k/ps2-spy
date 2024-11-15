@@ -12,23 +12,23 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
 	"github.com/x0k/ps2-spy/internal/meta"
 	"github.com/x0k/ps2-spy/internal/ps2"
-	"github.com/x0k/ps2-spy/internal/ps2/platforms"
+	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 	"github.com/x0k/ps2-spy/internal/storage"
 )
 
-type SqlStorage struct {
+type Storage struct {
 	log       *logger.Logger
 	db        *sql.DB
 	queries   *db.Queries
 	publisher pubsub.Publisher[storage.Event]
 }
 
-func New(ctx context.Context, log *logger.Logger, database *sql.DB, publisher pubsub.Publisher[storage.Event]) (*SqlStorage, error) {
+func New(ctx context.Context, log *logger.Logger, database *sql.DB, publisher pubsub.Publisher[storage.Event]) (*Storage, error) {
 	queries, err := db.Prepare(ctx, database)
 	if err != nil {
 		return nil, err
 	}
-	return &SqlStorage{
+	return &Storage{
 		log:       log.With(sl.Component("storage.SqlStorage")),
 		db:        database,
 		queries:   queries,
@@ -36,17 +36,17 @@ func New(ctx context.Context, log *logger.Logger, database *sql.DB, publisher pu
 	}, nil
 }
 
-func (s *SqlStorage) Close() error {
+func (s *Storage) Close() error {
 	return errors.Join(
 		s.queries.Close(),
 		s.db.Close(),
 	)
 }
 
-func (s *SqlStorage) Begin(
+func (s *Storage) Begin(
 	ctx context.Context,
 	expectedEventsCount int,
-	run func(s *SqlStorage) error,
+	run func(s *Storage) error,
 ) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -58,7 +58,7 @@ func (s *SqlStorage) Begin(
 		}
 	}()
 	bufferedPublisher := pubsub.NewBufferedPublisher(s.publisher, expectedEventsCount)
-	tmp := &SqlStorage{
+	tmp := &Storage{
 		log:       s.log,
 		db:        s.db,
 		queries:   s.queries.WithTx(tx),
@@ -75,7 +75,7 @@ func (s *SqlStorage) Begin(
 	return bufferedPublisher.Flush()
 }
 
-func (s *SqlStorage) SaveChannelOutfit(ctx context.Context, channelId meta.ChannelId, platform platforms.Platform, outfitId ps2.OutfitId) error {
+func (s *Storage) SaveChannelOutfit(ctx context.Context, channelId meta.ChannelId, platform ps2_platforms.Platform, outfitId ps2.OutfitId) error {
 	err := s.queries.InsertChannelOutfit(ctx, db.InsertChannelOutfitParams{
 		ChannelID: string(channelId),
 		OutfitID:  string(outfitId),
@@ -88,7 +88,7 @@ func (s *SqlStorage) SaveChannelOutfit(ctx context.Context, channelId meta.Chann
 	})
 }
 
-func (s *SqlStorage) DeleteChannelOutfit(ctx context.Context, channelId meta.ChannelId, platform platforms.Platform, outfitId ps2.OutfitId) error {
+func (s *Storage) DeleteChannelOutfit(ctx context.Context, channelId meta.ChannelId, platform ps2_platforms.Platform, outfitId ps2.OutfitId) error {
 	err := s.queries.DeleteChannelOutfit(ctx, db.DeleteChannelOutfitParams{
 		ChannelID: string(channelId),
 		OutfitID:  string(outfitId),
@@ -101,7 +101,7 @@ func (s *SqlStorage) DeleteChannelOutfit(ctx context.Context, channelId meta.Cha
 	})
 }
 
-func (s *SqlStorage) SaveChannelCharacter(ctx context.Context, channelId meta.ChannelId, platform platforms.Platform, characterId ps2.CharacterId) error {
+func (s *Storage) SaveChannelCharacter(ctx context.Context, channelId meta.ChannelId, platform ps2_platforms.Platform, characterId ps2.CharacterId) error {
 	err := s.queries.InsertChannelCharacter(ctx, db.InsertChannelCharacterParams{
 		ChannelID:   string(channelId),
 		CharacterID: string(characterId),
@@ -114,7 +114,7 @@ func (s *SqlStorage) SaveChannelCharacter(ctx context.Context, channelId meta.Ch
 	})
 }
 
-func (s *SqlStorage) DeleteChannelCharacter(ctx context.Context, channelId meta.ChannelId, platform platforms.Platform, characterId ps2.CharacterId) error {
+func (s *Storage) DeleteChannelCharacter(ctx context.Context, channelId meta.ChannelId, platform ps2_platforms.Platform, characterId ps2.CharacterId) error {
 	err := s.queries.DeleteChannelCharacter(ctx, db.DeleteChannelCharacterParams{
 		ChannelID:   string(channelId),
 		CharacterID: string(characterId),
@@ -127,7 +127,7 @@ func (s *SqlStorage) DeleteChannelCharacter(ctx context.Context, channelId meta.
 	})
 }
 
-func (s *SqlStorage) SaveOutfitMember(ctx context.Context, platform platforms.Platform, outfitId ps2.OutfitId, characterId ps2.CharacterId) error {
+func (s *Storage) SaveOutfitMember(ctx context.Context, platform ps2_platforms.Platform, outfitId ps2.OutfitId, characterId ps2.CharacterId) error {
 	err := s.queries.InsertOutfitMember(ctx, db.InsertOutfitMemberParams{
 		OutfitID:    string(outfitId),
 		CharacterID: string(characterId),
@@ -140,7 +140,7 @@ func (s *SqlStorage) SaveOutfitMember(ctx context.Context, platform platforms.Pl
 	})
 }
 
-func (s *SqlStorage) DeleteOutfitMember(ctx context.Context, platform platforms.Platform, outfitId ps2.OutfitId, characterId ps2.CharacterId) error {
+func (s *Storage) DeleteOutfitMember(ctx context.Context, platform ps2_platforms.Platform, outfitId ps2.OutfitId, characterId ps2.CharacterId) error {
 	err := s.queries.DeleteOutfitMember(ctx, db.DeleteOutfitMemberParams{
 		OutfitID:    string(outfitId),
 		CharacterID: string(characterId),
@@ -153,7 +153,7 @@ func (s *SqlStorage) DeleteOutfitMember(ctx context.Context, platform platforms.
 	})
 }
 
-func (s *SqlStorage) SaveOutfitSynchronizedAt(ctx context.Context, platform platforms.Platform, outfitId ps2.OutfitId, synchronizedAt time.Time) error {
+func (s *Storage) SaveOutfitSynchronizedAt(ctx context.Context, platform ps2_platforms.Platform, outfitId ps2.OutfitId, synchronizedAt time.Time) error {
 	err := s.queries.UpsertPlatformOutfitSynchronizedAt(ctx, db.UpsertPlatformOutfitSynchronizedAtParams{
 		Platform:       string(platform),
 		OutfitID:       string(outfitId),
@@ -166,14 +166,14 @@ func (s *SqlStorage) SaveOutfitSynchronizedAt(ctx context.Context, platform plat
 	})
 }
 
-func (s *SqlStorage) OutfitSynchronizedAt(ctx context.Context, platform platforms.Platform, outfitId ps2.OutfitId) (time.Time, error) {
+func (s *Storage) OutfitSynchronizedAt(ctx context.Context, platform ps2_platforms.Platform, outfitId ps2.OutfitId) (time.Time, error) {
 	return s.queries.GetPlatformOutfitSynchronizedAt(ctx, db.GetPlatformOutfitSynchronizedAtParams{
 		Platform: string(platform),
 		OutfitID: string(outfitId),
 	})
 }
 
-func (s *SqlStorage) TrackingChannelIdsForCharacter(ctx context.Context, platform platforms.Platform, characterId ps2.CharacterId, outfitId ps2.OutfitId) ([]meta.ChannelId, error) {
+func (s *Storage) TrackingChannelIdsForCharacter(ctx context.Context, platform ps2_platforms.Platform, characterId ps2.CharacterId, outfitId ps2.OutfitId) ([]meta.ChannelId, error) {
 	list, err := s.queries.ListPlatformTrackingChannelIdsForCharacter(ctx, db.ListPlatformTrackingChannelIdsForCharacterParams{
 		Platform:    string(platform),
 		CharacterID: string(characterId),
@@ -189,7 +189,7 @@ func (s *SqlStorage) TrackingChannelIdsForCharacter(ctx context.Context, platfor
 	return ids, nil
 }
 
-func (s *SqlStorage) TrackingChannelIdsForOutfit(ctx context.Context, platform platforms.Platform, outfitId ps2.OutfitId) ([]meta.ChannelId, error) {
+func (s *Storage) TrackingChannelIdsForOutfit(ctx context.Context, platform ps2_platforms.Platform, outfitId ps2.OutfitId) ([]meta.ChannelId, error) {
 	list, err := s.queries.ListPlatformTrackingChannelIdsForOutfit(ctx, db.ListPlatformTrackingChannelIdsForOutfitParams{
 		Platform: string(platform),
 		OutfitID: string(outfitId),
@@ -204,7 +204,7 @@ func (s *SqlStorage) TrackingChannelIdsForOutfit(ctx context.Context, platform p
 	return ids, nil
 }
 
-func (s *SqlStorage) TrackingOutfitIdsForPlatform(ctx context.Context, channelId meta.ChannelId, platform platforms.Platform) ([]ps2.OutfitId, error) {
+func (s *Storage) TrackingOutfitIdsForPlatform(ctx context.Context, channelId meta.ChannelId, platform ps2_platforms.Platform) ([]ps2.OutfitId, error) {
 	list, err := s.queries.ListChannelOutfitIdsForPlatform(ctx, db.ListChannelOutfitIdsForPlatformParams{
 		ChannelID: string(channelId),
 		Platform:  string(platform),
@@ -219,7 +219,7 @@ func (s *SqlStorage) TrackingOutfitIdsForPlatform(ctx context.Context, channelId
 	return ids, nil
 }
 
-func (s *SqlStorage) TrackingCharacterIdsForPlatform(ctx context.Context, channelId meta.ChannelId, platform platforms.Platform) ([]ps2.CharacterId, error) {
+func (s *Storage) TrackingCharacterIdsForPlatform(ctx context.Context, channelId meta.ChannelId, platform ps2_platforms.Platform) ([]ps2.CharacterId, error) {
 	list, err := s.queries.ListChannelCharacterIdsForPlatform(ctx, db.ListChannelCharacterIdsForPlatformParams{
 		ChannelID: string(channelId),
 		Platform:  string(platform),
@@ -234,7 +234,7 @@ func (s *SqlStorage) TrackingCharacterIdsForPlatform(ctx context.Context, channe
 	return ids, nil
 }
 
-func (s *SqlStorage) AllTrackableCharacterIdsWithDuplicationsForPlatform(ctx context.Context, platform platforms.Platform) ([]ps2.CharacterId, error) {
+func (s *Storage) AllTrackableCharacterIdsWithDuplicationsForPlatform(ctx context.Context, platform ps2_platforms.Platform) ([]ps2.CharacterId, error) {
 	list, err := s.queries.ListTrackableCharacterIdsWithDuplicationForPlatform(ctx, string(platform))
 	if err != nil {
 		return nil, err
@@ -246,7 +246,7 @@ func (s *SqlStorage) AllTrackableCharacterIdsWithDuplicationsForPlatform(ctx con
 	return ids, nil
 }
 
-func (s *SqlStorage) AllTrackableOutfitIdsWithDuplicationsForPlatform(ctx context.Context, platform platforms.Platform) ([]ps2.OutfitId, error) {
+func (s *Storage) AllTrackableOutfitIdsWithDuplicationsForPlatform(ctx context.Context, platform ps2_platforms.Platform) ([]ps2.OutfitId, error) {
 	list, err := s.queries.ListTrackableOutfitIdsWithDuplicationForPlatform(ctx, string(platform))
 	if err != nil {
 		return nil, err
@@ -258,7 +258,7 @@ func (s *SqlStorage) AllTrackableOutfitIdsWithDuplicationsForPlatform(ctx contex
 	return ids, nil
 }
 
-func (s *SqlStorage) AllUniqueTrackableOutfitIdsForPlatform(ctx context.Context, platform platforms.Platform) ([]ps2.OutfitId, error) {
+func (s *Storage) AllUniqueTrackableOutfitIdsForPlatform(ctx context.Context, platform ps2_platforms.Platform) ([]ps2.OutfitId, error) {
 	list, err := s.queries.ListUniqueTrackableOutfitIdsForPlatform(ctx, string(platform))
 	if err != nil {
 		return nil, err
@@ -270,7 +270,7 @@ func (s *SqlStorage) AllUniqueTrackableOutfitIdsForPlatform(ctx context.Context,
 	return ids, nil
 }
 
-func (s *SqlStorage) OutfitMembers(ctx context.Context, platform platforms.Platform, outfitId ps2.OutfitId) ([]ps2.CharacterId, error) {
+func (s *Storage) OutfitMembers(ctx context.Context, platform ps2_platforms.Platform, outfitId ps2.OutfitId) ([]ps2.CharacterId, error) {
 	list, err := s.queries.ListPlatformOutfitMembers(ctx, db.ListPlatformOutfitMembersParams{
 		Platform: string(platform),
 		OutfitID: string(outfitId),
@@ -285,7 +285,7 @@ func (s *SqlStorage) OutfitMembers(ctx context.Context, platform platforms.Platf
 	return ids, nil
 }
 
-func (s *SqlStorage) Outfit(ctx context.Context, platform platforms.Platform, outfitId ps2.OutfitId) (ps2.Outfit, error) {
+func (s *Storage) Outfit(ctx context.Context, platform ps2_platforms.Platform, outfitId ps2.OutfitId) (ps2.Outfit, error) {
 	outfit, err := s.queries.GetPlatformOutfit(ctx, db.GetPlatformOutfitParams{
 		Platform: string(platform),
 		OutfitID: string(outfitId),
@@ -301,7 +301,7 @@ func (s *SqlStorage) Outfit(ctx context.Context, platform platforms.Platform, ou
 	}, nil
 }
 
-func (s *SqlStorage) SaveOutfit(ctx context.Context, outfit ps2.Outfit) error {
+func (s *Storage) SaveOutfit(ctx context.Context, outfit ps2.Outfit) error {
 	return s.queries.InsertOutfit(ctx, db.InsertOutfitParams{
 		Platform:   string(outfit.Platform),
 		OutfitID:   string(outfit.Id),
@@ -310,7 +310,7 @@ func (s *SqlStorage) SaveOutfit(ctx context.Context, outfit ps2.Outfit) error {
 	})
 }
 
-func (s *SqlStorage) Outfits(ctx context.Context, platform platforms.Platform, outfitIds []ps2.OutfitId) ([]ps2.Outfit, error) {
+func (s *Storage) Outfits(ctx context.Context, platform ps2_platforms.Platform, outfitIds []ps2.OutfitId) ([]ps2.Outfit, error) {
 	ids := make([]string, 0, len(outfitIds))
 	for _, id := range outfitIds {
 		ids = append(ids, string(id))
@@ -334,7 +334,7 @@ func (s *SqlStorage) Outfits(ctx context.Context, platform platforms.Platform, o
 	return outfits, nil
 }
 
-func (s *SqlStorage) Facility(ctx context.Context, facilityId ps2.FacilityId) (ps2.Facility, error) {
+func (s *Storage) Facility(ctx context.Context, facilityId ps2.FacilityId) (ps2.Facility, error) {
 	facility, err := s.queries.GetFacility(ctx, string(facilityId))
 	if err != nil {
 		return ps2.Facility{}, err
@@ -347,7 +347,7 @@ func (s *SqlStorage) Facility(ctx context.Context, facilityId ps2.FacilityId) (p
 	}, nil
 }
 
-func (s *SqlStorage) SaveFacility(ctx context.Context, facility ps2.Facility) error {
+func (s *Storage) SaveFacility(ctx context.Context, facility ps2.Facility) error {
 	return s.queries.InsertFacility(ctx, db.InsertFacilityParams{
 		FacilityID:   string(facility.Id),
 		FacilityName: facility.Name,
@@ -356,7 +356,7 @@ func (s *SqlStorage) SaveFacility(ctx context.Context, facility ps2.Facility) er
 	})
 }
 
-func (s *SqlStorage) publish(err error, event storage.Event) error {
+func (s *Storage) publish(err error, event storage.Event) error {
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return storage.ErrNotFound

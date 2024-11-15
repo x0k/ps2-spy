@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	collections "github.com/x0k/ps2-spy/internal/lib/census2/collections/ps2"
+	ps2_collections "github.com/x0k/ps2-spy/internal/lib/census2/collections/ps2"
 )
 
 var queryFieldNames = [...]string{
@@ -96,7 +96,7 @@ func (q *Query) validateLeaderboardThing() error {
 	}
 	hasNameQuery := false
 	hasPeriodQuery := false
-	isChar := q.collection == collections.CharactersLeaderboard
+	isChar := q.collection == ps2_collections.CharactersLeaderboard
 	for _, t := range q.terms.values {
 		if t.field == "world" {
 			continue
@@ -142,8 +142,8 @@ func (q *Query) validateEventThing() error {
 			return fmt.Errorf("invalid field %q for collection %q", queryFieldNames[i], q.collection)
 		}
 	}
-	isChar := q.collection == collections.CharactersEvent
-	isWorld := q.collection == collections.WorldEvent
+	isChar := q.collection == ps2_collections.CharactersEvent
+	isWorld := q.collection == ps2_collections.WorldEvent
 	for _, t := range q.terms.values {
 		if (t.field == "before" ||
 			t.field == "after" ||
@@ -178,7 +178,7 @@ func (q *Query) Validate() error {
 	// Collection:
 	// map	Can only be queried by 'world_id = x' and 'zone_ids = x,y,z...'. None of the 'c:' commands are supported (except c:join, c:tree). Only 'get' is supported, 'count' is not.
 	switch q.collection {
-	case collections.Map:
+	case ps2_collections.Map:
 		if q.queryType != "get" {
 			return fmt.Errorf("invalid query type %q for collection %q", q.queryType, q.collection)
 		}
@@ -199,26 +199,26 @@ func (q *Query) Validate() error {
 		}
 		return nil
 	// characters_world	Can only be queried by 'character_id = x,y,z...' or equivalently 'id = x,y,z...'. None of the 'c:' commands are supported (except c:join, c:tree). Only 'get' is supported, 'count' is not.
-	case collections.CharactersWorld:
+	case ps2_collections.CharactersWorld:
 		return q.validateCharactersThing()
 	// characters_online_status	Can only be queried by 'character_id = x,y,z...' or equivalently 'id = x,y,z...'. None of the 'c:' commands are supported (except c:join, c:tree). Only 'get' is supported, 'count' is not.
-	case collections.CharactersOnlineStatus:
+	case ps2_collections.CharactersOnlineStatus:
 		return q.validateCharactersThing()
 	// characters_friend	Can only be queried by 'character_id = x,y,z...' or equivalently 'id = x,y,z...'. None of the 'c:' commands are supported (except c:join, c:tree). Only 'get' is supported, 'count' is not.
-	case collections.CharactersFriend:
+	case ps2_collections.CharactersFriend:
 		return q.validateCharactersThing()
 	// leaderboard	Can only be queried by 'name = x' (required), 'period = x' (required), 'world = [world_id]' (optional).
 	// Possible values for name are: Kills, Score, Time, Deaths.
 	// Possible value for period are: Forever, Monthly, Weekly, Daily, OneLife.
 	// The only 'c:' commands supported are c:start and c:limit (also c:join, c:tree).
 	// Only 'get' is supported, 'count' is not.
-	case collections.Leaderboard:
+	case ps2_collections.Leaderboard:
 		return q.validateLeaderboardThing()
 	// characters_leaderboard	Limitations are the same as those for leaderboard
 	// except 'character_id = x,y,z...' or equivalently 'id = x,y,z...' are used to limit the characters returned.
 	// Please note that only the top 10,000 characters are in the leaderboard data, many characters will not have a leaderboard row.
 	// Only 'get' is supported, 'count' is not.
-	case collections.CharactersLeaderboard:
+	case ps2_collections.CharactersLeaderboard:
 		return q.validateLeaderboardThing()
 	// event	Can only be queried by before, after and type.
 	// 'before = [timestamp]'. The before query field can be used to pull all rows by stepping through them backwards.
@@ -227,15 +227,15 @@ func (q *Query) Validate() error {
 	//    Aliases for these types are listed below. Multiple types can be provided comma-delimited.
 	//    The default value type is 'BATTLE_RANK,ACHIEVEMENT,ITEM'.
 	// The only 'c:' command supported is c:limit (also c:join, c:tree). Only 'get' is supported, 'count' is not.
-	case collections.Event:
+	case ps2_collections.Event:
 		return q.validateEventThing()
 	// characters_event	Limitations are the same as those for event
 	// except 'character_id = x,y,z...' or equivalently 'id = x,y,z...' are used to limit the rows returned.
-	case collections.CharactersEvent:
+	case ps2_collections.CharactersEvent:
 		return q.validateEventThing()
 	// world_event	Limitations are the same as those for event
 	// except 'world_id = x,y,z...' or equivalently 'id = x,y,z...' are used to limit the rows returned.
-	case collections.WorldEvent:
+	case ps2_collections.WorldEvent:
 		return q.validateEventThing()
 	// characters_event_grouped	Can only be queried by 'character_id = x,y,z...' or equivalently 'id = x,y,z...' and 'type = [DEATH | KILL]' (case insensitive).
 	//   Aliases for these types are listed below.
@@ -243,7 +243,7 @@ func (q *Query) Validate() error {
 	//   The default value type is 'DEATH,KILL'.
 	//   The only 'c:' commands supported are c:start and c:limit (also c:join, c:tree).
 	//   Only 'get' is supported, 'count' is not.
-	case collections.CharactersEventGrouped:
+	case ps2_collections.CharactersEventGrouped:
 		if q.queryType != "get" {
 			return fmt.Errorf("invalid query type %q for collection %q", q.queryType, q.collection)
 		}
@@ -279,7 +279,7 @@ func (q *Query) Validate() error {
 	// single_character_by_id	Can only be queried by 'character_id = x' or equivalently 'id = x'.
 	// None of the 'c:' commands are supported (except c:join, c:tree).
 	// Only 'get' is supported, 'count' is not.
-	case collections.SingleCharacterById:
+	case ps2_collections.SingleCharacterById:
 		if q.queryType != "get" {
 			return fmt.Errorf("invalid query type %q for collection %q", q.queryType, q.collection)
 		}
@@ -298,7 +298,7 @@ func (q *Query) Validate() error {
 		return nil
 	// characters_item	Can only be queried by 'character_id = x,y,z...' or equivalently 'id = x,y,z...'.
 	// None of the 'c:' commands are supported (except c:join, c:tree).
-	case collections.CharactersItem:
+	case ps2_collections.CharactersItem:
 		for i, f := range q.fields() {
 			name := queryFieldNames[i]
 			if !f.isEmpty() && (name == "c:join" || name == "c:tree" || name == "terms") {
@@ -313,7 +313,7 @@ func (q *Query) Validate() error {
 		}
 		return nil
 	// world Querying by name.en, name.fr, etc is not supported.
-	case collections.World:
+	case ps2_collections.World:
 		for _, t := range q.terms.values {
 			if strings.HasPrefix(t.field, "name.") {
 				return fmt.Errorf("invalid field %q for collection %q", t.field, q.collection)

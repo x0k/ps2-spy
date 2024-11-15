@@ -10,7 +10,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/modules/discord/commands"
 	profiler_module "github.com/x0k/ps2-spy/internal/modules/profiler"
 	ps2_module "github.com/x0k/ps2-spy/internal/modules/ps2"
-	"github.com/x0k/ps2-spy/internal/ps2/platforms"
+	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 	"github.com/x0k/ps2-spy/internal/storage"
 )
 
@@ -44,7 +44,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	}
 
 	ps2Module, err := ps2_module.New(log, &ps2_module.Config{
-		Platform:          platforms.PC,
+		Platform:          ps2_platforms.PC,
 		StreamingEndpoint: cfg.Ps2.StreamingEndpoint,
 		CensusServiceId:   cfg.Ps2.CensusServiceId,
 		HttpClient:        httpClient,

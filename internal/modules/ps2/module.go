@@ -11,13 +11,13 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/module"
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
-	events_module "github.com/x0k/ps2-spy/internal/modules/ps2/events"
-	"github.com/x0k/ps2-spy/internal/ps2/platforms"
+	ps2_events_module "github.com/x0k/ps2-spy/internal/modules/ps2/events"
+	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
 
 type Config struct {
 	HttpClient        *http.Client
-	Platform          platforms.Platform
+	Platform          ps2_platforms.Platform
 	StreamingEndpoint string
 	CensusServiceId   string
 }
@@ -27,7 +27,7 @@ func New(log *logger.Logger, cfg *Config) (*module.Module, error) {
 
 	eventsPubSub := pubsub.New[events.EventType]()
 
-	eventsModule, err := events_module.New(log, &events_module.Config{
+	eventsModule, err := ps2_events_module.New(log, &ps2_events_module.Config{
 		Platform:          cfg.Platform,
 		StreamingEndpoint: cfg.StreamingEndpoint,
 		CensusServiceId:   cfg.CensusServiceId,

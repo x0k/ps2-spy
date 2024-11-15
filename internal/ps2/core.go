@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/x0k/ps2-spy/internal/ps2/factions"
-	"github.com/x0k/ps2-spy/internal/ps2/platforms"
+	ps2_factions "github.com/x0k/ps2-spy/internal/ps2/factions"
+	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
 
 type ZoneId string
@@ -90,7 +90,7 @@ type ZoneTerritoryControl struct {
 	Id           ZoneId
 	IsOpen       bool
 	Since        time.Time
-	ControlledBy factions.Id
+	ControlledBy ps2_factions.Id
 	IsStable     bool
 	HasAlerts    bool
 	StatPerFactions
@@ -119,12 +119,12 @@ type CharacterId string
 
 type Character struct {
 	Id        CharacterId
-	FactionId factions.Id
+	FactionId ps2_factions.Id
 	Name      string
 	OutfitId  OutfitId
 	OutfitTag string
 	WorldId   WorldId
-	Platform  platforms.Platform
+	Platform  ps2_platforms.Platform
 }
 
 type OutfitId string
@@ -133,7 +133,7 @@ type Outfit struct {
 	Id       OutfitId
 	Name     string
 	Tag      string
-	Platform platforms.Platform
+	Platform ps2_platforms.Platform
 }
 
 type FacilityId string
@@ -147,7 +147,7 @@ type Facility struct {
 
 type ZoneMap struct {
 	Id         ZoneId
-	Facilities map[FacilityId]factions.Id
+	Facilities map[FacilityId]ps2_factions.Id
 }
 
 type WorldMap struct {
@@ -197,22 +197,22 @@ var WorldNames = map[WorldId]string{
 	"1000": "Genudine",
 	"2000": "Ceres",
 }
-var WorldPlatforms = map[WorldId]platforms.Platform{
-	"1":    platforms.PC,
-	"10":   platforms.PC,
-	"13":   platforms.PC,
-	"17":   platforms.PC,
-	"19":   platforms.PC,
-	"24":   platforms.PC,
-	"40":   platforms.PC,
-	"1000": platforms.PS4_US,
-	"2000": platforms.PS4_EU,
+var WorldPlatforms = map[WorldId]ps2_platforms.Platform{
+	"1":    ps2_platforms.PC,
+	"10":   ps2_platforms.PC,
+	"13":   ps2_platforms.PC,
+	"17":   ps2_platforms.PC,
+	"19":   ps2_platforms.PC,
+	"24":   ps2_platforms.PC,
+	"40":   ps2_platforms.PC,
+	"1000": ps2_platforms.PS4_US,
+	"2000": ps2_platforms.PS4_EU,
 }
 var PcPlatformWorldIds = []WorldId{"1", "10", "13", "17", "19", "24", "40"}
 var Ps4euPlatformWorldIds = []WorldId{"2000"}
 var Ps4usPlatformWorldIds = []WorldId{"1000"}
-var PlatformWorldIds = map[platforms.Platform][]WorldId{
-	platforms.PC:     PcPlatformWorldIds,
-	platforms.PS4_EU: Ps4euPlatformWorldIds,
-	platforms.PS4_US: Ps4usPlatformWorldIds,
+var PlatformWorldIds = map[ps2_platforms.Platform][]WorldId{
+	ps2_platforms.PC:     PcPlatformWorldIds,
+	ps2_platforms.PS4_EU: Ps4euPlatformWorldIds,
+	ps2_platforms.PS4_US: Ps4usPlatformWorldIds,
 }

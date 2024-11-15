@@ -8,7 +8,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/module"
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
 	"github.com/x0k/ps2-spy/internal/storage"
-	"github.com/x0k/ps2-spy/internal/storage/sql_storage"
+	sql_storage "github.com/x0k/ps2-spy/internal/storage/sql"
 
 	_ "modernc.org/sqlite"
 )

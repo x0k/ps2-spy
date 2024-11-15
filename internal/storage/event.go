@@ -6,7 +6,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
 	"github.com/x0k/ps2-spy/internal/meta"
 	"github.com/x0k/ps2-spy/internal/ps2"
-	"github.com/x0k/ps2-spy/internal/ps2/platforms"
+	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
 
 type EventType string
@@ -25,7 +25,7 @@ const (
 
 type ChannelOutfitSaved struct {
 	ChannelId meta.ChannelId
-	Platform  platforms.Platform
+	Platform  ps2_platforms.Platform
 	OutfitId  ps2.OutfitId
 }
 
@@ -35,7 +35,7 @@ func (e ChannelOutfitSaved) Type() EventType {
 
 type ChannelOutfitDeleted struct {
 	ChannelId meta.ChannelId
-	Platform  platforms.Platform
+	Platform  ps2_platforms.Platform
 	OutfitId  ps2.OutfitId
 }
 
@@ -45,7 +45,7 @@ func (e ChannelOutfitDeleted) Type() EventType {
 
 type ChannelCharacterSaved struct {
 	ChannelId   meta.ChannelId
-	Platform    platforms.Platform
+	Platform    ps2_platforms.Platform
 	CharacterId ps2.CharacterId
 }
 
@@ -55,7 +55,7 @@ func (e ChannelCharacterSaved) Type() EventType {
 
 type ChannelCharacterDeleted struct {
 	ChannelId   meta.ChannelId
-	Platform    platforms.Platform
+	Platform    ps2_platforms.Platform
 	CharacterId ps2.CharacterId
 }
 
@@ -64,7 +64,7 @@ func (e ChannelCharacterDeleted) Type() EventType {
 }
 
 type OutfitMemberSaved struct {
-	Platform    platforms.Platform
+	Platform    ps2_platforms.Platform
 	OutfitId    ps2.OutfitId
 	CharacterId ps2.CharacterId
 }
@@ -74,7 +74,7 @@ func (e OutfitMemberSaved) Type() EventType {
 }
 
 type OutfitMemberDeleted struct {
-	Platform    platforms.Platform
+	Platform    ps2_platforms.Platform
 	OutfitId    ps2.OutfitId
 	CharacterId ps2.CharacterId
 }
@@ -84,7 +84,7 @@ func (e OutfitMemberDeleted) Type() EventType {
 }
 
 type OutfitSynchronized struct {
-	Platform       platforms.Platform
+	Platform       ps2_platforms.Platform
 	OutfitId       ps2.OutfitId
 	SynchronizedAt time.Time
 }

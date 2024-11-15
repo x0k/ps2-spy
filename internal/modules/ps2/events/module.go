@@ -1,4 +1,4 @@
-package events_module
+package ps2_events_module
 
 import (
 	"fmt"
@@ -8,12 +8,12 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/module"
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
-	"github.com/x0k/ps2-spy/internal/ps2/platforms"
+	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 	"github.com/x0k/ps2-spy/internal/relogin_omitter"
 )
 
 type Config struct {
-	Platform          platforms.Platform
+	Platform          ps2_platforms.Platform
 	StreamingEndpoint string
 	CensusServiceId   string
 }
@@ -32,7 +32,7 @@ func New(log *logger.Logger, cfg *Config, eventsPublisher pubsub.Publisher[event
 
 	streamingClient := streaming.NewClient(
 		cfg.StreamingEndpoint,
-		platforms.PlatformEnvironment(cfg.Platform),
+		ps2_platforms.PlatformEnvironment(cfg.Platform),
 		cfg.CensusServiceId,
 		streamingPublisher,
 	)

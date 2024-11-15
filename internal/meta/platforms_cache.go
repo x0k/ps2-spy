@@ -5,17 +5,17 @@ import (
 	"errors"
 
 	"github.com/x0k/ps2-spy/internal/lib/cache"
-	"github.com/x0k/ps2-spy/internal/ps2/platforms"
+	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
 
 var ErrPlatformCacheNotFound = errors.New("cache for platform not found")
 
 type PlatformsCache[K comparable, T any] struct {
-	platformsCaches map[platforms.Platform]cache.Multi[K, T]
+	platformsCaches map[ps2_platforms.Platform]cache.Multi[K, T]
 }
 
 func NewPlatformsCache[K comparable, T any](
-	caches map[platforms.Platform]cache.Multi[K, T],
+	caches map[ps2_platforms.Platform]cache.Multi[K, T],
 ) *PlatformsCache[K, T] {
 	return &PlatformsCache[K, T]{
 		platformsCaches: caches,
