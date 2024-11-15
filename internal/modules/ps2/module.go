@@ -9,8 +9,10 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/census2"
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
+	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/lib/module"
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
+	census_characters_loader "github.com/x0k/ps2-spy/internal/loaders/characters/census"
 	ps2_events_module "github.com/x0k/ps2-spy/internal/modules/ps2/events"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
@@ -23,7 +25,7 @@ type Config struct {
 }
 
 func New(log *logger.Logger, cfg *Config) (*module.Module, error) {
-	m := module.New(log.Logger, "ps2")
+	m := module.New(log.Logger.With(slog.String("module", "ps2")), "ps2")
 
 	eventsPubSub := pubsub.New[events.EventType]()
 
@@ -50,7 +52,12 @@ func New(log *logger.Logger, cfg *Config) (*module.Module, error) {
 	}))
 
 	censusClient := census2.NewClient("https://census.daybreakgames.com", cfg.CensusServiceId, cfg.HttpClient)
-	_ = censusClient
+
+	charactersLoader := census_characters_loader.New(
+		log.With(sl.Component("characters_loader"), slog.String("platform", string(cfg.Platform))),
+		censusClient,
+		cfg.Platform,
+	)
 
 	return m, nil
 }

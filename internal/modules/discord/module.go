@@ -1,6 +1,7 @@
 package discord_module
 
 import (
+	"log/slog"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -20,7 +21,7 @@ func New(
 	log *logger.Logger,
 	cfg *Config,
 ) (*module.Module, error) {
-	m := module.New(log.Logger, "discord")
+	m := module.New(log.Logger.With(slog.String("module", "discord")), "discord")
 	session, err := discordgo.New("Bot " + cfg.Token)
 	if err != nil {
 		return nil, err

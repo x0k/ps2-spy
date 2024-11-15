@@ -2,6 +2,7 @@ package ps2_events_module
 
 import (
 	"fmt"
+	"log/slog"
 
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming"
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
@@ -19,7 +20,7 @@ type Config struct {
 }
 
 func New(log *logger.Logger, cfg *Config, eventsPublisher pubsub.Publisher[events.Event]) (*module.Module, error) {
-	m := module.New(log.Logger, fmt.Sprintf("platform.%s", cfg.Platform))
+	m := module.New(log.Logger.With(slog.String("module", "ps2.events")), fmt.Sprintf("platform.%s", cfg.Platform))
 
 	reLoginOmitter := relogin_omitter.NewReLoginOmitter(log, eventsPublisher)
 	m.Append(NewReLoginOmitterService(cfg.Platform, reLoginOmitter))

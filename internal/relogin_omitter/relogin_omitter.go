@@ -35,7 +35,7 @@ func NewReLoginOmitter(
 ) *ReLoginOmitter {
 	return &ReLoginOmitter{
 		Publisher:         pub,
-		log:               log.With(sl.Component("platform.ReLoginOmitter")),
+		log:               log,
 		logoutEventsQueue: containers.NewExpirationQueue[ps2.CharacterId](),
 		logoutEvents:      make(map[ps2.CharacterId]events.PlayerLogout),
 		flushInterval:     1 * time.Minute,

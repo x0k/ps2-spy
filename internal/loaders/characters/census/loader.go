@@ -29,10 +29,7 @@ type Loader struct {
 func New(log *logger.Logger, client *census2.Client, platform ps2_platforms.Platform) *Loader {
 	operand := census2.NewPtr(census2.StrList())
 	return &Loader{
-		log: log.With(
-			slog.String("component", "loaders.characters_loader.CensusLoader"),
-			slog.String("platform", string(platform)),
-		),
+		log:     log,
 		client:  client,
 		operand: operand,
 		query: census2.NewQuery(census2.GetQuery, ps2_platforms.PlatformNamespace(platform), ps2_collections.Character).

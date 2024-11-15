@@ -29,7 +29,7 @@ func New(ctx context.Context, log *logger.Logger, database *sql.DB, publisher pu
 		return nil, err
 	}
 	return &Storage{
-		log:       log.With(sl.Component("storage.SqlStorage")),
+		log:       log,
 		db:        database,
 		queries:   queries,
 		publisher: publisher,

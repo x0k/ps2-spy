@@ -21,7 +21,7 @@ type Module struct {
 
 func New(log *slog.Logger, name string) *Module {
 	return &Module{
-		log:   log.With(slog.String("module_name", name)),
+		log:   log,
 		name:  name,
 		fatal: make(chan error, 1),
 	}
