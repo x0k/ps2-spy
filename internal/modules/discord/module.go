@@ -1,10 +1,20 @@
 package discord_module
 
 import (
+	"time"
+
 	"github.com/bwmarrin/discordgo"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/module"
 )
+
+type Config struct {
+	Token                 string
+	RemoveCommands        bool
+	CommandHandlerTimeout time.Duration
+	EventHandlerTimeout   time.Duration
+	Commands              []*Command
+}
 
 func New(
 	log *logger.Logger,
