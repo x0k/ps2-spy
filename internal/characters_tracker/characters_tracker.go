@@ -142,7 +142,7 @@ func (p *CharactersTracker) handleLogin(ctx context.Context, char ps2.Character)
 
 func (p *CharactersTracker) publishPlayerLogin(ctx context.Context, event events.PlayerLogin) {
 	var t time.Time
-	// TODO: extract this somewhere
+	// TODO: move this somewhere
 	if timestamp, err := strconv.ParseInt(event.Timestamp, 10, 64); err == nil {
 		t = time.Unix(timestamp, 0)
 	} else {
@@ -157,8 +157,7 @@ func (p *CharactersTracker) publishPlayerLogin(ctx context.Context, event events
 	}
 }
 
-func (p *CharactersTracker) HandleLoginTask(ctx context.Context, wg *sync.WaitGroup, event events.PlayerLogin) {
-	defer wg.Done()
+func (p *CharactersTracker) HandleLogin(ctx context.Context, event events.PlayerLogin) {
 	charId := ps2.CharacterId(event.CharacterID)
 	char, err := p.retryableCharacterLoader.Run(
 		ctx,

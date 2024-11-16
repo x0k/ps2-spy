@@ -88,5 +88,17 @@ func New(log *logger.Logger, mt *metrics.Metrics, cfg *Config) (*module.Module, 
 		pubsub.New[characters_tracker.EventType](),
 	)
 
+	charactersTracker := characters_tracker.New(
+		log,
+		cfg.Platform,
+		[]ps2.WorldId{},
+		loader.Keyed[ps2.CharacterId, ps2.Character](cachedBatchedCharactersLoader),
+		charactersTrackerPublisher,
+		mt,
+	)
+	m.Append(newCharactersTrackerService(cfg.Platform, charactersTracker))
+
+	m.Append(newEventsSubscriptionService(cfg.Platform, m, eventsPubSub, charactersTracker))
+
 	return m, nil
 }

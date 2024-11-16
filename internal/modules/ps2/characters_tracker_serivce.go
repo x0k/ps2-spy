@@ -10,7 +10,6 @@ import (
 )
 
 func newCharactersTrackerService(
-	ctx context.Context,
 	platform ps2_platforms.Platform,
 	charactersTracker *characters_tracker.CharactersTracker,
 ) module.Service {
