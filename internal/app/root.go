@@ -29,30 +29,26 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		m.Append(newMetricsService(mt, cfg.Metrics.Address, m))
 	}
 
-	discordModule, err := discord_module.New(log, &discord_module.Config{
-		Token:                 cfg.Discord.Token,
-		RemoveCommands:        cfg.Discord.RemoveCommands,
-		CommandHandlerTimeout: cfg.Discord.CommandHandlerTimeout,
-		EventHandlerTimeout:   cfg.Discord.EventHandlerTimeout,
-		Commands:              commands.New(),
-	})
-	if err != nil {
-		return nil, err
-	}
-	m.Append(discordModule)
-
 	storagePubSub := pubsub.New[storage.EventType]()
 
 	db, err := sql.Open("sqlite", cfg.Storage.Path)
 	if err != nil {
 		return nil, err
 	}
-	storage := sql_storage.New(log, db, storagePubSub)
+	storage := sql_storage.New(
+		log.With(slog.String("module", "storage")),
+		db,
+		storagePubSub,
+	)
 	m.Append(module.NewService("storage.sqlite", storage.Start))
 
 	httpClient := &http.Client{
-		Timeout:   cfg.HttpClient.Timeout,
-		Transport: metrics.InstrumentTransport(mt, metrics.DefaultTransportName, http.DefaultTransport),
+		Timeout: cfg.HttpClient.Timeout,
+		Transport: metrics.InstrumentTransport(
+			mt,
+			metrics.DefaultTransportName,
+			http.DefaultTransport,
+		),
 	}
 
 	ps2Module, err := ps2_module.New(
@@ -70,7 +66,18 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	}
 	m.Append(ps2Module)
 
-	_ = ps2Module
+	discordModule, err := discord_module.New(
+		log.With(slog.String("module", "discord")),
+		cfg.Discord.Token,
+		commands.New(),
+		cfg.Discord.CommandHandlerTimeout,
+		cfg.Discord.EventHandlerTimeout,
+		cfg.Discord.RemoveCommands,
+	)
+	if err != nil {
+		return nil, err
+	}
+	m.Append(discordModule)
 
 	return m, nil
 }

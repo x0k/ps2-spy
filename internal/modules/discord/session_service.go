@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
@@ -16,15 +17,17 @@ var ErrDuplicateSubmitHandler = errors.New("duplicate submit handler")
 
 func NewSessionService(
 	log *logger.Logger,
-	cfg *Config,
 	fataler module.Fataler,
 	session *discordgo.Session,
+	commands []*Command,
+	commandHandlerTimeout time.Duration,
+	removeCommands bool,
 ) module.Service {
 	return module.NewService("discord_session", func(ctx context.Context) error {
-		handlers := make(map[string]InteractionHandler, len(cfg.Commands))
-		commands := make([]*discordgo.ApplicationCommand, 0, len(cfg.Commands))
-		submitHandlers := make(map[string]InteractionHandler, len(cfg.Commands))
-		for _, command := range cfg.Commands {
+		handlers := make(map[string]InteractionHandler, len(commands))
+		appCommands := make([]*discordgo.ApplicationCommand, 0, len(commands))
+		submitHandlers := make(map[string]InteractionHandler, len(commands))
+		for _, command := range commands {
 			handlers[command.Cmd.Name] = command.Handler
 			if command.SubmitHandlers != nil {
 				for name, handler := range command.SubmitHandlers {
@@ -34,7 +37,7 @@ func NewSessionService(
 					submitHandlers[name] = handler
 				}
 			}
-			commands = append(commands, command.Cmd)
+			appCommands = append(appCommands, command.Cmd)
 		}
 
 		session.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {
@@ -61,7 +64,7 @@ func NewSessionService(
 				cLog := hLog.With(slog.String("command", i.ApplicationCommandData().Name))
 				if handler, ok := handlers[i.ApplicationCommandData().Name]; ok {
 					cLog.Debug(ctx, "command received")
-					go handler.Run(ctx, cLog, cfg.CommandHandlerTimeout, s, i)
+					go handler.Run(ctx, cLog, commandHandlerTimeout, s, i)
 				} else {
 					cLog.Debug(ctx, "command not found")
 				}
@@ -70,7 +73,7 @@ func NewSessionService(
 				mLog := hLog.With(slog.String("custom_id", data.CustomID))
 				if handler, ok := submitHandlers[data.CustomID]; ok {
 					mLog.Debug(ctx, "submit received")
-					go handler.Run(ctx, mLog, cfg.CommandHandlerTimeout, s, i)
+					go handler.Run(ctx, mLog, commandHandlerTimeout, s, i)
 				} else {
 					mLog.Debug(ctx, "submit not found")
 				}
@@ -81,14 +84,14 @@ func NewSessionService(
 			return err
 		}
 
-		registeredCommands, err := session.ApplicationCommandBulkOverwrite(session.State.User.ID, "", commands)
+		registeredCommands, err := session.ApplicationCommandBulkOverwrite(session.State.User.ID, "", appCommands)
 		if err != nil {
 			return err
 		}
 
 		<-ctx.Done()
 
-		if cfg.RemoveCommands {
+		if removeCommands {
 			for _, v := range registeredCommands {
 				if err := session.ApplicationCommandDelete(session.State.User.ID, "", v.ID); err != nil {
 					log.Error(ctx, "cannot delete command", slog.String("command", v.Name), sl.Err(err))
