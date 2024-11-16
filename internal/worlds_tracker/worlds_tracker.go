@@ -110,9 +110,7 @@ func New(
 		worlds[worldId] = world
 	}
 	return &WorldsTracker{
-		log: log.With(
-			slog.String("component", "worlds_tracker.WorldsTracker"),
-		),
+		log:                     log,
 		worldIds:                worldIds,
 		retryableWorldMapLoader: retryable.NewWithArg(worldMapLoader),
 		worlds:                  worlds,

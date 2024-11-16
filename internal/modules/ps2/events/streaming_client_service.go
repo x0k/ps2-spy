@@ -45,7 +45,7 @@ func newStreamingClientService(
 	platform ps2_platforms.Platform,
 	client *streaming.Client,
 ) module.Service {
-	return module.NewService(fmt.Sprintf("platform.%s.streaming_client", platform), func(ctx context.Context) error {
+	return module.NewService(fmt.Sprintf("%s.streaming_client", platform), func(ctx context.Context) error {
 		err := retryable.New(func(ctx context.Context) error {
 			err := client.Connect(ctx)
 			if err != nil {

@@ -14,7 +14,7 @@ func NewReLoginOmitterService(
 	reLoginOmitter *relogin_omitter.ReLoginOmitter,
 ) module.Service {
 	return module.NewService(
-		fmt.Sprintf("platform.%s.relogin_omitter", platform),
+		fmt.Sprintf("%s.relogin_omitter", platform),
 		func(ctx context.Context) error {
 			reLoginOmitter.Start(ctx)
 			return nil

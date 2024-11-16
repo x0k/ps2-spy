@@ -1,22 +1,22 @@
-package ps2_platform_module
+package ps2_module
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/x0k/ps2-spy/internal/characters_tracker"
 	"github.com/x0k/ps2-spy/internal/lib/module"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
+	"github.com/x0k/ps2-spy/internal/worlds_tracker"
 )
 
-func newCharactersTrackerService(
+func newWorldsTrackerService(
 	platform ps2_platforms.Platform,
-	charactersTracker *characters_tracker.CharactersTracker,
+	worldsTracker *worlds_tracker.WorldsTracker,
 ) module.Service {
 	return module.NewService(
-		fmt.Sprintf("characters_tracker.%s", platform),
+		fmt.Sprintf("%s.worlds_tracker", platform),
 		func(ctx context.Context) error {
-			charactersTracker.Start(ctx)
+			worldsTracker.Start(ctx)
 			return nil
 		},
 	)

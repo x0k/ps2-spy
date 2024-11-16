@@ -14,7 +14,7 @@ func newCharactersTrackerService(
 	charactersTracker *characters_tracker.CharactersTracker,
 ) module.Service {
 	return module.NewService(
-		fmt.Sprintf("characters_tracker.%s", platform),
+		fmt.Sprintf("%s.characters_tracker", platform),
 		func(ctx context.Context) error {
 			charactersTracker.Start(ctx)
 			return nil

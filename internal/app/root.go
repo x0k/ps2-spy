@@ -49,6 +49,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	}
 
 	ps2Module, err := ps2_module.New(log, mt, &ps2_module.Config{
+		AppName:           cfg.Ps2.AppName,
 		Platform:          ps2_platforms.PC,
 		StreamingEndpoint: cfg.Ps2.StreamingEndpoint,
 		CensusServiceId:   cfg.Ps2.CensusServiceId,
