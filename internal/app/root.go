@@ -44,10 +44,11 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	m.Append(storageService)
 
 	httpClient := &http.Client{
-		Timeout: cfg.HttpClient.Timeout,
+		Timeout:   cfg.HttpClient.Timeout,
+		Transport: metrics.InstrumentTransport(mt, metrics.DefaultTransportName, http.DefaultTransport),
 	}
 
-	ps2Module, err := ps2_module.New(log, &ps2_module.Config{
+	ps2Module, err := ps2_module.New(log, mt, &ps2_module.Config{
 		Platform:          ps2_platforms.PC,
 		StreamingEndpoint: cfg.Ps2.StreamingEndpoint,
 		CensusServiceId:   cfg.Ps2.CensusServiceId,
