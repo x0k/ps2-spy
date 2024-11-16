@@ -1,6 +1,8 @@
 package meta
 
 import (
+	"time"
+
 	"github.com/x0k/ps2-spy/internal/lib/diff"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
@@ -33,4 +35,18 @@ type SettingsQuery struct {
 type PlatformQuery[T any] struct {
 	Platform ps2_platforms.Platform
 	Value    T
+}
+
+type Loaded[T any] struct {
+	Value     T
+	Source    string
+	UpdatedAt time.Time
+}
+
+func LoadedNow[T any](source string, value T) Loaded[T] {
+	return Loaded[T]{
+		Value:     value,
+		Source:    source,
+		UpdatedAt: time.Now(),
+	}
 }

@@ -7,6 +7,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming"
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
+	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/lib/module"
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
@@ -20,9 +21,12 @@ type Config struct {
 }
 
 func New(log *logger.Logger, cfg *Config, eventsPublisher pubsub.Publisher[events.Event]) (*module.Module, error) {
-	m := module.New(log.Logger.With(slog.String("module", "ps2.events")), fmt.Sprintf("platform.%s", cfg.Platform))
+	m := module.New(log.Logger.With(slog.String("module", "ps2.platform.events")), fmt.Sprintf("platform.%s", cfg.Platform))
 
-	reLoginOmitter := relogin_omitter.NewReLoginOmitter(log, eventsPublisher)
+	reLoginOmitter := relogin_omitter.NewReLoginOmitter(
+		log.With(sl.Component("relogin_omitter")),
+		eventsPublisher,
+	)
 	m.Append(NewReLoginOmitterService(cfg.Platform, reLoginOmitter))
 
 	rawEventsPublisher := events.NewPublisher(reLoginOmitter)
