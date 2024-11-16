@@ -41,7 +41,7 @@ func newEventsSubscriptionService(
 	continentLock := census2_adapters.Subscribe[events.ContinentLock](ps, subs)
 
 	return module.NewService(
-		fmt.Sprintf("%s.events_subscription", platform),
+		fmt.Sprintf("ps2.%s.events_subscription", platform),
 		func(ctx context.Context) error {
 			wg := sync.WaitGroup{}
 			for {

@@ -7,7 +7,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
 )
 
-func Subscribe[E pubsub.Event[events.EventType]](
+func Subscribe[E events.Event](
 	preStopper module.PreStopper,
 	subs pubsub.SubscriptionsManager[events.EventType],
 ) <-chan E {

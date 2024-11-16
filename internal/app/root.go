@@ -12,7 +12,6 @@ import (
 	discord_module "github.com/x0k/ps2-spy/internal/modules/discord"
 	"github.com/x0k/ps2-spy/internal/modules/discord/commands"
 	ps2_module "github.com/x0k/ps2-spy/internal/modules/ps2"
-	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 	"github.com/x0k/ps2-spy/internal/storage"
 	sql_storage "github.com/x0k/ps2-spy/internal/storage/sql"
 )
@@ -56,16 +55,16 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		Transport: metrics.InstrumentTransport(mt, metrics.DefaultTransportName, http.DefaultTransport),
 	}
 
-	ps2Module, err := ps2_module.New(&ps2_module.Config{
-		Log:               log.With(slog.String("module", "ps2")),
-		Metrics:           mt,
-		Storage:           storage,
-		AppName:           cfg.Ps2.AppName,
-		Platform:          ps2_platforms.PC,
-		StreamingEndpoint: cfg.Ps2.StreamingEndpoint,
-		CensusServiceId:   cfg.Ps2.CensusServiceId,
-		HttpClient:        httpClient,
-	})
+	ps2Module, err := ps2_module.New(
+		log.With(slog.String("module", "ps2")),
+		mt,
+		storage,
+		storagePubSub,
+		httpClient,
+		cfg.Ps2.StreamingEndpoint,
+		cfg.Ps2.CensusServiceId,
+		cfg.Ps2.AppName,
+	)
 	if err != nil {
 		return nil, err
 	}

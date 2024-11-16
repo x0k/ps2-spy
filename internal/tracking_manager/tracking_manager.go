@@ -107,20 +107,25 @@ func (tm *TrackingManager) rebuildOutfitsFilterTask(ctx context.Context, wg *syn
 	}
 }
 
+func (tm *TrackingManager) rebuildFilters(ctx context.Context, wg *sync.WaitGroup) {
+	tm.log.Debug(ctx, "rebuilding filters")
+	wg.Add(2)
+	go tm.rebuildCharactersFilterTask(ctx, wg)
+	go tm.rebuildOutfitsFilterTask(ctx, wg)
+}
+
 func (tm *TrackingManager) Start(ctx context.Context) {
 	ticker := time.NewTicker(tm.rebuildFiltersInterval)
 	defer ticker.Stop()
 	wg := &sync.WaitGroup{}
+	tm.rebuildFilters(ctx, wg)
 	for {
 		select {
 		case <-ctx.Done():
 			wg.Wait()
 			return
 		case <-ticker.C:
-			tm.log.Debug(ctx, "rebuilding filters")
-			wg.Add(2)
-			go tm.rebuildCharactersFilterTask(ctx, wg)
-			go tm.rebuildOutfitsFilterTask(ctx, wg)
+			tm.rebuildFilters(ctx, wg)
 		}
 	}
 }

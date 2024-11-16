@@ -14,7 +14,7 @@ func newWorldsTrackerService(
 	worldsTracker *worlds_tracker.WorldsTracker,
 ) module.Service {
 	return module.NewService(
-		fmt.Sprintf("%s.worlds_tracker", platform),
+		fmt.Sprintf("ps2.%s.worlds_tracker", platform),
 		func(ctx context.Context) error {
 			worldsTracker.Start(ctx)
 			return nil

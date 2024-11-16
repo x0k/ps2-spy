@@ -14,7 +14,7 @@ func newTrackingManagerService(
 	trackingManager *tracking_manager.TrackingManager,
 ) module.Service {
 	return module.NewService(
-		fmt.Sprintf("%s.tracking_manager", platform),
+		fmt.Sprintf("ps2.%s.tracking_manager", platform),
 		func(ctx context.Context) error {
 			trackingManager.Start(ctx)
 			return nil
