@@ -1,6 +1,8 @@
 package app
 
 import (
+	"database/sql"
+	"log/slog"
 	"net/http"
 
 	"github.com/x0k/ps2-spy/internal/lib/logger"
@@ -12,6 +14,7 @@ import (
 	ps2_module "github.com/x0k/ps2-spy/internal/modules/ps2"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 	"github.com/x0k/ps2-spy/internal/storage"
+	sql_storage "github.com/x0k/ps2-spy/internal/storage/sql"
 )
 
 func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
@@ -40,15 +43,23 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	m.Append(discordModule)
 
 	storagePubSub := pubsub.New[storage.EventType]()
-	storageService := newSqliteStorageService(log, cfg.Storage.Path, storagePubSub)
-	m.Append(storageService)
+
+	db, err := sql.Open("sqlite", cfg.Storage.Path)
+	if err != nil {
+		return nil, err
+	}
+	storage := sql_storage.New(log, db, storagePubSub)
+	m.Append(module.NewService("storage.sqlite", storage.Start))
 
 	httpClient := &http.Client{
 		Timeout:   cfg.HttpClient.Timeout,
 		Transport: metrics.InstrumentTransport(mt, metrics.DefaultTransportName, http.DefaultTransport),
 	}
 
-	ps2Module, err := ps2_module.New(log, mt, &ps2_module.Config{
+	ps2Module, err := ps2_module.New(&ps2_module.Config{
+		Log:               log.With(slog.String("module", "ps2")),
+		Metrics:           mt,
+		Storage:           storage,
 		AppName:           cfg.Ps2.AppName,
 		Platform:          ps2_platforms.PC,
 		StreamingEndpoint: cfg.Ps2.StreamingEndpoint,

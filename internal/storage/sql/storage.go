@@ -24,20 +24,22 @@ type Storage struct {
 	publisher pubsub.Publisher[storage.Event]
 }
 
-func New(ctx context.Context, log *logger.Logger, database *sql.DB, publisher pubsub.Publisher[storage.Event]) (*Storage, error) {
-	queries, err := db.Prepare(ctx, database)
-	if err != nil {
-		return nil, err
-	}
+func New(log *logger.Logger, database *sql.DB, publisher pubsub.Publisher[storage.Event]) *Storage {
 	return &Storage{
 		log:       log,
 		db:        database,
-		queries:   queries,
+		queries:   db.New(database),
 		publisher: publisher,
-	}, nil
+	}
 }
 
-func (s *Storage) Close() error {
+func (s *Storage) Start(ctx context.Context) error {
+	var err error
+	s.queries, err = db.Prepare(ctx, s.db)
+	if err != nil {
+		return err
+	}
+	<-ctx.Done()
 	return errors.Join(
 		s.queries.Close(),
 		s.db.Close(),
