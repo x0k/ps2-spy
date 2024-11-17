@@ -76,6 +76,8 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		),
 	}
 
+	censusClient := census2.NewClient("https://census.daybreakgames.com", cfg.CensusServiceId, httpClient)
+
 	characterTrackingChannelsLoader := sql_character_tracking_channels_loader.New(
 		storage,
 	)
@@ -104,8 +106,6 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			return nil, err
 		}
 		m.Append(eventsModule)
-
-		censusClient := census2.NewClient("https://census.daybreakgames.com", cfg.CensusServiceId, httpClient)
 
 		charactersLoader := metrics.InstrumentMultiKeyedLoaderWithSubjectsCounter(
 			metrics.PlatformLoaderSubjectsCounterMetric(mt, metrics.CharactersPlatformLoaderName, platform),
@@ -293,6 +293,8 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		cfg.Discord.EventHandlerTimeout,
 		cfg.Discord.RemoveCommands,
 		characterTrackerSubsMangers,
+		trackingManagers,
+		[]discord_module.Handler{},
 	)
 	if err != nil {
 		return nil, err
