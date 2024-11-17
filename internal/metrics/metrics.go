@@ -219,14 +219,15 @@ func PlatformLoaderInFlightMetric(
 	m *Metrics,
 	name PlatformLoaderName,
 	platform ps2_platforms.Platform,
-) prometheus.Gauge {
+) *prometheus.Gauge {
 	if m == nil {
 		return nil
 	}
-	return m.platformLoadersInFlight.With(prometheus.Labels{
+	g := m.platformLoadersInFlight.With(prometheus.Labels{
 		"loader_name": string(name),
 		"platform":    string(platform),
 	})
+	return &g
 }
 
 func PlatformLoaderSubjectsCounterMetric(

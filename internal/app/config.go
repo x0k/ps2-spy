@@ -33,20 +33,17 @@ type HttpClientConfig struct {
 	Timeout time.Duration `yaml:"timeout" env:"HTTP_CLIENT_TIMEOUT" env-default:"12s"`
 }
 
-type Ps2Config struct {
+type Config struct {
 	AppName           string `yaml:"app_name" env:"PS2_APP_NAME" env-default:"PS 2 Spy"`
 	StreamingEndpoint string `yaml:"streaming_endpoint" env:"PS2_STREAMING_ENDPOINT" env-default:"wss://push.planetside2.com/streaming"`
 	CensusServiceId   string `yaml:"census_service_id" env:"PS2_CENSUS_SERVICE_ID" env-required:"true"`
-}
 
-type Config struct {
 	Logger     LoggerConfig     `yaml:"logger"`
 	Profiler   ProfilerConfig   `yaml:"profiler"`
 	Discord    DiscordConfig    `yaml:"discord"`
 	Metrics    MetricsConfig    `yaml:"metrics"`
 	Storage    StorageConfig    `yaml:"storage"`
 	HttpClient HttpClientConfig `yaml:"http_client"`
-	Ps2        Ps2Config        `yaml:"ps2"`
 }
 
 func MustLoadConfig(configPath string) *Config {

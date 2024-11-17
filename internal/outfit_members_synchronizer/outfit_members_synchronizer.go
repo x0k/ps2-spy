@@ -22,7 +22,8 @@ type Saver interface {
 }
 
 type OutfitMembersSynchronizer struct {
-	log *logger.Logger
+	name string
+	log  *logger.Logger
 	// Loaders and saver are platform specific
 	outfitMembersLoader    loader.Keyed[ps2.OutfitId, []ps2.CharacterId]
 	outfitSyncAtLoader     loader.Keyed[ps2.OutfitId, time.Time]
@@ -33,6 +34,7 @@ type OutfitMembersSynchronizer struct {
 }
 
 func New(
+	name string,
 	log *logger.Logger,
 	trackableOutfitsLoader loader.Simple[[]ps2.OutfitId],
 	outfitSyncAtLoader loader.Keyed[ps2.OutfitId, time.Time],
@@ -41,6 +43,7 @@ func New(
 	refreshInterval time.Duration,
 ) *OutfitMembersSynchronizer {
 	return &OutfitMembersSynchronizer{
+		name:                   name,
 		log:                    log,
 		trackableOutfitsLoader: trackableOutfitsLoader,
 		outfitSyncAtLoader:     outfitSyncAtLoader,
@@ -48,6 +51,10 @@ func New(
 		membersSaver:           membersSaver,
 		refreshInterval:        refreshInterval,
 	}
+}
+
+func (s *OutfitMembersSynchronizer) Name() string {
+	return s.name
 }
 
 func (s *OutfitMembersSynchronizer) saveMembersTask(ctx context.Context, wg *sync.WaitGroup, outfitId ps2.OutfitId, members []ps2.CharacterId) {
@@ -111,7 +118,7 @@ func (s *OutfitMembersSynchronizer) sync(ctx context.Context, wg *sync.WaitGroup
 	}
 }
 
-func (s *OutfitMembersSynchronizer) Start(ctx context.Context) {
+func (s *OutfitMembersSynchronizer) Start(ctx context.Context) error {
 	s.ticker = time.NewTicker(s.refreshInterval)
 	defer s.ticker.Stop()
 	wg := &sync.WaitGroup{}
@@ -119,7 +126,8 @@ func (s *OutfitMembersSynchronizer) Start(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			return
+			wg.Wait()
+			return nil
 		case <-s.ticker.C:
 			s.sync(ctx, wg)
 		}

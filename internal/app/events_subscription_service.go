@@ -1,4 +1,4 @@
-package ps2_module
+package app
 
 import (
 	"context"

@@ -78,6 +78,7 @@ func (z zoneState) update(
 }
 
 type WorldsTracker struct {
+	name                    string
 	log                     *logger.Logger
 	retryableWorldMapLoader *retryable.WithArg[ps2.WorldId, ps2.WorldMap]
 	worldIds                []ps2.WorldId
@@ -88,6 +89,7 @@ type WorldsTracker struct {
 }
 
 func New(
+	name string,
 	log *logger.Logger,
 	platform ps2_platforms.Platform,
 	invalidationInterval time.Duration,
@@ -110,6 +112,7 @@ func New(
 		worlds[worldId] = world
 	}
 	return &WorldsTracker{
+		name:                    name,
 		log:                     log,
 		worldIds:                worldIds,
 		retryableWorldMapLoader: retryable.NewWithArg(worldMapLoader),
@@ -117,6 +120,10 @@ func New(
 		invalidationInterval:    invalidationInterval,
 		publisher:               publisher,
 	}
+}
+
+func (w *WorldsTracker) Name() string {
+	return w.name
 }
 
 func (w *WorldsTracker) invalidateEvents(now time.Time) {
@@ -237,7 +244,7 @@ func (w *WorldsTracker) invalidateFacilities(ctx context.Context, wg *sync.WaitG
 	}
 }
 
-func (w *WorldsTracker) Start(ctx context.Context) {
+func (w *WorldsTracker) Start(ctx context.Context) error {
 	wg := &sync.WaitGroup{}
 	w.invalidateFacilities(ctx, wg, time.Now())
 	ticker := time.NewTicker(w.invalidationInterval)
@@ -246,7 +253,7 @@ func (w *WorldsTracker) Start(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			wg.Wait()
-			return
+			return nil
 		case now := <-ticker.C:
 			w.invalidateEvents(now)
 			// To maintain `unstable` status

@@ -15,26 +15,34 @@ import (
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 	"github.com/x0k/ps2-spy/internal/shared"
 	"github.com/x0k/ps2-spy/internal/storage"
+
+	_ "modernc.org/sqlite"
 )
 
 type Storage struct {
-	log       *logger.Logger
-	db        *sql.DB
-	queries   *db.Queries
-	publisher pubsub.Publisher[storage.Event]
+	log         *logger.Logger
+	storagePath string
+	db          *sql.DB
+	queries     *db.Queries
+	publisher   pubsub.Publisher[storage.Event]
 }
 
-func New(log *logger.Logger, database *sql.DB, publisher pubsub.Publisher[storage.Event]) *Storage {
+func New(log *logger.Logger, storagePath string, publisher pubsub.Publisher[storage.Event]) *Storage {
 	return &Storage{
-		log:       log,
-		db:        database,
-		queries:   db.New(database),
-		publisher: publisher,
+		log:         log,
+		storagePath: storagePath,
+		publisher:   publisher,
+		db:          nil,
+		queries:     nil,
 	}
 }
 
 func (s *Storage) Start(ctx context.Context) error {
 	var err error
+	s.db, err = sql.Open("sqlite", s.storagePath)
+	if err != nil {
+		return err
+	}
 	s.queries, err = db.Prepare(ctx, s.db)
 	if err != nil {
 		return err

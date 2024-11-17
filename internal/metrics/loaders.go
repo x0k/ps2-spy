@@ -28,15 +28,16 @@ func InstrumentQueriedLoaderWithCounterMetric[Q any, T any](
 }
 
 func InstrumentQueriedLoaderWithFlightMetric[Q any, T any](
-	gauge prometheus.Gauge,
+	gauge *prometheus.Gauge,
 	loader loader.Queried[Q, T],
 ) loader.Queried[Q, T] {
 	if gauge == nil {
 		return loader
 	}
+	g := *gauge
 	return func(ctx context.Context, query Q) (T, error) {
-		gauge.Inc()
-		defer gauge.Dec()
+		g.Inc()
+		defer g.Dec()
 		return loader(ctx, query)
 	}
 }

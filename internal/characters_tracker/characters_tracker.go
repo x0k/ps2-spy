@@ -32,6 +32,7 @@ type player struct {
 }
 
 type CharactersTracker struct {
+	name                     string
 	log                      *logger.Logger
 	platform                 ps2_platforms.Platform
 	mutex                    sync.RWMutex
@@ -46,6 +47,7 @@ type CharactersTracker struct {
 }
 
 func New(
+	name string,
 	log *logger.Logger,
 	platform ps2_platforms.Platform,
 	worldIds []ps2.WorldId,
@@ -58,6 +60,7 @@ func New(
 		trackers[worldId] = newWorldPopulationTracker()
 	}
 	return &CharactersTracker{
+		name:                     name,
 		log:                      log,
 		platform:                 platform,
 		worldPopulationTrackers:  trackers,
@@ -69,6 +72,10 @@ func New(
 		publisher:                publisher,
 		mt:                       mt,
 	}
+}
+
+func (p *CharactersTracker) Name() string {
+	return p.name
 }
 
 func (p *CharactersTracker) handleInactive(ctx context.Context, now time.Time) []player {
@@ -112,13 +119,13 @@ func (p *CharactersTracker) publishPlayerLogout(ctx context.Context, t time.Time
 	}
 }
 
-func (p *CharactersTracker) Start(ctx context.Context) {
+func (p *CharactersTracker) Start(ctx context.Context) error {
 	ticker := time.NewTicker(p.inactivityCheckInterval)
 	defer ticker.Stop()
 	for {
 		select {
 		case <-ctx.Done():
-			return
+			return nil
 		case t := <-ticker.C:
 			removedPlayers := p.handleInactive(ctx, t)
 			for _, pl := range removedPlayers {

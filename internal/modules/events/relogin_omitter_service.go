@@ -1,22 +1,22 @@
-package ps2_module
+package events_module
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/x0k/ps2-spy/internal/characters_tracker"
 	"github.com/x0k/ps2-spy/internal/lib/module"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
+	"github.com/x0k/ps2-spy/internal/relogin_omitter"
 )
 
-func newCharactersTrackerService(
+func NewReLoginOmitterService(
 	platform ps2_platforms.Platform,
-	charactersTracker *characters_tracker.CharactersTracker,
+	reLoginOmitter *relogin_omitter.ReLoginOmitter,
 ) module.Service {
 	return module.NewService(
-		fmt.Sprintf("ps2.%s.characters_tracker", platform),
+		fmt.Sprintf("%s.relogin_omitter", platform),
 		func(ctx context.Context) error {
-			charactersTracker.Start(ctx)
+			reLoginOmitter.Start(ctx)
 			return nil
 		},
 	)

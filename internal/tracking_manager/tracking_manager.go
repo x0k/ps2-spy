@@ -20,6 +20,7 @@ import (
 var ErrUnknownEvent = fmt.Errorf("unknown event")
 
 type TrackingManager struct {
+	name                            string
 	log                             *logger.Logger
 	charactersFilterMu              sync.RWMutex
 	charactersFilter                map[ps2.CharacterId]int
@@ -35,6 +36,7 @@ type TrackingManager struct {
 }
 
 func New(
+	name string,
 	log *logger.Logger,
 	charLoader loader.Keyed[ps2.CharacterId, ps2.Character],
 	characterTrackingChannelsLoader loader.Keyed[ps2.Character, []meta.ChannelId],
@@ -44,6 +46,7 @@ func New(
 	trackableOutfitsLoader loader.Simple[[]ps2.OutfitId],
 ) *TrackingManager {
 	return &TrackingManager{
+		name:                            name,
 		log:                             log,
 		charactersFilter:                make(map[ps2.CharacterId]int),
 		outfitsFilter:                   make(map[ps2.OutfitId]int),
@@ -55,6 +58,10 @@ func New(
 		trackableOutfitsLoader:          trackableOutfitsLoader,
 		rebuildFiltersInterval:          time.Hour * 12,
 	}
+}
+
+func (tm *TrackingManager) Name() string {
+	return tm.name
 }
 
 func (tm *TrackingManager) rebuildCharactersFilterTask(ctx context.Context, wg *sync.WaitGroup) {
@@ -114,7 +121,7 @@ func (tm *TrackingManager) rebuildFilters(ctx context.Context, wg *sync.WaitGrou
 	go tm.rebuildOutfitsFilterTask(ctx, wg)
 }
 
-func (tm *TrackingManager) Start(ctx context.Context) {
+func (tm *TrackingManager) Start(ctx context.Context) error {
 	ticker := time.NewTicker(tm.rebuildFiltersInterval)
 	defer ticker.Stop()
 	wg := &sync.WaitGroup{}
@@ -123,7 +130,7 @@ func (tm *TrackingManager) Start(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			wg.Wait()
-			return
+			return nil
 		case <-ticker.C:
 			tm.rebuildFilters(ctx, wg)
 		}
