@@ -3,6 +3,7 @@ package discord_module
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/x0k/ps2-spy/internal/characters_tracker"
 	"github.com/x0k/ps2-spy/internal/lib/module"
@@ -20,12 +21,18 @@ func newCharactersTrackerEventsSubscriptionService(
 	return module.NewService(
 		fmt.Sprintf("discord.%s.characters_tracker_events_subscription", platform),
 		func(ctx context.Context) error {
+			wg := sync.WaitGroup{}
 			for {
 				select {
 				case <-ctx.Done():
+					wg.Wait()
 					return nil
 				case e := <-playerLogin:
-					eventsHandler.HandlePlayerLogin(e)
+					wg.Add(1)
+					go func() {
+						defer wg.Done()
+						eventsHandler.HandlePlayerLogin(ctx, e)
+					}()
 				}
 			}
 		},

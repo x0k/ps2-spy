@@ -7,14 +7,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/x0k/ps2-spy/internal/characters_tracker"
 	"github.com/x0k/ps2-spy/internal/lib/loader"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/meta"
 	"github.com/x0k/ps2-spy/internal/ps2"
-	sql_outfit_members_saver "github.com/x0k/ps2-spy/internal/savers/outfit_members/sql"
-	"github.com/x0k/ps2-spy/internal/worlds_tracker"
 )
 
 var ErrUnknownEvent = fmt.Errorf("unknown event")
@@ -143,7 +140,7 @@ func (tm *TrackingManager) characterTrackersCount(charId ps2.CharacterId) int {
 	return tm.charactersFilter[charId]
 }
 
-func (tm *TrackingManager) channelIdsForCharacter(ctx context.Context, characterId ps2.CharacterId) ([]meta.ChannelId, error) {
+func (tm *TrackingManager) ChannelIdsForCharacter(ctx context.Context, characterId ps2.CharacterId) ([]meta.ChannelId, error) {
 	const op = "tracking_manager.TrackingManager.channelIdsForCharacter"
 	trackersCount := tm.characterTrackersCount(characterId)
 	if trackersCount <= 0 {
@@ -165,7 +162,7 @@ func (tm *TrackingManager) outfitTrackersCount(outfitId ps2.OutfitId) int {
 	return tm.outfitsFilter[outfitId]
 }
 
-func (tm *TrackingManager) channelIdsForOutfit(ctx context.Context, outfitId ps2.OutfitId) ([]meta.ChannelId, error) {
+func (tm *TrackingManager) ChannelIdsForOutfit(ctx context.Context, outfitId ps2.OutfitId) ([]meta.ChannelId, error) {
 	trackersCount := tm.outfitTrackersCount(outfitId)
 	if trackersCount <= 0 {
 		if trackersCount < 0 {
@@ -174,23 +171,6 @@ func (tm *TrackingManager) channelIdsForOutfit(ctx context.Context, outfitId ps2
 		return nil, nil
 	}
 	return tm.outfitTrackingChannelsLoader(ctx, outfitId)
-}
-
-func (tm *TrackingManager) ChannelIds(ctx context.Context, event any) ([]meta.ChannelId, error) {
-	const op = "TrackingManager.ChannelIds"
-	switch e := event.(type) {
-	case characters_tracker.PlayerLogin:
-		return tm.channelIdsForCharacter(ctx, e.CharacterId)
-	case characters_tracker.PlayerLogout:
-		return tm.channelIdsForCharacter(ctx, e.CharacterId)
-	case sql_outfit_members_saver.OutfitMembersUpdate:
-		return tm.channelIdsForOutfit(ctx, e.OutfitId)
-	case worlds_tracker.FacilityControl:
-		return tm.channelIdsForOutfit(ctx, ps2.OutfitId(e.OutfitID))
-	case worlds_tracker.FacilityLoss:
-		return tm.channelIdsForOutfit(ctx, e.OldOutfitId)
-	}
-	return nil, fmt.Errorf("%s: %w", op, ErrUnknownEvent)
 }
 
 func (tm *TrackingManager) considerCharacter(charId ps2.CharacterId, delta int) {
