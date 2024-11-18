@@ -9,6 +9,8 @@ import (
 	loader_adapters "github.com/x0k/ps2-spy/internal/adapters/loader"
 	sql_facility_cache "github.com/x0k/ps2-spy/internal/cache/facility/sql"
 	"github.com/x0k/ps2-spy/internal/characters_tracker"
+	"github.com/x0k/ps2-spy/internal/discord"
+	discord_commands "github.com/x0k/ps2-spy/internal/discord/commands"
 	"github.com/x0k/ps2-spy/internal/lib/cache/memory"
 	"github.com/x0k/ps2-spy/internal/lib/census2"
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
@@ -33,7 +35,6 @@ import (
 	"github.com/x0k/ps2-spy/internal/meta"
 	"github.com/x0k/ps2-spy/internal/metrics"
 	discord_module "github.com/x0k/ps2-spy/internal/modules/discord"
-	"github.com/x0k/ps2-spy/internal/modules/discord/commands"
 	events_module "github.com/x0k/ps2-spy/internal/modules/events"
 	"github.com/x0k/ps2-spy/internal/outfit_members_synchronizer"
 	"github.com/x0k/ps2-spy/internal/ps2"
@@ -288,13 +289,13 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	discordModule, err := discord_module.New(
 		log.With(sl.Module("discord")),
 		cfg.Discord.Token,
-		commands.New(),
+		discord_commands.New(),
 		cfg.Discord.CommandHandlerTimeout,
 		cfg.Discord.EventHandlerTimeout,
 		cfg.Discord.RemoveCommands,
 		characterTrackerSubsMangers,
 		trackingManagers,
-		[]discord_module.Handler{},
+		[]discord.Handler{},
 	)
 	if err != nil {
 		return nil, err

@@ -1,4 +1,4 @@
-package discord_module
+package discord
 
 import (
 	"context"

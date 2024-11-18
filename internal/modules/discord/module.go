@@ -6,6 +6,8 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/x0k/ps2-spy/internal/characters_tracker"
+	"github.com/x0k/ps2-spy/internal/discord"
+	discord_events "github.com/x0k/ps2-spy/internal/discord/events"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/lib/module"
@@ -17,13 +19,13 @@ import (
 func New(
 	log *logger.Logger,
 	token string,
-	commands []*Command,
+	commands []*discord.Command,
 	commandHandlerTimeout time.Duration,
 	eventHandlerTimeout time.Duration,
 	removeCommands bool,
 	charactersTrackerSubsManagers map[ps2_platforms.Platform]pubsub.SubscriptionsManager[characters_tracker.EventType],
 	trackingManagers map[ps2_platforms.Platform]*tracking_manager.TrackingManager,
-	handlers []Handler,
+	handlers []discord.Handler,
 ) (*module.Module, error) {
 	m := module.New(log.Logger, "discord")
 	session, err := discordgo.New("Bot " + token)
@@ -42,8 +44,8 @@ func New(
 	unsubs := make([]func(), 0, len(handlers)*len(ps2_platforms.Platforms))
 
 	for _, platform := range ps2_platforms.Platforms {
-		eventsPubSub := pubsub.New[EventType]()
-		eventsPublisher := NewPublisher(eventsPubSub, trackingManagers[platform])
+		eventsPubSub := pubsub.New[discord.EventType]()
+		eventsPublisher := discord_events.NewPublisher(eventsPubSub, trackingManagers[platform])
 		m.Append(newEventsSubscriptionService(
 			log.With(sl.Component("events_subscription")),
 			m,

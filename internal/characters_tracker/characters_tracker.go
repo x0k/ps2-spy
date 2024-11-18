@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/x0k/ps2-spy/internal/discord"
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
 	"github.com/x0k/ps2-spy/internal/lib/containers"
 	"github.com/x0k/ps2-spy/internal/lib/loader"
@@ -17,7 +18,6 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/retryable"
 	"github.com/x0k/ps2-spy/internal/lib/retryable/perform"
 	"github.com/x0k/ps2-spy/internal/lib/retryable/while"
-	"github.com/x0k/ps2-spy/internal/meta"
 	"github.com/x0k/ps2-spy/internal/metrics"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	ps2_factions "github.com/x0k/ps2-spy/internal/ps2/factions"
@@ -228,7 +228,9 @@ func (p *CharactersTracker) HandleWorldZoneAction(ctx context.Context, worldId, 
 	}
 }
 
-func (p *CharactersTracker) TrackableOnlineEntities(settings meta.SubscriptionSettings) meta.TrackableEntities[map[ps2.OutfitId][]ps2.Character, []ps2.Character] {
+func (p *CharactersTracker) TrackableOnlineEntities(
+	settings discord.TrackableEntities[[]ps2.OutfitId, []ps2.CharacterId],
+) discord.TrackableEntities[map[ps2.OutfitId][]ps2.Character, []ps2.Character] {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
 	return p.onlineCharactersTracker.TrackableOnlineEntities(settings)

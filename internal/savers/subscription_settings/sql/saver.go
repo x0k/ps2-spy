@@ -3,8 +3,8 @@ package sql_subscription_settings_saver
 import (
 	"context"
 
+	"github.com/x0k/ps2-spy/internal/discord"
 	"github.com/x0k/ps2-spy/internal/lib/loader"
-	"github.com/x0k/ps2-spy/internal/meta"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 	sql_storage "github.com/x0k/ps2-spy/internal/storage/sql"
 )
@@ -12,12 +12,12 @@ import (
 type SubscriptionSettingsSaver struct {
 	platform       ps2_platforms.Platform
 	storage        *sql_storage.Storage
-	settingsLoader loader.Keyed[meta.SettingsQuery, meta.SubscriptionSettings]
+	settingsLoader loader.Keyed[discord.SettingsQuery, discord.SubscriptionSettings]
 }
 
 func New(
 	storage *sql_storage.Storage,
-	settingsLoader loader.Keyed[meta.SettingsQuery, meta.SubscriptionSettings],
+	settingsLoader loader.Keyed[discord.SettingsQuery, discord.SubscriptionSettings],
 	platform ps2_platforms.Platform,
 ) *SubscriptionSettingsSaver {
 	return &SubscriptionSettingsSaver{
@@ -27,12 +27,12 @@ func New(
 	}
 }
 
-func (s *SubscriptionSettingsSaver) Save(ctx context.Context, channelId meta.ChannelId, settings meta.SubscriptionSettings) error {
-	old, err := s.settingsLoader(ctx, meta.SettingsQuery{ChannelId: channelId, Platform: s.platform})
+func (s *SubscriptionSettingsSaver) Save(ctx context.Context, channelId discord.ChannelId, settings discord.SubscriptionSettings) error {
+	old, err := s.settingsLoader(ctx, discord.SettingsQuery{ChannelId: channelId, Platform: s.platform})
 	if err != nil {
 		return err
 	}
-	diff := meta.CalculateSubscriptionSettingsDiff(old, settings)
+	diff := discord.CalculateSubscriptionSettingsDiff(old, settings)
 	return s.storage.Begin(
 		ctx,
 		len(diff.Outfits.ToAdd)+len(diff.Outfits.ToDel)+len(diff.Characters.ToAdd)+len(diff.Characters.ToDel),

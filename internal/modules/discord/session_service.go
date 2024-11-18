@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/x0k/ps2-spy/internal/discord"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/lib/module"
@@ -19,14 +20,14 @@ func NewSessionService(
 	log *logger.Logger,
 	fataler module.Fataler,
 	session *discordgo.Session,
-	commands []*Command,
+	commands []*discord.Command,
 	commandHandlerTimeout time.Duration,
 	removeCommands bool,
 ) module.Service {
 	return module.NewService("discord_session", func(ctx context.Context) error {
-		handlers := make(map[string]InteractionHandler, len(commands))
+		handlers := make(map[string]discord.InteractionHandler, len(commands))
 		appCommands := make([]*discordgo.ApplicationCommand, 0, len(commands))
-		submitHandlers := make(map[string]InteractionHandler, len(commands))
+		submitHandlers := make(map[string]discord.InteractionHandler, len(commands))
 		for _, command := range commands {
 			handlers[command.Cmd.Name] = command.Handler
 			if command.SubmitHandlers != nil {

@@ -1,19 +1,20 @@
-package discord_module
+package discord_events
 
 import (
 	"context"
 
 	"github.com/x0k/ps2-spy/internal/characters_tracker"
+	"github.com/x0k/ps2-spy/internal/discord"
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
 	"github.com/x0k/ps2-spy/internal/tracking_manager"
 )
 
 type Publisher struct {
-	pubsub.Publisher[Event]
+	pubsub.Publisher[discord.Event]
 	trackingManager *tracking_manager.TrackingManager
 }
 
-func NewPublisher(publisher pubsub.Publisher[Event], trackingManager *tracking_manager.TrackingManager) *Publisher {
+func NewPublisher(publisher pubsub.Publisher[discord.Event], trackingManager *tracking_manager.TrackingManager) *Publisher {
 	return &Publisher{
 		Publisher:       publisher,
 		trackingManager: trackingManager,
@@ -28,5 +29,8 @@ func (h *Publisher) PublishPlayerLogin(ctx context.Context, e characters_tracker
 	if len(channels) == 0 {
 		return nil
 	}
-	return h.Publish(PlayerLogin(e))
+	return h.Publish(PlayerLogin{
+		channels: channels,
+		event:    e,
+	})
 }

@@ -6,11 +6,11 @@ import (
 	"errors"
 	"time"
 
+	"github.com/x0k/ps2-spy/internal/discord"
 	"github.com/x0k/ps2-spy/internal/lib/db"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
-	"github.com/x0k/ps2-spy/internal/meta"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 	"github.com/x0k/ps2-spy/internal/shared"
@@ -86,7 +86,7 @@ func (s *Storage) Begin(
 	return bufferedPublisher.Flush()
 }
 
-func (s *Storage) SaveChannelOutfit(ctx context.Context, channelId meta.ChannelId, platform ps2_platforms.Platform, outfitId ps2.OutfitId) error {
+func (s *Storage) SaveChannelOutfit(ctx context.Context, channelId discord.ChannelId, platform ps2_platforms.Platform, outfitId ps2.OutfitId) error {
 	err := s.queries.InsertChannelOutfit(ctx, db.InsertChannelOutfitParams{
 		ChannelID: string(channelId),
 		OutfitID:  string(outfitId),
@@ -99,7 +99,7 @@ func (s *Storage) SaveChannelOutfit(ctx context.Context, channelId meta.ChannelI
 	})
 }
 
-func (s *Storage) DeleteChannelOutfit(ctx context.Context, channelId meta.ChannelId, platform ps2_platforms.Platform, outfitId ps2.OutfitId) error {
+func (s *Storage) DeleteChannelOutfit(ctx context.Context, channelId discord.ChannelId, platform ps2_platforms.Platform, outfitId ps2.OutfitId) error {
 	err := s.queries.DeleteChannelOutfit(ctx, db.DeleteChannelOutfitParams{
 		ChannelID: string(channelId),
 		OutfitID:  string(outfitId),
@@ -112,7 +112,7 @@ func (s *Storage) DeleteChannelOutfit(ctx context.Context, channelId meta.Channe
 	})
 }
 
-func (s *Storage) SaveChannelCharacter(ctx context.Context, channelId meta.ChannelId, platform ps2_platforms.Platform, characterId ps2.CharacterId) error {
+func (s *Storage) SaveChannelCharacter(ctx context.Context, channelId discord.ChannelId, platform ps2_platforms.Platform, characterId ps2.CharacterId) error {
 	err := s.queries.InsertChannelCharacter(ctx, db.InsertChannelCharacterParams{
 		ChannelID:   string(channelId),
 		CharacterID: string(characterId),
@@ -125,7 +125,7 @@ func (s *Storage) SaveChannelCharacter(ctx context.Context, channelId meta.Chann
 	})
 }
 
-func (s *Storage) DeleteChannelCharacter(ctx context.Context, channelId meta.ChannelId, platform ps2_platforms.Platform, characterId ps2.CharacterId) error {
+func (s *Storage) DeleteChannelCharacter(ctx context.Context, channelId discord.ChannelId, platform ps2_platforms.Platform, characterId ps2.CharacterId) error {
 	err := s.queries.DeleteChannelCharacter(ctx, db.DeleteChannelCharacterParams{
 		ChannelID:   string(channelId),
 		CharacterID: string(characterId),
@@ -184,7 +184,7 @@ func (s *Storage) OutfitSynchronizedAt(ctx context.Context, platform ps2_platfor
 	})
 }
 
-func (s *Storage) TrackingChannelIdsForCharacter(ctx context.Context, platform ps2_platforms.Platform, characterId ps2.CharacterId, outfitId ps2.OutfitId) ([]meta.ChannelId, error) {
+func (s *Storage) TrackingChannelIdsForCharacter(ctx context.Context, platform ps2_platforms.Platform, characterId ps2.CharacterId, outfitId ps2.OutfitId) ([]discord.ChannelId, error) {
 	list, err := s.queries.ListPlatformTrackingChannelIdsForCharacter(ctx, db.ListPlatformTrackingChannelIdsForCharacterParams{
 		Platform:    string(platform),
 		CharacterID: string(characterId),
@@ -193,14 +193,14 @@ func (s *Storage) TrackingChannelIdsForCharacter(ctx context.Context, platform p
 	if err != nil {
 		return nil, err
 	}
-	ids := make([]meta.ChannelId, 0, len(list))
+	ids := make([]discord.ChannelId, 0, len(list))
 	for _, id := range list {
-		ids = append(ids, meta.ChannelId(id))
+		ids = append(ids, discord.ChannelId(id))
 	}
 	return ids, nil
 }
 
-func (s *Storage) TrackingChannelIdsForOutfit(ctx context.Context, platform ps2_platforms.Platform, outfitId ps2.OutfitId) ([]meta.ChannelId, error) {
+func (s *Storage) TrackingChannelIdsForOutfit(ctx context.Context, platform ps2_platforms.Platform, outfitId ps2.OutfitId) ([]discord.ChannelId, error) {
 	list, err := s.queries.ListPlatformTrackingChannelIdsForOutfit(ctx, db.ListPlatformTrackingChannelIdsForOutfitParams{
 		Platform: string(platform),
 		OutfitID: string(outfitId),
@@ -208,14 +208,14 @@ func (s *Storage) TrackingChannelIdsForOutfit(ctx context.Context, platform ps2_
 	if err != nil {
 		return nil, err
 	}
-	ids := make([]meta.ChannelId, 0, len(list))
+	ids := make([]discord.ChannelId, 0, len(list))
 	for _, id := range list {
-		ids = append(ids, meta.ChannelId(id))
+		ids = append(ids, discord.ChannelId(id))
 	}
 	return ids, nil
 }
 
-func (s *Storage) TrackingOutfitIdsForPlatform(ctx context.Context, channelId meta.ChannelId, platform ps2_platforms.Platform) ([]ps2.OutfitId, error) {
+func (s *Storage) TrackingOutfitIdsForPlatform(ctx context.Context, channelId discord.ChannelId, platform ps2_platforms.Platform) ([]ps2.OutfitId, error) {
 	list, err := s.queries.ListChannelOutfitIdsForPlatform(ctx, db.ListChannelOutfitIdsForPlatformParams{
 		ChannelID: string(channelId),
 		Platform:  string(platform),
@@ -230,7 +230,7 @@ func (s *Storage) TrackingOutfitIdsForPlatform(ctx context.Context, channelId me
 	return ids, nil
 }
 
-func (s *Storage) TrackingCharacterIdsForPlatform(ctx context.Context, channelId meta.ChannelId, platform ps2_platforms.Platform) ([]ps2.CharacterId, error) {
+func (s *Storage) TrackingCharacterIdsForPlatform(ctx context.Context, channelId discord.ChannelId, platform ps2_platforms.Platform) ([]ps2.CharacterId, error) {
 	list, err := s.queries.ListChannelCharacterIdsForPlatform(ctx, db.ListChannelCharacterIdsForPlatformParams{
 		ChannelID: string(channelId),
 		Platform:  string(platform),
