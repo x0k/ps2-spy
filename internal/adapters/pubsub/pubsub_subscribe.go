@@ -15,8 +15,9 @@ func (h handler[T, E]) Type() T {
 	return e.Type()
 }
 
-func (h handler[T, E]) Handle(event pubsub.Event[T]) {
+func (h handler[T, E]) Handle(event pubsub.Event[T]) error {
 	h <- event.(E)
+	return nil
 }
 
 func Subscribe[T pubsub.EventType, E pubsub.Event[T]](

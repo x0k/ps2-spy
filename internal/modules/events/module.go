@@ -1,6 +1,8 @@
 package events_module
 
 import (
+	"fmt"
+
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming"
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
@@ -21,10 +23,11 @@ func New(
 	m := module.New(log.Logger, "ps2.events")
 
 	reLoginOmitter := relogin_omitter.NewReLoginOmitter(
+		fmt.Sprintf("%s.relogin_omitter", platform),
 		log.With(sl.Component("relogin_omitter")),
 		eventsPublisher,
 	)
-	m.Append(NewReLoginOmitterService(platform, reLoginOmitter))
+	m.Append(reLoginOmitter)
 
 	rawEventsPublisher := events.NewPublisher(reLoginOmitter)
 

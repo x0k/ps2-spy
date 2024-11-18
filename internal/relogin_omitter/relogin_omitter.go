@@ -19,6 +19,7 @@ var ErrConvertEvent = fmt.Errorf("failed to convert event")
 
 type ReLoginOmitter struct {
 	pubsub.Publisher[events.Event]
+	name              string
 	log               *logger.Logger
 	batchMu           sync.Mutex
 	logoutEventsQueue *containers.ExpirationQueue[ps2.CharacterId]
@@ -29,11 +30,13 @@ type ReLoginOmitter struct {
 }
 
 func NewReLoginOmitter(
+	name string,
 	log *logger.Logger,
 	pub pubsub.Publisher[events.Event],
 	// mt metrics.Metrics,
 ) *ReLoginOmitter {
 	return &ReLoginOmitter{
+		name:              name,
 		Publisher:         pub,
 		log:               log,
 		logoutEventsQueue: containers.NewExpirationQueue[ps2.CharacterId](),
@@ -42,6 +45,10 @@ func NewReLoginOmitter(
 		delayDuration:     3 * time.Minute,
 		// mt:                mt,
 	}
+}
+
+func (r *ReLoginOmitter) Name() string {
+	return r.name
 }
 
 func (r *ReLoginOmitter) addLogoutEvent(event events.PlayerLogout) {
@@ -90,13 +97,13 @@ func (r *ReLoginOmitter) flushLogOutEvents(ctx context.Context, now time.Time) {
 	}
 }
 
-func (r *ReLoginOmitter) Start(ctx context.Context) {
+func (r *ReLoginOmitter) Start(ctx context.Context) error {
 	ticker := time.NewTicker(r.flushInterval)
 	defer ticker.Stop()
 	for {
 		select {
 		case <-ctx.Done():
-			return
+			return nil
 		case now := <-ticker.C:
 			r.flushLogOutEvents(ctx, now)
 		}

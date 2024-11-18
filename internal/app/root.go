@@ -9,8 +9,8 @@ import (
 	loader_adapters "github.com/x0k/ps2-spy/internal/adapters/loader"
 	sql_facility_cache "github.com/x0k/ps2-spy/internal/cache/facility/sql"
 	"github.com/x0k/ps2-spy/internal/characters_tracker"
-	"github.com/x0k/ps2-spy/internal/discord"
 	discord_commands "github.com/x0k/ps2-spy/internal/discord/commands"
+	discord_handlers "github.com/x0k/ps2-spy/internal/discord/handlers"
 	"github.com/x0k/ps2-spy/internal/lib/cache/memory"
 	"github.com/x0k/ps2-spy/internal/lib/census2"
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
@@ -89,6 +89,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	trackingManagers := make(map[ps2_platforms.Platform]*tracking_manager.TrackingManager, len(ps2_platforms.Platforms))
 	outfitMembersSaverPublishers := make(map[ps2_platforms.Platform]pubsub.Publisher[sql_outfit_members_saver.Event], len(ps2_platforms.Platforms))
 	outfitMembersSynchronizers := make(map[ps2_platforms.Platform]*outfit_members_synchronizer.OutfitMembersSynchronizer, len(ps2_platforms.Platforms))
+	characterLoaders := make(map[ps2_platforms.Platform]loader.Keyed[ps2.CharacterId, ps2.Character], len(ps2_platforms.Platforms))
 
 	for _, platform := range ps2_platforms.Platforms {
 		pl := log.With(slog.String("platform", string(platform)))
@@ -120,14 +121,17 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		batchedCharactersLoader := loader.WithBatching(charactersLoader, 10*time.Second)
 		m.Append(loader_adapters.NewBatchingService("batched_characters_loader", batchedCharactersLoader))
 
-		cachedBatchedCharactersLoader := loader.WithQueriedCache(
-			pl.With(sl.Component("cached_batched_characters_loader")),
-			metrics.InstrumentQueriedLoaderWithCounterMetric(
-				metrics.PlatformLoadsCounterMetric(mt, metrics.CharacterPlatformLoaderName, platform),
-				batchedCharactersLoader.Load,
+		cachedBatchedCharactersLoader := loader.Keyed[ps2.CharacterId, ps2.Character](
+			loader.WithQueriedCache(
+				pl.With(sl.Component("cached_batched_characters_loader")),
+				metrics.InstrumentQueriedLoaderWithCounterMetric(
+					metrics.PlatformLoadsCounterMetric(mt, metrics.CharacterPlatformLoaderName, platform),
+					batchedCharactersLoader.Load,
+				),
+				memory.NewKeyedExpirableCache[ps2.CharacterId, ps2.Character](0, 24*time.Hour),
 			),
-			memory.NewKeyedExpirableCache[ps2.CharacterId, ps2.Character](0, 24*time.Hour),
 		)
+		characterLoaders[platform] = cachedBatchedCharactersLoader
 
 		ps := pubsub.New[characters_tracker.EventType]()
 		charactersTrackerPublisher := metrics.InstrumentPlatformPublisher(
@@ -143,7 +147,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			pl.With(sl.Component("characters_tracker")),
 			platform,
 			ps2.PlatformWorldIds[platform],
-			loader.Keyed[ps2.CharacterId, ps2.Character](cachedBatchedCharactersLoader),
+			cachedBatchedCharactersLoader,
 			charactersTrackerPublisher,
 			mt,
 		)
@@ -201,7 +205,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		trackingManager := tracking_manager.New(
 			fmt.Sprintf("%s.tracking_manager", platform),
 			pl.With(sl.Component("tracking_manager")),
-			loader.Keyed[ps2.CharacterId, ps2.Character](cachedBatchedCharactersLoader),
+			cachedBatchedCharactersLoader,
 			characterTrackingChannelsLoader,
 			trackableCharacterIdsLoader,
 			sqlOutfitMemberIdsLoader,
@@ -295,7 +299,9 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		cfg.Discord.RemoveCommands,
 		characterTrackerSubsMangers,
 		trackingManagers,
-		[]discord.Handler{},
+		discord_handlers.New(
+			characterLoaders,
+		),
 	)
 	if err != nil {
 		return nil, err

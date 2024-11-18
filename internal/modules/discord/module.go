@@ -1,7 +1,7 @@
 package discord_module
 
 import (
-	"context"
+	"fmt"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -25,7 +25,7 @@ func New(
 	removeCommands bool,
 	charactersTrackerSubsManagers map[ps2_platforms.Platform]pubsub.SubscriptionsManager[characters_tracker.EventType],
 	trackingManagers map[ps2_platforms.Platform]*tracking_manager.TrackingManager,
-	handlers []discord.Handler,
+	handlerFactories map[discord.EventType]discord.HandlerFactory,
 ) (*module.Module, error) {
 	m := module.New(log.Logger, "discord")
 	session, err := discordgo.New("Bot " + token)
@@ -41,30 +41,28 @@ func New(
 		removeCommands,
 	))
 
-	unsubs := make([]func(), 0, len(handlers)*len(ps2_platforms.Platforms))
-
 	for _, platform := range ps2_platforms.Platforms {
-		eventsPubSub := pubsub.New[discord.EventType]()
-		eventsPublisher := discord_events.NewPublisher(eventsPubSub, trackingManagers[platform])
-		m.Append(newEventsSubscriptionService(
-			log.With(sl.Component("events_subscription")),
-			m,
-			platform,
-			charactersTrackerSubsManagers[platform],
-			eventsPublisher,
-		))
-
-		for _, handler := range handlers {
-			unsubs = append(unsubs, eventsPubSub.AddHandler(handler.ForPlatform(platform)))
+		handlers := make(map[discord.EventType]discord.Handler, len(handlerFactories))
+		for t, factory := range handlerFactories {
+			handlers[t] = factory(platform)
 		}
+		handlersManager := discord_events.NewHandlersManager(
+			fmt.Sprintf("discord.%s.handlers", platform),
+			log.With(sl.Component("handlers_manager")),
+			handlers,
+			trackingManagers[platform],
+		)
+		m.Append(
+			handlersManager,
+			newEventsSubscriptionService(
+				log.With(sl.Component("events_subscription")),
+				m,
+				platform,
+				charactersTrackerSubsManagers[platform],
+				handlersManager,
+			),
+		)
 	}
-
-	m.PreStop(module.NewHook("handlers_unsubscribe", func(_ context.Context) error {
-		for _, unsub := range unsubs {
-			unsub()
-		}
-		return nil
-	}))
 
 	return m, nil
 }

@@ -17,7 +17,7 @@ type Event[T EventType] interface {
 
 type Handler[T EventType] interface {
 	Type() T
-	Handle(event Event[T])
+	Handle(event Event[T]) error
 }
 
 type SubscriptionsManager[T EventType] interface {
@@ -64,7 +64,9 @@ func (p *pubSub[T]) Publish(event Event[T]) error {
 	p.handlersMu.RLock()
 	defer p.handlersMu.RUnlock()
 	for _, h := range p.handlers[event.Type()] {
-		h.Handle(event)
+		if err := h.Handle(event); err != nil {
+			return err
+		}
 	}
 	return nil
 }
