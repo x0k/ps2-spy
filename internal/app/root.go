@@ -62,11 +62,13 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	storagePubSub := pubsub.New[storage.EventType]()
 
 	storage := sql_storage.New(
+		"storage",
 		log.With(sl.Component("storage")),
 		cfg.Storage.Path,
 		storagePubSub,
 	)
-	m.Append(module.NewService("storage", storage.Start))
+	m.PreStart(module.NewHook(storage.Name(), storage.Open))
+	m.PreStop(module.NewHook(storage.Name(), storage.Close))
 
 	httpClient := &http.Client{
 		Timeout: cfg.HttpClient.Timeout,
@@ -269,6 +271,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			charactersTrackers,
 		),
 	}
+	_ = populationLoaders
 
 	worldPopulationLoaders := map[string]loader.Keyed[ps2.WorldId, meta.Loaded[ps2.DetailedWorldPopulation]]{
 		"spy": characters_tracker_world_population_loader.New(
@@ -276,6 +279,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			charactersTrackers,
 		),
 	}
+	_ = worldPopulationLoaders
 
 	alertsLoaders := map[string]loader.Simple[meta.Loaded[ps2.Alerts]]{
 		"spy": worlds_tracker_alerts_loader.New(
@@ -284,11 +288,13 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			worldTrackers,
 		),
 	}
+	_ = alertsLoaders
 
 	facilityCache := sql_facility_cache.New(
 		log.With(sl.Component("facility_cache")),
 		storage,
 	)
+	_ = facilityCache
 
 	discordModule, err := discord_module.New(
 		log.With(sl.Module("discord")),

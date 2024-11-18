@@ -2,7 +2,6 @@ package metrics
 
 import (
 	"errors"
-	"strconv"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
@@ -17,17 +16,8 @@ type instrumentedPublisher[T pubsub.EventType] struct {
 
 func (p *instrumentedPublisher[T]) Publish(event pubsub.Event[T]) error {
 	err := p.Publisher.Publish(event)
-	var eventType string
-	switch v := any(event.Type()).(type) {
-	case int:
-		eventType = strconv.Itoa(v)
-	case string:
-		eventType = v
-	default:
-		return ErrInvalidEventType
-	}
 	labels := prometheus.Labels{
-		"event_type": eventType,
+		"event_type": string(event.Type()),
 		"status":     string(SuccessStatus),
 	}
 	if err != nil {

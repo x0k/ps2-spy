@@ -20,6 +20,7 @@ import (
 )
 
 type Storage struct {
+	name        string
 	log         *logger.Logger
 	storagePath string
 	db          *sql.DB
@@ -27,8 +28,14 @@ type Storage struct {
 	publisher   pubsub.Publisher[storage.Event]
 }
 
-func New(log *logger.Logger, storagePath string, publisher pubsub.Publisher[storage.Event]) *Storage {
+func New(
+	name string,
+	log *logger.Logger,
+	storagePath string,
+	publisher pubsub.Publisher[storage.Event],
+) *Storage {
 	return &Storage{
+		name:        name,
 		log:         log,
 		storagePath: storagePath,
 		publisher:   publisher,
@@ -37,7 +44,11 @@ func New(log *logger.Logger, storagePath string, publisher pubsub.Publisher[stor
 	}
 }
 
-func (s *Storage) Start(ctx context.Context) error {
+func (s *Storage) Name() string {
+	return s.name
+}
+
+func (s *Storage) Open(ctx context.Context) error {
 	var err error
 	s.db, err = sql.Open("sqlite", s.storagePath)
 	if err != nil {
@@ -47,7 +58,10 @@ func (s *Storage) Start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	<-ctx.Done()
+	return nil
+}
+
+func (s *Storage) Close(_ context.Context) error {
 	return errors.Join(
 		s.queries.Close(),
 		s.db.Close(),

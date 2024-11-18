@@ -8,7 +8,7 @@ import (
 var ErrUnknownHandler = errors.New("unknown handler")
 
 type EventType interface {
-	~int | ~string
+	~string
 }
 
 type Event[T EventType] interface {

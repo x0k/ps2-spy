@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"sync"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/x0k/ps2-spy/internal/characters_tracker"
@@ -21,19 +22,24 @@ type HandlersManager struct {
 	session         *discordgo.Session
 	wg              sync.WaitGroup
 	trackingManager *tracking_manager.TrackingManager
+	handlersTimeout time.Duration
 }
 
 func NewHandlersManager(
 	name string,
 	log *logger.Logger,
+	session *discordgo.Session,
 	handlers map[discord.EventType]discord.Handler,
 	trackingManager *tracking_manager.TrackingManager,
+	handlersTimeout time.Duration,
 ) *HandlersManager {
 	return &HandlersManager{
 		name:            name,
 		log:             log,
+		session:         session,
 		handlers:        handlers,
 		trackingManager: trackingManager,
+		handlersTimeout: handlersTimeout,
 	}
 }
 
@@ -58,8 +64,7 @@ func (h *HandlersManager) handleCharacterEventTask(
 	e discord.Event,
 ) {
 	defer h.wg.Done()
-	t := e.Type()
-	handler, ok := h.handlers[t]
+	handler, ok := h.handlers[e.Type()]
 	if !ok {
 		return
 	}
@@ -70,6 +75,8 @@ func (h *HandlersManager) handleCharacterEventTask(
 	if len(channels) == 0 {
 		return
 	}
+	ctx, cancel := context.WithTimeout(ctx, h.handlersTimeout)
+	defer cancel()
 	if err := handler(ctx, h.session, channels, e); err != nil {
 		h.log.Error(ctx, "cannot handle event", sl.Err(err))
 	}

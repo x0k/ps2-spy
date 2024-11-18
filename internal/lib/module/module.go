@@ -2,6 +2,7 @@ package module
 
 import (
 	"context"
+	"runtime"
 	"sync"
 	"sync/atomic"
 
@@ -13,6 +14,7 @@ type Module struct {
 	log       *slog.Logger
 	wg        sync.WaitGroup
 	services  []Service
+	preStart  []Hook
 	postStart []Hook
 	preStop   []Hook
 	fatal     chan error
@@ -33,6 +35,10 @@ func (m *Module) Name() string {
 
 func (m *Module) Append(services ...Service) {
 	m.services = append(m.services, services...)
+}
+
+func (m *Module) PreStart(hooks ...Hook) {
+	m.preStart = append(m.preStart, hooks...)
 }
 
 func (m *Module) PostStart(hooks ...Hook) {
@@ -73,6 +79,13 @@ func (m *Module) start(ctx context.Context, awaiter func(context.Context) error)
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
+	for _, hook := range m.preStart {
+		m.log.LogAttrs(ctx, slog.LevelInfo, "run pre start", slog.String("hook", hook.Name()))
+		if err := hook.Run(ctx); err != nil {
+			m.Fatal(ctx, err)
+		}
+	}
+
 	for _, service := range m.services {
 		m.wg.Add(1)
 		go func() {
@@ -83,6 +96,7 @@ func (m *Module) start(ctx context.Context, awaiter func(context.Context) error)
 			}
 			m.log.LogAttrs(ctx, slog.LevelInfo, "stopped", slog.String("service", service.Name()))
 		}()
+		runtime.Gosched()
 	}
 
 	for _, hook := range m.postStart {

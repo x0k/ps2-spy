@@ -49,13 +49,14 @@ func New(
 		handlersManager := discord_events.NewHandlersManager(
 			fmt.Sprintf("discord.%s.handlers", platform),
 			log.With(sl.Component("handlers_manager")),
+			session,
 			handlers,
 			trackingManagers[platform],
+			eventHandlerTimeout,
 		)
 		m.Append(
 			handlersManager,
 			newEventsSubscriptionService(
-				log.With(sl.Component("events_subscription")),
 				m,
 				platform,
 				charactersTrackerSubsManagers[platform],
