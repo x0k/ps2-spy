@@ -33,17 +33,20 @@ var truncation = []rune("... (truncated)")
 
 const msgMaxLen = 2000
 
-func SimpleMessage[E Event](handle func(ctx context.Context, e E) (MessageRenderer, *Error)) Handler {
+func SimpleMessage[E Event](handle func(ctx context.Context, e E) LocalizedMessage) Handler {
 	return func(ctx context.Context, session *discordgo.Session, channels []Channel, event Event) error {
 		const op = "discord.SimpleMessage"
-		msgRenderer, err := handle(ctx, event.(E))
+		msgRenderer := handle(ctx, event.(E))
 		channelsByLocale := slicesx.GroupBy(channels, func(c Channel) Locale { return c.Locale })
-		if err != nil {
-			msgRenderer = err.Msg
-		}
-		errs := make([]error, 0, len(channels))
+		handlingErrors := make([]error, 0, len(channels))
+		sendErrors := make([]error, 0, len(channels))
 		for locale, channels := range channelsByLocale {
-			msg := []rune(msgRenderer(locale))
+			msgStr, err := msgRenderer(locale)
+			if err != nil {
+				msgStr = err.Msg
+				handlingErrors = append(handlingErrors, err.Err)
+			}
+			msg := []rune(msgStr)
 			for len(msg) > 0 {
 				toSend := msg
 				if len(toSend) > msgMaxLen {
@@ -68,16 +71,16 @@ func SimpleMessage[E Event](handle func(ctx context.Context, e E) (MessageRender
 				for _, channel := range channels {
 					_, err := session.ChannelMessageSend(string(channel.ChannelId), string(toSend))
 					if err != nil {
-						errs = append(errs, err)
+						sendErrors = append(sendErrors, err)
 					}
 				}
 			}
 		}
-		if err != nil {
-			return fmt.Errorf("%s handling event %q: %w", op, event.Type(), err.Err)
+		if len(handlingErrors) > 0 {
+			return fmt.Errorf("%s handling event %q: %w", op, event.Type(), errors.Join(handlingErrors...))
 		}
-		if len(errs) > 0 {
-			return fmt.Errorf("%s sending messages: %s", op, errors.Join(errs...))
+		if len(sendErrors) > 0 {
+			return fmt.Errorf("%s sending messages: %s", op, errors.Join(sendErrors...))
 		}
 		return nil
 	}

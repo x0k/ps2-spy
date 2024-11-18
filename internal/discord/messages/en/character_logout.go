@@ -1,4 +1,4 @@
-package render
+package en_messages
 
 import (
 	"fmt"

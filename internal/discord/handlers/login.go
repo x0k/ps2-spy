@@ -11,19 +11,17 @@ import (
 )
 
 func NewLoginHandlerFactory(
+	messages discord.LocalizedMessages,
 	characterLoaders map[ps2_platforms.Platform]loader.Keyed[ps2.CharacterId, ps2.Character],
 ) discord.HandlerFactory {
 	return func(platform ps2_platforms.Platform) discord.Handler {
 		characterLoader := characterLoaders[platform]
-		return discord.SimpleMessage(func(ctx context.Context, e discord_events.PlayerLogin) (discord.MessageRenderer, *discord.Error) {
+		return discord.SimpleMessage(func(ctx context.Context, e discord_events.PlayerLogin) discord.LocalizedMessage {
 			char, err := characterLoader(ctx, e.CharacterId)
 			if err != nil {
-				return "", &discord.Error{
-					Msg: "Failed to load character",
-					Err: err,
-				}
+				return messages.CharacterLoadError(e.CharacterId, err)
 			}
-			return render.RenderCharacterLogin(char), nil
+			return messages.CharacterLogin(char)
 		})
 	}
 }

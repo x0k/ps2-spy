@@ -11,6 +11,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/characters_tracker"
 	discord_commands "github.com/x0k/ps2-spy/internal/discord/commands"
 	discord_handlers "github.com/x0k/ps2-spy/internal/discord/handlers"
+	discord_messages "github.com/x0k/ps2-spy/internal/discord/messages"
 	"github.com/x0k/ps2-spy/internal/lib/cache/memory"
 	"github.com/x0k/ps2-spy/internal/lib/census2"
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
@@ -306,6 +307,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		characterTrackerSubsMangers,
 		trackingManagers,
 		discord_handlers.New(
+			discord_messages.New(),
 			characterLoaders,
 		),
 	)

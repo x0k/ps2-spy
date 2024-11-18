@@ -8,9 +8,13 @@ import (
 )
 
 func New(
+	message discord.LocalizedMessages,
 	characterLoaders map[ps2_platforms.Platform]loader.Keyed[ps2.CharacterId, ps2.Character],
 ) map[discord.EventType]discord.HandlerFactory {
 	return map[discord.EventType]discord.HandlerFactory{
-		discord.PlayerLoginType: NewLoginHandlerFactory(characterLoaders),
+		discord.PlayerLoginType: NewLoginHandlerFactory(
+			message,
+			characterLoaders,
+		),
 	}
 }

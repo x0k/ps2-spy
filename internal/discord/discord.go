@@ -69,10 +69,3 @@ func NewChannel(channelId ChannelId, locale Locale) Channel {
 		Locale:    locale,
 	}
 }
-
-type MessageRenderer = func(locale Locale) string
-
-type Error struct {
-	Msg MessageRenderer
-	Err error
-}

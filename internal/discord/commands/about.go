@@ -13,7 +13,7 @@ func NewAbout() *discord.Command {
 			Name:        "about",
 			Description: "About this bot",
 		},
-		Handler: discord.DeferredEphemeralResponse(func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.WebhookEdit, *discord.Error) {
+		Handler: discord.DeferredEphemeralResponse(func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.WebhookEdit, *discord.LocalizedError) {
 			content := `# PlanetSide 2 Spy
 
 Simple discord bot for PlanetSide 2 outfits
