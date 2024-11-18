@@ -8,6 +8,11 @@ import (
 	"time"
 )
 
+type ChannelLocale struct {
+	ChannelID string
+	Locale    string
+}
+
 type ChannelToCharacter struct {
 	ChannelID   string
 	Platform    string

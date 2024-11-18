@@ -24,10 +24,10 @@ type TrackingManager struct {
 	outfitsFilterMu                 sync.RWMutex
 	outfitsFilter                   map[ps2.OutfitId]int
 	characterLoader                 loader.Keyed[ps2.CharacterId, ps2.Character]
-	characterTrackingChannelsLoader loader.Keyed[ps2.Character, []discord.ChannelId]
+	characterTrackingChannelsLoader loader.Keyed[ps2.Character, []discord.Channel]
 	trackableCharactersLoader       loader.Simple[[]ps2.CharacterId]
 	outfitMembersLoader             loader.Keyed[ps2.OutfitId, []ps2.CharacterId]
-	outfitTrackingChannelsLoader    loader.Keyed[ps2.OutfitId, []discord.ChannelId]
+	outfitTrackingChannelsLoader    loader.Keyed[ps2.OutfitId, []discord.Channel]
 	trackableOutfitsLoader          loader.Simple[[]ps2.OutfitId]
 	rebuildFiltersInterval          time.Duration
 }
@@ -36,10 +36,10 @@ func New(
 	name string,
 	log *logger.Logger,
 	charLoader loader.Keyed[ps2.CharacterId, ps2.Character],
-	characterTrackingChannelsLoader loader.Keyed[ps2.Character, []discord.ChannelId],
+	characterTrackingChannelsLoader loader.Keyed[ps2.Character, []discord.Channel],
 	trackableCharactersLoader loader.Simple[[]ps2.CharacterId],
 	outfitMembersLoader loader.Keyed[ps2.OutfitId, []ps2.CharacterId],
-	outfitTrackingChannelsLoader loader.Keyed[ps2.OutfitId, []discord.ChannelId],
+	outfitTrackingChannelsLoader loader.Keyed[ps2.OutfitId, []discord.Channel],
 	trackableOutfitsLoader loader.Simple[[]ps2.OutfitId],
 ) *TrackingManager {
 	return &TrackingManager{
@@ -140,7 +140,7 @@ func (tm *TrackingManager) characterTrackersCount(charId ps2.CharacterId) int {
 	return tm.charactersFilter[charId]
 }
 
-func (tm *TrackingManager) ChannelIdsForCharacter(ctx context.Context, characterId ps2.CharacterId) ([]discord.ChannelId, error) {
+func (tm *TrackingManager) ChannelIdsForCharacter(ctx context.Context, characterId ps2.CharacterId) ([]discord.Channel, error) {
 	const op = "tracking_manager.TrackingManager.channelIdsForCharacter"
 	trackersCount := tm.characterTrackersCount(characterId)
 	if trackersCount <= 0 {
@@ -162,7 +162,7 @@ func (tm *TrackingManager) outfitTrackersCount(outfitId ps2.OutfitId) int {
 	return tm.outfitsFilter[outfitId]
 }
 
-func (tm *TrackingManager) ChannelIdsForOutfit(ctx context.Context, outfitId ps2.OutfitId) ([]discord.ChannelId, error) {
+func (tm *TrackingManager) ChannelIdsForOutfit(ctx context.Context, outfitId ps2.OutfitId) ([]discord.Channel, error) {
 	trackersCount := tm.outfitTrackersCount(outfitId)
 	if trackersCount <= 0 {
 		if trackersCount < 0 {

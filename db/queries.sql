@@ -55,28 +55,37 @@ WHERE
   platform = ?
   AND outfit_id = ?;
 
--- name: ListPlatformTrackingChannelIdsForCharacter :many
+-- name: ListPlatformTrackingChannelsForCharacter :many
 SELECT
-  channel_id
+  channel.channel_id,
+  channel_locale.locale
 FROM
-  channel_to_character
-WHERE
-  channel_to_character.platform = sqlc.arg(platform)
-  AND character_id = ?
-UNION
-SELECT
-  channel_id
-FROM
-  channel_to_outfit
-WHERE
-  channel_to_outfit.platform = sqlc.arg(platform)
-  AND outfit_id = ?;
+  (
+    SELECT
+      channel_id
+    FROM
+      channel_to_character
+    WHERE
+      channel_to_character.platform = sqlc.arg (platform)
+      AND character_id = ?
+    UNION
+    SELECT
+      channel_id
+    FROM
+      channel_to_outfit
+    WHERE
+      channel_to_outfit.platform = sqlc.arg (platform)
+      AND outfit_id = ?
+  ) AS channel
+  LEFT JOIN channel_locale ON channel_locale.channel_id = subquery.channel_id;
 
--- name: ListPlatformTrackingChannelIdsForOutfit :many
+-- name: ListPlatformTrackingChannelsForOutfit :many
 SELECT
-  channel_id
+  channel_to_outfit.channel_id,
+  channel_locale.locale
 FROM
   channel_to_outfit
+  LEFT JOIN channel_locale ON channel_locale.channel_id = channel_to_outfit.channel_id
 WHERE
   platform = ?
   AND outfit_id = ?;
@@ -105,7 +114,7 @@ SELECT
 FROM
   channel_to_character
 WHERE
-  channel_to_character.platform = sqlc.arg(platform)
+  channel_to_character.platform = sqlc.arg (platform)
 UNION ALL
 SELECT
   character_id
@@ -114,7 +123,7 @@ FROM
   JOIN outfit_to_character ON channel_to_outfit.outfit_id = outfit_to_character.outfit_id
   AND channel_to_outfit.platform = outfit_to_character.platform
 WHERE
-  channel_to_outfit.platform = sqlc.arg(platform);
+  channel_to_outfit.platform = sqlc.arg (platform);
 
 -- name: ListTrackableOutfitIdsWithDuplicationForPlatform :many
 SELECT
@@ -166,7 +175,12 @@ WHERE
 
 -- name: InsertFacility :exec
 INSERT INTO
-  facility (facility_id, facility_name, facility_type, zone_id)
+  facility (
+    facility_id,
+    facility_name,
+    facility_type,
+    zone_id
+  )
 VALUES
   (?, ?, ?, ?);
 
@@ -177,4 +191,4 @@ FROM
   outfit
 WHERE
   platform = ?
-  AND outfit_id IN (sqlc.slice(outfit_ids));
+  AND outfit_id IN (sqlc.slice (outfit_ids));

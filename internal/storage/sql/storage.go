@@ -198,8 +198,13 @@ func (s *Storage) OutfitSynchronizedAt(ctx context.Context, platform ps2_platfor
 	})
 }
 
-func (s *Storage) TrackingChannelIdsForCharacter(ctx context.Context, platform ps2_platforms.Platform, characterId ps2.CharacterId, outfitId ps2.OutfitId) ([]discord.ChannelId, error) {
-	list, err := s.queries.ListPlatformTrackingChannelIdsForCharacter(ctx, db.ListPlatformTrackingChannelIdsForCharacterParams{
+func (s *Storage) TrackingChannelsForCharacter(
+	ctx context.Context,
+	platform ps2_platforms.Platform,
+	characterId ps2.CharacterId,
+	outfitId ps2.OutfitId,
+) ([]discord.Channel, error) {
+	rows, err := s.queries.ListPlatformTrackingChannelsForCharacter(ctx, db.ListPlatformTrackingChannelsForCharacterParams{
 		Platform:    string(platform),
 		CharacterID: string(characterId),
 		OutfitID:    string(outfitId),
@@ -207,26 +212,44 @@ func (s *Storage) TrackingChannelIdsForCharacter(ctx context.Context, platform p
 	if err != nil {
 		return nil, err
 	}
-	ids := make([]discord.ChannelId, 0, len(list))
-	for _, id := range list {
-		ids = append(ids, discord.ChannelId(id))
+	channels := make([]discord.Channel, 0, len(rows))
+	for _, row := range rows {
+		locale := discord.DEFAULT_LOCALE
+		if row.Locale.Valid {
+			locale = discord.Locale(row.Locale.String)
+		}
+		channels = append(channels, discord.NewChannel(
+			discord.ChannelId(row.ChannelID),
+			discord.Locale(locale),
+		))
 	}
-	return ids, nil
+	return channels, nil
 }
 
-func (s *Storage) TrackingChannelIdsForOutfit(ctx context.Context, platform ps2_platforms.Platform, outfitId ps2.OutfitId) ([]discord.ChannelId, error) {
-	list, err := s.queries.ListPlatformTrackingChannelIdsForOutfit(ctx, db.ListPlatformTrackingChannelIdsForOutfitParams{
+func (s *Storage) TrackingChannelsForOutfit(
+	ctx context.Context,
+	platform ps2_platforms.Platform,
+	outfitId ps2.OutfitId,
+) ([]discord.Channel, error) {
+	rows, err := s.queries.ListPlatformTrackingChannelsForOutfit(ctx, db.ListPlatformTrackingChannelsForOutfitParams{
 		Platform: string(platform),
 		OutfitID: string(outfitId),
 	})
 	if err != nil {
 		return nil, err
 	}
-	ids := make([]discord.ChannelId, 0, len(list))
-	for _, id := range list {
-		ids = append(ids, discord.ChannelId(id))
+	channels := make([]discord.Channel, 0, len(rows))
+	for _, id := range rows {
+		locale := discord.DEFAULT_LOCALE
+		if id.Locale.Valid {
+			locale = discord.Locale(id.Locale.String)
+		}
+		channels = append(channels, discord.NewChannel(
+			discord.ChannelId(id.ChannelID),
+			discord.Locale(locale),
+		))
 	}
-	return ids, nil
+	return channels, nil
 }
 
 func (s *Storage) TrackingOutfitIdsForPlatform(ctx context.Context, channelId discord.ChannelId, platform ps2_platforms.Platform) ([]ps2.OutfitId, error) {

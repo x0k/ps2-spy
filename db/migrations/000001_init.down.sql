@@ -9,3 +9,5 @@ DROP TABLE channel_to_character;
 DROP TABLE outfit;
 
 DROP TABLE facility;
+
+DROP TABLE channel_locale;

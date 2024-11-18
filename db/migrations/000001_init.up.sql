@@ -46,3 +46,9 @@ CREATE TABLE
     facility_type TEXT NOT NULL,
     zone_id TEXT NOT NULL
   );
+
+CREATE TABLE
+  IF NOT EXISTS channel_locale (
+    channel_id TEXT PRIMARY KEY NOT NULL,
+    locale TEXT NOT NULL
+  );

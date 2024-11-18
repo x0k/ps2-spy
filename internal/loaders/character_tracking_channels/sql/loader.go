@@ -10,8 +10,8 @@ import (
 
 func New(
 	storage *sql_storage.Storage,
-) func(context.Context, ps2.Character) ([]discord.ChannelId, error) {
-	return func(ctx context.Context, c ps2.Character) ([]discord.ChannelId, error) {
-		return storage.TrackingChannelIdsForCharacter(ctx, c.Platform, c.Id, c.OutfitId)
+) func(context.Context, ps2.Character) ([]discord.Channel, error) {
+	return func(ctx context.Context, c ps2.Character) ([]discord.Channel, error) {
+		return storage.TrackingChannelsForCharacter(ctx, c.Platform, c.Id, c.OutfitId)
 	}
 }

@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 	"strings"
 	"time"
 )
@@ -176,7 +177,12 @@ func (q *Queries) InsertChannelOutfit(ctx context.Context, arg InsertChannelOutf
 
 const insertFacility = `-- name: InsertFacility :exec
 INSERT INTO
-  facility (facility_id, facility_name, facility_type, zone_id)
+  facility (
+    facility_id,
+    facility_name,
+    facility_type,
+    zone_id
+  )
 VALUES
   (?, ?, ?, ?)
 `
@@ -408,43 +414,55 @@ func (q *Queries) ListPlatformOutfits(ctx context.Context, arg ListPlatformOutfi
 	return items, nil
 }
 
-const listPlatformTrackingChannelIdsForCharacter = `-- name: ListPlatformTrackingChannelIdsForCharacter :many
+const listPlatformTrackingChannelsForCharacter = `-- name: ListPlatformTrackingChannelsForCharacter :many
 SELECT
-  channel_id
+  channel.channel_id,
+  channel_locale.locale
 FROM
-  channel_to_character
-WHERE
-  channel_to_character.platform = ?3
-  AND character_id = ?
-UNION
-SELECT
-  channel_id
-FROM
-  channel_to_outfit
-WHERE
-  channel_to_outfit.platform = ?3
-  AND outfit_id = ?
+  (
+    SELECT
+      channel_id
+    FROM
+      channel_to_character
+    WHERE
+      channel_to_character.platform = ?3
+      AND character_id = ?
+    UNION
+    SELECT
+      channel_id
+    FROM
+      channel_to_outfit
+    WHERE
+      channel_to_outfit.platform = ?3
+      AND outfit_id = ?
+  ) AS channel
+  LEFT JOIN channel_locale ON channel_locale.channel_id = subquery.channel_id
 `
 
-type ListPlatformTrackingChannelIdsForCharacterParams struct {
+type ListPlatformTrackingChannelsForCharacterParams struct {
 	Platform    string
 	CharacterID string
 	OutfitID    string
 }
 
-func (q *Queries) ListPlatformTrackingChannelIdsForCharacter(ctx context.Context, arg ListPlatformTrackingChannelIdsForCharacterParams) ([]string, error) {
-	rows, err := q.query(ctx, q.listPlatformTrackingChannelIdsForCharacterStmt, listPlatformTrackingChannelIdsForCharacter, arg.Platform, arg.CharacterID, arg.OutfitID)
+type ListPlatformTrackingChannelsForCharacterRow struct {
+	ChannelID string
+	Locale    sql.NullString
+}
+
+func (q *Queries) ListPlatformTrackingChannelsForCharacter(ctx context.Context, arg ListPlatformTrackingChannelsForCharacterParams) ([]ListPlatformTrackingChannelsForCharacterRow, error) {
+	rows, err := q.query(ctx, q.listPlatformTrackingChannelsForCharacterStmt, listPlatformTrackingChannelsForCharacter, arg.Platform, arg.CharacterID, arg.OutfitID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []string
+	var items []ListPlatformTrackingChannelsForCharacterRow
 	for rows.Next() {
-		var channel_id string
-		if err := rows.Scan(&channel_id); err != nil {
+		var i ListPlatformTrackingChannelsForCharacterRow
+		if err := rows.Scan(&i.ChannelID, &i.Locale); err != nil {
 			return nil, err
 		}
-		items = append(items, channel_id)
+		items = append(items, i)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err
@@ -455,34 +473,41 @@ func (q *Queries) ListPlatformTrackingChannelIdsForCharacter(ctx context.Context
 	return items, nil
 }
 
-const listPlatformTrackingChannelIdsForOutfit = `-- name: ListPlatformTrackingChannelIdsForOutfit :many
+const listPlatformTrackingChannelsForOutfit = `-- name: ListPlatformTrackingChannelsForOutfit :many
 SELECT
-  channel_id
+  channel_to_outfit.channel_id,
+  channel_locale.locale
 FROM
   channel_to_outfit
+  LEFT JOIN channel_locale ON channel_locale.channel_id = channel_to_outfit.channel_id
 WHERE
   platform = ?
   AND outfit_id = ?
 `
 
-type ListPlatformTrackingChannelIdsForOutfitParams struct {
+type ListPlatformTrackingChannelsForOutfitParams struct {
 	Platform string
 	OutfitID string
 }
 
-func (q *Queries) ListPlatformTrackingChannelIdsForOutfit(ctx context.Context, arg ListPlatformTrackingChannelIdsForOutfitParams) ([]string, error) {
-	rows, err := q.query(ctx, q.listPlatformTrackingChannelIdsForOutfitStmt, listPlatformTrackingChannelIdsForOutfit, arg.Platform, arg.OutfitID)
+type ListPlatformTrackingChannelsForOutfitRow struct {
+	ChannelID string
+	Locale    sql.NullString
+}
+
+func (q *Queries) ListPlatformTrackingChannelsForOutfit(ctx context.Context, arg ListPlatformTrackingChannelsForOutfitParams) ([]ListPlatformTrackingChannelsForOutfitRow, error) {
+	rows, err := q.query(ctx, q.listPlatformTrackingChannelsForOutfitStmt, listPlatformTrackingChannelsForOutfit, arg.Platform, arg.OutfitID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []string
+	var items []ListPlatformTrackingChannelsForOutfitRow
 	for rows.Next() {
-		var channel_id string
-		if err := rows.Scan(&channel_id); err != nil {
+		var i ListPlatformTrackingChannelsForOutfitRow
+		if err := rows.Scan(&i.ChannelID, &i.Locale); err != nil {
 			return nil, err
 		}
-		items = append(items, channel_id)
+		items = append(items, i)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err

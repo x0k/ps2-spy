@@ -12,8 +12,8 @@ import (
 func New(
 	storage *sql_storage.Storage,
 	platform ps2_platforms.Platform,
-) func(context.Context, ps2.OutfitId) ([]discord.ChannelId, error) {
-	return func(ctx context.Context, oi ps2.OutfitId) ([]discord.ChannelId, error) {
-		return storage.TrackingChannelIdsForOutfit(ctx, platform, oi)
+) func(context.Context, ps2.OutfitId) ([]discord.Channel, error) {
+	return func(ctx context.Context, oi ps2.OutfitId) ([]discord.Channel, error) {
+		return storage.TrackingChannelsForOutfit(ctx, platform, oi)
 	}
 }

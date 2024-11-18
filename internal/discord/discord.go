@@ -1,6 +1,7 @@
 package discord
 
 import (
+	"github.com/bwmarrin/discordgo"
 	"github.com/x0k/ps2-spy/internal/lib/diff"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
@@ -33,4 +34,45 @@ type SettingsQuery struct {
 type PlatformQuery[T any] struct {
 	Platform ps2_platforms.Platform
 	Value    T
+}
+
+type Locale string
+
+const (
+	EN Locale = "en"
+	RU Locale = "ru"
+)
+
+const DEFAULT_LOCALE = EN
+
+func localeFromInteraction(i *discordgo.InteractionCreate) Locale {
+	switch i.Locale {
+	case discordgo.Russian:
+		return RU
+	case discordgo.EnglishGB:
+		return EN
+	case discordgo.EnglishUS:
+		return EN
+	default:
+		return DEFAULT_LOCALE
+	}
+}
+
+type Channel struct {
+	ChannelId ChannelId
+	Locale    Locale
+}
+
+func NewChannel(channelId ChannelId, locale Locale) Channel {
+	return Channel{
+		ChannelId: channelId,
+		Locale:    locale,
+	}
+}
+
+type MessageRenderer = func(locale Locale) string
+
+type Error struct {
+	Msg MessageRenderer
+	Err error
 }

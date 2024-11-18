@@ -69,11 +69,11 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.listPlatformOutfitsStmt, err = db.PrepareContext(ctx, listPlatformOutfits); err != nil {
 		return nil, fmt.Errorf("error preparing query ListPlatformOutfits: %w", err)
 	}
-	if q.listPlatformTrackingChannelIdsForCharacterStmt, err = db.PrepareContext(ctx, listPlatformTrackingChannelIdsForCharacter); err != nil {
-		return nil, fmt.Errorf("error preparing query ListPlatformTrackingChannelIdsForCharacter: %w", err)
+	if q.listPlatformTrackingChannelsForCharacterStmt, err = db.PrepareContext(ctx, listPlatformTrackingChannelsForCharacter); err != nil {
+		return nil, fmt.Errorf("error preparing query ListPlatformTrackingChannelsForCharacter: %w", err)
 	}
-	if q.listPlatformTrackingChannelIdsForOutfitStmt, err = db.PrepareContext(ctx, listPlatformTrackingChannelIdsForOutfit); err != nil {
-		return nil, fmt.Errorf("error preparing query ListPlatformTrackingChannelIdsForOutfit: %w", err)
+	if q.listPlatformTrackingChannelsForOutfitStmt, err = db.PrepareContext(ctx, listPlatformTrackingChannelsForOutfit); err != nil {
+		return nil, fmt.Errorf("error preparing query ListPlatformTrackingChannelsForOutfit: %w", err)
 	}
 	if q.listTrackableCharacterIdsWithDuplicationForPlatformStmt, err = db.PrepareContext(ctx, listTrackableCharacterIdsWithDuplicationForPlatform); err != nil {
 		return nil, fmt.Errorf("error preparing query ListTrackableCharacterIdsWithDuplicationForPlatform: %w", err)
@@ -167,14 +167,14 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing listPlatformOutfitsStmt: %w", cerr)
 		}
 	}
-	if q.listPlatformTrackingChannelIdsForCharacterStmt != nil {
-		if cerr := q.listPlatformTrackingChannelIdsForCharacterStmt.Close(); cerr != nil {
-			err = fmt.Errorf("error closing listPlatformTrackingChannelIdsForCharacterStmt: %w", cerr)
+	if q.listPlatformTrackingChannelsForCharacterStmt != nil {
+		if cerr := q.listPlatformTrackingChannelsForCharacterStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing listPlatformTrackingChannelsForCharacterStmt: %w", cerr)
 		}
 	}
-	if q.listPlatformTrackingChannelIdsForOutfitStmt != nil {
-		if cerr := q.listPlatformTrackingChannelIdsForOutfitStmt.Close(); cerr != nil {
-			err = fmt.Errorf("error closing listPlatformTrackingChannelIdsForOutfitStmt: %w", cerr)
+	if q.listPlatformTrackingChannelsForOutfitStmt != nil {
+		if cerr := q.listPlatformTrackingChannelsForOutfitStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing listPlatformTrackingChannelsForOutfitStmt: %w", cerr)
 		}
 	}
 	if q.listTrackableCharacterIdsWithDuplicationForPlatformStmt != nil {
@@ -251,8 +251,8 @@ type Queries struct {
 	listChannelOutfitIdsForPlatformStmt                     *sql.Stmt
 	listPlatformOutfitMembersStmt                           *sql.Stmt
 	listPlatformOutfitsStmt                                 *sql.Stmt
-	listPlatformTrackingChannelIdsForCharacterStmt          *sql.Stmt
-	listPlatformTrackingChannelIdsForOutfitStmt             *sql.Stmt
+	listPlatformTrackingChannelsForCharacterStmt            *sql.Stmt
+	listPlatformTrackingChannelsForOutfitStmt               *sql.Stmt
 	listTrackableCharacterIdsWithDuplicationForPlatformStmt *sql.Stmt
 	listTrackableOutfitIdsWithDuplicationForPlatformStmt    *sql.Stmt
 	listUniqueTrackableOutfitIdsForPlatformStmt             *sql.Stmt
@@ -261,25 +261,25 @@ type Queries struct {
 
 func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 	return &Queries{
-		db:                                     tx,
-		tx:                                     tx,
-		deleteChannelCharacterStmt:             q.deleteChannelCharacterStmt,
-		deleteChannelOutfitStmt:                q.deleteChannelOutfitStmt,
-		deleteOutfitMemberStmt:                 q.deleteOutfitMemberStmt,
-		getFacilityStmt:                        q.getFacilityStmt,
-		getPlatformOutfitStmt:                  q.getPlatformOutfitStmt,
-		getPlatformOutfitSynchronizedAtStmt:    q.getPlatformOutfitSynchronizedAtStmt,
-		insertChannelCharacterStmt:             q.insertChannelCharacterStmt,
-		insertChannelOutfitStmt:                q.insertChannelOutfitStmt,
-		insertFacilityStmt:                     q.insertFacilityStmt,
-		insertOutfitStmt:                       q.insertOutfitStmt,
-		insertOutfitMemberStmt:                 q.insertOutfitMemberStmt,
-		listChannelCharacterIdsForPlatformStmt: q.listChannelCharacterIdsForPlatformStmt,
-		listChannelOutfitIdsForPlatformStmt:    q.listChannelOutfitIdsForPlatformStmt,
-		listPlatformOutfitMembersStmt:          q.listPlatformOutfitMembersStmt,
-		listPlatformOutfitsStmt:                q.listPlatformOutfitsStmt,
-		listPlatformTrackingChannelIdsForCharacterStmt:          q.listPlatformTrackingChannelIdsForCharacterStmt,
-		listPlatformTrackingChannelIdsForOutfitStmt:             q.listPlatformTrackingChannelIdsForOutfitStmt,
+		db:                                           tx,
+		tx:                                           tx,
+		deleteChannelCharacterStmt:                   q.deleteChannelCharacterStmt,
+		deleteChannelOutfitStmt:                      q.deleteChannelOutfitStmt,
+		deleteOutfitMemberStmt:                       q.deleteOutfitMemberStmt,
+		getFacilityStmt:                              q.getFacilityStmt,
+		getPlatformOutfitStmt:                        q.getPlatformOutfitStmt,
+		getPlatformOutfitSynchronizedAtStmt:          q.getPlatformOutfitSynchronizedAtStmt,
+		insertChannelCharacterStmt:                   q.insertChannelCharacterStmt,
+		insertChannelOutfitStmt:                      q.insertChannelOutfitStmt,
+		insertFacilityStmt:                           q.insertFacilityStmt,
+		insertOutfitStmt:                             q.insertOutfitStmt,
+		insertOutfitMemberStmt:                       q.insertOutfitMemberStmt,
+		listChannelCharacterIdsForPlatformStmt:       q.listChannelCharacterIdsForPlatformStmt,
+		listChannelOutfitIdsForPlatformStmt:          q.listChannelOutfitIdsForPlatformStmt,
+		listPlatformOutfitMembersStmt:                q.listPlatformOutfitMembersStmt,
+		listPlatformOutfitsStmt:                      q.listPlatformOutfitsStmt,
+		listPlatformTrackingChannelsForCharacterStmt: q.listPlatformTrackingChannelsForCharacterStmt,
+		listPlatformTrackingChannelsForOutfitStmt:    q.listPlatformTrackingChannelsForOutfitStmt,
 		listTrackableCharacterIdsWithDuplicationForPlatformStmt: q.listTrackableCharacterIdsWithDuplicationForPlatformStmt,
 		listTrackableOutfitIdsWithDuplicationForPlatformStmt:    q.listTrackableOutfitIdsWithDuplicationForPlatformStmt,
 		listUniqueTrackableOutfitIdsForPlatformStmt:             q.listUniqueTrackableOutfitIdsForPlatformStmt,

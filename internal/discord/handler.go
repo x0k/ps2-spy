@@ -4,58 +4,72 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
+	"slices"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/x0k/ps2-spy/internal/lib/slicesx"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
 
 type Handler func(
 	ctx context.Context,
 	session *discordgo.Session,
-	channelIds []ChannelId,
+	channelIds []Channel,
 	event Event,
 ) error
 
 type HandlerFactory = func(platform ps2_platforms.Platform) Handler
 
-func SimpleMessage[E Event](handle func(ctx context.Context, e E) (string, *Error)) Handler {
-	return func(ctx context.Context, session *discordgo.Session, channelIds []ChannelId, event Event) error {
+func lastIndexRune(runes []rune, target rune) int {
+	for i := len(runes) - 1; i >= 0; i-- {
+		if runes[i] == target {
+			return i
+		}
+	}
+	return -1
+}
+
+var truncation = []rune("... (truncated)")
+
+const msgMaxLen = 2000
+
+func SimpleMessage[E Event](handle func(ctx context.Context, e E) (MessageRenderer, *Error)) Handler {
+	return func(ctx context.Context, session *discordgo.Session, channels []Channel, event Event) error {
 		const op = "discord.SimpleMessage"
-		msg, err := handle(ctx, event.(E))
+		msgRenderer, err := handle(ctx, event.(E))
+		channelsByLocale := slicesx.GroupBy(channels, func(c Channel) Locale { return c.Locale })
 		if err != nil {
-			msg = err.Msg
+			msgRenderer = err.Msg
 		}
-		if msg == "" {
-			return nil
-		}
-		errs := make([]error, 0, len(channelIds))
-		for len(msg) > 0 {
-			toSend := msg
-			if len(toSend) > 4000 {
-				toSend = toSend[:4000]
-				lastLineBreak := strings.LastIndexByte(toSend, '\n')
-				if lastLineBreak > 0 {
-					toSend = toSend[:lastLineBreak]
-					msg = msg[lastLineBreak+1:]
-				} else {
-					lastSpace := strings.LastIndexByte(toSend, ' ')
-					if lastSpace > 0 {
-						toSend = toSend[:lastSpace]
-						msg = msg[lastSpace+1:]
+		errs := make([]error, 0, len(channels))
+		for locale, channels := range channelsByLocale {
+			msg := []rune(msgRenderer(locale))
+			for len(msg) > 0 {
+				toSend := msg
+				if len(toSend) > msgMaxLen {
+					toSend = toSend[:msgMaxLen]
+					lastLineBreak := lastIndexRune(toSend, '\n')
+					if lastLineBreak > 0 {
+						toSend = toSend[:lastLineBreak]
+						msg = msg[lastLineBreak+1:]
 					} else {
-						const truncation = "... (truncated)"
-						toSend = msg[:4000-len(truncation)] + truncation
-						msg = msg[4000-len(truncation):]
+						lastSpace := lastIndexRune(toSend, ' ')
+						if lastSpace > 0 {
+							toSend = toSend[:lastSpace]
+							msg = msg[lastSpace+1:]
+						} else {
+							toSend = slices.Concat(msg[:msgMaxLen-len(truncation)], truncation)
+							msg = msg[msgMaxLen-len(truncation):]
+						}
 					}
+				} else {
+					msg = msg[len(toSend):]
 				}
-			} else {
-				msg = ""
-			}
-			for _, channelId := range channelIds {
-				_, err := session.ChannelMessageSend(string(channelId), toSend)
-				if err != nil {
-					errs = append(errs, err)
+				for _, channel := range channels {
+					_, err := session.ChannelMessageSend(string(channel.ChannelId), string(toSend))
+					if err != nil {
+						errs = append(errs, err)
+					}
 				}
 			}
 		}

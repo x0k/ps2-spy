@@ -5,7 +5,6 @@ import (
 
 	"github.com/x0k/ps2-spy/internal/discord"
 	discord_events "github.com/x0k/ps2-spy/internal/discord/events"
-	render "github.com/x0k/ps2-spy/internal/discord/render/en"
 	"github.com/x0k/ps2-spy/internal/lib/loader"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
@@ -16,7 +15,7 @@ func NewLoginHandlerFactory(
 ) discord.HandlerFactory {
 	return func(platform ps2_platforms.Platform) discord.Handler {
 		characterLoader := characterLoaders[platform]
-		return discord.SimpleMessage(func(ctx context.Context, e discord_events.PlayerLogin) (string, *discord.Error) {
+		return discord.SimpleMessage(func(ctx context.Context, e discord_events.PlayerLogin) (discord.MessageRenderer, *discord.Error) {
 			char, err := characterLoader(ctx, e.CharacterId)
 			if err != nil {
 				return "", &discord.Error{
