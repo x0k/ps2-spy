@@ -33,6 +33,7 @@ import (
 	sql_trackable_outfits_with_duplication_loader "github.com/x0k/ps2-spy/internal/loaders/trackable_outfits_with_duplication/sql"
 	census_world_map_loader "github.com/x0k/ps2-spy/internal/loaders/world_map/census"
 	characters_tracker_world_population_loader "github.com/x0k/ps2-spy/internal/loaders/world_population/characters_tracker"
+	worlds_tracker_world_territory_control_loader "github.com/x0k/ps2-spy/internal/loaders/world_territory_control/worlds_tracker"
 	"github.com/x0k/ps2-spy/internal/meta"
 	"github.com/x0k/ps2-spy/internal/metrics"
 	discord_module "github.com/x0k/ps2-spy/internal/modules/discord"
@@ -304,6 +305,10 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		[]string{"spy"},
 		worldPopulationLoaders,
 		[]string{"spy"},
+		worlds_tracker_world_territory_control_loader.New(
+			cfg.AppName,
+			worldTrackers,
+		),
 	)
 	m.Append(discordCommands)
 	discordModule, err := discord_module.New(

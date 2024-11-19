@@ -16,13 +16,11 @@ import (
 )
 
 type worldPopulationLoader struct {
-	name      string
 	fallbacks *containers.Fallbacks[loader.Keyed[ps2.WorldId, meta.Loaded[ps2.DetailedWorldPopulation]]]
 	load      loader.Queried[query[ps2.WorldId], meta.Loaded[ps2.DetailedWorldPopulation]]
 }
 
 func newWorldPopulationLoader(
-	name string,
 	log *logger.Logger,
 	loaders map[string]loader.Keyed[ps2.WorldId, meta.Loaded[ps2.DetailedWorldPopulation]],
 	loadersPriority []string,
@@ -49,14 +47,9 @@ func newWorldPopulationLoader(
 		),
 	)
 	return &worldPopulationLoader{
-		name:      name,
 		fallbacks: fallbacks,
 		load:      loader.Queried[query[ps2.WorldId], meta.Loaded[ps2.DetailedWorldPopulation]](cached),
 	}
-}
-
-func (l *worldPopulationLoader) Name() string {
-	return l.name
 }
 
 func (l *worldPopulationLoader) Start(ctx context.Context) {

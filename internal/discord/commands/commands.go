@@ -2,7 +2,6 @@ package discord_commands
 
 import (
 	"context"
-	"fmt"
 	"slices"
 	"sync"
 
@@ -29,15 +28,14 @@ func New(
 	populationLoadersPriority []string,
 	worldPopulationLoaders map[string]loader.Keyed[ps2.WorldId, meta.Loaded[ps2.DetailedWorldPopulation]],
 	worldPopulationLoadersPriority []string,
+	worldTerritoryControlLoader loader.Keyed[ps2.WorldId, meta.Loaded[ps2.WorldTerritoryControl]],
 ) *commands {
 	populationLoader := newPopulationLoader(
-		fmt.Sprintf("%s.population_loader", name),
 		log.With(sl.Component("population_loader")),
 		populationLoaders,
 		populationLoadersPriority,
 	)
 	worldPopulationLoader := newWorldPopulationLoader(
-		fmt.Sprintf("%s.world_population_loader", name),
 		log.With(sl.Component("world_population_loader")),
 		worldPopulationLoaders,
 		worldPopulationLoadersPriority,
@@ -55,6 +53,10 @@ func New(
 				slices.Values(populationLoadersPriority),
 				worldPopulationLoader.load,
 				slices.Values(worldPopulationLoadersPriority),
+			),
+			NewTerritories(
+				messages,
+				worldTerritoryControlLoader,
 			),
 		},
 	}

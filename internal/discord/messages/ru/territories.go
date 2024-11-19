@@ -1,4 +1,4 @@
-package en_messages
+package ru_messages
 
 import (
 	"fmt"
@@ -15,9 +15,9 @@ import (
 func renderZoneTerritoryControl(zone ps2.ZoneTerritoryControl) string {
 	b := strings.Builder{}
 	if zone.IsOpen {
-		b.WriteString("Unlocked ")
+		b.WriteString("Разблокирован ")
 	} else {
-		b.WriteString("Locked ")
+		b.WriteString("Заблокирован ")
 	}
 	b.WriteString(messages_shared.RenderTime(zone.Since))
 	b.WriteString(" (")
@@ -25,24 +25,24 @@ func renderZoneTerritoryControl(zone ps2.ZoneTerritoryControl) string {
 	if zone.ControlledBy == factions.None {
 		b.WriteByte(')')
 	} else {
-		b.WriteString(") by `")
+		b.WriteString(") фракцией `")
 		b.WriteString(factions.FactionNameById(zone.ControlledBy))
 		b.WriteByte('`')
 	}
 	if !zone.IsOpen {
 		return b.String()
 	}
-	b.WriteString("\nStatus: _")
+	b.WriteString("\nСтатус: _")
 	if zone.IsStable {
-		b.WriteString("Stable")
+		b.WriteString("Стабильный")
 	} else {
-		b.WriteString("Unstable")
+		b.WriteString("Нестабильный")
 	}
-	b.WriteString("_\nAlerts: _")
+	b.WriteString("_\nТревоги: _")
 	if zone.HasAlerts {
-		b.WriteString("Yes")
+		b.WriteString("Да")
 	} else {
-		b.WriteString("No")
+		b.WriteString("Нет")
 	}
 	b.WriteString("_\n")
 	RenderStatPerFactions(&b, zone.StatPerFactions)
@@ -71,7 +71,7 @@ func RenderWorldTerritoryControl(loaded meta.Loaded[ps2.WorldTerritoryControl]) 
 		Title:  ps2.WorldNameById(world.Id),
 		Fields: RenderZoneTerritoryControls(world.Zones),
 		Footer: &discordgo.MessageEmbedFooter{
-			Text: fmt.Sprintf("Source: %s", loaded.Source),
+			Text: fmt.Sprintf("Источник: %s", loaded.Source),
 		},
 		Timestamp: loaded.UpdatedAt.Format(time.RFC3339),
 	}

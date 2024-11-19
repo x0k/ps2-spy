@@ -69,3 +69,15 @@ func (m *localizedMessages) WorldPopulation(population meta.Loaded[ps2.DetailedW
 		return m.messages[locale].WorldPopulation(population)
 	}
 }
+
+func (m *localizedMessages) WorldTerritoryControlLoadError(worldId ps2.WorldId, err error) discord.LocalizedResponse {
+	return func(locale discord.Locale) (*discordgo.WebhookEdit, *discord.Error) {
+		return m.messages[locale].WorldTerritoryControlLoadError(worldId, err)
+	}
+}
+
+func (m *localizedMessages) WorldTerritoryControl(control meta.Loaded[ps2.WorldTerritoryControl]) discord.LocalizedResponse {
+	return func(locale discord.Locale) (*discordgo.WebhookEdit, *discord.Error) {
+		return m.messages[locale].WorldTerritoryControl(control)
+	}
+}

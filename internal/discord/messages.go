@@ -21,6 +21,8 @@ type Messages interface {
 	GlobalPopulationLoadError(provider string, err error) (*discordgo.WebhookEdit, *Error)
 	WorldPopulation(meta.Loaded[ps2.DetailedWorldPopulation]) (*discordgo.WebhookEdit, *Error)
 	WorldPopulationLoadError(provider string, worldId ps2.WorldId, err error) (*discordgo.WebhookEdit, *Error)
+	WorldTerritoryControlLoadError(ps2.WorldId, error) (*discordgo.WebhookEdit, *Error)
+	WorldTerritoryControl(meta.Loaded[ps2.WorldTerritoryControl]) (*discordgo.WebhookEdit, *Error)
 }
 
 type LocalizedMessage = func(locale Locale) (string, *Error)
@@ -37,4 +39,6 @@ type LocalizedMessages interface {
 	WorldPopulationLoadError(provider string, worldId ps2.WorldId, err error) LocalizedResponse
 	GlobalPopulation(meta.Loaded[ps2.WorldsPopulation]) LocalizedResponse
 	WorldPopulation(meta.Loaded[ps2.DetailedWorldPopulation]) LocalizedResponse
+	WorldTerritoryControlLoadError(ps2.WorldId, error) LocalizedResponse
+	WorldTerritoryControl(meta.Loaded[ps2.WorldTerritoryControl]) LocalizedResponse
 }
