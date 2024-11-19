@@ -38,7 +38,7 @@ type Command struct {
 	// ComponentHandlers map[string]InteractionHandler
 }
 
-func DeferredEphemeralResponse(handle func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.WebhookEdit, *Error[Localized])) InteractionHandler {
+func DeferredEphemeralResponse(handle func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) LocalizedResponse) InteractionHandler {
 	return func(ctx context.Context, log *logger.Logger, s *discordgo.Session, i *discordgo.InteractionCreate) error {
 		err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
@@ -49,10 +49,10 @@ func DeferredEphemeralResponse(handle func(ctx context.Context, s *discordgo.Ses
 		if err != nil {
 			return err
 		}
-		data, customErr := handle(ctx, s, i)
+		data, customErr := handle(ctx, s, i)(LocaleFromInteraction(i))
 		if customErr != nil {
 			if _, err := s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
-				Content: customErr.Msg(LocaleFromInteraction(i)),
+				Content: customErr.Msg,
 			}); err != nil {
 				log.Error(ctx, "error sending followup message", sl.Err(err))
 			}

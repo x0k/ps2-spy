@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	messages_shared "github.com/x0k/ps2-spy/internal/discord/messages/shared"
 	"github.com/x0k/ps2-spy/internal/meta"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	factions "github.com/x0k/ps2-spy/internal/ps2/factions"
@@ -18,9 +19,9 @@ func renderZoneTerritoryControl(zone ps2.ZoneTerritoryControl) string {
 	} else {
 		b.WriteString("Locked ")
 	}
-	b.WriteString(renderTime(zone.Since))
+	b.WriteString(messages_shared.RenderTime(zone.Since))
 	b.WriteString(" (")
-	b.WriteString(renderRelativeTime(zone.Since))
+	b.WriteString(messages_shared.RenderRelativeTime(zone.Since))
 	if zone.ControlledBy == factions.None {
 		b.WriteByte(')')
 	} else {

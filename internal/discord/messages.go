@@ -1,27 +1,40 @@
 package discord
 
-import "github.com/x0k/ps2-spy/internal/ps2"
+import (
+	"github.com/bwmarrin/discordgo"
+	"github.com/x0k/ps2-spy/internal/meta"
+	"github.com/x0k/ps2-spy/internal/ps2"
+)
 
-type Error[M any] struct {
-	Msg M
+type Error struct {
+	Msg string
 	Err error
 }
-type Localized = func(locale Locale) string
-
-type LocalizedError = Error[Localized]
-
-type StringError = Error[string]
 
 type Messages interface {
-	About() string
-	CharacterLogin(ps2.Character) (string, *StringError)
-	CharacterLoadError(ps2.CharacterId, error) (string, *StringError)
+	CharacterLogin(ps2.Character) (string, *Error)
+	CharacterLoadError(ps2.CharacterId, error) (string, *Error)
+
+	About() (*discordgo.WebhookEdit, *Error)
+	InvalidPopulationType(string, error) (*discordgo.WebhookEdit, *Error)
+	GlobalPopulation(meta.Loaded[ps2.WorldsPopulation]) (*discordgo.WebhookEdit, *Error)
+	GlobalPopulationLoadError(provider string, err error) (*discordgo.WebhookEdit, *Error)
+	WorldPopulation(meta.Loaded[ps2.DetailedWorldPopulation]) (*discordgo.WebhookEdit, *Error)
+	WorldPopulationLoadError(provider string, worldId ps2.WorldId, err error) (*discordgo.WebhookEdit, *Error)
 }
 
-type LocalizedMessage = func(locale Locale) (string, *StringError)
+type LocalizedMessage = func(locale Locale) (string, *Error)
+
+type LocalizedResponse = func(locale Locale) (*discordgo.WebhookEdit, *Error)
 
 type LocalizedMessages interface {
-	About() Localized
 	CharacterLogin(ps2.Character) LocalizedMessage
 	CharacterLoadError(ps2.CharacterId, error) LocalizedMessage
+
+	About() LocalizedResponse
+	InvalidPopulationType(string, error) LocalizedResponse
+	GlobalPopulationLoadError(provider string, err error) LocalizedResponse
+	WorldPopulationLoadError(provider string, worldId ps2.WorldId, err error) LocalizedResponse
+	GlobalPopulation(meta.Loaded[ps2.WorldsPopulation]) LocalizedResponse
+	WorldPopulation(meta.Loaded[ps2.DetailedWorldPopulation]) LocalizedResponse
 }

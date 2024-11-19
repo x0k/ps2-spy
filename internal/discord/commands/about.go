@@ -12,14 +12,21 @@ func NewAbout(
 ) *discord.Command {
 	return &discord.Command{
 		Cmd: &discordgo.ApplicationCommand{
-			Name:        "about",
+			Name: "about",
+			NameLocalizations: &map[discordgo.Locale]string{
+				discordgo.Russian: "О боте",
+			},
 			Description: "About this bot",
+			DescriptionLocalizations: &map[discordgo.Locale]string{
+				discordgo.Russian: "Общие сведения о боте",
+			},
 		},
-		Handler: discord.DeferredEphemeralResponse(func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.WebhookEdit, *discord.LocalizedError) {
-			content := messages.About()(discord.LocaleFromInteraction(i))
-			return &discordgo.WebhookEdit{
-				Content: &content,
-			}, nil
+		Handler: discord.DeferredEphemeralResponse(func(
+			ctx context.Context,
+			s *discordgo.Session,
+			i *discordgo.InteractionCreate,
+		) discord.LocalizedResponse {
+			return messages.About()
 		}),
 	}
 }

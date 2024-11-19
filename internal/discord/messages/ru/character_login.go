@@ -8,7 +8,7 @@ import (
 	factions "github.com/x0k/ps2-spy/internal/ps2/factions"
 )
 
-func (m *messages) CharacterLogin(char ps2.Character) (string, *discord.StringError) {
+func (m *messages) CharacterLogin(char ps2.Character) (string, *discord.Error) {
 	if char.OutfitTag != "" {
 		return fmt.Sprintf(
 			"[%s] %s (%s) онлайн (%s)",

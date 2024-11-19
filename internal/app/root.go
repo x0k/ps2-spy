@@ -301,7 +301,12 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	discordModule, err := discord_module.New(
 		log.With(sl.Module("discord")),
 		cfg.Discord.Token,
-		discord_commands.New(discordMessages),
+		discord_commands.New(
+			log.With(sl.Component("commands")),
+			discordMessages,
+			populationLoaders,
+			worldPopulationLoaders,
+		),
 		cfg.Discord.CommandHandlerTimeout,
 		cfg.Discord.EventHandlerTimeout,
 		cfg.Discord.RemoveCommands,

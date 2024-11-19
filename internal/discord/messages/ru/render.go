@@ -1,4 +1,4 @@
-package en_messages
+package ru_messages
 
 import (
 	"fmt"
@@ -16,11 +16,11 @@ import (
 func RenderStatPerFactions(builder *strings.Builder, p ps2.StatPerFactions) string {
 	builder.Grow(60) // 16 characters per line
 	if p.All == 0 {
-		builder.WriteString("TR:   0 | 0.0%\nNC:   0 | 0.0%\nVS:   0 | 0.0%\n")
+		builder.WriteString("ТР:   0 | 0.0%\nНК:   0 | 0.0%\nСВ:   0 | 0.0%\n")
 	} else {
-		builder.WriteString(fmt.Sprintf("TR: %3d | %.1f%%\n", p.TR, float64(p.TR)/float64(p.All)*100))
-		builder.WriteString(fmt.Sprintf("NC: %3d | %.1f%%\n", p.NC, float64(p.NC)/float64(p.All)*100))
-		builder.WriteString(fmt.Sprintf("VS: %3d | %.1f%%\n", p.VS, float64(p.VS)/float64(p.All)*100))
+		builder.WriteString(fmt.Sprintf("ТР: %3d | %.1f%%\n", p.TR, float64(p.TR)/float64(p.All)*100))
+		builder.WriteString(fmt.Sprintf("НК: %3d | %.1f%%\n", p.NC, float64(p.NC)/float64(p.All)*100))
+		builder.WriteString(fmt.Sprintf("СВ: %3d | %.1f%%\n", p.VS, float64(p.VS)/float64(p.All)*100))
 		// builder.WriteString(fmt.Sprintf("Other: %3d | %.2f%\n", worldPopulation.Total.Other, float64(worldPopulation.Total.Other)/float64(worldPopulation.Total.All)*100))
 	}
 	return builder.String()
@@ -43,7 +43,7 @@ func RenderWorldDetailedPopulation(loaded meta.Loaded[ps2.DetailedWorldPopulatio
 		Title:  fmt.Sprintf("%s - %d", worldPopulation.Name, worldPopulation.Total),
 		Fields: zones,
 		Footer: &discordgo.MessageEmbedFooter{
-			Text: fmt.Sprintf("Source: %s", loaded.Source),
+			Text: fmt.Sprintf("Источник: %s", loaded.Source),
 		},
 		Timestamp: loaded.UpdatedAt.Format(time.RFC3339),
 	}
@@ -69,10 +69,10 @@ func renderPopulation(loaded meta.Loaded[ps2.WorldsPopulation]) *discordgo.Messa
 	}
 	return &discordgo.MessageEmbed{
 		Type:   discordgo.EmbedTypeRich,
-		Title:  fmt.Sprintf("Total population - %d", population.Total),
+		Title:  fmt.Sprintf("Итоговая популяция - %d", population.Total),
 		Fields: fields,
 		Footer: &discordgo.MessageEmbedFooter{
-			Text: fmt.Sprintf("Source: %q", loaded.Source),
+			Text: fmt.Sprintf("Источник: %q", loaded.Source),
 		},
 		Timestamp: loaded.UpdatedAt.Format(time.RFC3339),
 	}
@@ -87,9 +87,9 @@ func RenderAlertTitle(alert ps2.Alert) *discordgo.MessageEmbedField {
 
 func RenderAlertTiming(alert ps2.Alert) *discordgo.MessageEmbedField {
 	return &discordgo.MessageEmbedField{
-		Name: "Period",
+		Name: "Период",
 		Value: fmt.Sprintf(
-			"%s - %s (Ends %s)",
+			"%s - %s (Заканчивается %s)",
 			messages_shared.RenderTime(alert.StartedAt),
 			messages_shared.RenderTime(alert.StartedAt.Add(alert.Duration)),
 			messages_shared.RenderRelativeTime(alert.StartedAt.Add(alert.Duration)),
@@ -99,7 +99,7 @@ func RenderAlertTiming(alert ps2.Alert) *discordgo.MessageEmbedField {
 
 func RenderAlertTerritoryControl(alert ps2.Alert) *discordgo.MessageEmbedField {
 	return &discordgo.MessageEmbedField{
-		Name:  "Territory Control",
+		Name:  "Контроль территорий",
 		Value: RenderStatPerFactions(&strings.Builder{}, alert.TerritoryControl),
 	}
 }
@@ -116,19 +116,19 @@ func RenderWorldDetailedAlerts(worldName string, loaded meta.Loaded[ps2.Alerts])
 	alerts := loaded.Value
 	if len(alerts) == 0 {
 		return &discordgo.MessageEmbed{
-			Title: fmt.Sprintf("%s - No alerts", worldName),
+			Title: fmt.Sprintf("%s - Без тревог", worldName),
 			Footer: &discordgo.MessageEmbedFooter{
-				Text: fmt.Sprintf("Source: %s", loaded.Source),
+				Text: fmt.Sprintf("Источник: %s", loaded.Source),
 			},
 			Timestamp: loaded.UpdatedAt.Format(time.RFC3339),
 		}
 	}
 	return &discordgo.MessageEmbed{
 		Type:   discordgo.EmbedTypeRich,
-		Title:  fmt.Sprintf("%s alerts", worldName),
+		Title:  fmt.Sprintf("%s тревоги", worldName),
 		Fields: RenderWorldAlerts(alerts),
 		Footer: &discordgo.MessageEmbedFooter{
-			Text: fmt.Sprintf("Source: %s", loaded.Source),
+			Text: fmt.Sprintf("Источник: %s", loaded.Source),
 		},
 		Timestamp: loaded.UpdatedAt.Format(time.RFC3339),
 	}
@@ -139,9 +139,9 @@ func RenderAlerts(loaded meta.Loaded[ps2.Alerts]) []*discordgo.MessageEmbed {
 	if len(alerts) == 0 {
 		return []*discordgo.MessageEmbed{
 			{
-				Title: "No alerts",
+				Title: "Без тревог",
 				Footer: &discordgo.MessageEmbedFooter{
-					Text: fmt.Sprintf("Source: %s", loaded.Source),
+					Text: fmt.Sprintf("Источник: %s", loaded.Source),
 				},
 				Timestamp: loaded.UpdatedAt.Format(time.RFC3339),
 			},
