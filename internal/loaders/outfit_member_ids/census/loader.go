@@ -15,16 +15,16 @@ type Loader struct {
 	client  *census2.Client
 	queryMu sync.Mutex
 	query   *census2.Query
-	operand census2.Ptr[census2.Str]
+	operand *census2.Ptr[census2.Str]
 }
 
 func New(client *census2.Client, namespace string) *Loader {
 	operand := census2.NewPtr(census2.Str(""))
 	return &Loader{
 		client:  client,
-		operand: operand,
+		operand: &operand,
 		query: census2.NewQuery(census2.GetQuery, namespace, ps2_collections.Outfit).
-			Where(census2.Cond("outfit_id").Equals(operand)).
+			Where(census2.Cond("outfit_id").Equals(&operand)).
 			Show("outfit_id").
 			WithJoin(
 				census2.Join(ps2_collections.OutfitMember).

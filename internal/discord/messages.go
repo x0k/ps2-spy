@@ -4,6 +4,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/x0k/ps2-spy/internal/meta"
 	"github.com/x0k/ps2-spy/internal/ps2"
+	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
 
 type Error struct {
@@ -27,6 +28,13 @@ type Messages interface {
 	WorldAlerts(worldName string, alerts meta.Loaded[ps2.Alerts]) (*discordgo.WebhookEdit, *Error)
 	GlobalAlertsLoadError(provider string, err error) (*discordgo.WebhookEdit, *Error)
 	GlobalAlerts(alerts meta.Loaded[ps2.Alerts]) (*discordgo.WebhookEdit, *Error)
+	OnlineMembersLoadError(channelId ChannelId, platform ps2_platforms.Platform, err error) (*discordgo.WebhookEdit, *Error)
+	OutfitsLoadError(outfitIds []ps2.OutfitId, platform ps2_platforms.Platform, err error) (*discordgo.WebhookEdit, *Error)
+	MembersOnline(
+		outfitCharacters map[ps2.OutfitId][]ps2.Character,
+		characters []ps2.Character,
+		outfits map[ps2.OutfitId]ps2.Outfit,
+	) (*discordgo.WebhookEdit, *Error)
 }
 
 type LocalizedMessage = func(locale Locale) (string, *Error)
@@ -49,4 +57,11 @@ type LocalizedMessages interface {
 	WorldAlerts(worldName string, alerts meta.Loaded[ps2.Alerts]) LocalizedResponse
 	GlobalAlertsLoadError(provider string, err error) LocalizedResponse
 	GlobalAlerts(alerts meta.Loaded[ps2.Alerts]) LocalizedResponse
+	OnlineMembersLoadError(channelId ChannelId, platform ps2_platforms.Platform, err error) LocalizedResponse
+	OutfitsLoadError(outfitIds []ps2.OutfitId, platform ps2_platforms.Platform, err error) LocalizedResponse
+	MembersOnline(
+		outfitCharacters map[ps2.OutfitId][]ps2.Character,
+		characters []ps2.Character,
+		outfits map[ps2.OutfitId]ps2.Outfit,
+	) LocalizedResponse
 }

@@ -16,7 +16,7 @@ type Loader struct {
 	client  *census2.Client
 	queryMu sync.Mutex
 	query   *census2.Query
-	operand census2.Ptr[census2.Str]
+	operand *census2.Ptr[census2.Str]
 }
 
 func New(client *census2.Client, platform ps2_platforms.Platform) *Loader {
@@ -31,10 +31,10 @@ func New(client *census2.Client, platform ps2_platforms.Platform) *Loader {
 	}
 	return &Loader{
 		client:  client,
-		operand: operand,
+		operand: &operand,
 		query: census2.NewQuery(census2.GetQuery, ns, ps2_collections.Map).
 			Where(
-				census2.Cond("world_id").Equals(operand),
+				census2.Cond("world_id").Equals(&operand),
 				census2.Cond("zone_ids").Equals(census2.Str(b.String())),
 			).
 			WithJoin(

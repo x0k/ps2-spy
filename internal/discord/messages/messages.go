@@ -7,6 +7,7 @@ import (
 	ru_messages "github.com/x0k/ps2-spy/internal/discord/messages/ru"
 	"github.com/x0k/ps2-spy/internal/meta"
 	"github.com/x0k/ps2-spy/internal/ps2"
+	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
 
 type localizedMessages struct {
@@ -103,5 +104,27 @@ func (m *localizedMessages) GlobalAlertsLoadError(provider string, err error) di
 func (m *localizedMessages) GlobalAlerts(alerts meta.Loaded[ps2.Alerts]) discord.LocalizedResponse {
 	return func(locale discord.Locale) (*discordgo.WebhookEdit, *discord.Error) {
 		return m.messages[locale].GlobalAlerts(alerts)
+	}
+}
+
+func (m *localizedMessages) OnlineMembersLoadError(channelId discord.ChannelId, platform ps2_platforms.Platform, err error) discord.LocalizedResponse {
+	return func(locale discord.Locale) (*discordgo.WebhookEdit, *discord.Error) {
+		return m.messages[locale].OnlineMembersLoadError(channelId, platform, err)
+	}
+}
+
+func (m *localizedMessages) OutfitsLoadError(outfitIds []ps2.OutfitId, platform ps2_platforms.Platform, err error) discord.LocalizedResponse {
+	return func(locale discord.Locale) (*discordgo.WebhookEdit, *discord.Error) {
+		return m.messages[locale].OutfitsLoadError(outfitIds, platform, err)
+	}
+}
+
+func (m *localizedMessages) MembersOnline(
+	outfitCharacters map[ps2.OutfitId][]ps2.Character,
+	characters []ps2.Character,
+	outfits map[ps2.OutfitId]ps2.Outfit,
+) discord.LocalizedResponse {
+	return func(locale discord.Locale) (*discordgo.WebhookEdit, *discord.Error) {
+		return m.messages[locale].MembersOnline(outfitCharacters, characters, outfits)
 	}
 }

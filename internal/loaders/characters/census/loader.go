@@ -19,7 +19,7 @@ import (
 type Loader struct {
 	log                       *logger.Logger
 	client                    *census2.Client
-	operand                   census2.Ptr[census2.List[census2.Str]]
+	operand                   *census2.Ptr[census2.List[census2.Str]]
 	queryMu                   sync.Mutex
 	query                     *census2.Query
 	platform                  ps2_platforms.Platform
@@ -31,9 +31,9 @@ func New(log *logger.Logger, client *census2.Client, platform ps2_platforms.Plat
 	return &Loader{
 		log:     log,
 		client:  client,
-		operand: operand,
+		operand: &operand,
 		query: census2.NewQuery(census2.GetQuery, ps2_platforms.PlatformNamespace(platform), ps2_collections.Character).
-			Where(census2.Cond("character_id").Equals(operand)).
+			Where(census2.Cond("character_id").Equals(&operand)).
 			Show("character_id", "faction_id", "name.first").
 			WithJoin(
 				census2.Join(ps2_collections.OutfitMemberExtended).
