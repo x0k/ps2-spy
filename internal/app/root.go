@@ -288,7 +288,6 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			worldTrackers,
 		),
 	}
-	_ = alertsLoaders
 
 	facilityCache := sql_facility_cache.New(
 		log.With(sl.Component("facility_cache")),
@@ -309,6 +308,8 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			cfg.AppName,
 			worldTrackers,
 		),
+		alertsLoaders,
+		[]string{"spy"},
 	)
 	m.Append(discordCommands)
 	discordModule, err := discord_module.New(

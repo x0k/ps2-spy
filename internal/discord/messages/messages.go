@@ -81,3 +81,27 @@ func (m *localizedMessages) WorldTerritoryControl(control meta.Loaded[ps2.WorldT
 		return m.messages[locale].WorldTerritoryControl(control)
 	}
 }
+
+func (m *localizedMessages) WorldAlertsLoadError(worldName string, worldId ps2.WorldId, err error) discord.LocalizedResponse {
+	return func(locale discord.Locale) (*discordgo.WebhookEdit, *discord.Error) {
+		return m.messages[locale].WorldAlertsLoadError(worldName, worldId, err)
+	}
+}
+
+func (m *localizedMessages) WorldAlerts(worldName string, worldAlerts meta.Loaded[ps2.Alerts]) discord.LocalizedResponse {
+	return func(locale discord.Locale) (*discordgo.WebhookEdit, *discord.Error) {
+		return m.messages[locale].WorldAlerts(worldName, worldAlerts)
+	}
+}
+
+func (m *localizedMessages) GlobalAlertsLoadError(provider string, err error) discord.LocalizedResponse {
+	return func(locale discord.Locale) (*discordgo.WebhookEdit, *discord.Error) {
+		return m.messages[locale].GlobalAlertsLoadError(provider, err)
+	}
+}
+
+func (m *localizedMessages) GlobalAlerts(alerts meta.Loaded[ps2.Alerts]) discord.LocalizedResponse {
+	return func(locale discord.Locale) (*discordgo.WebhookEdit, *discord.Error) {
+		return m.messages[locale].GlobalAlerts(alerts)
+	}
+}

@@ -18,9 +18,9 @@ func NewPopulation(
 	log *logger.Logger,
 	messages discord.LocalizedMessages,
 	populationLoader loader.Keyed[string, meta.Loaded[ps2.WorldsPopulation]],
-	populationLoaders iter.Seq[string],
+	populationProviders iter.Seq[string],
 	worldPopulationLoader loader.Queried[query[ps2.WorldId], meta.Loaded[ps2.DetailedWorldPopulation]],
-	worldPopulationLoaders iter.Seq[string],
+	worldPopulationProviders iter.Seq[string],
 ) *discord.Command {
 	return &discord.Command{
 		Cmd: &discordgo.ApplicationCommand{
@@ -54,7 +54,7 @@ func NewPopulation(
 							DescriptionLocalizations: map[discordgo.Locale]string{
 								discordgo.Russian: "Название провайдера",
 							},
-							Choices: providerChoices(populationLoaders),
+							Choices: providerChoices(populationProviders),
 						},
 					},
 				},
@@ -92,7 +92,7 @@ func NewPopulation(
 							DescriptionLocalizations: map[discordgo.Locale]string{
 								discordgo.Russian: "Название провайдера",
 							},
-							Choices: providerChoices(worldPopulationLoaders),
+							Choices: providerChoices(worldPopulationProviders),
 						},
 					},
 				},
