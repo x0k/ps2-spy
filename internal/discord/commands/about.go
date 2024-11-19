@@ -25,7 +25,7 @@ func NewAbout(
 			ctx context.Context,
 			s *discordgo.Session,
 			i *discordgo.InteractionCreate,
-		) discord.LocalizedResponse {
+		) discord.LocalizedEdit {
 			return messages.About()
 		}),
 	}

@@ -7,6 +7,8 @@ import (
 	"slices"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/x0k/ps2-spy/internal/lib/logger"
+	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/lib/slicesx"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
@@ -83,5 +85,23 @@ func SimpleMessage[E Event](handle func(ctx context.Context, e E) LocalizedMessa
 			return fmt.Errorf("%s sending messages: %s", op, errors.Join(sendErrors...))
 		}
 		return nil
+	}
+}
+
+func ShowModal(handle func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) LocalizedResponse) InteractionHandler {
+	return func(ctx context.Context, log *logger.Logger, s *discordgo.Session, i *discordgo.InteractionCreate) error {
+		data, customErr := handle(ctx, s, i)(LocaleFromInteraction(i))
+		if customErr != nil {
+			if _, err := s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
+				Content: customErr.Msg,
+			}); err != nil {
+				log.Error(ctx, "error sending followup message", sl.Err(err))
+			}
+			return customErr.Err
+		}
+		return s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseModal,
+			Data: data,
+		})
 	}
 }

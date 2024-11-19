@@ -44,7 +44,7 @@ func NewTerritories(
 			ctx context.Context,
 			s *discordgo.Session,
 			i *discordgo.InteractionCreate,
-		) discord.LocalizedResponse {
+		) discord.LocalizedEdit {
 			server := i.ApplicationCommandData().Options[0].StringValue()
 			worldId := ps2.WorldId(server)
 			loaded, err := WorldTerritoryControlLoader(ctx, worldId)

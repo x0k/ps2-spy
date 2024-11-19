@@ -7,6 +7,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
+	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
 
 type InteractionHandler func(
@@ -38,7 +39,19 @@ type Command struct {
 	// ComponentHandlers map[string]InteractionHandler
 }
 
-func DeferredEphemeralResponse(handle func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) LocalizedResponse) InteractionHandler {
+const (
+	SUBSCRIPTION_SETUP_PC_MODAL     = "subscription_setup_pc"
+	SUBSCRIPTION_SETUP_PS4_EU_MODAL = "subscription_setup_ps4_eu"
+	SUBSCRIPTION_SETUP_PS4_US_MODAL = "subscription_setup_ps4_us"
+)
+
+var SUBSCRIPTION_MODAL_CUSTOM_IDS = map[ps2_platforms.Platform]string{
+	ps2_platforms.PC:     SUBSCRIPTION_SETUP_PC_MODAL,
+	ps2_platforms.PS4_EU: SUBSCRIPTION_SETUP_PS4_EU_MODAL,
+	ps2_platforms.PS4_US: SUBSCRIPTION_SETUP_PS4_US_MODAL,
+}
+
+func DeferredEphemeralResponse(handle func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) LocalizedEdit) InteractionHandler {
 	return func(ctx context.Context, log *logger.Logger, s *discordgo.Session, i *discordgo.InteractionCreate) error {
 		err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,

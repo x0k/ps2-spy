@@ -35,33 +35,53 @@ type Messages interface {
 		characters []ps2.Character,
 		outfits map[ps2.OutfitId]ps2.Outfit,
 	) (*discordgo.WebhookEdit, *Error)
+
+	SubscriptionSettingsLoadError(channelId ChannelId, platform ps2_platforms.Platform, err error) (*discordgo.InteractionResponseData, *Error)
+	OutfitTagsLoadError(outfitIds []ps2.OutfitId, platform ps2_platforms.Platform, err error) (*discordgo.InteractionResponseData, *Error)
+	CharacterNamesLoadError(characterIds []ps2.CharacterId, platform ps2_platforms.Platform, err error) (*discordgo.InteractionResponseData, *Error)
+	SubscriptionSettingsModal(
+		customId string,
+		outfitTags []string,
+		characterNames []string,
+	) (*discordgo.InteractionResponseData, *Error)
 }
 
 type LocalizedMessage = func(locale Locale) (string, *Error)
 
-type LocalizedResponse = func(locale Locale) (*discordgo.WebhookEdit, *Error)
+type LocalizedEdit = func(locale Locale) (*discordgo.WebhookEdit, *Error)
+
+type LocalizedResponse = func(locale Locale) (*discordgo.InteractionResponseData, *Error)
 
 type LocalizedMessages interface {
 	CharacterLogin(ps2.Character) LocalizedMessage
 	CharacterLoadError(ps2.CharacterId, error) LocalizedMessage
 
-	About() LocalizedResponse
-	InvalidPopulationType(string, error) LocalizedResponse
-	GlobalPopulationLoadError(provider string, err error) LocalizedResponse
-	WorldPopulationLoadError(provider string, worldId ps2.WorldId, err error) LocalizedResponse
-	GlobalPopulation(meta.Loaded[ps2.WorldsPopulation]) LocalizedResponse
-	WorldPopulation(meta.Loaded[ps2.DetailedWorldPopulation]) LocalizedResponse
-	WorldTerritoryControlLoadError(ps2.WorldId, error) LocalizedResponse
-	WorldTerritoryControl(meta.Loaded[ps2.WorldTerritoryControl]) LocalizedResponse
-	WorldAlertsLoadError(provider string, worldId ps2.WorldId, err error) LocalizedResponse
-	WorldAlerts(worldName string, alerts meta.Loaded[ps2.Alerts]) LocalizedResponse
-	GlobalAlertsLoadError(provider string, err error) LocalizedResponse
-	GlobalAlerts(alerts meta.Loaded[ps2.Alerts]) LocalizedResponse
-	OnlineMembersLoadError(channelId ChannelId, platform ps2_platforms.Platform, err error) LocalizedResponse
-	OutfitsLoadError(outfitIds []ps2.OutfitId, platform ps2_platforms.Platform, err error) LocalizedResponse
+	About() LocalizedEdit
+	InvalidPopulationType(string, error) LocalizedEdit
+	GlobalPopulationLoadError(provider string, err error) LocalizedEdit
+	WorldPopulationLoadError(provider string, worldId ps2.WorldId, err error) LocalizedEdit
+	GlobalPopulation(meta.Loaded[ps2.WorldsPopulation]) LocalizedEdit
+	WorldPopulation(meta.Loaded[ps2.DetailedWorldPopulation]) LocalizedEdit
+	WorldTerritoryControlLoadError(ps2.WorldId, error) LocalizedEdit
+	WorldTerritoryControl(meta.Loaded[ps2.WorldTerritoryControl]) LocalizedEdit
+	WorldAlertsLoadError(provider string, worldId ps2.WorldId, err error) LocalizedEdit
+	WorldAlerts(worldName string, alerts meta.Loaded[ps2.Alerts]) LocalizedEdit
+	GlobalAlertsLoadError(provider string, err error) LocalizedEdit
+	GlobalAlerts(alerts meta.Loaded[ps2.Alerts]) LocalizedEdit
+	OnlineMembersLoadError(channelId ChannelId, platform ps2_platforms.Platform, err error) LocalizedEdit
+	OutfitsLoadError(outfitIds []ps2.OutfitId, platform ps2_platforms.Platform, err error) LocalizedEdit
 	MembersOnline(
 		outfitCharacters map[ps2.OutfitId][]ps2.Character,
 		characters []ps2.Character,
 		outfits map[ps2.OutfitId]ps2.Outfit,
+	) LocalizedEdit
+
+	SubscriptionSettingsLoadError(channelId ChannelId, platform ps2_platforms.Platform, err error) LocalizedResponse
+	OutfitTagsLoadError(outfitIds []ps2.OutfitId, platform ps2_platforms.Platform, err error) LocalizedResponse
+	CharacterNamesLoadError(characterIds []ps2.CharacterId, platform ps2_platforms.Platform, err error) LocalizedResponse
+	SubscriptionSettingsModal(
+		customId string,
+		outfitTags []string,
+		characterNames []string,
 	) LocalizedResponse
 }

@@ -102,7 +102,7 @@ func NewPopulation(
 			ctx context.Context,
 			s *discordgo.Session,
 			i *discordgo.InteractionCreate,
-		) discord.LocalizedResponse {
+		) discord.LocalizedEdit {
 			const op = "discord_commands.NewPopulation.Handle"
 			option := i.ApplicationCommandData().Options[0]
 			populationType := option.Name
@@ -127,7 +127,7 @@ func handleGlobalPopulation(
 	messages discord.LocalizedMessages,
 	opts []*discordgo.ApplicationCommandInteractionDataOption,
 	popLoader loader.Keyed[string, meta.Loaded[ps2.WorldsPopulation]],
-) discord.LocalizedResponse {
+) discord.LocalizedEdit {
 	var provider string
 	if len(opts) > 0 {
 		provider = opts[0].StringValue()
@@ -146,7 +146,7 @@ func handleServerPopulation(
 	messages discord.LocalizedMessages,
 	opts []*discordgo.ApplicationCommandInteractionDataOption,
 	worldPopLoader loader.Queried[query[ps2.WorldId], meta.Loaded[ps2.DetailedWorldPopulation]],
-) discord.LocalizedResponse {
+) discord.LocalizedEdit {
 	server := opts[0].StringValue()
 	var provider string
 	if len(opts) > 1 {

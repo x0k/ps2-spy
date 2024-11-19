@@ -30,6 +30,8 @@ import (
 	sql_outfit_member_ids_loader "github.com/x0k/ps2-spy/internal/loaders/outfit_member_ids/sql"
 	sql_outfit_sync_at_loader "github.com/x0k/ps2-spy/internal/loaders/outfit_sync_at/sql"
 	sql_outfit_tracking_channels_loader "github.com/x0k/ps2-spy/internal/loaders/outfit_tracking_channels/sql"
+	census_platform_character_names_loader "github.com/x0k/ps2-spy/internal/loaders/platform_character_names/census"
+	census_platform_outfit_tags_loader "github.com/x0k/ps2-spy/internal/loaders/platform_outfit_tags/census"
 	census_platform_outfits_loader "github.com/x0k/ps2-spy/internal/loaders/platform_outfits/census"
 	characters_tracker_population_loader "github.com/x0k/ps2-spy/internal/loaders/population/characters_tracker"
 	sql_subscription_settings_loader "github.com/x0k/ps2-spy/internal/loaders/subscription_settings/sql"
@@ -317,11 +319,19 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		charactersTrackers,
 	)
 
-	outfitsLoader := loader.WithQueriedCache(
+	outfitsLoader := census_platform_outfits_loader.New(censusClient)
+
+	cachedOutfitsLoader := loader.WithQueriedCache(
 		log.With(sl.Component("outfits_cached_loader")),
-		census_platform_outfits_loader.New(censusClient).Load,
+		outfitsLoader.Load,
 		discord.NewPlatformsCache(outfitsCaches),
 	)
+
+	// TODO: Cache
+	characterNamesLoader := census_platform_character_names_loader.New(censusClient)
+
+	// TODO: Cache
+	outfitTagsLoader := census_platform_outfit_tags_loader.New(censusClient)
 
 	discordMessages := discord_messages.New()
 	discordCommands := discord_commands.New(
@@ -339,7 +349,10 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		alertsLoaders,
 		[]string{"spy"},
 		trackableOnlineEntitiesLoader,
-		outfitsLoader,
+		cachedOutfitsLoader,
+		subscriptionSettingsLoader,
+		characterNamesLoader.Load,
+		outfitTagsLoader.Load,
 	)
 	m.Append(discordCommands)
 	discordModule, err := discord_module.New(

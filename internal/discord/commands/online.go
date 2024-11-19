@@ -59,7 +59,7 @@ func NewOnline(
 			ctx context.Context,
 			s *discordgo.Session,
 			i *discordgo.InteractionCreate,
-		) discord.LocalizedResponse {
+		) discord.LocalizedEdit {
 			platform := ps2_platforms.Platform(i.ApplicationCommandData().Options[0].Name)
 			channelId := discord.ChannelId(i.ChannelID)
 			onlineMembers, err := onlineTrackableEntitiesLoader(ctx, discord.SettingsQuery{
