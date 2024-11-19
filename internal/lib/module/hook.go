@@ -13,6 +13,10 @@ type PreStopper interface {
 	PreStop(hooks ...Hook)
 }
 
+type PostStopper interface {
+	PostStop(hooks ...Hook)
+}
+
 type hook struct {
 	name string
 	run  func(ctx context.Context) error

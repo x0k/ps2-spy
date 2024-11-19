@@ -8,8 +8,8 @@ import (
 )
 
 func Subscribe[E events.Event](
-	preStopper module.PreStopper,
+	postStopper module.PostStopper,
 	subs pubsub.SubscriptionsManager[events.EventType],
 ) <-chan E {
-	return pubsub_adapters.Subscribe[events.EventType, E](preStopper, subs)
+	return pubsub_adapters.Subscribe[events.EventType, E](postStopper, subs)
 }

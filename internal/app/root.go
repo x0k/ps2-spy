@@ -297,17 +297,18 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	)
 	_ = facilityCache
 
+	discordMessages := discord_messages.New()
 	discordModule, err := discord_module.New(
 		log.With(sl.Module("discord")),
 		cfg.Discord.Token,
-		discord_commands.New(),
+		discord_commands.New(discordMessages),
 		cfg.Discord.CommandHandlerTimeout,
 		cfg.Discord.EventHandlerTimeout,
 		cfg.Discord.RemoveCommands,
 		characterTrackerSubsMangers,
 		trackingManagers,
 		discord_handlers.New(
-			discord_messages.New(),
+			discordMessages,
 			characterLoaders,
 		),
 	)

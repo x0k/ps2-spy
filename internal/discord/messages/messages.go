@@ -3,6 +3,7 @@ package discord_messages
 import (
 	"github.com/x0k/ps2-spy/internal/discord"
 	en_messages "github.com/x0k/ps2-spy/internal/discord/messages/en"
+	ru_messages "github.com/x0k/ps2-spy/internal/discord/messages/ru"
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
@@ -14,7 +15,14 @@ func New() *localizedMessages {
 	return &localizedMessages{
 		messages: map[discord.Locale]discord.Messages{
 			discord.EN: en_messages.New(),
+			discord.RU: ru_messages.New(),
 		},
+	}
+}
+
+func (m *localizedMessages) About() discord.Localized {
+	return func(locale discord.Locale) string {
+		return m.messages[locale].About()
 	}
 }
 

@@ -19,7 +19,7 @@ import (
 func newEventsSubscriptionService(
 	log *logger.Logger,
 	platform ps2_platforms.Platform,
-	ps module.PreStopper,
+	ps module.PostStopper,
 	subs pubsub.SubscriptionsManager[events.EventType],
 	charactersTracker *characters_tracker.CharactersTracker,
 	worldsTracker *worlds_tracker.WorldsTracker,

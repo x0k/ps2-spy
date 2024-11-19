@@ -12,7 +12,7 @@ import (
 )
 
 func newEventsSubscriptionService(
-	ps module.PreStopper,
+	ps module.PostStopper,
 	platform ps2_platforms.Platform,
 	charactersTrackerSubs pubsub.SubscriptionsManager[characters_tracker.EventType],
 	handlersManager *discord_events.HandlersManager,

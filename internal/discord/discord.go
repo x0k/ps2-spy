@@ -45,7 +45,7 @@ const (
 
 const DEFAULT_LOCALE = EN
 
-func localeFromInteraction(i *discordgo.InteractionCreate) Locale {
+func LocaleFromInteraction(i *discordgo.InteractionCreate) Locale {
 	switch i.Locale {
 	case discordgo.Russian:
 		return RU

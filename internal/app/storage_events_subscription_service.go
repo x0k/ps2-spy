@@ -17,7 +17,7 @@ import (
 
 func newStorageEventsSubscriptionService(
 	log *logger.Logger,
-	ps module.PreStopper,
+	ps module.PostStopper,
 	tms map[ps2_platforms.Platform]*tracking_manager.TrackingManager,
 	oss map[ps2_platforms.Platform]*outfit_members_synchronizer.OutfitMembersSynchronizer,
 	subs pubsub.SubscriptionsManager[storage.EventType],
@@ -40,6 +40,9 @@ func newStorageEventsSubscriptionService(
 					return nil
 				case e := <-outfitMemberSaved:
 					tm := tms[e.Platform]
+					println("____________________")
+					println(tm)
+					println("____________________")
 					tm.TrackOutfitMember(e.CharacterId, e.OutfitId)
 				case e := <-outfitMemberDeleted:
 					tm := tms[e.Platform]

@@ -7,22 +7,16 @@ import (
 	"github.com/x0k/ps2-spy/internal/discord"
 )
 
-func NewAbout() *discord.Command {
+func NewAbout(
+	messages discord.LocalizedMessages,
+) *discord.Command {
 	return &discord.Command{
 		Cmd: &discordgo.ApplicationCommand{
 			Name:        "about",
 			Description: "About this bot",
 		},
 		Handler: discord.DeferredEphemeralResponse(func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) (*discordgo.WebhookEdit, *discord.LocalizedError) {
-			content := `# PlanetSide 2 Spy
-
-Simple discord bot for PlanetSide 2 outfits
-
-## Links
-
-- [GitHub](https://github.com/x0k/ps2-spy)
-		
-`
+			content := messages.About()(discord.LocaleFromInteraction(i))
 			return &discordgo.WebhookEdit{
 				Content: &content,
 			}, nil

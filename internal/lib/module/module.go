@@ -17,6 +17,7 @@ type Module struct {
 	preStart  []Hook
 	postStart []Hook
 	preStop   []Hook
+	postStop  []Hook
 	fatal     chan error
 	stopped   atomic.Bool
 }
@@ -47,6 +48,10 @@ func (m *Module) PostStart(hooks ...Hook) {
 
 func (m *Module) PreStop(hooks ...Hook) {
 	m.preStop = append(m.preStop, hooks...)
+}
+
+func (m *Module) PostStop(hooks ...Hook) {
+	m.postStop = append(m.postStop, hooks...)
 }
 
 func (m *Module) Fatal(ctx context.Context, err error) {
@@ -118,6 +123,13 @@ func (m *Module) start(ctx context.Context, awaiter func(context.Context) error)
 	m.log.LogAttrs(ctx, slog.LevelInfo, "stopping")
 	m.stopped.Store(true)
 	cancel()
+
+	for _, hook := range m.postStop {
+		m.log.LogAttrs(ctx, slog.LevelInfo, "run post stop", slog.String("hook", hook.Name()))
+		if err := hook.Run(ctx); err != nil {
+			m.Fatal(ctx, err)
+		}
+	}
 
 	m.wg.Wait()
 

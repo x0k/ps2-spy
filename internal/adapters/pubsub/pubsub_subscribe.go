@@ -21,13 +21,13 @@ func (h handler[T, E]) Handle(event pubsub.Event[T]) error {
 }
 
 func Subscribe[T pubsub.EventType, E pubsub.Event[T]](
-	preStopper module.PreStopper,
+	postStopper module.PostStopper,
 	subs pubsub.SubscriptionsManager[T],
 ) <-chan E {
 	channel := make(chan E)
 	h := handler[T, E](channel)
 	unSubscribe := subs.AddHandler(h)
-	preStopper.PreStop(module.NewHook(
+	postStopper.PostStop(module.NewHook(
 		fmt.Sprintf("event_handler_%v", h.Type()),
 		func(_ context.Context) error {
 			unSubscribe()

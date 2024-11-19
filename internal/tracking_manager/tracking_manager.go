@@ -157,6 +157,7 @@ func (tm *TrackingManager) ChannelIdsForCharacter(ctx context.Context, character
 }
 
 func (tm *TrackingManager) outfitTrackersCount(outfitId ps2.OutfitId) int {
+	println(tm)
 	tm.outfitsFilterMu.RLock()
 	defer tm.outfitsFilterMu.RUnlock()
 	return tm.outfitsFilter[outfitId]
