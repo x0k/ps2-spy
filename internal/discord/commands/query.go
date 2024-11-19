@@ -11,3 +11,12 @@ func newQuery[K comparable](provider string, key K) query[K] {
 		Key:      key,
 	}
 }
+
+const defaultProvider = "default"
+
+func providerName(provider string) string {
+	if provider == "" {
+		return defaultProvider
+	}
+	return provider
+}

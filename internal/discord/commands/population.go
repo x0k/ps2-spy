@@ -17,16 +17,16 @@ import (
 func NewPopulation(
 	log *logger.Logger,
 	messages discord.LocalizedMessages,
-	populationLoaders iter.Seq[string],
-	worldPopulationLoaders iter.Seq[string],
 	populationLoader loader.Keyed[string, meta.Loaded[ps2.WorldsPopulation]],
+	populationLoaders iter.Seq[string],
 	worldPopulationLoader loader.Queried[query[ps2.WorldId], meta.Loaded[ps2.DetailedWorldPopulation]],
+	worldPopulationLoaders iter.Seq[string],
 ) *discord.Command {
 	return &discord.Command{
 		Cmd: &discordgo.ApplicationCommand{
 			Name: "population",
 			NameLocalizations: &map[discordgo.Locale]string{
-				discordgo.Russian: "Популяция",
+				discordgo.Russian: "популяция",
 			},
 			Description: "Returns the population.",
 			DescriptionLocalizations: &map[discordgo.Locale]string{
@@ -37,7 +37,7 @@ func NewPopulation(
 					Type: discordgo.ApplicationCommandOptionSubCommand,
 					Name: "global",
 					NameLocalizations: map[discordgo.Locale]string{
-						discordgo.Russian: "Глобальная",
+						discordgo.Russian: "глобальная",
 					},
 					Description: "Returns the global population.",
 					DescriptionLocalizations: map[discordgo.Locale]string{
@@ -48,7 +48,7 @@ func NewPopulation(
 							Type: discordgo.ApplicationCommandOptionString,
 							Name: "provider",
 							NameLocalizations: map[discordgo.Locale]string{
-								discordgo.Russian: "Провайдер",
+								discordgo.Russian: "источник",
 							},
 							Description: "Provider name",
 							DescriptionLocalizations: map[discordgo.Locale]string{
@@ -62,7 +62,7 @@ func NewPopulation(
 					Type: discordgo.ApplicationCommandOptionSubCommand,
 					Name: "server",
 					NameLocalizations: map[discordgo.Locale]string{
-						discordgo.Russian: "Сервер",
+						discordgo.Russian: "сервер",
 					},
 					Description: "Returns the server population.",
 					DescriptionLocalizations: map[discordgo.Locale]string{
@@ -73,7 +73,7 @@ func NewPopulation(
 							Type: discordgo.ApplicationCommandOptionString,
 							Name: "server",
 							NameLocalizations: map[discordgo.Locale]string{
-								discordgo.Russian: "Сервер",
+								discordgo.Russian: "сервер",
 							},
 							Description: "Server name",
 							DescriptionLocalizations: map[discordgo.Locale]string{
@@ -86,7 +86,7 @@ func NewPopulation(
 							Type: discordgo.ApplicationCommandOptionString,
 							Name: "provider",
 							NameLocalizations: map[discordgo.Locale]string{
-								discordgo.Russian: "Провайдер",
+								discordgo.Russian: "источник",
 							},
 							Description: "Provider name",
 							DescriptionLocalizations: map[discordgo.Locale]string{

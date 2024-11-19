@@ -272,7 +272,6 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			charactersTrackers,
 		),
 	}
-	_ = populationLoaders
 
 	worldPopulationLoaders := map[string]loader.Keyed[ps2.WorldId, meta.Loaded[ps2.DetailedWorldPopulation]]{
 		"spy": characters_tracker_world_population_loader.New(
@@ -280,7 +279,6 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			charactersTrackers,
 		),
 	}
-	_ = worldPopulationLoaders
 
 	alertsLoaders := map[string]loader.Simple[meta.Loaded[ps2.Alerts]]{
 		"spy": worlds_tracker_alerts_loader.New(
@@ -298,15 +296,20 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	_ = facilityCache
 
 	discordMessages := discord_messages.New()
+	discordCommands := discord_commands.New(
+		"discord_commands",
+		log.With(sl.Component("commands")),
+		discordMessages,
+		populationLoaders,
+		[]string{"spy"},
+		worldPopulationLoaders,
+		[]string{"spy"},
+	)
+	m.Append(discordCommands)
 	discordModule, err := discord_module.New(
 		log.With(sl.Module("discord")),
 		cfg.Discord.Token,
-		discord_commands.New(
-			log.With(sl.Component("commands")),
-			discordMessages,
-			populationLoaders,
-			worldPopulationLoaders,
-		),
+		discordCommands.Commands(),
 		cfg.Discord.CommandHandlerTimeout,
 		cfg.Discord.EventHandlerTimeout,
 		cfg.Discord.RemoveCommands,

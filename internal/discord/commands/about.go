@@ -14,7 +14,7 @@ func NewAbout(
 		Cmd: &discordgo.ApplicationCommand{
 			Name: "about",
 			NameLocalizations: &map[discordgo.Locale]string{
-				discordgo.Russian: "О боте",
+				discordgo.Russian: "сведения",
 			},
 			Description: "About this bot",
 			DescriptionLocalizations: &map[discordgo.Locale]string{

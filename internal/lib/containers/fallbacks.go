@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"sync"
 	"time"
 
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
@@ -28,7 +27,7 @@ func NewFallbacks[T any](log *slog.Logger, entities map[string]T, priority []str
 	}
 }
 
-func (f *Fallbacks[T]) Start(ctx context.Context, wg *sync.WaitGroup) {
+func (f *Fallbacks[T]) Start(ctx context.Context) {
 	f.lastSuccessfulEntity.Start(ctx)
 }
 
