@@ -290,8 +290,8 @@
             ]
         },
         {
-            "id": "Failed to save subscription settings for {ChannelId} channel ({Platform})",
-            "message": "Failed to save subscription settings for {ChannelId} channel ({Platform})",
+            "id": "Failed to save tracking settings for {ChannelId} channel ({Platform})",
+            "message": "Failed to save tracking settings for {ChannelId} channel ({Platform})",
             "translation": "Ошибка сохранения настроек подписки для канала {ChannelId} ({Platform})",
             "placeholders": [
                 {
@@ -359,8 +359,8 @@
             ]
         },
         {
-            "id": "Failed to load subscription settings for {ChannelId} channel ({Platform})",
-            "message": "Failed to load subscription settings for {ChannelId} channel ({Platform})",
+            "id": "Failed to load tracking settings for {ChannelId} channel ({Platform})",
+            "message": "Failed to load tracking settings for {ChannelId} channel ({Platform})",
             "translation": "Ошибка загрузки настроек подписки для канала {ChannelId} ({Platform})",
             "placeholders": [
                 {
@@ -428,19 +428,19 @@
             ]
         },
         {
-            "id": "Subscription Settings (PC)",
-            "message": "Subscription Settings (PC)",
-            "translation": "Настройки подписки (PC)"
+            "id": "Tracking Settings (PC)",
+            "message": "Tracking Settings (PC)",
+            "translation": "Настройки отслеживания (PC)"
         },
         {
-            "id": "Subscription Settings (PS4 EU)",
-            "message": "Subscription Settings (PS4 EU)",
-            "translation": "Настройки подписки (PS4 EU)"
+            "id": "Tracking Settings (PS4 EU)",
+            "message": "Tracking Settings (PS4 EU)",
+            "translation": "Настройки отслеживания (PS4 EU)"
         },
         {
-            "id": "Subscription Settings (PS4 US)",
-            "message": "Subscription Settings (PS4 US)",
-            "translation": "Настройки подписки (PS4 US)"
+            "id": "Tracking Settings (PS4 US)",
+            "message": "Tracking Settings (PS4 US)",
+            "translation": "Настройки отслеживания (PS4 US)"
         },
         {
             "id": "Which outfits do you want to track?",
@@ -461,6 +461,51 @@
             "id": "Enter the character names separated by comma",
             "message": "Enter the character names separated by comma",
             "translation": "Введите имена персонажей через запятую"
+        },
+        {
+            "id": "Failed to parse language {Lang}",
+            "message": "Failed to parse language {Lang}",
+            "translation": "Невозможно распознать локализацию {Lang}",
+            "placeholders": [
+                {
+                    "id": "Lang",
+                    "string": "%[1]q",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "lang"
+                }
+            ]
+        },
+        {
+            "id": "Failed to save language {Lang}",
+            "message": "Failed to save language {Lang}",
+            "translation": "Ошибка при сохранении локализации {Lang}",
+            "placeholders": [
+                {
+                    "id": "Lang",
+                    "string": "%[1]q",
+                    "type": "golang.org/x/text/language.Tag",
+                    "underlyingType": "struct{language golang.org/x/text/internal/language/compact.ID; locale golang.org/x/text/internal/language/compact.ID; full golang.org/x/text/internal/language/compact.fullTag}",
+                    "argNum": 1,
+                    "expr": "lang"
+                }
+            ]
+        },
+        {
+            "id": "Language for this channel has been set to {String}",
+            "message": "Language for this channel has been set to {String}",
+            "translation": "Язык для этого канала был установлен в {String}",
+            "placeholders": [
+                {
+                    "id": "String",
+                    "string": "%[1]q",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "lang.String()"
+                }
+            ]
         },
         {
             "id": "No characters online",

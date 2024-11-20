@@ -318,9 +318,9 @@
             "fuzzy": true
         },
         {
-            "id": "Failed to save subscription settings for {ChannelId} channel ({Platform})",
-            "message": "Failed to save subscription settings for {ChannelId} channel ({Platform})",
-            "translation": "Failed to save subscription settings for {ChannelId} channel ({Platform})",
+            "id": "Failed to save tracking settings for {ChannelId} channel ({Platform})",
+            "message": "Failed to save tracking settings for {ChannelId} channel ({Platform})",
+            "translation": "Failed to save tracking settings for {ChannelId} channel ({Platform})",
             "translatorComment": "Copied from source.",
             "placeholders": [
                 {
@@ -393,9 +393,9 @@
             "fuzzy": true
         },
         {
-            "id": "Failed to load subscription settings for {ChannelId} channel ({Platform})",
-            "message": "Failed to load subscription settings for {ChannelId} channel ({Platform})",
-            "translation": "Failed to load subscription settings for {ChannelId} channel ({Platform})",
+            "id": "Failed to load tracking settings for {ChannelId} channel ({Platform})",
+            "message": "Failed to load tracking settings for {ChannelId} channel ({Platform})",
+            "translation": "Failed to load tracking settings for {ChannelId} channel ({Platform})",
             "translatorComment": "Copied from source.",
             "placeholders": [
                 {
@@ -468,23 +468,23 @@
             "fuzzy": true
         },
         {
-            "id": "Subscription Settings (PC)",
-            "message": "Subscription Settings (PC)",
-            "translation": "Subscription Settings (PC)",
+            "id": "Tracking Settings (PC)",
+            "message": "Tracking Settings (PC)",
+            "translation": "Tracking Settings (PC)",
             "translatorComment": "Copied from source.",
             "fuzzy": true
         },
         {
-            "id": "Subscription Settings (PS4 EU)",
-            "message": "Subscription Settings (PS4 EU)",
-            "translation": "Subscription Settings (PS4 EU)",
+            "id": "Tracking Settings (PS4 EU)",
+            "message": "Tracking Settings (PS4 EU)",
+            "translation": "Tracking Settings (PS4 EU)",
             "translatorComment": "Copied from source.",
             "fuzzy": true
         },
         {
-            "id": "Subscription Settings (PS4 US)",
-            "message": "Subscription Settings (PS4 US)",
-            "translation": "Subscription Settings (PS4 US)",
+            "id": "Tracking Settings (PS4 US)",
+            "message": "Tracking Settings (PS4 US)",
+            "translation": "Tracking Settings (PS4 US)",
             "translatorComment": "Copied from source.",
             "fuzzy": true
         },
@@ -514,6 +514,57 @@
             "message": "Enter the character names separated by comma",
             "translation": "Enter the character names separated by comma",
             "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Failed to parse language {Lang}",
+            "message": "Failed to parse language {Lang}",
+            "translation": "Failed to parse language {Lang}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Lang",
+                    "string": "%[1]q",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "lang"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "Failed to save language {Lang}",
+            "message": "Failed to save language {Lang}",
+            "translation": "Failed to save language {Lang}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Lang",
+                    "string": "%[1]q",
+                    "type": "golang.org/x/text/language.Tag",
+                    "underlyingType": "struct{language golang.org/x/text/internal/language/compact.ID; locale golang.org/x/text/internal/language/compact.ID; full golang.org/x/text/internal/language/compact.fullTag}",
+                    "argNum": 1,
+                    "expr": "lang"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "Language for this channel has been set to {String}",
+            "message": "Language for this channel has been set to {String}",
+            "translation": "Language for this channel has been set to {String}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "String",
+                    "string": "%[1]q",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "lang.String()"
+                }
+            ],
             "fuzzy": true
         },
         {
