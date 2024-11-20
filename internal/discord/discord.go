@@ -16,11 +16,11 @@ type TrackableEntities[O any, C any] struct {
 	Characters C
 }
 
-type SubscriptionSettings = TrackableEntities[[]ps2.OutfitId, []ps2.CharacterId]
+type TrackingSettings = TrackableEntities[[]ps2.OutfitId, []ps2.CharacterId]
 
-func CalculateSubscriptionSettingsDiff(
-	old SubscriptionSettings,
-	new SubscriptionSettings,
+func CalculateTrackingSettingsDiff(
+	old TrackingSettings,
+	new TrackingSettings,
 ) TrackableEntities[diff.Diff[ps2.OutfitId], diff.Diff[ps2.CharacterId]] {
 	return TrackableEntities[diff.Diff[ps2.OutfitId], diff.Diff[ps2.CharacterId]]{
 		Outfits:    diff.SlicesDiff(old.Outfits, new.Outfits),

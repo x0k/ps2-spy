@@ -84,6 +84,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.listUniqueTrackableOutfitIdsForPlatformStmt, err = db.PrepareContext(ctx, listUniqueTrackableOutfitIdsForPlatform); err != nil {
 		return nil, fmt.Errorf("error preparing query ListUniqueTrackableOutfitIdsForPlatform: %w", err)
 	}
+	if q.upsertChannelLocaleStmt, err = db.PrepareContext(ctx, upsertChannelLocale); err != nil {
+		return nil, fmt.Errorf("error preparing query UpsertChannelLocale: %w", err)
+	}
 	if q.upsertPlatformOutfitSynchronizedAtStmt, err = db.PrepareContext(ctx, upsertPlatformOutfitSynchronizedAt); err != nil {
 		return nil, fmt.Errorf("error preparing query UpsertPlatformOutfitSynchronizedAt: %w", err)
 	}
@@ -192,6 +195,11 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing listUniqueTrackableOutfitIdsForPlatformStmt: %w", cerr)
 		}
 	}
+	if q.upsertChannelLocaleStmt != nil {
+		if cerr := q.upsertChannelLocaleStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing upsertChannelLocaleStmt: %w", cerr)
+		}
+	}
 	if q.upsertPlatformOutfitSynchronizedAtStmt != nil {
 		if cerr := q.upsertPlatformOutfitSynchronizedAtStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing upsertPlatformOutfitSynchronizedAtStmt: %w", cerr)
@@ -256,6 +264,7 @@ type Queries struct {
 	listTrackableCharacterIdsWithDuplicationForPlatformStmt *sql.Stmt
 	listTrackableOutfitIdsWithDuplicationForPlatformStmt    *sql.Stmt
 	listUniqueTrackableOutfitIdsForPlatformStmt             *sql.Stmt
+	upsertChannelLocaleStmt                                 *sql.Stmt
 	upsertPlatformOutfitSynchronizedAtStmt                  *sql.Stmt
 }
 
@@ -283,6 +292,7 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		listTrackableCharacterIdsWithDuplicationForPlatformStmt: q.listTrackableCharacterIdsWithDuplicationForPlatformStmt,
 		listTrackableOutfitIdsWithDuplicationForPlatformStmt:    q.listTrackableOutfitIdsWithDuplicationForPlatformStmt,
 		listUniqueTrackableOutfitIdsForPlatformStmt:             q.listUniqueTrackableOutfitIdsForPlatformStmt,
+		upsertChannelLocaleStmt:                                 q.upsertChannelLocaleStmt,
 		upsertPlatformOutfitSynchronizedAtStmt:                  q.upsertPlatformOutfitSynchronizedAtStmt,
 	}
 }

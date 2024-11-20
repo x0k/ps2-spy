@@ -52,7 +52,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/ps2"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 	sql_outfit_members_saver "github.com/x0k/ps2-spy/internal/savers/outfit_members/sql"
-	sql_subscription_settings_saver "github.com/x0k/ps2-spy/internal/savers/subscription_settings/sql"
+	sql_tracking_settings_saver "github.com/x0k/ps2-spy/internal/savers/tracking_settings/sql"
 	"github.com/x0k/ps2-spy/internal/storage"
 	sql_storage "github.com/x0k/ps2-spy/internal/storage/sql"
 	"github.com/x0k/ps2-spy/internal/tracking_manager"
@@ -338,7 +338,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		charactersTrackers,
 	)
 
-	channelSubscriptionSettingsSaver := sql_subscription_settings_saver.New(
+	channelSubscriptionSettingsSaver := sql_tracking_settings_saver.New(
 		storage,
 		subscriptionSettingsLoader,
 	)
@@ -376,6 +376,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			return outfitIdsLoaders[pq.Platform](ctx, pq.Value)
 		},
 		channelSubscriptionSettingsSaver,
+		storage.SaveChannelLanguage,
 	)
 	m.Append(discordCommands)
 	discordModule, err := discord_module.New(

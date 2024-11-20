@@ -407,6 +407,17 @@ func (s *Storage) SaveFacility(ctx context.Context, facility ps2.Facility) error
 	})
 }
 
+func (s *Storage) SaveChannelLanguage(
+	ctx context.Context,
+	channelId discord.ChannelId,
+	lang language.Tag,
+) error {
+	return s.queries.UpsertChannelLocale(ctx, db.UpsertChannelLocaleParams{
+		ChannelID: string(channelId),
+		Locale:    lang.String(),
+	})
+}
+
 func (s *Storage) publish(err error, event storage.Event) error {
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {

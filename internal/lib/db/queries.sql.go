@@ -623,6 +623,26 @@ func (q *Queries) ListUniqueTrackableOutfitIdsForPlatform(ctx context.Context, p
 	return items, nil
 }
 
+const upsertChannelLocale = `-- name: UpsertChannelLocale :exec
+INSERT INTO
+  channel_locale (channel_id, locale)
+VALUES
+  (?, ?) ON CONFLICT (channel_id) DO
+UPDATE
+SET
+  locale = EXCLUDED.locale
+`
+
+type UpsertChannelLocaleParams struct {
+	ChannelID string
+	Locale    string
+}
+
+func (q *Queries) UpsertChannelLocale(ctx context.Context, arg UpsertChannelLocaleParams) error {
+	_, err := q.exec(ctx, q.upsertChannelLocaleStmt, upsertChannelLocale, arg.ChannelID, arg.Locale)
+	return err
+}
+
 const upsertPlatformOutfitSynchronizedAt = `-- name: UpsertPlatformOutfitSynchronizedAt :exec
 INSERT INTO
   outfit_synchronization (platform, outfit_id, synchronized_at)

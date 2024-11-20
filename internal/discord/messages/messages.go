@@ -9,6 +9,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/ps2"
 	ps2_factions "github.com/x0k/ps2-spy/internal/ps2/factions"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
+	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 )
 
@@ -216,16 +217,16 @@ func (m *Messages) CharacterIdsLoadError(characterNames []string, platform ps2_p
 	}
 }
 
-func (m *Messages) SubscriptionSettingsSaveError(channelId discord.ChannelId, platform ps2_platforms.Platform, err error) discord.Edit {
+func (m *Messages) TrackingSettingsSaveError(channelId discord.ChannelId, platform ps2_platforms.Platform, err error) discord.Edit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
 		return nil, &discord.Error{
-			Msg: p.Sprintf("Failed to save subscription settings for %s channel (%s)", channelId, platform),
+			Msg: p.Sprintf("Failed to save tracking settings for %s channel (%s)", channelId, platform),
 			Err: err,
 		}
 	}
 }
 
-func (m *Messages) SubscriptionSettingsOutfitTagsLoadError(outfitIds []ps2.OutfitId, platform ps2_platforms.Platform, err error) discord.Edit {
+func (m *Messages) TrackingSettingsOutfitTagsLoadError(outfitIds []ps2.OutfitId, platform ps2_platforms.Platform, err error) discord.Edit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
 		return nil, &discord.Error{
 			Msg: p.Sprintf("Settings are saved, but failed to load outfit tags %v (%s)", outfitIds, platform),
@@ -234,7 +235,7 @@ func (m *Messages) SubscriptionSettingsOutfitTagsLoadError(outfitIds []ps2.Outfi
 	}
 }
 
-func (m *Messages) SubscriptionSettingsCharacterNamesLoadError(characterIds []ps2.CharacterId, platform ps2_platforms.Platform, err error) discord.Edit {
+func (m *Messages) TrackingSettingsCharacterNamesLoadError(characterIds []ps2.CharacterId, platform ps2_platforms.Platform, err error) discord.Edit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
 		return nil, &discord.Error{
 			Msg: p.Sprintf("Settings are saved, but failed to load character names %v (%s)", characterIds, platform),
@@ -243,7 +244,7 @@ func (m *Messages) SubscriptionSettingsCharacterNamesLoadError(characterIds []ps
 	}
 }
 
-func (m *Messages) SubscriptionSettingsUpdate(entities discord.TrackableEntities[[]string, []string]) discord.Edit {
+func (m *Messages) TrackingSettingsUpdate(entities discord.TrackableEntities[[]string, []string]) discord.Edit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
 		content := renderSubscriptionsSettingsUpdate(p, entities)
 		return &discordgo.WebhookEdit{
@@ -252,10 +253,10 @@ func (m *Messages) SubscriptionSettingsUpdate(entities discord.TrackableEntities
 	}
 }
 
-func (m *Messages) SubscriptionSettingsLoadError(channelId discord.ChannelId, platform ps2_platforms.Platform, err error) discord.Response {
+func (m *Messages) TrackingSettingsLoadError(channelId discord.ChannelId, platform ps2_platforms.Platform, err error) discord.Response {
 	return func(p *message.Printer) (*discordgo.InteractionResponseData, *discord.Error) {
 		return nil, &discord.Error{
-			Msg: p.Sprintf("Failed to load subscription settings for %s channel (%s)", channelId, platform),
+			Msg: p.Sprintf("Failed to load tracking settings for %s channel (%s)", channelId, platform),
 			Err: err,
 		}
 	}
@@ -279,20 +280,20 @@ func (m *Messages) CharacterNamesLoadError(characterIds []ps2.CharacterId, platf
 	}
 }
 
-func (m *Messages) SubscriptionSettingsModal(
+func (m *Messages) TrackingSettingsModal(
 	customId string,
 	outfitTags []string,
 	characterNames []string,
 ) discord.Response {
 	return func(p *message.Printer) (*discordgo.InteractionResponseData, *discord.Error) {
-		var subscriptionModalTitles = map[string]string{
-			discord.SUBSCRIPTION_MODAL_CUSTOM_IDS[ps2_platforms.PC]:     p.Sprintf("Subscription Settings (PC)"),
-			discord.SUBSCRIPTION_MODAL_CUSTOM_IDS[ps2_platforms.PS4_EU]: p.Sprintf("Subscription Settings (PS4 EU)"),
-			discord.SUBSCRIPTION_MODAL_CUSTOM_IDS[ps2_platforms.PS4_US]: p.Sprintf("Subscription Settings (PS4 US)"),
+		var trackingModalTitles = map[string]string{
+			discord.TRACKING_MODAL_CUSTOM_IDS[ps2_platforms.PC]:     p.Sprintf("Tracking Settings (PC)"),
+			discord.TRACKING_MODAL_CUSTOM_IDS[ps2_platforms.PS4_EU]: p.Sprintf("Tracking Settings (PS4 EU)"),
+			discord.TRACKING_MODAL_CUSTOM_IDS[ps2_platforms.PS4_US]: p.Sprintf("Tracking Settings (PS4 US)"),
 		}
 		return &discordgo.InteractionResponseData{
 			CustomID: customId,
-			Title:    subscriptionModalTitles[customId],
+			Title:    trackingModalTitles[customId],
 			Components: []discordgo.MessageComponent{
 				discordgo.ActionsRow{
 					Components: []discordgo.MessageComponent{
@@ -317,6 +318,33 @@ func (m *Messages) SubscriptionSettingsModal(
 					},
 				},
 			},
+		}, nil
+	}
+}
+
+func (m *Messages) ChannelLanguageParseError(channelId discord.ChannelId, lang string, err error) discord.Edit {
+	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
+		return nil, &discord.Error{
+			Msg: p.Sprintf("Failed to parse language %q", lang),
+			Err: err,
+		}
+	}
+}
+
+func (m *Messages) ChannelLanguageSaveError(channelId discord.ChannelId, lang language.Tag, err error) discord.Edit {
+	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
+		return nil, &discord.Error{
+			Msg: p.Sprintf("Failed to save language %q", lang),
+			Err: err,
+		}
+	}
+}
+
+func (m *Messages) ChannelLanguageSaved(channelId discord.ChannelId, lang language.Tag) discord.Edit {
+	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
+		content := p.Sprintf("Language for this channel has been set to %q", lang.String())
+		return &discordgo.WebhookEdit{
+			Content: &content,
 		}, nil
 	}
 }

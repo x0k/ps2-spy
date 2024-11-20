@@ -192,3 +192,12 @@ FROM
 WHERE
   platform = ?
   AND outfit_id IN (sqlc.slice (outfit_ids));
+
+-- name: UpsertChannelLocale :exec
+INSERT INTO
+  channel_locale (channel_id, locale)
+VALUES
+  (?, ?) ON CONFLICT (channel_id) DO
+UPDATE
+SET
+  locale = EXCLUDED.locale;

@@ -12,22 +12,20 @@ import (
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
 
-type ChannelSettingsSaver interface {
-	Save(ctx context.Context, channelId discord.ChannelId, platform ps2_platforms.Platform, settings discord.SubscriptionSettings) error
-}
+type ChannelTrackingSettingsSaver = func(ctx context.Context, channelId discord.ChannelId, platform ps2_platforms.Platform, settings discord.TrackingSettings) error
 
-func NewSubscription(
+func NewTracking(
 	messages *discord_messages.Messages,
-	settingsLoader loader.Keyed[discord.SettingsQuery, discord.SubscriptionSettings],
+	settingsLoader loader.Keyed[discord.SettingsQuery, discord.TrackingSettings],
 	characterNamesLoader loader.Queried[discord.PlatformQuery[[]ps2.CharacterId], []string],
 	characterIdsLoader loader.Queried[discord.PlatformQuery[[]string], []ps2.CharacterId],
 	outfitTagsLoader loader.Queried[discord.PlatformQuery[[]ps2.OutfitId], []string],
 	outfitIdsLoader loader.Queried[discord.PlatformQuery[[]string], []ps2.OutfitId],
-	channelSettingsSaver ChannelSettingsSaver,
+	channelTrackingSettingsSaver ChannelTrackingSettingsSaver,
 ) *discord.Command {
 	submitHandlers := make(map[string]discord.InteractionHandler, len(ps2_platforms.Platforms))
 	for _, platform := range ps2_platforms.Platforms {
-		submitHandlers[discord.SUBSCRIPTION_MODAL_CUSTOM_IDS[platform]] = discord.DeferredEphemeralResponse(func(
+		submitHandlers[discord.TRACKING_MODAL_CUSTOM_IDS[platform]] = discord.DeferredEphemeralResponse(func(
 			ctx context.Context,
 			s *discordgo.Session,
 			i *discordgo.InteractionCreate,
@@ -63,33 +61,33 @@ func NewSubscription(
 				}
 			}
 			channelId := discord.ChannelId(i.ChannelID)
-			err = channelSettingsSaver.Save(
+			err = channelTrackingSettingsSaver(
 				ctx,
 				channelId,
 				platform,
-				discord.SubscriptionSettings{
+				discord.TrackingSettings{
 					Outfits:    outfitsIds,
 					Characters: charIds,
 				},
 			)
 			if err != nil {
-				return messages.SubscriptionSettingsSaveError(channelId, platform, err)
+				return messages.TrackingSettingsSaveError(channelId, platform, err)
 			}
 			outfitTags, err := outfitTagsLoader(ctx, discord.PlatformQuery[[]ps2.OutfitId]{
 				Platform: platform,
 				Value:    outfitsIds,
 			})
 			if err != nil {
-				return messages.SubscriptionSettingsOutfitTagsLoadError(outfitsIds, platform, err)
+				return messages.TrackingSettingsOutfitTagsLoadError(outfitsIds, platform, err)
 			}
 			charNames, err := characterNamesLoader(ctx, discord.PlatformQuery[[]ps2.CharacterId]{
 				Platform: platform,
 				Value:    charIds,
 			})
 			if err != nil {
-				return messages.SubscriptionSettingsCharacterNamesLoadError(charIds, platform, err)
+				return messages.TrackingSettingsCharacterNamesLoadError(charIds, platform, err)
 			}
-			return messages.SubscriptionSettingsUpdate(discord.TrackableEntities[[]string, []string]{
+			return messages.TrackingSettingsUpdate(discord.TrackableEntities[[]string, []string]{
 				Outfits:    outfitTags,
 				Characters: charNames,
 			})
@@ -97,37 +95,37 @@ func NewSubscription(
 	}
 	return &discord.Command{
 		Cmd: &discordgo.ApplicationCommand{
-			Name: "subscription",
+			Name: "tracking",
 			NameLocalizations: &map[discordgo.Locale]string{
-				discordgo.Russian: "настроика",
+				discordgo.Russian: "отслеживание",
 			},
-			Description: "Manage subscription settings for this channel",
+			Description: "Manage tracking settings for this channel",
 			DescriptionLocalizations: &map[discordgo.Locale]string{
-				discordgo.Russian: "Управление подписками для этого канала",
+				discordgo.Russian: "Управление отслеживанием в этом канале",
 			},
 			Options: []*discordgo.ApplicationCommandOption{
 				{
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
 					Name:        string(ps2_platforms.PC),
-					Description: "Subscription settings for the PC platform",
+					Description: "Tracking settings for the PC platform",
 					DescriptionLocalizations: map[discordgo.Locale]string{
-						discordgo.Russian: "Настройки подписки для ПК",
+						discordgo.Russian: "Настройки отслеживания для ПК",
 					},
 				},
 				{
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
 					Name:        string(ps2_platforms.PS4_EU),
-					Description: "Subscription settings for the PS4 EU platform",
+					Description: "Tracking settings for the PS4 EU platform",
 					DescriptionLocalizations: map[discordgo.Locale]string{
-						discordgo.Russian: "Настройки подписки для PS4 EU",
+						discordgo.Russian: "Настройки отслеживания для PS4 EU",
 					},
 				},
 				{
 					Type:        discordgo.ApplicationCommandOptionSubCommand,
 					Name:        string(ps2_platforms.PS4_US),
-					Description: "Subscription settings for the PS4 US platform",
+					Description: "Tracking settings for the PS4 US platform",
 					DescriptionLocalizations: map[discordgo.Locale]string{
-						discordgo.Russian: "Настройки подписки для PS4 US",
+						discordgo.Russian: "Настройки отслеживания для PS4 US",
 					},
 				},
 			},
@@ -144,7 +142,7 @@ func NewSubscription(
 				Platform:  platform,
 			})
 			if err != nil {
-				return messages.SubscriptionSettingsLoadError(channelId, platform, err)
+				return messages.TrackingSettingsLoadError(channelId, platform, err)
 			}
 			tags, err := outfitTagsLoader(ctx, discord.PlatformQuery[[]ps2.OutfitId]{
 				Platform: platform,
@@ -160,8 +158,8 @@ func NewSubscription(
 			if err != nil {
 				return messages.CharacterNamesLoadError(settings.Characters, platform, err)
 			}
-			return messages.SubscriptionSettingsModal(
-				discord.SUBSCRIPTION_MODAL_CUSTOM_IDS[platform],
+			return messages.TrackingSettingsModal(
+				discord.TRACKING_MODAL_CUSTOM_IDS[platform],
 				tags,
 				names,
 			)

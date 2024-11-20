@@ -38,12 +38,13 @@ func New(
 		[]ps2.Character,
 	]],
 	outfitsLoader loader.Queried[discord.PlatformQuery[[]ps2.OutfitId], map[ps2.OutfitId]ps2.Outfit],
-	settingsLoader loader.Keyed[discord.SettingsQuery, discord.SubscriptionSettings],
+	settingsLoader loader.Keyed[discord.SettingsQuery, discord.TrackingSettings],
 	characterNamesLoader loader.Queried[discord.PlatformQuery[[]ps2.CharacterId], []string],
 	characterIdsLoader loader.Queried[discord.PlatformQuery[[]string], []ps2.CharacterId],
 	outfitTagsLoader loader.Queried[discord.PlatformQuery[[]ps2.OutfitId], []string],
 	outfitIdsLoader loader.Queried[discord.PlatformQuery[[]string], []ps2.OutfitId],
-	channelSettingsSaver ChannelSettingsSaver,
+	channelTrackingSettingsSaver ChannelTrackingSettingsSaver,
+	channelLanguageSaver ChannelLanguageSaver,
 ) *commands {
 	populationLoader := newPopulationLoader(
 		log.With(sl.Component("population_loader")),
@@ -104,14 +105,18 @@ func New(
 				onlineTrackableEntitiesLoader,
 				outfitsLoader,
 			),
-			NewSubscription(
+			NewTracking(
 				messages,
 				settingsLoader,
 				characterNamesLoader,
 				characterIdsLoader,
 				outfitTagsLoader,
 				outfitIdsLoader,
-				channelSettingsSaver,
+				channelTrackingSettingsSaver,
+			),
+			NewLanguage(
+				messages,
+				channelLanguageSaver,
 			),
 		},
 	}

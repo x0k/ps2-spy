@@ -14,7 +14,7 @@ import (
 var ErrPopulationTrackerNotFound = errors.New("population tracker not found")
 
 func New(
-	settingsLoader loader.Keyed[discord.SettingsQuery, discord.SubscriptionSettings],
+	settingsLoader loader.Keyed[discord.SettingsQuery, discord.TrackingSettings],
 	populationTrackers map[ps2_platforms.Platform]*characters_tracker.CharactersTracker,
 ) loader.Keyed[discord.SettingsQuery, discord.TrackableEntities[
 	map[ps2.OutfitId][]ps2.Character,

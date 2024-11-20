@@ -10,17 +10,17 @@ import (
 
 func New(
 	storage *sql_storage.Storage,
-) loader.Keyed[discord.SettingsQuery, discord.SubscriptionSettings] {
-	return func(ctx context.Context, query discord.SettingsQuery) (discord.SubscriptionSettings, error) {
+) loader.Keyed[discord.SettingsQuery, discord.TrackingSettings] {
+	return func(ctx context.Context, query discord.SettingsQuery) (discord.TrackingSettings, error) {
 		outfits, err := storage.TrackingOutfitIdsForPlatform(ctx, query.ChannelId, query.Platform)
 		if err != nil {
-			return discord.SubscriptionSettings{}, err
+			return discord.TrackingSettings{}, err
 		}
 		characters, err := storage.TrackingCharacterIdsForPlatform(ctx, query.ChannelId, query.Platform)
 		if err != nil {
-			return discord.SubscriptionSettings{}, err
+			return discord.TrackingSettings{}, err
 		}
-		return discord.SubscriptionSettings{
+		return discord.TrackingSettings{
 			Outfits:    outfits,
 			Characters: characters,
 		}, nil
