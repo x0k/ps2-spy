@@ -2,8 +2,6 @@ package discord_commands
 
 import (
 	"context"
-	"fmt"
-	"maps"
 	"time"
 
 	"github.com/x0k/ps2-spy/internal/lib/cache/memory"
@@ -31,15 +29,14 @@ func newWorldPopulationLoader(
 		loadersPriority,
 		time.Hour,
 	)
-	withDefault := maps.Clone(loaders)
-	withDefault[defaultProvider] = loader.NewKeyedFallback(fallbacks)
+	fallbackLoader := loader.NewKeyedFallback(fallbacks)
 	cached := loader.WithQueriedCache(
 		log.With(sl.Component("world_population_loader_cache")),
 		func(ctx context.Context, query query[ps2.WorldId]) (meta.Loaded[ps2.DetailedWorldPopulation], error) {
-			if loader, ok := withDefault[providerName(query.Provider)]; ok {
+			if loader, ok := loaders[query.Provider]; ok {
 				return loader(ctx, query.Key)
 			}
-			return meta.Loaded[ps2.DetailedWorldPopulation]{}, fmt.Errorf("unknown provider: %s", query.Provider)
+			return fallbackLoader(ctx, query.Key)
 		},
 		memory.NewKeyedExpirableCache[query[ps2.WorldId], meta.Loaded[ps2.DetailedWorldPopulation]](
 			(len(loaders)+1)*len(ps2.ZoneNames),

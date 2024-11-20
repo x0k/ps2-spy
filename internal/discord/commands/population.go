@@ -48,7 +48,7 @@ func NewPopulation(
 							Type: discordgo.ApplicationCommandOptionString,
 							Name: "provider",
 							NameLocalizations: map[discordgo.Locale]string{
-								discordgo.Russian: "источник",
+								discordgo.Russian: "проваидер",
 							},
 							Description: "Provider name",
 							DescriptionLocalizations: map[discordgo.Locale]string{
@@ -86,7 +86,7 @@ func NewPopulation(
 							Type: discordgo.ApplicationCommandOptionString,
 							Name: "provider",
 							NameLocalizations: map[discordgo.Locale]string{
-								discordgo.Russian: "источник",
+								discordgo.Russian: "проваидер",
 							},
 							Description: "Provider name",
 							DescriptionLocalizations: map[discordgo.Locale]string{

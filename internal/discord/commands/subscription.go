@@ -20,7 +20,7 @@ func NewSubscription(
 		Cmd: &discordgo.ApplicationCommand{
 			Name: "subscription",
 			NameLocalizations: &map[discordgo.Locale]string{
-				discordgo.Russian: "настройка",
+				discordgo.Russian: "настроика",
 			},
 			Description: "Manage subscription settings for this channel",
 			DescriptionLocalizations: &map[discordgo.Locale]string{

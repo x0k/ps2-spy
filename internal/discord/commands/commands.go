@@ -60,6 +60,7 @@ func New(
 		name:                  name,
 		populationLoader:      populationLoader,
 		worldPopulationLoader: worldPopulationLoader,
+		alertsLoader:          alertsLoader,
 		commands: []*discord.Command{
 			NewAbout(messages),
 			NewPopulation(

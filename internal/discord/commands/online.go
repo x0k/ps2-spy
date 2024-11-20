@@ -22,7 +22,7 @@ func NewOnline(
 		Cmd: &discordgo.ApplicationCommand{
 			Name: "online",
 			NameLocalizations: &map[discordgo.Locale]string{
-				discordgo.Russian: "онлайн",
+				discordgo.Russian: "онлаин",
 			},
 			Description: "Returns online trackable outfits members and characters",
 			DescriptionLocalizations: &map[discordgo.Locale]string{

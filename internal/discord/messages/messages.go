@@ -128,3 +128,31 @@ func (m *localizedMessages) MembersOnline(
 		return m.messages[locale].MembersOnline(outfitCharacters, characters, outfits)
 	}
 }
+
+func (m *localizedMessages) SubscriptionSettingsLoadError(channelId discord.ChannelId, platform ps2_platforms.Platform, err error) discord.LocalizedResponse {
+	return func(locale discord.Locale) (*discordgo.InteractionResponseData, *discord.Error) {
+		return m.messages[locale].SubscriptionSettingsLoadError(channelId, platform, err)
+	}
+}
+
+func (m *localizedMessages) OutfitTagsLoadError(outfitIds []ps2.OutfitId, platform ps2_platforms.Platform, err error) discord.LocalizedResponse {
+	return func(locale discord.Locale) (*discordgo.InteractionResponseData, *discord.Error) {
+		return m.messages[locale].OutfitTagsLoadError(outfitIds, platform, err)
+	}
+}
+
+func (m *localizedMessages) CharacterNamesLoadError(characterIds []ps2.CharacterId, platform ps2_platforms.Platform, err error) discord.LocalizedResponse {
+	return func(locale discord.Locale) (*discordgo.InteractionResponseData, *discord.Error) {
+		return m.messages[locale].CharacterNamesLoadError(characterIds, platform, err)
+	}
+}
+
+func (m *localizedMessages) SubscriptionSettingsModal(
+	customId string,
+	outfitTags []string,
+	characterNames []string,
+) discord.LocalizedResponse {
+	return func(locale discord.Locale) (*discordgo.InteractionResponseData, *discord.Error) {
+		return m.messages[locale].SubscriptionSettingsModal(customId, outfitTags, characterNames)
+	}
+}

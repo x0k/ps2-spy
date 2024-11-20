@@ -2,8 +2,6 @@ package discord_commands
 
 import (
 	"context"
-	"fmt"
-	"maps"
 	"time"
 
 	"github.com/x0k/ps2-spy/internal/lib/cache/memory"
@@ -31,15 +29,14 @@ func newAlertsLoader(
 		loadersPriority,
 		time.Hour,
 	)
-	withDefault := maps.Clone(loaders)
-	withDefault[defaultProvider] = loader.NewFallback(fallbacks)
+	fallbackLoader := loader.NewFallback(fallbacks)
 	cached := loader.WithQueriedCache(
 		log.With(sl.Component("alerts_loader_cache")),
 		func(ctx context.Context, provider string) (meta.Loaded[ps2.Alerts], error) {
-			if loader, ok := withDefault[providerName(provider)]; ok {
+			if loader, ok := loaders[provider]; ok {
 				return loader(ctx)
 			}
-			return meta.Loaded[ps2.Alerts]{}, fmt.Errorf("unknown provider: %s", provider)
+			return fallbackLoader(ctx)
 		},
 		memory.NewKeyedExpirableCache[string, meta.Loaded[ps2.Alerts]](
 			len(loaders)+1,

@@ -39,16 +39,10 @@ type Command struct {
 	// ComponentHandlers map[string]InteractionHandler
 }
 
-const (
-	SUBSCRIPTION_SETUP_PC_MODAL     = "subscription_setup_pc"
-	SUBSCRIPTION_SETUP_PS4_EU_MODAL = "subscription_setup_ps4_eu"
-	SUBSCRIPTION_SETUP_PS4_US_MODAL = "subscription_setup_ps4_us"
-)
-
 var SUBSCRIPTION_MODAL_CUSTOM_IDS = map[ps2_platforms.Platform]string{
-	ps2_platforms.PC:     SUBSCRIPTION_SETUP_PC_MODAL,
-	ps2_platforms.PS4_EU: SUBSCRIPTION_SETUP_PS4_EU_MODAL,
-	ps2_platforms.PS4_US: SUBSCRIPTION_SETUP_PS4_US_MODAL,
+	ps2_platforms.PC:     "subscription_setup_pc",
+	ps2_platforms.PS4_EU: "subscription_setup_ps4_eu",
+	ps2_platforms.PS4_US: "subscription_setup_ps4_us",
 }
 
 func DeferredEphemeralResponse(handle func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) LocalizedEdit) InteractionHandler {
