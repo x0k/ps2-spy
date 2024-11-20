@@ -31,7 +31,7 @@ func newPopulationLoader(
 	)
 	fallbackLoader := loader.NewFallback(fallbacks)
 	cached := loader.WithQueriedCache(
-		log.With(sl.Component("population_loader_cache")),
+		log.Logger.With(sl.Component("population_loader_cache")),
 		func(ctx context.Context, provider string) (meta.Loaded[ps2.WorldsPopulation], error) {
 			if loader, ok := loaders[provider]; ok {
 				return loader(ctx)

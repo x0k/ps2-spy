@@ -31,7 +31,7 @@ func newAlertsLoader(
 	)
 	fallbackLoader := loader.NewFallback(fallbacks)
 	cached := loader.WithQueriedCache(
-		log.With(sl.Component("alerts_loader_cache")),
+		log.Logger.With(sl.Component("alerts_loader_cache")),
 		func(ctx context.Context, provider string) (meta.Loaded[ps2.Alerts], error) {
 			if loader, ok := loaders[provider]; ok {
 				return loader(ctx)

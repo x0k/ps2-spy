@@ -31,7 +31,7 @@ func newWorldPopulationLoader(
 	)
 	fallbackLoader := loader.NewKeyedFallback(fallbacks)
 	cached := loader.WithQueriedCache(
-		log.With(sl.Component("world_population_loader_cache")),
+		log.Logger.With(sl.Component("world_population_loader_cache")),
 		func(ctx context.Context, query query[ps2.WorldId]) (meta.Loaded[ps2.DetailedWorldPopulation], error) {
 			if loader, ok := loaders[query.Provider]; ok {
 				return loader(ctx, query.Key)

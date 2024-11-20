@@ -140,7 +140,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 
 		cachedBatchedCharactersLoader := loader.Keyed[ps2.CharacterId, ps2.Character](
 			loader.WithQueriedCache(
-				pl.With(sl.Component("cached_batched_characters_loader")),
+				pl.Logger.With(sl.Component("cached_batched_characters_loader")),
 				metrics.InstrumentQueriedLoaderWithCounterMetric(
 					metrics.PlatformLoadsCounterMetric(mt, metrics.CharacterPlatformLoaderName, platform),
 					batchedCharactersLoader.Load,
@@ -326,7 +326,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	outfitsLoader := census_platform_outfits_loader.New(censusClient)
 
 	cachedOutfitsLoader := loader.WithQueriedCache(
-		log.With(sl.Component("outfits_cached_loader")),
+		log.Logger.With(sl.Component("outfits_cached_loader")),
 		outfitsLoader.Load,
 		discord.NewPlatformsCache(outfitsCaches),
 	)
