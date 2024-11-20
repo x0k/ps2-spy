@@ -436,7 +436,7 @@ FROM
       channel_to_outfit.platform = ?3
       AND outfit_id = ?
   ) AS channel
-  LEFT JOIN channel_locale ON channel_locale.channel_id = subquery.channel_id
+  LEFT JOIN channel_locale ON channel_locale.channel_id = channel.channel_id
 `
 
 type ListPlatformTrackingChannelsForCharacterParams struct {

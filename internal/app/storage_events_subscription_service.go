@@ -40,9 +40,6 @@ func newStorageEventsSubscriptionService(
 					return nil
 				case e := <-outfitMemberSaved:
 					tm := tms[e.Platform]
-					println("____________________")
-					println(tm)
-					println("____________________")
 					tm.TrackOutfitMember(e.CharacterId, e.OutfitId)
 				case e := <-outfitMemberDeleted:
 					tm := tms[e.Platform]

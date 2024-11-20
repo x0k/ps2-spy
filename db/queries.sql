@@ -77,7 +77,7 @@ FROM
       channel_to_outfit.platform = sqlc.arg (platform)
       AND outfit_id = ?
   ) AS channel
-  LEFT JOIN channel_locale ON channel_locale.channel_id = subquery.channel_id;
+  LEFT JOIN channel_locale ON channel_locale.channel_id = channel.channel_id;
 
 -- name: ListPlatformTrackingChannelsForOutfit :many
 SELECT
