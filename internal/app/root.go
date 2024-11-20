@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -14,7 +15,6 @@ import (
 	discord_commands "github.com/x0k/ps2-spy/internal/discord/commands"
 	discord_handlers "github.com/x0k/ps2-spy/internal/discord/handlers"
 	discord_messages "github.com/x0k/ps2-spy/internal/discord/messages"
-	"github.com/x0k/ps2-spy/internal/lib/cache"
 	"github.com/x0k/ps2-spy/internal/lib/cache/memory"
 	"github.com/x0k/ps2-spy/internal/lib/census2"
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
@@ -24,17 +24,17 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/module"
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
 	worlds_tracker_alerts_loader "github.com/x0k/ps2-spy/internal/loaders/alerts/worlds_tracker"
+	census_character_ids_loader "github.com/x0k/ps2-spy/internal/loaders/character_ids/census"
+	census_character_names_loader "github.com/x0k/ps2-spy/internal/loaders/character_names/census"
 	sql_character_tracking_channels_loader "github.com/x0k/ps2-spy/internal/loaders/character_tracking_channels/sql"
 	census_characters_loader "github.com/x0k/ps2-spy/internal/loaders/characters/census"
+	census_outfit_ids_loader "github.com/x0k/ps2-spy/internal/loaders/outfit_ids/census"
 	census_outfit_member_ids_loader "github.com/x0k/ps2-spy/internal/loaders/outfit_member_ids/census"
 	sql_outfit_member_ids_loader "github.com/x0k/ps2-spy/internal/loaders/outfit_member_ids/sql"
 	sql_outfit_sync_at_loader "github.com/x0k/ps2-spy/internal/loaders/outfit_sync_at/sql"
+	census_outfit_tags_loader "github.com/x0k/ps2-spy/internal/loaders/outfit_tags/census"
 	sql_outfit_tracking_channels_loader "github.com/x0k/ps2-spy/internal/loaders/outfit_tracking_channels/sql"
-	census_platform_character_ids_loader "github.com/x0k/ps2-spy/internal/loaders/platform_character_ids/census"
-	census_platform_character_names_loader "github.com/x0k/ps2-spy/internal/loaders/platform_character_names/census"
-	census_platform_outfit_ids_loader "github.com/x0k/ps2-spy/internal/loaders/platform_outfit_ids/census"
-	census_platform_outfit_tags_loader "github.com/x0k/ps2-spy/internal/loaders/platform_outfit_tags/census"
-	census_platform_outfits_loader "github.com/x0k/ps2-spy/internal/loaders/platform_outfits/census"
+	census_outfits_loader "github.com/x0k/ps2-spy/internal/loaders/outfits/census"
 	characters_tracker_population_loader "github.com/x0k/ps2-spy/internal/loaders/population/characters_tracker"
 	sql_subscription_settings_loader "github.com/x0k/ps2-spy/internal/loaders/subscription_settings/sql"
 	sql_trackable_character_ids_loader "github.com/x0k/ps2-spy/internal/loaders/trackable_character_ids/sql"
@@ -105,7 +105,11 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	outfitMembersSaverPublishers := make(map[ps2_platforms.Platform]pubsub.Publisher[sql_outfit_members_saver.Event], len(ps2_platforms.Platforms))
 	outfitMembersSynchronizers := make(map[ps2_platforms.Platform]*outfit_members_synchronizer.OutfitMembersSynchronizer, len(ps2_platforms.Platforms))
 	characterLoaders := make(map[ps2_platforms.Platform]loader.Keyed[ps2.CharacterId, ps2.Character], len(ps2_platforms.Platforms))
-	outfitsCaches := make(map[ps2_platforms.Platform]cache.Multi[ps2.OutfitId, ps2.Outfit], len(ps2_platforms.Platforms))
+	outfitsLoaders := make(map[ps2_platforms.Platform]loader.Multi[ps2.OutfitId, ps2.Outfit], len(ps2_platforms.Platforms))
+	characterNamesLoaders := make(map[ps2_platforms.Platform]loader.Queried[[]ps2.CharacterId, []string], len(ps2_platforms.Platforms))
+	characterIdsLoaders := make(map[ps2_platforms.Platform]loader.Queried[[]string, []ps2.CharacterId], len(ps2_platforms.Platforms))
+	outfitTagsLoaders := make(map[ps2_platforms.Platform]loader.Queried[[]ps2.OutfitId, []string], len(ps2_platforms.Platforms))
+	outfitIdsLoaders := make(map[ps2_platforms.Platform]loader.Queried[[]string, []ps2.OutfitId], len(ps2_platforms.Platforms))
 
 	for _, platform := range ps2_platforms.Platforms {
 		pl := log.With(slog.String("platform", string(platform)))
@@ -270,11 +274,22 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		m.Append(outfitMembersSynchronizer)
 		outfitMembersSynchronizers[platform] = outfitMembersSynchronizer
 
-		outfitsCaches[platform] = sql_outfits_cache.New(
-			log.With(sl.Component("outfits_cache")),
-			storage,
-			platform,
+		outfitsLoaders[platform] = loader.WithMultiCache(
+			log.Logger.With(sl.Component("outfits_loader_cache")),
+			census_outfits_loader.New(censusClient, platform).Load,
+			sql_outfits_cache.New(
+				log.With(sl.Component("outfits_cache")),
+				storage,
+				platform,
+			),
 		)
+
+		// TODO: Use characters cache
+		characterNamesLoaders[platform] = census_character_names_loader.New(censusClient, ns).Load
+		characterIdsLoaders[platform] = census_character_ids_loader.New(censusClient, ns).Load
+		// TODO: Use outfits cache
+		outfitTagsLoaders[platform] = census_outfit_tags_loader.New(censusClient, ns).Load
+		outfitIdsLoaders[platform] = census_outfit_ids_loader.New(censusClient, ns).Load
 	}
 
 	m.Append(newStorageEventsSubscriptionService(
@@ -323,20 +338,6 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		charactersTrackers,
 	)
 
-	outfitsLoader := census_platform_outfits_loader.New(censusClient)
-
-	cachedOutfitsLoader := loader.WithQueriedCache(
-		log.Logger.With(sl.Component("outfits_cached_loader")),
-		outfitsLoader.Load,
-		discord.NewPlatformsCache(outfitsCaches),
-	)
-
-	// TODO: Cache
-	characterNamesLoader := census_platform_character_names_loader.New(censusClient)
-	characterIdsLoader := census_platform_character_ids_loader.New(censusClient)
-	outfitTagsLoader := census_platform_outfit_tags_loader.New(censusClient)
-	outfitIdsLoader := census_platform_outfit_ids_loader.New(censusClient)
-
 	channelSubscriptionSettingsSaver := sql_subscription_settings_saver.New(
 		storage,
 		subscriptionSettingsLoader,
@@ -358,12 +359,22 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		alertsLoaders,
 		[]string{"spy"},
 		trackableOnlineEntitiesLoader,
-		cachedOutfitsLoader,
+		func(ctx context.Context, pq discord.PlatformQuery[[]ps2.OutfitId]) (map[ps2.OutfitId]ps2.Outfit, error) {
+			return outfitsLoaders[pq.Platform](ctx, pq.Value)
+		},
 		subscriptionSettingsLoader,
-		characterNamesLoader.Load,
-		characterIdsLoader.Load,
-		outfitTagsLoader.Load,
-		outfitIdsLoader.Load,
+		func(ctx context.Context, pq discord.PlatformQuery[[]ps2.CharacterId]) ([]string, error) {
+			return characterNamesLoaders[pq.Platform](ctx, pq.Value)
+		},
+		func(ctx context.Context, pq discord.PlatformQuery[[]string]) ([]ps2.CharacterId, error) {
+			return characterIdsLoaders[pq.Platform](ctx, pq.Value)
+		},
+		func(ctx context.Context, pq discord.PlatformQuery[[]ps2.OutfitId]) ([]string, error) {
+			return outfitTagsLoaders[pq.Platform](ctx, pq.Value)
+		},
+		func(ctx context.Context, pq discord.PlatformQuery[[]string]) ([]ps2.OutfitId, error) {
+			return outfitIdsLoaders[pq.Platform](ctx, pq.Value)
+		},
 		channelSubscriptionSettingsSaver,
 	)
 	m.Append(discordCommands)
