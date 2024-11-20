@@ -35,6 +35,12 @@ type Messages interface {
 		characters []ps2.Character,
 		outfits map[ps2.OutfitId]ps2.Outfit,
 	) (*discordgo.WebhookEdit, *Error)
+	OutfitIdsLoadError(outfitTags []string, platform ps2_platforms.Platform, err error) (*discordgo.WebhookEdit, *Error)
+	CharacterIdsLoadError(characterNames []string, platform ps2_platforms.Platform, err error) (*discordgo.WebhookEdit, *Error)
+	SubscriptionSettingsSaveError(channelId ChannelId, platform ps2_platforms.Platform, err error) (*discordgo.WebhookEdit, *Error)
+	SubscriptionSettingsOutfitTagsLoadError(outfitIds []ps2.OutfitId, platform ps2_platforms.Platform, err error) (*discordgo.WebhookEdit, *Error)
+	SubscriptionSettingsCharacterNamesLoadError(characterIds []ps2.CharacterId, platform ps2_platforms.Platform, err error) (*discordgo.WebhookEdit, *Error)
+	SubscriptionSettingsUpdate(TrackableEntities[[]string, []string]) (*discordgo.WebhookEdit, *Error)
 
 	SubscriptionSettingsLoadError(channelId ChannelId, platform ps2_platforms.Platform, err error) (*discordgo.InteractionResponseData, *Error)
 	OutfitTagsLoadError(outfitIds []ps2.OutfitId, platform ps2_platforms.Platform, err error) (*discordgo.InteractionResponseData, *Error)
@@ -75,6 +81,12 @@ type LocalizedMessages interface {
 		characters []ps2.Character,
 		outfits map[ps2.OutfitId]ps2.Outfit,
 	) LocalizedEdit
+	OutfitIdsLoadError(outfitTags []string, platform ps2_platforms.Platform, err error) LocalizedEdit
+	CharacterIdsLoadError(characterNames []string, platform ps2_platforms.Platform, err error) LocalizedEdit
+	SubscriptionSettingsSaveError(channelId ChannelId, platform ps2_platforms.Platform, err error) LocalizedEdit
+	SubscriptionSettingsOutfitTagsLoadError(outfitIds []ps2.OutfitId, platform ps2_platforms.Platform, err error) LocalizedEdit
+	SubscriptionSettingsCharacterNamesLoadError(characterIds []ps2.CharacterId, platform ps2_platforms.Platform, err error) LocalizedEdit
+	SubscriptionSettingsUpdate(TrackableEntities[[]string, []string]) LocalizedEdit
 
 	SubscriptionSettingsLoadError(channelId ChannelId, platform ps2_platforms.Platform, err error) LocalizedResponse
 	OutfitTagsLoadError(outfitIds []ps2.OutfitId, platform ps2_platforms.Platform, err error) LocalizedResponse

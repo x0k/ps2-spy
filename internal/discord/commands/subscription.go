@@ -6,16 +6,94 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/x0k/ps2-spy/internal/discord"
 	"github.com/x0k/ps2-spy/internal/lib/loader"
+	"github.com/x0k/ps2-spy/internal/lib/stringsx"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
 
+type ChannelSettingsSaver interface {
+	Save(ctx context.Context, channelId discord.ChannelId, platform ps2_platforms.Platform, settings discord.SubscriptionSettings) error
+}
+
 func NewSubscription(
 	messages discord.LocalizedMessages,
 	settingsLoader loader.Keyed[discord.SettingsQuery, discord.SubscriptionSettings],
-	namesLoader loader.Queried[discord.PlatformQuery[[]ps2.CharacterId], []string],
+	characterNamesLoader loader.Queried[discord.PlatformQuery[[]ps2.CharacterId], []string],
+	characterIdsLoader loader.Queried[discord.PlatformQuery[[]string], []ps2.CharacterId],
 	outfitTagsLoader loader.Queried[discord.PlatformQuery[[]ps2.OutfitId], []string],
+	outfitIdsLoader loader.Queried[discord.PlatformQuery[[]string], []ps2.OutfitId],
+	channelSettingsSaver ChannelSettingsSaver,
 ) *discord.Command {
+	submitHandlers := make(map[string]discord.InteractionHandler, len(ps2_platforms.Platforms))
+	for _, platform := range ps2_platforms.Platforms {
+		submitHandlers[discord.SUBSCRIPTION_MODAL_CUSTOM_IDS[platform]] = discord.DeferredEphemeralResponse(func(
+			ctx context.Context,
+			s *discordgo.Session,
+			i *discordgo.InteractionCreate,
+		) discord.LocalizedEdit {
+			data := i.ModalSubmitData()
+			var err error
+			var outfitsIds []ps2.OutfitId
+			outfitTagsFromInput := stringsx.SplitAndTrim(
+				data.Components[0].(*discordgo.ActionsRow).Components[0].(*discordgo.TextInput).Value,
+				",",
+			)
+			if outfitTagsFromInput[0] != "" {
+				outfitsIds, err = outfitIdsLoader(ctx, discord.PlatformQuery[[]string]{
+					Platform: platform,
+					Value:    outfitTagsFromInput,
+				})
+				if err != nil {
+					return messages.OutfitIdsLoadError(outfitTagsFromInput, platform, err)
+				}
+			}
+			var charIds []ps2.CharacterId
+			charNamesFromInput := stringsx.SplitAndTrim(
+				data.Components[1].(*discordgo.ActionsRow).Components[0].(*discordgo.TextInput).Value,
+				",",
+			)
+			if charNamesFromInput[0] != "" {
+				charIds, err = characterIdsLoader(ctx, discord.PlatformQuery[[]string]{
+					Platform: platform,
+					Value:    charNamesFromInput,
+				})
+				if err != nil {
+					return messages.CharacterIdsLoadError(charNamesFromInput, platform, err)
+				}
+			}
+			channelId := discord.ChannelId(i.ChannelID)
+			err = channelSettingsSaver.Save(
+				ctx,
+				channelId,
+				platform,
+				discord.SubscriptionSettings{
+					Outfits:    outfitsIds,
+					Characters: charIds,
+				},
+			)
+			if err != nil {
+				return messages.SubscriptionSettingsSaveError(channelId, platform, err)
+			}
+			outfitTags, err := outfitTagsLoader(ctx, discord.PlatformQuery[[]ps2.OutfitId]{
+				Platform: platform,
+				Value:    outfitsIds,
+			})
+			if err != nil {
+				return messages.SubscriptionSettingsOutfitTagsLoadError(outfitsIds, platform, err)
+			}
+			charNames, err := characterNamesLoader(ctx, discord.PlatformQuery[[]ps2.CharacterId]{
+				Platform: platform,
+				Value:    charIds,
+			})
+			if err != nil {
+				return messages.SubscriptionSettingsCharacterNamesLoadError(charIds, platform, err)
+			}
+			return messages.SubscriptionSettingsUpdate(discord.TrackableEntities[[]string, []string]{
+				Outfits:    outfitTags,
+				Characters: charNames,
+			})
+		})
+	}
 	return &discord.Command{
 		Cmd: &discordgo.ApplicationCommand{
 			Name: "subscription",
@@ -74,7 +152,7 @@ func NewSubscription(
 			if err != nil {
 				return messages.OutfitTagsLoadError(settings.Outfits, platform, err)
 			}
-			names, err := namesLoader(ctx, discord.PlatformQuery[[]ps2.CharacterId]{
+			names, err := characterNamesLoader(ctx, discord.PlatformQuery[[]ps2.CharacterId]{
 				Platform: platform,
 				Value:    settings.Characters,
 			})
@@ -87,5 +165,6 @@ func NewSubscription(
 				names,
 			)
 		}),
+		SubmitHandlers: submitHandlers,
 	}
 }

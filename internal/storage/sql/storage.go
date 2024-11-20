@@ -78,7 +78,7 @@ func (s *Storage) Begin(
 		return err
 	}
 	defer func() {
-		if err := tx.Rollback(); err != nil {
+		if err := tx.Rollback(); err != nil && !errors.Is(err, sql.ErrTxDone) {
 			s.log.Error(ctx, "failed to rollback transaction", sl.Err(err))
 		}
 	}()
@@ -192,10 +192,14 @@ func (s *Storage) SaveOutfitSynchronizedAt(ctx context.Context, platform ps2_pla
 }
 
 func (s *Storage) OutfitSynchronizedAt(ctx context.Context, platform ps2_platforms.Platform, outfitId ps2.OutfitId) (time.Time, error) {
-	return s.queries.GetPlatformOutfitSynchronizedAt(ctx, db.GetPlatformOutfitSynchronizedAtParams{
+	time, err := s.queries.GetPlatformOutfitSynchronizedAt(ctx, db.GetPlatformOutfitSynchronizedAtParams{
 		Platform: string(platform),
 		OutfitID: string(outfitId),
 	})
+	if errors.Is(err, sql.ErrNoRows) {
+		return time, shared.ErrNotFound
+	}
+	return time, err
 }
 
 func (s *Storage) TrackingChannelsForCharacter(

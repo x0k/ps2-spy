@@ -30,7 +30,9 @@ import (
 	sql_outfit_member_ids_loader "github.com/x0k/ps2-spy/internal/loaders/outfit_member_ids/sql"
 	sql_outfit_sync_at_loader "github.com/x0k/ps2-spy/internal/loaders/outfit_sync_at/sql"
 	sql_outfit_tracking_channels_loader "github.com/x0k/ps2-spy/internal/loaders/outfit_tracking_channels/sql"
+	census_platform_character_ids_loader "github.com/x0k/ps2-spy/internal/loaders/platform_character_ids/census"
 	census_platform_character_names_loader "github.com/x0k/ps2-spy/internal/loaders/platform_character_names/census"
+	census_platform_outfit_ids_loader "github.com/x0k/ps2-spy/internal/loaders/platform_outfit_ids/census"
 	census_platform_outfit_tags_loader "github.com/x0k/ps2-spy/internal/loaders/platform_outfit_tags/census"
 	census_platform_outfits_loader "github.com/x0k/ps2-spy/internal/loaders/platform_outfits/census"
 	characters_tracker_population_loader "github.com/x0k/ps2-spy/internal/loaders/population/characters_tracker"
@@ -50,6 +52,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/ps2"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 	sql_outfit_members_saver "github.com/x0k/ps2-spy/internal/savers/outfit_members/sql"
+	sql_subscription_settings_saver "github.com/x0k/ps2-spy/internal/savers/subscription_settings/sql"
 	"github.com/x0k/ps2-spy/internal/storage"
 	sql_storage "github.com/x0k/ps2-spy/internal/storage/sql"
 	"github.com/x0k/ps2-spy/internal/tracking_manager"
@@ -116,6 +119,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			cfg.StreamingEndpoint,
 			cfg.CensusServiceId,
 			eventsPubSub,
+			mt,
 		)
 		if err != nil {
 			return nil, err
@@ -329,9 +333,14 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 
 	// TODO: Cache
 	characterNamesLoader := census_platform_character_names_loader.New(censusClient)
-
-	// TODO: Cache
+	characterIdsLoader := census_platform_character_ids_loader.New(censusClient)
 	outfitTagsLoader := census_platform_outfit_tags_loader.New(censusClient)
+	outfitIdsLoader := census_platform_outfit_ids_loader.New(censusClient)
+
+	channelSubscriptionSettingsSaver := sql_subscription_settings_saver.New(
+		storage,
+		subscriptionSettingsLoader,
+	)
 
 	discordMessages := discord_messages.New()
 	discordCommands := discord_commands.New(
@@ -352,7 +361,10 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		cachedOutfitsLoader,
 		subscriptionSettingsLoader,
 		characterNamesLoader.Load,
+		characterIdsLoader.Load,
 		outfitTagsLoader.Load,
+		outfitIdsLoader.Load,
+		channelSubscriptionSettingsSaver,
 	)
 	m.Append(discordCommands)
 	discordModule, err := discord_module.New(

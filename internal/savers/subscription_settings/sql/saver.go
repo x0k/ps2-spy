@@ -10,7 +10,6 @@ import (
 )
 
 type SubscriptionSettingsSaver struct {
-	platform       ps2_platforms.Platform
 	storage        *sql_storage.Storage
 	settingsLoader loader.Keyed[discord.SettingsQuery, discord.SubscriptionSettings]
 }
@@ -18,17 +17,20 @@ type SubscriptionSettingsSaver struct {
 func New(
 	storage *sql_storage.Storage,
 	settingsLoader loader.Keyed[discord.SettingsQuery, discord.SubscriptionSettings],
-	platform ps2_platforms.Platform,
 ) *SubscriptionSettingsSaver {
 	return &SubscriptionSettingsSaver{
 		storage:        storage,
-		platform:       platform,
 		settingsLoader: settingsLoader,
 	}
 }
 
-func (s *SubscriptionSettingsSaver) Save(ctx context.Context, channelId discord.ChannelId, settings discord.SubscriptionSettings) error {
-	old, err := s.settingsLoader(ctx, discord.SettingsQuery{ChannelId: channelId, Platform: s.platform})
+func (s *SubscriptionSettingsSaver) Save(
+	ctx context.Context,
+	channelId discord.ChannelId,
+	platform ps2_platforms.Platform,
+	settings discord.SubscriptionSettings,
+) error {
+	old, err := s.settingsLoader(ctx, discord.SettingsQuery{ChannelId: channelId, Platform: platform})
 	if err != nil {
 		return err
 	}
@@ -38,22 +40,22 @@ func (s *SubscriptionSettingsSaver) Save(ctx context.Context, channelId discord.
 		len(diff.Outfits.ToAdd)+len(diff.Outfits.ToDel)+len(diff.Characters.ToAdd)+len(diff.Characters.ToDel),
 		func(tx *sql_storage.Storage) error {
 			for _, outfitId := range diff.Outfits.ToDel {
-				if err := tx.DeleteChannelOutfit(ctx, channelId, s.platform, outfitId); err != nil {
+				if err := tx.DeleteChannelOutfit(ctx, channelId, platform, outfitId); err != nil {
 					return err
 				}
 			}
 			for _, outfitId := range diff.Outfits.ToAdd {
-				if err := tx.SaveChannelOutfit(ctx, channelId, s.platform, outfitId); err != nil {
+				if err := tx.SaveChannelOutfit(ctx, channelId, platform, outfitId); err != nil {
 					return err
 				}
 			}
 			for _, characterId := range diff.Characters.ToDel {
-				if err := tx.DeleteChannelCharacter(ctx, channelId, s.platform, characterId); err != nil {
+				if err := tx.DeleteChannelCharacter(ctx, channelId, platform, characterId); err != nil {
 					return err
 				}
 			}
 			for _, characterId := range diff.Characters.ToAdd {
-				if err := tx.SaveChannelCharacter(ctx, channelId, s.platform, characterId); err != nil {
+				if err := tx.SaveChannelCharacter(ctx, channelId, platform, characterId); err != nil {
 					return err
 				}
 			}

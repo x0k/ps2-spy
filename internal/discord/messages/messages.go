@@ -129,6 +129,42 @@ func (m *localizedMessages) MembersOnline(
 	}
 }
 
+func (m *localizedMessages) OutfitIdsLoadError(outfitTags []string, platform ps2_platforms.Platform, err error) discord.LocalizedEdit {
+	return func(locale discord.Locale) (*discordgo.WebhookEdit, *discord.Error) {
+		return m.messages[locale].OutfitIdsLoadError(outfitTags, platform, err)
+	}
+}
+
+func (m *localizedMessages) CharacterIdsLoadError(characterNames []string, platform ps2_platforms.Platform, err error) discord.LocalizedEdit {
+	return func(locale discord.Locale) (*discordgo.WebhookEdit, *discord.Error) {
+		return m.messages[locale].CharacterIdsLoadError(characterNames, platform, err)
+	}
+}
+
+func (m *localizedMessages) SubscriptionSettingsSaveError(channelId discord.ChannelId, platform ps2_platforms.Platform, err error) discord.LocalizedEdit {
+	return func(locale discord.Locale) (*discordgo.WebhookEdit, *discord.Error) {
+		return m.messages[locale].SubscriptionSettingsSaveError(channelId, platform, err)
+	}
+}
+
+func (m *localizedMessages) SubscriptionSettingsOutfitTagsLoadError(outfitIds []ps2.OutfitId, platform ps2_platforms.Platform, err error) discord.LocalizedEdit {
+	return func(locale discord.Locale) (*discordgo.WebhookEdit, *discord.Error) {
+		return m.messages[locale].SubscriptionSettingsOutfitTagsLoadError(outfitIds, platform, err)
+	}
+}
+
+func (m *localizedMessages) SubscriptionSettingsCharacterNamesLoadError(characterIds []ps2.CharacterId, platform ps2_platforms.Platform, err error) discord.LocalizedEdit {
+	return func(locale discord.Locale) (*discordgo.WebhookEdit, *discord.Error) {
+		return m.messages[locale].SubscriptionSettingsCharacterNamesLoadError(characterIds, platform, err)
+	}
+}
+
+func (m *localizedMessages) SubscriptionSettingsUpdate(entities discord.TrackableEntities[[]string, []string]) discord.LocalizedEdit {
+	return func(locale discord.Locale) (*discordgo.WebhookEdit, *discord.Error) {
+		return m.messages[locale].SubscriptionSettingsUpdate(entities)
+	}
+}
+
 func (m *localizedMessages) SubscriptionSettingsLoadError(channelId discord.ChannelId, platform ps2_platforms.Platform, err error) discord.LocalizedResponse {
 	return func(locale discord.Locale) (*discordgo.InteractionResponseData, *discord.Error) {
 		return m.messages[locale].SubscriptionSettingsLoadError(channelId, platform, err)

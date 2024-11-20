@@ -12,7 +12,9 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
+	"github.com/x0k/ps2-spy/internal/metrics"
 	"github.com/x0k/ps2-spy/internal/ps2"
+	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
 
 var ErrConvertEvent = fmt.Errorf("failed to convert event")
@@ -26,14 +28,16 @@ type ReLoginOmitter struct {
 	logoutEvents      map[ps2.CharacterId]events.PlayerLogout
 	flushInterval     time.Duration
 	delayDuration     time.Duration
-	// mt                metrics.Metrics
+	mt                *metrics.Metrics
+	platform          ps2_platforms.Platform
 }
 
 func NewReLoginOmitter(
 	name string,
 	log *logger.Logger,
 	pub pubsub.Publisher[events.Event],
-	// mt metrics.Metrics,
+	mt *metrics.Metrics,
+	platform ps2_platforms.Platform,
 ) *ReLoginOmitter {
 	return &ReLoginOmitter{
 		name:              name,
@@ -43,7 +47,8 @@ func NewReLoginOmitter(
 		logoutEvents:      make(map[ps2.CharacterId]events.PlayerLogout),
 		flushInterval:     1 * time.Minute,
 		delayDuration:     3 * time.Minute,
-		// mt:                mt,
+		mt:                mt,
+		platform:          platform,
 	}
 }
 
@@ -76,17 +81,18 @@ func (r *ReLoginOmitter) flushLogOutEvents(ctx context.Context, now time.Time) {
 	defer r.batchMu.Unlock()
 	count := r.logoutEventsQueue.RemoveExpired(now.Add(-r.delayDuration), func(charId ps2.CharacterId) {
 		if e, ok := r.logoutEvents[charId]; ok {
-			if err := r.Publisher.Publish(&e); err != nil {
+			if err := r.Publisher.Publish(e); err != nil {
 				r.log.Error(ctx, "failed to publish logout event", sl.Err(err))
 			}
 			delete(r.logoutEvents, charId)
 		}
 	})
-	// r.mt.SetPlatformQueueSize(
-	// 	metrics.LogoutEventsQueueName,
-	// 	r.platform,
-	// 	r.logoutEventsQueue.Len(),
-	// )
+	metrics.SetPlatformQueueSize(
+		r.mt,
+		metrics.LogoutEventsQueueName,
+		r.platform,
+		r.logoutEventsQueue.Len(),
+	)
 	if count > 0 {
 		r.log.Debug(
 			ctx,

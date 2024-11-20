@@ -38,8 +38,11 @@ func New(
 	]],
 	outfitsLoader loader.Queried[discord.PlatformQuery[[]ps2.OutfitId], map[ps2.OutfitId]ps2.Outfit],
 	settingsLoader loader.Keyed[discord.SettingsQuery, discord.SubscriptionSettings],
-	namesLoader loader.Queried[discord.PlatformQuery[[]ps2.CharacterId], []string],
+	characterNamesLoader loader.Queried[discord.PlatformQuery[[]ps2.CharacterId], []string],
+	characterIdsLoader loader.Queried[discord.PlatformQuery[[]string], []ps2.CharacterId],
 	outfitTagsLoader loader.Queried[discord.PlatformQuery[[]ps2.OutfitId], []string],
+	outfitIdsLoader loader.Queried[discord.PlatformQuery[[]string], []ps2.OutfitId],
+	channelSettingsSaver ChannelSettingsSaver,
 ) *commands {
 	populationLoader := newPopulationLoader(
 		log.With(sl.Component("population_loader")),
@@ -103,8 +106,11 @@ func New(
 			NewSubscription(
 				messages,
 				settingsLoader,
-				namesLoader,
+				characterNamesLoader,
+				characterIdsLoader,
 				outfitTagsLoader,
+				outfitIdsLoader,
+				channelSettingsSaver,
 			),
 		},
 	}
