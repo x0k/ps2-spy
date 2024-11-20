@@ -425,16 +425,16 @@ FROM
     FROM
       channel_to_character
     WHERE
-      channel_to_character.platform = ?3
-      AND character_id = ?
+      channel_to_character.platform = ?1
+      AND character_id = ?2
     UNION
     SELECT
       channel_id
     FROM
       channel_to_outfit
     WHERE
-      channel_to_outfit.platform = ?3
-      AND outfit_id = ?
+      channel_to_outfit.platform = ?1
+      AND outfit_id = ?3
   ) AS channel
   LEFT JOIN channel_locale ON channel_locale.channel_id = channel.channel_id
 `

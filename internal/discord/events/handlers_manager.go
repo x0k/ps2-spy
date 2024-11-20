@@ -66,6 +66,7 @@ func (h *HandlersManager) handleCharacterEventTask(
 	defer h.wg.Done()
 	handler, ok := h.handlers[e.Type()]
 	if !ok {
+		h.log.Debug(ctx, "no handler for event", slog.String("event_type", string(e.Type())))
 		return
 	}
 	channels, err := h.trackingManager.ChannelIdsForCharacter(ctx, characterId)

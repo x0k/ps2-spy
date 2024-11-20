@@ -343,6 +343,9 @@ func (s *Storage) Outfit(ctx context.Context, platform ps2_platforms.Platform, o
 		OutfitID: string(outfitId),
 	})
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ps2.Outfit{}, shared.ErrNotFound
+		}
 		return ps2.Outfit{}, err
 	}
 	return ps2.Outfit{
@@ -389,6 +392,9 @@ func (s *Storage) Outfits(ctx context.Context, platform ps2_platforms.Platform, 
 func (s *Storage) Facility(ctx context.Context, facilityId ps2.FacilityId) (ps2.Facility, error) {
 	facility, err := s.queries.GetFacility(ctx, string(facilityId))
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ps2.Facility{}, shared.ErrNotFound
+		}
 		return ps2.Facility{}, err
 	}
 	return ps2.Facility{

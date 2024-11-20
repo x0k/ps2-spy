@@ -32,6 +32,7 @@ func RenderOnline(
 			builder.WriteString(characters[0].OutfitTag)
 		}
 		builder.WriteString("] outfit (")
+		// TODO: Find non NSO faction
 		builder.WriteString(factions.FactionNameById(characters[0].FactionId))
 		builder.WriteString(", ")
 		builder.WriteString(ps2.WorldNameById(characters[0].WorldId))
