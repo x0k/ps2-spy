@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/x0k/ps2-spy/internal/discord"
+	discord_messages "github.com/x0k/ps2-spy/internal/discord/messages"
 	"github.com/x0k/ps2-spy/internal/lib/loader"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
@@ -24,7 +25,7 @@ type commands struct {
 func New(
 	name string,
 	log *logger.Logger,
-	messages discord.LocalizedMessages,
+	messages *discord_messages.Messages,
 	populationLoaders map[string]loader.Simple[meta.Loaded[ps2.WorldsPopulation]],
 	populationLoadersPriority []string,
 	worldPopulationLoaders map[string]loader.Keyed[ps2.WorldId, meta.Loaded[ps2.DetailedWorldPopulation]],

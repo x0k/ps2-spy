@@ -15,6 +15,7 @@ import (
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 	"github.com/x0k/ps2-spy/internal/shared"
 	"github.com/x0k/ps2-spy/internal/storage"
+	"golang.org/x/text/language"
 
 	_ "modernc.org/sqlite"
 )
@@ -218,13 +219,9 @@ func (s *Storage) TrackingChannelsForCharacter(
 	}
 	channels := make([]discord.Channel, 0, len(rows))
 	for _, row := range rows {
-		locale := discord.DEFAULT_LOCALE
-		if row.Locale.Valid {
-			locale = discord.Locale(row.Locale.String)
-		}
 		channels = append(channels, discord.NewChannel(
 			discord.ChannelId(row.ChannelID),
-			discord.Locale(locale),
+			langTag(row.Locale),
 		))
 	}
 	return channels, nil
@@ -243,14 +240,10 @@ func (s *Storage) TrackingChannelsForOutfit(
 		return nil, err
 	}
 	channels := make([]discord.Channel, 0, len(rows))
-	for _, id := range rows {
-		locale := discord.DEFAULT_LOCALE
-		if id.Locale.Valid {
-			locale = discord.Locale(id.Locale.String)
-		}
+	for _, row := range rows {
 		channels = append(channels, discord.NewChannel(
-			discord.ChannelId(id.ChannelID),
-			discord.Locale(locale),
+			discord.ChannelId(row.ChannelID),
+			langTag(row.Locale),
 		))
 	}
 	return channels, nil
@@ -422,4 +415,14 @@ func (s *Storage) publish(err error, event storage.Event) error {
 		return err
 	}
 	return s.publisher.Publish(event)
+}
+
+func langTag(str sql.NullString) language.Tag {
+	if !str.Valid {
+		return discord.DEFAULT_LANG_TAG
+	}
+	if tag, err := language.Parse(str.String); err == nil {
+		return tag
+	}
+	return discord.DEFAULT_LANG_TAG
 }

@@ -11,6 +11,8 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/lib/slicesx"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
 )
 
 type Handler func(
@@ -35,15 +37,15 @@ var truncation = []rune("... (truncated)")
 
 const msgMaxLen = 2000
 
-func SimpleMessage[E Event](handle func(ctx context.Context, e E) LocalizedMessage) Handler {
+func SimpleMessage[E Event](handle func(ctx context.Context, e E) Message) Handler {
 	return func(ctx context.Context, session *discordgo.Session, channels []Channel, event Event) error {
 		const op = "discord.SimpleMessage"
 		msgRenderer := handle(ctx, event.(E))
-		channelsByLocale := slicesx.GroupBy(channels, func(c Channel) Locale { return c.Locale })
+		channelsByLocale := slicesx.GroupBy(channels, func(c Channel) language.Tag { return c.Locale })
 		handlingErrors := make([]error, 0, len(channels))
 		sendErrors := make([]error, 0, len(channels))
 		for locale, channels := range channelsByLocale {
-			msgStr, err := msgRenderer(locale)
+			msgStr, err := msgRenderer(message.NewPrinter(locale))
 			if err != nil {
 				msgStr = err.Msg
 				handlingErrors = append(handlingErrors, err.Err)
@@ -88,9 +90,9 @@ func SimpleMessage[E Event](handle func(ctx context.Context, e E) LocalizedMessa
 	}
 }
 
-func ShowModal(handle func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) LocalizedResponse) InteractionHandler {
+func ShowModal(handle func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) Response) InteractionHandler {
 	return func(ctx context.Context, log *logger.Logger, s *discordgo.Session, i *discordgo.InteractionCreate) error {
-		data, customErr := handle(ctx, s, i)(LocaleFromInteraction(i))
+		data, customErr := handle(ctx, s, i)(message.NewPrinter(langTagFromInteraction(i)))
 		if customErr != nil {
 			if _, err := s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
 				Content: customErr.Msg,

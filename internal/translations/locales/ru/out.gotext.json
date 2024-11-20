@@ -1,0 +1,754 @@
+{
+    "language": "ru",
+    "messages": [
+        {
+            "id": "[{OutfitTag}] {Name} ({FactionId}) is now online ({WorldId})",
+            "message": "[{OutfitTag}] {Name} ({FactionId}) is now online ({WorldId})",
+            "translation": "[{OutfitTag}] {Name} ({FactionId}) онлайн ({WorldId})",
+            "placeholders": [
+                {
+                    "id": "OutfitTag",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "char.OutfitTag"
+                },
+                {
+                    "id": "Name",
+                    "string": "%[2]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "char.Name"
+                },
+                {
+                    "id": "FactionId",
+                    "string": "%[3]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 3,
+                    "expr": "ps2_factions.FactionNameById(char.FactionId)"
+                },
+                {
+                    "id": "WorldId",
+                    "string": "%[4]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 4,
+                    "expr": "ps2.WorldNameById(char.WorldId)"
+                }
+            ]
+        },
+        {
+            "id": "{Name} ({FactionId}) is now online ({WorldId})",
+            "message": "{Name} ({FactionId}) is now online ({WorldId})",
+            "translation": "{Name} ({FactionId}) онлайн ({WorldId})",
+            "placeholders": [
+                {
+                    "id": "Name",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "char.Name"
+                },
+                {
+                    "id": "FactionId",
+                    "string": "%[2]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "ps2_factions.FactionNameById(char.FactionId)"
+                },
+                {
+                    "id": "WorldId",
+                    "string": "%[3]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 3,
+                    "expr": "ps2.WorldNameById(char.WorldId)"
+                }
+            ]
+        },
+        {
+            "id": "Failed to load character: {CharacterId}",
+            "message": "Failed to load character: {CharacterId}",
+            "translation": "Ошибка загрузки персонажа: {CharacterId}",
+            "placeholders": [
+                {
+                    "id": "CharacterId",
+                    "string": "%[1]s",
+                    "type": "github.com/x0k/ps2-spy/internal/ps2.CharacterId",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "characterId"
+                }
+            ]
+        },
+        {
+            "id": "# PlanetSide 2 Spy\n\nSimple discord bot for PlanetSide 2 outfits\n\n## Links\n\n- [GitHub](https://github.com/x0k/ps2-spy)",
+            "message": "# PlanetSide 2 Spy\n\nSimple discord bot for PlanetSide 2 outfits\n\n## Links\n\n- [GitHub](https://github.com/x0k/ps2-spy)",
+            "translation": "PlanetSide 2 Spy\n\nПростой бот для PlanetSide 2 аутфитов\n\n## Ссылки\n\n- [GitHub](https://github.com/x0k/ps2-spy)"
+        },
+        {
+            "id": "Invalid population type: {PopType}",
+            "message": "Invalid population type: {PopType}",
+            "translation": "Неверный тип популяции: {PopType}",
+            "placeholders": [
+                {
+                    "id": "PopType",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "popType"
+                }
+            ]
+        },
+        {
+            "id": "Failed to load global population with {Provider}",
+            "message": "Failed to load global population with {Provider}",
+            "translation": "Ошибка загрузки глобальной популяции ({Provider})",
+            "placeholders": [
+                {
+                    "id": "Provider",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "provider"
+                }
+            ]
+        },
+        {
+            "id": "Failed to load {WorldNameByIdworldId} population with {Provider}",
+            "message": "Failed to load {WorldNameByIdworldId} population with {Provider}",
+            "translation": "Ошибка загрузки {WorldNameByIdworldId} популяции ({Provider})",
+            "placeholders": [
+                {
+                    "id": "WorldNameByIdworldId",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "ps2.WorldNameById(worldId)"
+                },
+                {
+                    "id": "Provider",
+                    "string": "%[2]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "provider"
+                }
+            ]
+        },
+        {
+            "id": "Failed to load {WorldNameByIdworldId} territory control",
+            "message": "Failed to load {WorldNameByIdworldId} territory control",
+            "translation": "Ошибка загрузки контроля территории для {WorldNameByIdworldId}",
+            "placeholders": [
+                {
+                    "id": "WorldNameByIdworldId",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "ps2.WorldNameById(worldId)"
+                }
+            ]
+        },
+        {
+            "id": "Failed to load world alerts for {WorldNameByIdworldId} from {Provider}",
+            "message": "Failed to load world alerts for {WorldNameByIdworldId} from {Provider}",
+            "translation": "Ошибка загрузки тревог для {WorldNameByIdworldId} ({Provider})",
+            "placeholders": [
+                {
+                    "id": "WorldNameByIdworldId",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "ps2.WorldNameById(worldId)"
+                },
+                {
+                    "id": "Provider",
+                    "string": "%[2]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "provider"
+                }
+            ]
+        },
+        {
+            "id": "Failed to load global alerts from {Provider}",
+            "message": "Failed to load global alerts from {Provider}",
+            "translation": "Ошибка загрузки глобальных тревог ({Provider})",
+            "placeholders": [
+                {
+                    "id": "Provider",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "provider"
+                }
+            ]
+        },
+        {
+            "id": "Failed to load online members for {ChannelId} channel ({Platform})",
+            "message": "Failed to load online members for {ChannelId} channel ({Platform})",
+            "translation": "Ошибка загрузки онлайн участников канала {ChannelId} ({Platform})",
+            "placeholders": [
+                {
+                    "id": "ChannelId",
+                    "string": "%[1]s",
+                    "type": "github.com/x0k/ps2-spy/internal/discord.ChannelId",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "channelId"
+                },
+                {
+                    "id": "Platform",
+                    "string": "%[2]s",
+                    "type": "github.com/x0k/ps2-spy/internal/ps2/platforms.Platform",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "platform"
+                }
+            ]
+        },
+        {
+            "id": "Failed to load outfits {OutfitIds} ({Platform})",
+            "message": "Failed to load outfits {OutfitIds} ({Platform})",
+            "translation": "Ошибка загрузки аутфитов {OutfitIds} ({Platform})",
+            "placeholders": [
+                {
+                    "id": "OutfitIds",
+                    "string": "%[1]v",
+                    "type": "[]github.com/x0k/ps2-spy/internal/ps2.OutfitId",
+                    "underlyingType": "[]github.com/x0k/ps2-spy/internal/ps2.OutfitId",
+                    "argNum": 1,
+                    "expr": "outfitIds"
+                },
+                {
+                    "id": "Platform",
+                    "string": "%[2]s",
+                    "type": "github.com/x0k/ps2-spy/internal/ps2/platforms.Platform",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "platform"
+                }
+            ]
+        },
+        {
+            "id": "Failed to load outfits by tags {OutfitTags} ({Platform})",
+            "message": "Failed to load outfits by tags {OutfitTags} ({Platform})",
+            "translation": "Ошибка загрузки аутфитов по тегам {OutfitTags} ({Platform})",
+            "placeholders": [
+                {
+                    "id": "OutfitTags",
+                    "string": "%[1]v",
+                    "type": "[]string",
+                    "underlyingType": "[]string",
+                    "argNum": 1,
+                    "expr": "outfitTags"
+                },
+                {
+                    "id": "Platform",
+                    "string": "%[2]s",
+                    "type": "github.com/x0k/ps2-spy/internal/ps2/platforms.Platform",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "platform"
+                }
+            ]
+        },
+        {
+            "id": "Failed to load characters {CharacterNames} ({Platform})",
+            "message": "Failed to load characters {CharacterNames} ({Platform})",
+            "translation": "Ошибка загрузки персонажей {CharacterNames} ({Platform})",
+            "placeholders": [
+                {
+                    "id": "CharacterNames",
+                    "string": "%[1]v",
+                    "type": "[]string",
+                    "underlyingType": "[]string",
+                    "argNum": 1,
+                    "expr": "characterNames"
+                },
+                {
+                    "id": "Platform",
+                    "string": "%[2]s",
+                    "type": "github.com/x0k/ps2-spy/internal/ps2/platforms.Platform",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "platform"
+                }
+            ]
+        },
+        {
+            "id": "Failed to save subscription settings for {ChannelId} channel ({Platform})",
+            "message": "Failed to save subscription settings for {ChannelId} channel ({Platform})",
+            "translation": "Ошибка сохранения настроек подписки для канала {ChannelId} ({Platform})",
+            "placeholders": [
+                {
+                    "id": "ChannelId",
+                    "string": "%[1]s",
+                    "type": "github.com/x0k/ps2-spy/internal/discord.ChannelId",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "channelId"
+                },
+                {
+                    "id": "Platform",
+                    "string": "%[2]s",
+                    "type": "github.com/x0k/ps2-spy/internal/ps2/platforms.Platform",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "platform"
+                }
+            ]
+        },
+        {
+            "id": "Settings are saved, but failed to load outfit tags {OutfitIds} ({Platform})",
+            "message": "Settings are saved, but failed to load outfit tags {OutfitIds} ({Platform})",
+            "translation": "Настройки сохранены, но не удалось загрузить теги аутфитов {OutfitIds} ({Platform})",
+            "placeholders": [
+                {
+                    "id": "OutfitIds",
+                    "string": "%[1]v",
+                    "type": "[]github.com/x0k/ps2-spy/internal/ps2.OutfitId",
+                    "underlyingType": "[]github.com/x0k/ps2-spy/internal/ps2.OutfitId",
+                    "argNum": 1,
+                    "expr": "outfitIds"
+                },
+                {
+                    "id": "Platform",
+                    "string": "%[2]s",
+                    "type": "github.com/x0k/ps2-spy/internal/ps2/platforms.Platform",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "platform"
+                }
+            ]
+        },
+        {
+            "id": "Settings are saved, but failed to load character names {CharacterIds} ({Platform})",
+            "message": "Settings are saved, but failed to load character names {CharacterIds} ({Platform})",
+            "translation": "Настройки сохранены, но не удалось загрузить имена персонажей {CharacterIds} ({Platform})",
+            "placeholders": [
+                {
+                    "id": "CharacterIds",
+                    "string": "%[1]v",
+                    "type": "[]github.com/x0k/ps2-spy/internal/ps2.CharacterId",
+                    "underlyingType": "[]github.com/x0k/ps2-spy/internal/ps2.CharacterId",
+                    "argNum": 1,
+                    "expr": "characterIds"
+                },
+                {
+                    "id": "Platform",
+                    "string": "%[2]s",
+                    "type": "github.com/x0k/ps2-spy/internal/ps2/platforms.Platform",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "platform"
+                }
+            ]
+        },
+        {
+            "id": "Failed to load subscription settings for {ChannelId} channel ({Platform})",
+            "message": "Failed to load subscription settings for {ChannelId} channel ({Platform})",
+            "translation": "Ошибка загрузки настроек подписки для канала {ChannelId} ({Platform})",
+            "placeholders": [
+                {
+                    "id": "ChannelId",
+                    "string": "%[1]s",
+                    "type": "github.com/x0k/ps2-spy/internal/discord.ChannelId",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "channelId"
+                },
+                {
+                    "id": "Platform",
+                    "string": "%[2]s",
+                    "type": "github.com/x0k/ps2-spy/internal/ps2/platforms.Platform",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "platform"
+                }
+            ]
+        },
+        {
+            "id": "Failed to load outfit tags for {OutfitIds} ({Platform})",
+            "message": "Failed to load outfit tags for {OutfitIds} ({Platform})",
+            "translation": "Не удалось загрузить теги аутфитов {OutfitIds} ({Platform})",
+            "placeholders": [
+                {
+                    "id": "OutfitIds",
+                    "string": "%[1]v",
+                    "type": "[]github.com/x0k/ps2-spy/internal/ps2.OutfitId",
+                    "underlyingType": "[]github.com/x0k/ps2-spy/internal/ps2.OutfitId",
+                    "argNum": 1,
+                    "expr": "outfitIds"
+                },
+                {
+                    "id": "Platform",
+                    "string": "%[2]s",
+                    "type": "github.com/x0k/ps2-spy/internal/ps2/platforms.Platform",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "platform"
+                }
+            ]
+        },
+        {
+            "id": "Failed to load character names for {CharacterIds} ({Platform})",
+            "message": "Failed to load character names for {CharacterIds} ({Platform})",
+            "translation": "Не удалось загрузить имена персонажей {CharacterIds} ({Platform})",
+            "placeholders": [
+                {
+                    "id": "CharacterIds",
+                    "string": "%[1]v",
+                    "type": "[]github.com/x0k/ps2-spy/internal/ps2.CharacterId",
+                    "underlyingType": "[]github.com/x0k/ps2-spy/internal/ps2.CharacterId",
+                    "argNum": 1,
+                    "expr": "characterIds"
+                },
+                {
+                    "id": "Platform",
+                    "string": "%[2]s",
+                    "type": "github.com/x0k/ps2-spy/internal/ps2/platforms.Platform",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "platform"
+                }
+            ]
+        },
+        {
+            "id": "Subscription Settings (PC)",
+            "message": "Subscription Settings (PC)",
+            "translation": "Настройки подписки (PC)"
+        },
+        {
+            "id": "Subscription Settings (PS4 EU)",
+            "message": "Subscription Settings (PS4 EU)",
+            "translation": "Настройки подписки (PS4 EU)"
+        },
+        {
+            "id": "Subscription Settings (PS4 US)",
+            "message": "Subscription Settings (PS4 US)",
+            "translation": "Настройки подписки (PS4 US)"
+        },
+        {
+            "id": "Which outfits do you want to track?",
+            "message": "Which outfits do you want to track?",
+            "translation": "Какие аутфиты хотите отслеживать?"
+        },
+        {
+            "id": "Enter the outfit tags separated by comma",
+            "message": "Enter the outfit tags separated by comma",
+            "translation": "Введите теги аутфитов через запятую"
+        },
+        {
+            "id": "Which characters do you want to track?",
+            "message": "Which characters do you want to track?",
+            "translation": "Каких игроков хотите отслеживать?"
+        },
+        {
+            "id": "Enter the character names separated by comma",
+            "message": "Enter the character names separated by comma",
+            "translation": "Введите имена персонажей через запятую"
+        },
+        {
+            "id": "No characters online",
+            "message": "No characters online",
+            "translation": "Нет персонажей онлайн"
+        },
+        {
+            "id": "Characters online:",
+            "message": "Characters online:",
+            "translation": "Персонажи онлайн:"
+        },
+        {
+            "id": "] outfit (",
+            "message": "] outfit (",
+            "translation": "] аутфит ("
+        },
+        {
+            "id": "**Other characters:**",
+            "message": "**Other characters:**",
+            "translation": "**Другие персонажи:**"
+        },
+        {
+            "id": "TR:   0 | 0.0%\nNC:   0 | 0.0%\nVS:   0 | 0.0%",
+            "message": "TR:   0 | 0.0%\nNC:   0 | 0.0%\nVS:   0 | 0.0%",
+            "translation": "ТР:   0 | 0.0%\nНК:   0 | 0.0%\nСВ:   0 | 0.0%"
+        },
+        {
+            "id": "TR: {TR} | {All__100}%",
+            "message": "TR: {TR} | {All__100}%",
+            "translation": "ТР: {TR} | {All__100}%",
+            "placeholders": [
+                {
+                    "id": "TR",
+                    "string": "%3[1]d",
+                    "type": "int",
+                    "underlyingType": "int",
+                    "argNum": 1,
+                    "expr": "st.TR"
+                },
+                {
+                    "id": "All__100",
+                    "string": "%.1[2]f",
+                    "type": "float64",
+                    "underlyingType": "float64",
+                    "argNum": 2,
+                    "expr": "float64(st.TR) / float64(st.All) * 100"
+                }
+            ]
+        },
+        {
+            "id": "NC: {NC} | {All__100}%",
+            "message": "NC: {NC} | {All__100}%",
+            "translation": "НК: {NC} | {All__100}%",
+            "placeholders": [
+                {
+                    "id": "NC",
+                    "string": "%3[1]d",
+                    "type": "int",
+                    "underlyingType": "int",
+                    "argNum": 1,
+                    "expr": "st.NC"
+                },
+                {
+                    "id": "All__100",
+                    "string": "%.1[2]f",
+                    "type": "float64",
+                    "underlyingType": "float64",
+                    "argNum": 2,
+                    "expr": "float64(st.NC) / float64(st.All) * 100"
+                }
+            ]
+        },
+        {
+            "id": "VS: {VS} | {All__100}%",
+            "message": "VS: {VS} | {All__100}%",
+            "translation": "СВ: {VS} | {All__100}%",
+            "placeholders": [
+                {
+                    "id": "VS",
+                    "string": "%3[1]d",
+                    "type": "int",
+                    "underlyingType": "int",
+                    "argNum": 1,
+                    "expr": "st.VS"
+                },
+                {
+                    "id": "All__100",
+                    "string": "%.1[2]f",
+                    "type": "float64",
+                    "underlyingType": "float64",
+                    "argNum": 2,
+                    "expr": "float64(st.VS) / float64(st.All) * 100"
+                }
+            ]
+        },
+        {
+            "id": "Source: {Source}",
+            "message": "Source: {Source}",
+            "translation": "Источник: {Source}",
+            "placeholders": [
+                {
+                    "id": "Source",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "loaded.Source"
+                }
+            ]
+        },
+        {
+            "id": "{Name} - {All}",
+            "message": "{Name} - {All}",
+            "translation": "{Name} - {All}",
+            "placeholders": [
+                {
+                    "id": "Name",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "worldPopulation.Name"
+                },
+                {
+                    "id": "All",
+                    "string": "%[2]d",
+                    "type": "int",
+                    "underlyingType": "int",
+                    "argNum": 2,
+                    "expr": "worldPopulation.StatPerFactions.All"
+                }
+            ]
+        },
+        {
+            "id": "Total population - {Total}",
+            "message": "Total population - {Total}",
+            "translation": "Глобальная популяция - {Total}",
+            "placeholders": [
+                {
+                    "id": "Total",
+                    "string": "%[1]d",
+                    "type": "int",
+                    "underlyingType": "int",
+                    "argNum": 1,
+                    "expr": "population.Total"
+                }
+            ]
+        },
+        {
+            "id": "Period",
+            "message": "Period",
+            "translation": "Период"
+        },
+        {
+            "id": "{StartedAt} - {Duration} (Ends {Duration_1})",
+            "message": "{StartedAt} - {Duration} (Ends {Duration_1})",
+            "translation": "{StartedAt} - {Duration} (Кончится {Duration_1})",
+            "placeholders": [
+                {
+                    "id": "StartedAt",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "renderTime(alert.StartedAt)"
+                },
+                {
+                    "id": "Duration",
+                    "string": "%[2]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "renderTime(alert.StartedAt.Add(alert.Duration))"
+                },
+                {
+                    "id": "Duration_1",
+                    "string": "%[3]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 3,
+                    "expr": "renderRelativeTime(alert.StartedAt.Add(alert.Duration))"
+                }
+            ]
+        },
+        {
+            "id": "Territory Control",
+            "message": "Territory Control",
+            "translation": "Контроль территории"
+        },
+        {
+            "id": "{WorldName} - No alerts",
+            "message": "{WorldName} - No alerts",
+            "translation": "{WorldName} - Нет тревог",
+            "placeholders": [
+                {
+                    "id": "WorldName",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "worldName"
+                }
+            ]
+        },
+        {
+            "id": "{WorldName} alerts",
+            "message": "{WorldName} alerts",
+            "translation": "{WorldName} тревоги",
+            "placeholders": [
+                {
+                    "id": "WorldName",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "worldName"
+                }
+            ]
+        },
+        {
+            "id": "No alerts",
+            "message": "No alerts",
+            "translation": "Нет тревог"
+        },
+        {
+            "id": "Settings are updated.\n\n**Outfits:**",
+            "message": "Settings are updated.\n\n**Outfits:**",
+            "translation": "Настройки обновлены.\n\n**Аутфиты:**"
+        },
+        {
+            "id": "No outfits",
+            "message": "No outfits",
+            "translation": "Нет аутфитов"
+        },
+        {
+            "id": "**Characters:**",
+            "message": "**Characters:**",
+            "translation": "**Персонажи:**"
+        },
+        {
+            "id": "No characters",
+            "message": "No characters",
+            "translation": "Нет персонажей"
+        },
+        {
+            "id": "Unlocked",
+            "message": "Unlocked",
+            "translation": "Разблокирован"
+        },
+        {
+            "id": "Locked",
+            "message": "Locked",
+            "translation": "Заблокирован"
+        },
+        {
+            "id": ") by `",
+            "message": ") by `",
+            "translation": ") фракцией `"
+        },
+        {
+            "id": "Status: _",
+            "message": "Status: _",
+            "translation": "Статус: _"
+        },
+        {
+            "id": "Stable",
+            "message": "Stable",
+            "translation": "Стабильный"
+        },
+        {
+            "id": "Unstable",
+            "message": "Unstable",
+            "translation": "Не стабильный"
+        },
+        {
+            "id": "_\nAlerts: _",
+            "message": "_\nAlerts: _",
+            "translation": "_\nТревоги: _"
+        },
+        {
+            "id": "Yes",
+            "message": "Yes",
+            "translation": "Да"
+        },
+        {
+            "id": "No",
+            "message": "No",
+            "translation": "Нет"
+        }
+    ]
+}

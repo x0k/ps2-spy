@@ -8,6 +8,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/x0k/ps2-spy/internal/discord"
+	discord_messages "github.com/x0k/ps2-spy/internal/discord/messages"
 	"github.com/x0k/ps2-spy/internal/lib/loader"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/meta"
@@ -16,7 +17,7 @@ import (
 
 func NewPopulation(
 	log *logger.Logger,
-	messages discord.LocalizedMessages,
+	messages *discord_messages.Messages,
 	populationLoader loader.Keyed[string, meta.Loaded[ps2.WorldsPopulation]],
 	populationProviders iter.Seq[string],
 	worldPopulationLoader loader.Queried[query[ps2.WorldId], meta.Loaded[ps2.DetailedWorldPopulation]],
@@ -102,7 +103,7 @@ func NewPopulation(
 			ctx context.Context,
 			s *discordgo.Session,
 			i *discordgo.InteractionCreate,
-		) discord.LocalizedEdit {
+		) discord.Edit {
 			const op = "discord_commands.NewPopulation.Handle"
 			option := i.ApplicationCommandData().Options[0]
 			populationType := option.Name
@@ -124,10 +125,10 @@ func NewPopulation(
 func handleGlobalPopulation(
 	ctx context.Context,
 	log *logger.Logger,
-	messages discord.LocalizedMessages,
+	messages *discord_messages.Messages,
 	opts []*discordgo.ApplicationCommandInteractionDataOption,
 	popLoader loader.Keyed[string, meta.Loaded[ps2.WorldsPopulation]],
-) discord.LocalizedEdit {
+) discord.Edit {
 	var provider string
 	if len(opts) > 0 {
 		provider = opts[0].StringValue()
@@ -143,10 +144,10 @@ func handleGlobalPopulation(
 func handleServerPopulation(
 	ctx context.Context,
 	log *logger.Logger,
-	messages discord.LocalizedMessages,
+	messages *discord_messages.Messages,
 	opts []*discordgo.ApplicationCommandInteractionDataOption,
 	worldPopLoader loader.Queried[query[ps2.WorldId], meta.Loaded[ps2.DetailedWorldPopulation]],
-) discord.LocalizedEdit {
+) discord.Edit {
 	server := opts[0].StringValue()
 	var provider string
 	if len(opts) > 1 {

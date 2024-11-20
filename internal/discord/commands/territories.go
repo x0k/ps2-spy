@@ -5,13 +5,14 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/x0k/ps2-spy/internal/discord"
+	discord_messages "github.com/x0k/ps2-spy/internal/discord/messages"
 	"github.com/x0k/ps2-spy/internal/lib/loader"
 	"github.com/x0k/ps2-spy/internal/meta"
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
 func NewTerritories(
-	messages discord.LocalizedMessages,
+	messages *discord_messages.Messages,
 	WorldTerritoryControlLoader loader.Keyed[ps2.WorldId, meta.Loaded[ps2.WorldTerritoryControl]],
 ) *discord.Command {
 	return &discord.Command{
@@ -44,7 +45,7 @@ func NewTerritories(
 			ctx context.Context,
 			s *discordgo.Session,
 			i *discordgo.InteractionCreate,
-		) discord.LocalizedEdit {
+		) discord.Edit {
 			server := i.ApplicationCommandData().Options[0].StringValue()
 			worldId := ps2.WorldId(server)
 			loaded, err := WorldTerritoryControlLoader(ctx, worldId)

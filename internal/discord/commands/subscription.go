@@ -5,6 +5,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/x0k/ps2-spy/internal/discord"
+	discord_messages "github.com/x0k/ps2-spy/internal/discord/messages"
 	"github.com/x0k/ps2-spy/internal/lib/loader"
 	"github.com/x0k/ps2-spy/internal/lib/stringsx"
 	"github.com/x0k/ps2-spy/internal/ps2"
@@ -16,7 +17,7 @@ type ChannelSettingsSaver interface {
 }
 
 func NewSubscription(
-	messages discord.LocalizedMessages,
+	messages *discord_messages.Messages,
 	settingsLoader loader.Keyed[discord.SettingsQuery, discord.SubscriptionSettings],
 	characterNamesLoader loader.Queried[discord.PlatformQuery[[]ps2.CharacterId], []string],
 	characterIdsLoader loader.Queried[discord.PlatformQuery[[]string], []ps2.CharacterId],
@@ -30,7 +31,7 @@ func NewSubscription(
 			ctx context.Context,
 			s *discordgo.Session,
 			i *discordgo.InteractionCreate,
-		) discord.LocalizedEdit {
+		) discord.Edit {
 			data := i.ModalSubmitData()
 			var err error
 			var outfitsIds []ps2.OutfitId
@@ -135,7 +136,7 @@ func NewSubscription(
 			ctx context.Context,
 			s *discordgo.Session,
 			i *discordgo.InteractionCreate,
-		) discord.LocalizedResponse {
+		) discord.Response {
 			platform := ps2_platforms.Platform(i.ApplicationCommandData().Options[0].Name)
 			channelId := discord.ChannelId(i.ChannelID)
 			settings, err := settingsLoader(ctx, discord.SettingsQuery{

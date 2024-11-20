@@ -5,10 +5,11 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/x0k/ps2-spy/internal/discord"
+	discord_messages "github.com/x0k/ps2-spy/internal/discord/messages"
 )
 
 func NewAbout(
-	messages discord.LocalizedMessages,
+	messages *discord_messages.Messages,
 ) *discord.Command {
 	return &discord.Command{
 		Cmd: &discordgo.ApplicationCommand{
@@ -25,7 +26,7 @@ func NewAbout(
 			ctx context.Context,
 			s *discordgo.Session,
 			i *discordgo.InteractionCreate,
-		) discord.LocalizedEdit {
+		) discord.Edit {
 			return messages.About()
 		}),
 	}

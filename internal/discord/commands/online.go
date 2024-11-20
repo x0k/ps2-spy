@@ -5,13 +5,14 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/x0k/ps2-spy/internal/discord"
+	discord_messages "github.com/x0k/ps2-spy/internal/discord/messages"
 	"github.com/x0k/ps2-spy/internal/lib/loader"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
 
 func NewOnline(
-	messages discord.LocalizedMessages,
+	messages *discord_messages.Messages,
 	onlineTrackableEntitiesLoader loader.Keyed[discord.SettingsQuery, discord.TrackableEntities[
 		map[ps2.OutfitId][]ps2.Character,
 		[]ps2.Character,
@@ -59,7 +60,7 @@ func NewOnline(
 			ctx context.Context,
 			s *discordgo.Session,
 			i *discordgo.InteractionCreate,
-		) discord.LocalizedEdit {
+		) discord.Edit {
 			platform := ps2_platforms.Platform(i.ApplicationCommandData().Options[0].Name)
 			channelId := discord.ChannelId(i.ChannelID)
 			onlineMembers, err := onlineTrackableEntitiesLoader(ctx, discord.SettingsQuery{

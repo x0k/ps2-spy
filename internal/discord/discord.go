@@ -1,6 +1,8 @@
 package discord
 
 import (
+	"golang.org/x/text/language"
+
 	"github.com/bwmarrin/discordgo"
 	"github.com/x0k/ps2-spy/internal/lib/diff"
 	"github.com/x0k/ps2-spy/internal/ps2"
@@ -36,34 +38,21 @@ type PlatformQuery[T any] struct {
 	Value    T
 }
 
-type Locale string
+var DEFAULT_LANG_TAG = language.English
 
-const (
-	EN Locale = "en"
-	RU Locale = "ru"
-)
-
-const DEFAULT_LOCALE = EN
-
-func LocaleFromInteraction(i *discordgo.InteractionCreate) Locale {
-	switch i.Locale {
-	case discordgo.Russian:
-		return RU
-	case discordgo.EnglishGB:
-		return EN
-	case discordgo.EnglishUS:
-		return EN
-	default:
-		return DEFAULT_LOCALE
+func langTagFromInteraction(i *discordgo.InteractionCreate) language.Tag {
+	if t, err := language.Parse(string(i.Locale)); err == nil {
+		return t
 	}
+	return DEFAULT_LANG_TAG
 }
 
 type Channel struct {
 	ChannelId ChannelId
-	Locale    Locale
+	Locale    language.Tag
 }
 
-func NewChannel(channelId ChannelId, locale Locale) Channel {
+func NewChannel(channelId ChannelId, locale language.Tag) Channel {
 	return Channel{
 		ChannelId: channelId,
 		Locale:    locale,

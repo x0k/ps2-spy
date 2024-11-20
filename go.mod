@@ -50,4 +50,5 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/prometheus/client_golang v1.20.5
 	golang.org/x/sys v0.27.0 // indirect
+	golang.org/x/text v0.20.0
 )

@@ -8,6 +8,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
+	"golang.org/x/text/message"
 )
 
 type InteractionHandler func(
@@ -45,7 +46,7 @@ var SUBSCRIPTION_MODAL_CUSTOM_IDS = map[ps2_platforms.Platform]string{
 	ps2_platforms.PS4_US: "subscription_setup_ps4_us",
 }
 
-func DeferredEphemeralResponse(handle func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) LocalizedEdit) InteractionHandler {
+func DeferredEphemeralResponse(handle func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) Edit) InteractionHandler {
 	return func(ctx context.Context, log *logger.Logger, s *discordgo.Session, i *discordgo.InteractionCreate) error {
 		err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
@@ -56,7 +57,7 @@ func DeferredEphemeralResponse(handle func(ctx context.Context, s *discordgo.Ses
 		if err != nil {
 			return err
 		}
-		data, customErr := handle(ctx, s, i)(LocaleFromInteraction(i))
+		data, customErr := handle(ctx, s, i)(message.NewPrinter(langTagFromInteraction(i)))
 		if customErr != nil {
 			if _, err := s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
 				Content: customErr.Msg,

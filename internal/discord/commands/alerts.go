@@ -7,6 +7,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/x0k/ps2-spy/internal/discord"
+	discord_messages "github.com/x0k/ps2-spy/internal/discord/messages"
 	"github.com/x0k/ps2-spy/internal/lib/loader"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/meta"
@@ -15,7 +16,7 @@ import (
 
 func NewAlerts(
 	log *logger.Logger,
-	messages discord.LocalizedMessages,
+	messages *discord_messages.Messages,
 	alertsProviders iter.Seq[string],
 	alertsLoader loader.Keyed[string, meta.Loaded[ps2.Alerts]],
 	worldAlertsLoader loader.Queried[query[ps2.WorldId], meta.Loaded[ps2.Alerts]],
@@ -61,7 +62,7 @@ func NewAlerts(
 			ctx context.Context,
 			s *discordgo.Session,
 			i *discordgo.InteractionCreate,
-		) discord.LocalizedEdit {
+		) discord.Edit {
 			opts := i.ApplicationCommandData().Options
 			var worldId ps2.WorldId
 			var provider string
