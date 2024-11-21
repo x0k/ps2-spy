@@ -39,21 +39,21 @@ func init() {
 }
 
 var messageKeyToIndex = map[string]int{
-	"\n\n**Characters:**\n":        60,
+	"\n\n**Characters:**\n":        59,
 	"\n**Left the outfit:**":       9,
 	"\n**Other characters:**":      44,
 	"\n**Welcome to the outfit:**": 8,
-	"\nStatus: _":                  65,
+	"\nStatus: _":                  64,
 	"# PlanetSide 2 Spy\n\nSimple discord bot for PlanetSide 2 outfits\n\n## Links\n\n- [GitHub](https://github.com/x0k/ps2-spy)\n\t\t\n": 14,
 	"%s (%s) is now offline (%s)":                          3,
 	"%s (%s) is now online (%s)":                           1,
-	"%s - %d":                                              50,
-	"%s - %s (Ends %s)":                                    53,
-	"%s - No alerts":                                       55,
+	"%s - %d":                                              49,
+	"%s - %s (Ends %s)":                                    52,
+	"%s - No alerts":                                       54,
 	"%s [%s] captured %s (%s) on %s (%s)":                  12,
 	"%s [%s] lost %s (%s) on %s (%s)":                      13,
-	"%s alerts":                                            56,
-	") by `":                                               64,
+	"%s alerts":                                            55,
+	") by `":                                               63,
 	"Characters online:":                                   42,
 	"Enter the character names separated by comma":         37,
 	"Enter the outfit tags separated by comma":             35,
@@ -78,41 +78,40 @@ var messageKeyToIndex = map[string]int{
 	"Failed to save tracking settings for %s channel (%s)": 25,
 	"Invalid population type: %s":                          15,
 	"Language for this channel has been set to %q":         40,
-	"Locked ":              63,
-	"NC: %3d | %.1f%%\n":   47,
-	"No":                   70,
-	"No alerts":            57,
-	"No characters":        61,
+	"Locked ":              62,
+	"NC":                   46,
+	"No":                   69,
+	"No alerts":            56,
+	"No characters":        60,
 	"No characters online": 41,
-	"No outfits":           59,
-	"Period":               52,
+	"No outfits":           58,
+	"Period":               51,
 	"Settings are saved, but failed to load character names %v (%s)": 27,
 	"Settings are saved, but failed to load outfit tags %v (%s)":     26,
-	"Settings are updated.\n\n**Outfits:**\n":                        58,
-	"Source: %s": 49,
-	"Stable":     66,
-	"TR:   0 | 0.0%%\nNC:   0 | 0.0%%\nVS:   0 | 0.0%%\n": 45,
-	"TR: %3d | %.1f%%\n":                     46,
-	"Territory Control":                      54,
-	"Total population - %d":                  51,
+	"Settings are updated.\n\n**Outfits:**\n":                        57,
+	"Source: %s":                             48,
+	"Stable":                                 65,
+	"TR":                                     45,
+	"Territory Control":                      53,
+	"Total population - %d":                  50,
 	"Tracking Settings (PC)":                 31,
 	"Tracking Settings (PS4 EU)":             32,
 	"Tracking Settings (PS4 US)":             33,
-	"Unlocked ":                              62,
-	"Unstable":                               67,
+	"Unlocked ":                              61,
+	"Unstable":                               66,
 	"Update of ":                             6,
-	"VS: %3d | %.1f%%\n":                     48,
+	"VS":                                     47,
 	"Which characters do you want to track?": 36,
 	"Which outfits do you want to track?":    34,
-	"Yes":                                    69,
+	"Yes":                                    68,
 	"[%s] %s (%s) is now offline (%s)":       2,
 	"[%s] %s (%s) is now online (%s)":        0,
 	"] outfit (":                             43,
 	"] outfit members:":                      7,
-	"_\nAlerts: _":                           68,
+	"_\nAlerts: _":                           67,
 }
 
-var enIndex = []uint32{ // 72 elements
+var enIndex = []uint32{ // 71 elements
 	// Entry 0 - 1F
 	0x00000000, 0x0000002c, 0x00000050, 0x0000007d,
 	0x000000a2, 0x000000c7, 0x000000f0, 0x000000ff,
@@ -126,17 +125,17 @@ var enIndex = []uint32{ // 72 elements
 	0x00000589, 0x000005a4, 0x000005bf, 0x000005e3,
 	0x0000060c, 0x00000633, 0x00000660, 0x0000067f,
 	0x0000069d, 0x000006cd, 0x000006e2, 0x000006f5,
-	0x00000700, 0x0000071b, 0x0000074d, 0x00000768,
-	0x00000783, 0x0000079e, 0x000007ac, 0x000007ba,
-	0x000007d3, 0x000007da, 0x000007f5, 0x00000807,
-	0x00000819, 0x00000826, 0x00000830, 0x00000859,
-	0x00000864, 0x0000087b, 0x00000889, 0x00000897,
+	0x00000700, 0x0000071b, 0x0000071e, 0x00000721,
+	0x00000724, 0x00000732, 0x00000740, 0x00000759,
+	0x00000760, 0x0000077b, 0x0000078d, 0x0000079f,
+	0x000007ac, 0x000007b6, 0x000007df, 0x000007ea,
+	0x00000801, 0x0000080f, 0x0000081d, 0x00000829,
 	// Entry 40 - 5F
-	0x000008a3, 0x000008aa, 0x000008b9, 0x000008c0,
-	0x000008c9, 0x000008d5, 0x000008d9, 0x000008dc,
-} // Size: 312 bytes
+	0x00000830, 0x0000083f, 0x00000846, 0x0000084f,
+	0x0000085b, 0x0000085f, 0x00000862,
+} // Size: 308 bytes
 
-const enData string = "" + // Size: 2268 bytes
+const enData string = "" + // Size: 2146 bytes
 	"\x02[%[1]s] %[2]s (%[3]s) is now online (%[4]s)\x02%[1]s (%[2]s) is now " +
 	"online (%[3]s)\x02[%[1]s] %[2]s (%[3]s) is now offline (%[4]s)\x02%[1]s " +
 	"(%[2]s) is now offline (%[3]s)\x02Failed to load outfit: %[1]s (%[2]s)" +
@@ -165,18 +164,16 @@ const enData string = "" + // Size: 2268 bytes
 	"cter names separated by comma\x02Failed to parse language %[1]q\x02Faile" +
 	"d to save language %[1]q\x02Language for this channel has been set to %[" +
 	"1]q\x02No characters online\x02Characters online:\x02] outfit (\x04\x01" +
-	"\x0a\x00\x16\x02**Other characters:**\x04\x00\x01\x0a-\x02TR:   0 | 0.0%" +
-	"\x0aNC:   0 | 0.0%\x0aVS:   0 | 0.0%\x04\x00\x01\x0a\x16\x02TR: %3[1]d |" +
-	" %.1[2]f%\x04\x00\x01\x0a\x16\x02NC: %3[1]d | %.1[2]f%\x04\x00\x01\x0a" +
-	"\x16\x02VS: %3[1]d | %.1[2]f%\x02Source: %[1]s\x02%[1]s - %[2]d\x02Total" +
-	" population - %[1]d\x02Period\x02%[1]s - %[2]s (Ends %[3]s)\x02Territory" +
-	" Control\x02%[1]s - No alerts\x02%[1]s alerts\x02No alerts\x04\x00\x01" +
-	"\x0a$\x02Settings are updated.\x0a\x0a**Outfits:**\x02No outfits\x04\x02" +
-	"\x0a\x0a\x01\x0a\x10\x02**Characters:**\x02No characters\x04\x00\x01 " +
-	"\x09\x02Unlocked\x04\x00\x01 \x07\x02Locked\x02) by `\x04\x01\x0a\x00" +
-	"\x0a\x02Status: _\x02Stable\x02Unstable\x02_\x0aAlerts: _\x02Yes\x02No"
+	"\x0a\x00\x16\x02**Other characters:**\x02TR\x02NC\x02VS\x02Source: %[1]s" +
+	"\x02%[1]s - %[2]d\x02Total population - %[1]d\x02Period\x02%[1]s - %[2]s" +
+	" (Ends %[3]s)\x02Territory Control\x02%[1]s - No alerts\x02%[1]s alerts" +
+	"\x02No alerts\x04\x00\x01\x0a$\x02Settings are updated.\x0a\x0a**Outfits" +
+	":**\x02No outfits\x04\x02\x0a\x0a\x01\x0a\x10\x02**Characters:**\x02No c" +
+	"haracters\x04\x00\x01 \x09\x02Unlocked\x04\x00\x01 \x07\x02Locked\x02) b" +
+	"y `\x04\x01\x0a\x00\x0a\x02Status: _\x02Stable\x02Unstable\x02_\x0aAlert" +
+	"s: _\x02Yes\x02No"
 
-var ruIndex = []uint32{ // 72 elements
+var ruIndex = []uint32{ // 71 elements
 	// Entry 0 - 1F
 	0x00000000, 0x0000002d, 0x00000052, 0x00000081,
 	0x000000a8, 0x000000e4, 0x00000128, 0x00000142,
@@ -190,17 +187,17 @@ var ruIndex = []uint32{ // 72 elements
 	0x000008a3, 0x000008d8, 0x0000090d, 0x0000094c,
 	0x0000098f, 0x000009ce, 0x00000a19, 0x00000a60,
 	0x00000aa6, 0x00000af0, 0x00000b1d, 0x00000b40,
-	0x00000b51, 0x00000b7b, 0x00000bb3, 0x00000bd0,
-	0x00000bed, 0x00000c0a, 0x00000c22, 0x00000c30,
-	0x00000c60, 0x00000c6d, 0x00000c94, 0x00000cba,
-	0x00000cd6, 0x00000ceb, 0x00000cff, 0x00000d42,
-	0x00000d5a, 0x00000d79, 0x00000d97, 0x00000db7,
+	0x00000b51, 0x00000b7b, 0x00000b80, 0x00000b85,
+	0x00000b8a, 0x00000ba2, 0x00000bb0, 0x00000be0,
+	0x00000bed, 0x00000c14, 0x00000c3a, 0x00000c56,
+	0x00000c6b, 0x00000c7f, 0x00000cc2, 0x00000cda,
+	0x00000cf9, 0x00000d17, 0x00000d37, 0x00000d55,
 	// Entry 40 - 5F
-	0x00000dd5, 0x00000dea, 0x00000dff, 0x00000e14,
-	0x00000e2e, 0x00000e42, 0x00000e47, 0x00000e4e,
-} // Size: 312 bytes
+	0x00000d6a, 0x00000d7f, 0x00000d94, 0x00000dae,
+	0x00000dc2, 0x00000dc7, 0x00000dce,
+} // Size: 308 bytes
 
-const ruData string = "" + // Size: 3662 bytes
+const ruData string = "" + // Size: 3534 bytes
 	"\x02[%[1]s] %[2]s (%[3]s) онлайн (%[4]s)\x02%[1]s (%[2]s) онлайн (%[3]" +
 	"s)\x02[%[1]s] %[2]s (%[3]s) оффлайн (%[4]s)\x02%[1]s (%[2]s) оффлайн (" +
 	"%[3]s)\x02Ошибка загрузки аутфита: %[1]s (%[2]s)\x02Ошибка загрузки перс" +
@@ -213,7 +210,7 @@ const ruData string = "" + // Size: 3662 bytes
 	" PlanetSide 2 аутфитов\x0a\x0a## Ссылки\x0a\x0a- [GitHub](https://github" +
 	".com/x0k/ps2-spy)\x02Неверный тип популяции: %[1]s\x02Ошибка загрузки г" +
 	"лобальной популяции (%[1]s)\x02Ошибка загрузки %[1]s популяции (%[2]s)" +
-	"\x02Ошибка загрузки контроля территории для %[1]s\x02Ошибка загрузки тре" +
+	"\x02Ошибка загрузки контроля территорий для %[1]s\x02Ошибка загрузки тре" +
 	"вог для %[1]s (%[2]s)\x02Ошибка загрузки глобальных тревог (%[1]s)\x02О" +
 	"шибка загрузки онлайн участников канала %[1]s (%[2]s)\x02Ошибка загруз" +
 	"ки аутфитов %[1]v (%[2]s)\x02Ошибка загрузки аутфитов по тегам %[1]v (%" +
@@ -230,16 +227,13 @@ const ruData string = "" + // Size: 3662 bytes
 	"но распознать локализацию %[1]q\x02Ошибка при сохранении локализации %[" +
 	"1]q\x02Для этого канала был установлен язык %[1]q\x02Нет персонажей онл" +
 	"айн\x02Персонажи онлайн:\x02] аутфит (\x04\x01\x0a\x00%\x02**Другие п" +
-	"ерсонажи:**\x04\x00\x01\x0a3\x02ТР:   0 | 0.0%\x0aНК:   0 | 0.0%\x0aСВ:" +
-	"   0 | 0.0%\x04\x00\x01\x0a\x18\x02ТР: %3[1]d | %.1[2]f%\x04\x00\x01\x0a" +
-	"\x18\x02НК: %3[1]d | %.1[2]f%\x04\x00\x01\x0a\x18\x02СВ: %3[1]d | %.1[2]" +
-	"f%\x02Источник: %[1]s\x02%[1]s - %[2]d\x02Глобальная популяция - %[1]d" +
-	"\x02Период\x02%[1]s - %[2]s (Кончится %[3]s)\x02Контроль территории\x02%" +
-	"[1]s - Нет тревог\x02%[1]s тревоги\x02Нет тревог\x04\x00\x01\x0a>\x02Нас" +
-	"тройки обновлены.\x0a\x0a**Аутфиты:**\x02Нет аутфитов\x04\x02\x0a\x0a" +
-	"\x01\x0a\x18\x02**Персонажи:**\x02Нет персонажей\x04\x00\x01 \x1b\x02Ра" +
-	"зблокирован\x04\x00\x01 \x19\x02Заблокирован\x02) фракцией `\x04\x01" +
-	"\x0a\x00\x10\x02Статус: _\x02Стабильный\x02Не стабильный\x02_\x0aТревоги" +
-	": _\x02Да\x02Нет"
+	"ерсонажи:**\x02ТР\x02НК\x02СВ\x02Источник: %[1]s\x02%[1]s - %[2]d\x02Гл" +
+	"обальная популяция - %[1]d\x02Период\x02%[1]s - %[2]s (Кончится %[3]s)" +
+	"\x02Контроль территорий\x02%[1]s - Нет тревог\x02%[1]s тревоги\x02Нет тр" +
+	"евог\x04\x00\x01\x0a>\x02Настройки обновлены.\x0a\x0a**Аутфиты:**\x02Н" +
+	"ет аутфитов\x04\x02\x0a\x0a\x01\x0a\x18\x02**Персонажи:**\x02Нет персон" +
+	"ажей\x04\x00\x01 \x1b\x02Разблокирован\x04\x00\x01 \x19\x02Заблокирова" +
+	"н\x02) фракцией `\x04\x01\x0a\x00\x10\x02Статус: _\x02Стабильный\x02Не " +
+	"стабильный\x02_\x0aТревоги: _\x02Да\x02Нет"
 
-	// Total table size 6554 bytes (6KiB); checksum: 5D3F3F70
+	// Total table size 6296 bytes (6KiB); checksum: F8ACABF9

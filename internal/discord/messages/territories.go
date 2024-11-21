@@ -44,7 +44,7 @@ func renderZoneTerritoryControl(p *message.Printer, zone ps2.ZoneTerritoryContro
 		b.WriteString(p.Sprintf("No"))
 	}
 	b.WriteString("_\n")
-	RenderStatPerFactions(p, &b, zone.StatPerFactions)
+	renderStatPerFactions(p, &b, zone.StatPerFactions)
 	return b.String()
 }
 

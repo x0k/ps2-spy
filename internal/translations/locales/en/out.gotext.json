@@ -879,85 +879,24 @@
             "fuzzy": true
         },
         {
-            "id": "TR:   0 | 0.0%\nNC:   0 | 0.0%\nVS:   0 | 0.0%",
-            "message": "TR:   0 | 0.0%\nNC:   0 | 0.0%\nVS:   0 | 0.0%",
-            "translation": "TR:   0 | 0.0%\nNC:   0 | 0.0%\nVS:   0 | 0.0%",
+            "id": "TR",
+            "message": "TR",
+            "translation": "TR",
             "translatorComment": "Copied from source.",
             "fuzzy": true
         },
         {
-            "id": "TR: {TR} | {All__100}%",
-            "message": "TR: {TR} | {All__100}%",
-            "translation": "TR: {TR} | {All__100}%",
+            "id": "NC",
+            "message": "NC",
+            "translation": "NC",
             "translatorComment": "Copied from source.",
-            "placeholders": [
-                {
-                    "id": "TR",
-                    "string": "%3[1]d",
-                    "type": "int",
-                    "underlyingType": "int",
-                    "argNum": 1,
-                    "expr": "st.TR"
-                },
-                {
-                    "id": "All__100",
-                    "string": "%.1[2]f",
-                    "type": "float64",
-                    "underlyingType": "float64",
-                    "argNum": 2,
-                    "expr": "float64(st.TR) / float64(st.All) * 100"
-                }
-            ],
             "fuzzy": true
         },
         {
-            "id": "NC: {NC} | {All__100}%",
-            "message": "NC: {NC} | {All__100}%",
-            "translation": "NC: {NC} | {All__100}%",
+            "id": "VS",
+            "message": "VS",
+            "translation": "VS",
             "translatorComment": "Copied from source.",
-            "placeholders": [
-                {
-                    "id": "NC",
-                    "string": "%3[1]d",
-                    "type": "int",
-                    "underlyingType": "int",
-                    "argNum": 1,
-                    "expr": "st.NC"
-                },
-                {
-                    "id": "All__100",
-                    "string": "%.1[2]f",
-                    "type": "float64",
-                    "underlyingType": "float64",
-                    "argNum": 2,
-                    "expr": "float64(st.NC) / float64(st.All) * 100"
-                }
-            ],
-            "fuzzy": true
-        },
-        {
-            "id": "VS: {VS} | {All__100}%",
-            "message": "VS: {VS} | {All__100}%",
-            "translation": "VS: {VS} | {All__100}%",
-            "translatorComment": "Copied from source.",
-            "placeholders": [
-                {
-                    "id": "VS",
-                    "string": "%3[1]d",
-                    "type": "int",
-                    "underlyingType": "int",
-                    "argNum": 1,
-                    "expr": "st.VS"
-                },
-                {
-                    "id": "All__100",
-                    "string": "%.1[2]f",
-                    "type": "float64",
-                    "underlyingType": "float64",
-                    "argNum": 2,
-                    "expr": "float64(st.VS) / float64(st.All) * 100"
-                }
-            ],
             "fuzzy": true
         },
         {

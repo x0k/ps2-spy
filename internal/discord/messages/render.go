@@ -13,14 +13,17 @@ import (
 	"golang.org/x/text/message"
 )
 
-func RenderStatPerFactions(p *message.Printer, builder *strings.Builder, st ps2.StatPerFactions) {
+func renderStatPerFactions(p *message.Printer, builder *strings.Builder, st ps2.StatPerFactions) {
 	builder.Grow(60) // 16 characters per line
+	tr := p.Sprintf("TR")
+	nc := p.Sprintf("NC")
+	vs := p.Sprintf("VS")
 	if st.All == 0 {
-		builder.WriteString(p.Sprintf("TR:   0 | 0.0%%\nNC:   0 | 0.0%%\nVS:   0 | 0.0%%\n"))
+		builder.WriteString(fmt.Sprintf("%s:   0 | 0.0%%\n%s:   0 | 0.0%%\n%s:   0 | 0.0%%\n", tr, nc, vs))
 	} else {
-		builder.WriteString(p.Sprintf("TR: %3d | %.1f%%\n", st.TR, float64(st.TR)/float64(st.All)*100))
-		builder.WriteString(p.Sprintf("NC: %3d | %.1f%%\n", st.NC, float64(st.NC)/float64(st.All)*100))
-		builder.WriteString(p.Sprintf("VS: %3d | %.1f%%\n", st.VS, float64(st.VS)/float64(st.All)*100))
+		builder.WriteString(fmt.Sprintf("%s: %3d | %.1f%%\n", tr, st.TR, float64(st.TR)/float64(st.All)*100))
+		builder.WriteString(fmt.Sprintf("%s: %3d | %.1f%%\n", nc, st.NC, float64(st.NC)/float64(st.All)*100))
+		builder.WriteString(fmt.Sprintf("%s: %3d | %.1f%%\n", vs, st.VS, float64(st.VS)/float64(st.All)*100))
 		// builder.WriteString(p.Sprintf("Other: %3d | %.2f%\n", worldPopulation.Total.Other, float64(worldPopulation.Total.Other)/float64(worldPopulation.Total.All)*100))
 	}
 }
@@ -31,7 +34,7 @@ func renderWorldDetailedPopulation(p *message.Printer, loaded meta.Loaded[ps2.De
 	b := strings.Builder{}
 	for _, zonePopulation := range worldPopulation.Zones {
 		if zonePopulation.IsOpen {
-			RenderStatPerFactions(p, &b, zonePopulation.StatPerFactions)
+			renderStatPerFactions(p, &b, zonePopulation.StatPerFactions)
 			zones = append(zones, &discordgo.MessageEmbedField{
 				Name:   fmt.Sprintf("%s - %d", zonePopulation.Name, zonePopulation.All),
 				Value:  b.String(),
@@ -53,7 +56,7 @@ func renderWorldDetailedPopulation(p *message.Printer, loaded meta.Loaded[ps2.De
 
 func RenderWorldTotalPopulation(p *message.Printer, worldPopulation ps2.WorldPopulation) *discordgo.MessageEmbedField {
 	b := strings.Builder{}
-	RenderStatPerFactions(p, &b, worldPopulation.StatPerFactions)
+	renderStatPerFactions(p, &b, worldPopulation.StatPerFactions)
 	return &discordgo.MessageEmbedField{
 		Name:   p.Sprintf("%s - %d", worldPopulation.Name, worldPopulation.StatPerFactions.All),
 		Value:  b.String(),
@@ -103,7 +106,7 @@ func RenderAlertTiming(p *message.Printer, alert ps2.Alert) *discordgo.MessageEm
 
 func RenderAlertTerritoryControl(p *message.Printer, alert ps2.Alert) *discordgo.MessageEmbedField {
 	b := strings.Builder{}
-	RenderStatPerFactions(p, &b, alert.TerritoryControl)
+	renderStatPerFactions(p, &b, alert.TerritoryControl)
 	return &discordgo.MessageEmbedField{
 		Name:  p.Sprintf("Territory Control"),
 		Value: b.String(),

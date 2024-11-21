@@ -408,7 +408,7 @@
         {
             "id": "Failed to load {WorldNameByIdworldId} territory control",
             "message": "Failed to load {WorldNameByIdworldId} territory control",
-            "translation": "Ошибка загрузки контроля территории для {WorldNameByIdworldId}",
+            "translation": "Ошибка загрузки контроля территорий для {WorldNameByIdworldId}",
             "placeholders": [
                 {
                     "id": "WorldNameByIdworldId",
@@ -789,78 +789,19 @@
             "translation": "**Другие персонажи:**"
         },
         {
-            "id": "TR:   0 | 0.0%\nNC:   0 | 0.0%\nVS:   0 | 0.0%",
-            "message": "TR:   0 | 0.0%\nNC:   0 | 0.0%\nVS:   0 | 0.0%",
-            "translation": "ТР:   0 | 0.0%\nНК:   0 | 0.0%\nСВ:   0 | 0.0%"
+            "id": "TR",
+            "message": "TR",
+            "translation": "ТР"
         },
         {
-            "id": "TR: {TR} | {All__100}%",
-            "message": "TR: {TR} | {All__100}%",
-            "translation": "ТР: {TR} | {All__100}%",
-            "placeholders": [
-                {
-                    "id": "TR",
-                    "string": "%3[1]d",
-                    "type": "int",
-                    "underlyingType": "int",
-                    "argNum": 1,
-                    "expr": "st.TR"
-                },
-                {
-                    "id": "All__100",
-                    "string": "%.1[2]f",
-                    "type": "float64",
-                    "underlyingType": "float64",
-                    "argNum": 2,
-                    "expr": "float64(st.TR) / float64(st.All) * 100"
-                }
-            ]
+            "id": "NC",
+            "message": "NC",
+            "translation": "НК"
         },
         {
-            "id": "NC: {NC} | {All__100}%",
-            "message": "NC: {NC} | {All__100}%",
-            "translation": "НК: {NC} | {All__100}%",
-            "placeholders": [
-                {
-                    "id": "NC",
-                    "string": "%3[1]d",
-                    "type": "int",
-                    "underlyingType": "int",
-                    "argNum": 1,
-                    "expr": "st.NC"
-                },
-                {
-                    "id": "All__100",
-                    "string": "%.1[2]f",
-                    "type": "float64",
-                    "underlyingType": "float64",
-                    "argNum": 2,
-                    "expr": "float64(st.NC) / float64(st.All) * 100"
-                }
-            ]
-        },
-        {
-            "id": "VS: {VS} | {All__100}%",
-            "message": "VS: {VS} | {All__100}%",
-            "translation": "СВ: {VS} | {All__100}%",
-            "placeholders": [
-                {
-                    "id": "VS",
-                    "string": "%3[1]d",
-                    "type": "int",
-                    "underlyingType": "int",
-                    "argNum": 1,
-                    "expr": "st.VS"
-                },
-                {
-                    "id": "All__100",
-                    "string": "%.1[2]f",
-                    "type": "float64",
-                    "underlyingType": "float64",
-                    "argNum": 2,
-                    "expr": "float64(st.VS) / float64(st.All) * 100"
-                }
-            ]
+            "id": "VS",
+            "message": "VS",
+            "translation": "СВ"
         },
         {
             "id": "Source: {Source}",
@@ -954,7 +895,7 @@
         {
             "id": "Territory Control",
             "message": "Territory Control",
-            "translation": "Контроль территории"
+            "translation": "Контроль территорий"
         },
         {
             "id": "{WorldName} - No alerts",

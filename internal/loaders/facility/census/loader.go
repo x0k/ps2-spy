@@ -10,16 +10,16 @@ import (
 	"github.com/x0k/ps2-spy/internal/shared"
 )
 
-type CensusLoader struct {
+type Loader struct {
 	client  *census2.Client
 	queryMu sync.Mutex
 	query   *census2.Query
 	operand *census2.Ptr[census2.Str]
 }
 
-func NewCensus(client *census2.Client, ns string) *CensusLoader {
+func New(client *census2.Client, ns string) *Loader {
 	operand := census2.NewPtr(census2.Str(""))
-	return &CensusLoader{
+	return &Loader{
 		client:  client,
 		operand: &operand,
 		query: census2.NewQuery(census2.GetQuery, ns, ps2_collections.MapRegion).
@@ -28,14 +28,14 @@ func NewCensus(client *census2.Client, ns string) *CensusLoader {
 	}
 }
 
-func (l *CensusLoader) toUrl(facilityId ps2.FacilityId) string {
+func (l *Loader) toUrl(facilityId ps2.FacilityId) string {
 	l.queryMu.Lock()
 	defer l.queryMu.Unlock()
 	l.operand.Set(census2.Str(facilityId))
 	return l.client.ToURL(l.query)
 }
 
-func (l *CensusLoader) Load(ctx context.Context, facilityId ps2.FacilityId) (ps2.Facility, error) {
+func (l *Loader) Load(ctx context.Context, facilityId ps2.FacilityId) (ps2.Facility, error) {
 	url := l.toUrl(facilityId)
 	regions, err := census2.ExecutePreparedAndDecode[ps2_collections.MapRegionItem](
 		ctx,
