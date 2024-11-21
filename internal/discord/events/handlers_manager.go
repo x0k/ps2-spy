@@ -11,7 +11,9 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/ps2"
+	"github.com/x0k/ps2-spy/internal/storage"
 	"github.com/x0k/ps2-spy/internal/tracking_manager"
+	"github.com/x0k/ps2-spy/internal/worlds_tracker"
 )
 
 type HandlersManager struct {
@@ -62,6 +64,21 @@ func (h *HandlersManager) HandlePlayerLogout(ctx context.Context, e characters_t
 	go h.handleCharacterEventTask(ctx, e.CharacterId, PlayerLogout(e))
 }
 
+func (h *HandlersManager) HandleOutfitMembersUpdate(ctx context.Context, e storage.OutfitMembersUpdate) {
+	h.wg.Add(1)
+	go h.handleOutfitEventTask(ctx, e.OutfitId, OutfitMembersUpdate(e))
+}
+
+func (h *HandlersManager) HandleFacilityControl(ctx context.Context, e worlds_tracker.FacilityControl) {
+	h.wg.Add(1)
+	go h.handleOutfitEventTask(ctx, ps2.OutfitId(e.OutfitID), FacilityControl(e))
+}
+
+func (h *HandlersManager) HandleFacilityLoss(ctx context.Context, e worlds_tracker.FacilityLoss) {
+	h.wg.Add(1)
+	go h.handleOutfitEventTask(ctx, e.OldOutfitId, FacilityLoss(e))
+}
+
 func (h *HandlersManager) handleCharacterEventTask(
 	ctx context.Context,
 	characterId ps2.CharacterId,
@@ -76,6 +93,31 @@ func (h *HandlersManager) handleCharacterEventTask(
 	channels, err := h.trackingManager.ChannelIdsForCharacter(ctx, characterId)
 	if err != nil {
 		h.log.Error(ctx, "cannot get channels for character", slog.String("character_id", string(characterId)), sl.Err(err))
+	}
+	if len(channels) == 0 {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, h.handlersTimeout)
+	defer cancel()
+	if err := handler(ctx, h.session, channels, e); err != nil {
+		h.log.Error(ctx, "cannot handle event", sl.Err(err))
+	}
+}
+
+func (h *HandlersManager) handleOutfitEventTask(
+	ctx context.Context,
+	outfitId ps2.OutfitId,
+	e Event,
+) {
+	defer h.wg.Done()
+	handler, ok := h.handlers[e.Type()]
+	if !ok {
+		h.log.Debug(ctx, "no handler for event", slog.String("event_type", string(e.Type())))
+		return
+	}
+	channels, err := h.trackingManager.ChannelIdsForOutfit(ctx, outfitId)
+	if err != nil {
+		h.log.Error(ctx, "cannot get channels for outfit", slog.String("outfit_id", string(outfitId)), sl.Err(err))
 	}
 	if len(channels) == 0 {
 		return

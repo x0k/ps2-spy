@@ -67,6 +67,7 @@ func (e ChannelCharacterDeleted) Type() EventType {
 }
 
 type OutfitMembersInit struct {
+	Platform ps2_platforms.Platform
 	OutfitId ps2.OutfitId
 	Members  []ps2.CharacterId
 }
@@ -76,6 +77,7 @@ func (e OutfitMembersInit) Type() EventType {
 }
 
 type OutfitMembersUpdate struct {
+	Platform ps2_platforms.Platform
 	OutfitId ps2.OutfitId
 	Members  diff.Diff[ps2.CharacterId]
 }

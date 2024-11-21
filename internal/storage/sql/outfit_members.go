@@ -41,11 +41,13 @@ func (s *Storage) SaveOutfitMembers(
 	var pErr error
 	if len(old) == 0 {
 		pErr = s.publisher.Publish(storage.OutfitMembersInit{
+			Platform: platform,
 			OutfitId: outfitId,
 			Members:  members,
 		})
 	} else {
 		pErr = s.publisher.Publish(storage.OutfitMembersUpdate{
+			Platform: platform,
 			OutfitId: outfitId,
 			Members:  membersDiff,
 		})

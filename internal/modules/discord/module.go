@@ -13,7 +13,9 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/module"
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
+	"github.com/x0k/ps2-spy/internal/storage"
 	"github.com/x0k/ps2-spy/internal/tracking_manager"
+	"github.com/x0k/ps2-spy/internal/worlds_tracker"
 )
 
 func New(
@@ -26,6 +28,8 @@ func New(
 	charactersTrackerSubsManagers map[ps2_platforms.Platform]pubsub.SubscriptionsManager[characters_tracker.EventType],
 	trackingManagers map[ps2_platforms.Platform]*tracking_manager.TrackingManager,
 	handlerFactories map[discord_events.EventType]discord_events.HandlerFactory,
+	storageSubs pubsub.SubscriptionsManager[storage.EventType],
+	worldTrackerSubsMangers map[ps2_platforms.Platform]pubsub.SubscriptionsManager[worlds_tracker.EventType],
 ) (*module.Module, error) {
 	m := module.New(log.Logger, "discord")
 	session, err := discordgo.New("Bot " + token)
@@ -60,6 +64,8 @@ func New(
 				m,
 				platform,
 				charactersTrackerSubsManagers[platform],
+				storageSubs,
+				worldTrackerSubsMangers[platform],
 				handlersManager,
 			),
 		)

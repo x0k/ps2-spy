@@ -130,6 +130,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 
 	characterTrackerSubsMangers := make(map[ps2_platforms.Platform]pubsub.SubscriptionsManager[characters_tracker.EventType], len(ps2_platforms.Platforms))
 	charactersTrackers := make(map[ps2_platforms.Platform]*characters_tracker.CharactersTracker, len(ps2_platforms.Platforms))
+	worldTrackerSubsMangers := make(map[ps2_platforms.Platform]pubsub.SubscriptionsManager[worlds_tracker.EventType], len(ps2_platforms.Platforms))
 	worldTrackers := make(map[ps2_platforms.Platform]*worlds_tracker.WorldsTracker, len(ps2_platforms.Platforms))
 	trackingManagers := make(map[ps2_platforms.Platform]*tracking_manager.TrackingManager, len(ps2_platforms.Platforms))
 	outfitMembersSynchronizers := make(map[ps2_platforms.Platform]*outfit_members_synchronizer.OutfitMembersSynchronizer, len(ps2_platforms.Platforms))
@@ -223,6 +224,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			platform,
 			worldsTrackerPubSub,
 		)
+		worldTrackerSubsMangers[platform] = worldsTrackerPubSub
 		worldMapLoader := census_world_map_loader.New(
 			censusClient,
 			platform,
@@ -441,6 +443,8 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			charactersLoaders,
 			facilityLoaders,
 		),
+		storagePubSub,
+		worldTrackerSubsMangers,
 	)
 	if err != nil {
 		return nil, err
