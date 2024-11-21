@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/hashicorp/golang-lru/v2/expirable"
 	loader_adapters "github.com/x0k/ps2-spy/internal/adapters/loader"
 	sql_facility_cache "github.com/x0k/ps2-spy/internal/cache/facility/sql"
 	sql_outfits_cache "github.com/x0k/ps2-spy/internal/cache/outfits/sql"
@@ -102,10 +103,11 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	charactersTrackers := make(map[ps2_platforms.Platform]*characters_tracker.CharactersTracker, len(ps2_platforms.Platforms))
 	worldTrackers := make(map[ps2_platforms.Platform]*worlds_tracker.WorldsTracker, len(ps2_platforms.Platforms))
 	trackingManagers := make(map[ps2_platforms.Platform]*tracking_manager.TrackingManager, len(ps2_platforms.Platforms))
-	outfitMembersSaverPublishers := make(map[ps2_platforms.Platform]pubsub.Publisher[sql_outfit_members_saver.Event], len(ps2_platforms.Platforms))
 	outfitMembersSynchronizers := make(map[ps2_platforms.Platform]*outfit_members_synchronizer.OutfitMembersSynchronizer, len(ps2_platforms.Platforms))
+	charactersLoaders := make(map[ps2_platforms.Platform]loader.Multi[ps2.CharacterId, ps2.Character], len(ps2_platforms.Platforms))
 	characterLoaders := make(map[ps2_platforms.Platform]loader.Keyed[ps2.CharacterId, ps2.Character], len(ps2_platforms.Platforms))
 	outfitsLoaders := make(map[ps2_platforms.Platform]loader.Multi[ps2.OutfitId, ps2.Outfit], len(ps2_platforms.Platforms))
+	outfitLoaders := make(map[ps2_platforms.Platform]loader.Keyed[ps2.OutfitId, ps2.Outfit], len(ps2_platforms.Platforms))
 	characterNamesLoaders := make(map[ps2_platforms.Platform]loader.Queried[[]ps2.CharacterId, []string], len(ps2_platforms.Platforms))
 	characterIdsLoaders := make(map[ps2_platforms.Platform]loader.Queried[[]string, []ps2.CharacterId], len(ps2_platforms.Platforms))
 	outfitTagsLoaders := make(map[ps2_platforms.Platform]loader.Queried[[]ps2.OutfitId, []string], len(ps2_platforms.Platforms))
@@ -139,7 +141,15 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			).Load,
 		)
 
-		batchedCharactersLoader := loader.WithBatching(charactersLoader, 10*time.Second)
+		charactersCache := expirable.NewLRU[ps2.CharacterId, ps2.Character](0, nil, 24*time.Hour)
+		cachedCharactersLoader := loader.WithMultiCache(
+			pl.Logger.With(sl.Component("characters_loader_cache")),
+			charactersLoader,
+			memory.NewMultiExpirableCache(charactersCache),
+		)
+		charactersLoaders[platform] = cachedCharactersLoader
+
+		batchedCharactersLoader := loader.WithBatching(cachedCharactersLoader, 10*time.Second)
 		m.Append(loader_adapters.NewBatchingService("batched_characters_loader", batchedCharactersLoader))
 
 		cachedBatchedCharactersLoader := loader.Keyed[ps2.CharacterId, ps2.Character](
@@ -149,7 +159,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 					metrics.PlatformLoadsCounterMetric(mt, metrics.CharacterPlatformLoaderName, platform),
 					batchedCharactersLoader.Load,
 				),
-				memory.NewKeyedExpirableCache[ps2.CharacterId, ps2.Character](0, 24*time.Hour),
+				memory.NewKeyedExpirableCache(charactersCache),
 			),
 		)
 		characterLoaders[platform] = cachedBatchedCharactersLoader
@@ -242,7 +252,6 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			platform,
 			pubsub.New[sql_outfit_members_saver.EventType](),
 		)
-		outfitMembersSaverPublishers[platform] = outfitMembersSaverPubSub
 
 		trackableOutfitsLoader := sql_trackable_outfits_loader.New(
 			storage,
@@ -274,7 +283,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		m.Append(outfitMembersSynchronizer)
 		outfitMembersSynchronizers[platform] = outfitMembersSynchronizer
 
-		outfitsLoaders[platform] = loader.WithMultiCache(
+		outfitsLoader := loader.WithMultiCache(
 			log.Logger.With(sl.Component("outfits_loader_cache")),
 			census_outfits_loader.New(censusClient, platform).Load,
 			sql_outfits_cache.New(
@@ -283,6 +292,15 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 				platform,
 			),
 		)
+		outfitsLoaders[platform] = outfitsLoader
+		// We don't need batching here right now
+		outfitLoaders[platform] = func(ctx context.Context, oi ps2.OutfitId) (ps2.Outfit, error) {
+			outfit, err := outfitsLoader(ctx, []ps2.OutfitId{oi})
+			if err != nil {
+				return ps2.Outfit{}, err
+			}
+			return outfit[oi], nil
+		}
 
 		// TODO: Use characters cache
 		characterNamesLoaders[platform] = census_character_names_loader.New(censusClient, ns).Load
@@ -389,8 +407,11 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		characterTrackerSubsMangers,
 		trackingManagers,
 		discord_events.NewHandlers(
+			log.With(sl.Component("discord_event_handlers")),
 			discordMessages,
 			characterLoaders,
+			outfitLoaders,
+			charactersLoaders,
 		),
 	)
 	if err != nil {

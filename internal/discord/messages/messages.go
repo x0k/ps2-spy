@@ -5,6 +5,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/x0k/ps2-spy/internal/discord"
+	"github.com/x0k/ps2-spy/internal/lib/diff"
 	"github.com/x0k/ps2-spy/internal/meta"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	ps2_factions "github.com/x0k/ps2-spy/internal/ps2/factions"
@@ -56,6 +57,50 @@ func (m *Messages) CharacterLogout(char ps2.Character) discord.Message {
 			ps2_factions.FactionNameById(char.FactionId),
 			ps2.WorldNameById(char.WorldId),
 		), nil
+	}
+}
+
+func (m *Messages) OutfitLoadError(outfitId ps2.OutfitId, platform ps2_platforms.Platform, err error) discord.Message {
+	return func(p *message.Printer) (string, *discord.Error) {
+		return "", &discord.Error{
+			Msg: p.Sprintf("Failed to load outfit: %s (%s)", outfitId, platform),
+			Err: err,
+		}
+	}
+}
+
+func (m *Messages) CharactersLoadError(characterIds []ps2.CharacterId, platform ps2_platforms.Platform, err error) discord.Message {
+	return func(p *message.Printer) (string, *discord.Error) {
+		return "", &discord.Error{
+			Msg: p.Sprintf("Failed to load characters: %v (%s)", characterIds, platform),
+			Err: err,
+		}
+	}
+}
+
+func (m *Messages) OutfitMembersUpdate(outfit ps2.Outfit, change diff.Diff[ps2.Character]) discord.Message {
+	return func(p *message.Printer) (string, *discord.Error) {
+		builder := strings.Builder{}
+		builder.WriteString(p.Sprintf("Update of "))
+		builder.WriteString(outfit.Name)
+		builder.WriteString(" [")
+		builder.WriteString(outfit.Tag)
+		builder.WriteString(p.Sprintf("] outfit members:"))
+		if len(change.ToAdd) > 0 {
+			builder.WriteString(p.Sprintf("\n**Welcome to the outfit:**"))
+			for i := range change.ToAdd {
+				builder.WriteString("\n- ")
+				builder.WriteString(change.ToAdd[i].Name)
+			}
+		}
+		if len(change.ToDel) > 0 {
+			builder.WriteString(p.Sprintf("\n**Left the outfit:**"))
+			for i := range change.ToDel {
+				builder.WriteString("\n- ")
+				builder.WriteString(change.ToDel[i].Name)
+			}
+		}
+		return builder.String(), nil
 	}
 }
 

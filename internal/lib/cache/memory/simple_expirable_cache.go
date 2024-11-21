@@ -2,7 +2,6 @@ package memory
 
 import (
 	"context"
-	"time"
 
 	"github.com/x0k/ps2-spy/internal/lib/containers"
 )
@@ -11,9 +10,9 @@ type SimpleExpirableCache[T any] struct {
 	cache *containers.Expirable[T]
 }
 
-func NewSimpleExpirable[T any](ttl time.Duration) *SimpleExpirableCache[T] {
+func NewSimpleExpirable[T any](cache *containers.Expirable[T]) *SimpleExpirableCache[T] {
 	return &SimpleExpirableCache[T]{
-		cache: containers.NewExpirable[T](ttl),
+		cache: cache,
 	}
 }
 

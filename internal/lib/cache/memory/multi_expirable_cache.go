@@ -2,7 +2,6 @@ package memory
 
 import (
 	"context"
-	"time"
 
 	"github.com/hashicorp/golang-lru/v2/expirable"
 )
@@ -12,9 +11,9 @@ type MultiExpirableCache[K comparable, T any] struct {
 }
 
 // NOTE: Start a new goroutine for evicting expired items which will never be stopped.
-func NewMultiExpirableCache[K comparable, T any](size int, ttl time.Duration) *MultiExpirableCache[K, T] {
+func NewMultiExpirableCache[K comparable, T any](cache *expirable.LRU[K, T]) *MultiExpirableCache[K, T] {
 	return &MultiExpirableCache[K, T]{
-		cache: expirable.NewLRU[K, T](size, nil, ttl),
+		cache: cache,
 	}
 }
 

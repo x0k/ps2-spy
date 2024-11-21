@@ -44,8 +44,8 @@ func InstrumentQueriedLoaderWithFlightMetric[Q any, T any](
 
 func InstrumentMultiKeyedLoaderWithSubjectsCounter[K comparable, T any](
 	counter *prometheus.CounterVec,
-	loader loader.Queried[[]K, map[K]T],
-) loader.Queried[[]K, map[K]T] {
+	loader loader.Multi[K, T],
+) loader.Multi[K, T] {
 	if counter == nil {
 		return loader
 	}

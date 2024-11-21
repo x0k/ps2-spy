@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/hashicorp/golang-lru/v2/expirable"
 	"github.com/x0k/ps2-spy/internal/lib/cache/memory"
 	"github.com/x0k/ps2-spy/internal/lib/containers"
 	"github.com/x0k/ps2-spy/internal/lib/loader"
@@ -38,9 +39,12 @@ func newWorldPopulationLoader(
 			}
 			return fallbackLoader(ctx, query.Key)
 		},
-		memory.NewKeyedExpirableCache[query[ps2.WorldId], meta.Loaded[ps2.DetailedWorldPopulation]](
-			(len(loaders)+1)*len(ps2.ZoneNames),
-			time.Minute,
+		memory.NewKeyedExpirableCache(
+			expirable.NewLRU[query[ps2.WorldId], meta.Loaded[ps2.DetailedWorldPopulation]](
+				(len(loaders)+1)*len(ps2.ZoneNames),
+				nil,
+				time.Minute,
+			),
 		),
 	)
 	return &worldPopulationLoader{

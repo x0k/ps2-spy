@@ -7,7 +7,7 @@ import (
 )
 
 type Batched[K comparable, T any] struct {
-	loader     Queried[[]K, map[K]T]
+	loader     Multi[K, T]
 	awaitersMu sync.Mutex
 	awaiters   map[K][]chan result[T]
 	checkRate  time.Duration
@@ -19,7 +19,7 @@ type result[T any] struct {
 }
 
 func WithBatching[K comparable, T any](
-	loader Queried[[]K, map[K]T],
+	loader Multi[K, T],
 	checkRate time.Duration,
 ) *Batched[K, T] {
 	return &Batched[K, T]{
