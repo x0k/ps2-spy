@@ -58,7 +58,6 @@ import (
 	characters_tracker_trackable_online_entities_loader "github.com/x0k/ps2-spy/internal/loaders/trackable_online_entities/characters_tracker"
 	sql_trackable_outfits_loader "github.com/x0k/ps2-spy/internal/loaders/trackable_outfits/sql"
 	sql_trackable_outfits_with_duplication_loader "github.com/x0k/ps2-spy/internal/loaders/trackable_outfits_with_duplication/sql"
-	sql_tracking_settings_loader "github.com/x0k/ps2-spy/internal/loaders/tracking_settings/sql"
 	census_world_map_loader "github.com/x0k/ps2-spy/internal/loaders/world_map/census"
 	characters_tracker_world_population_loader "github.com/x0k/ps2-spy/internal/loaders/world_population/characters_tracker"
 	honu_world_population_loader "github.com/x0k/ps2-spy/internal/loaders/world_population/honu"
@@ -73,7 +72,6 @@ import (
 	"github.com/x0k/ps2-spy/internal/ps2"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 	sql_outfit_members_saver "github.com/x0k/ps2-spy/internal/savers/outfit_members/sql"
-	sql_tracking_settings_saver "github.com/x0k/ps2-spy/internal/savers/tracking_settings/sql"
 	"github.com/x0k/ps2-spy/internal/storage"
 	sql_storage "github.com/x0k/ps2-spy/internal/storage/sql"
 	"github.com/x0k/ps2-spy/internal/tracking_manager"
@@ -396,18 +394,9 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		"voidwell": voidwell_alerts_loader.New(voidWellClient),
 	}
 
-	trackingSettingsLoader := sql_tracking_settings_loader.New(
-		storage,
-	)
-
 	trackableOnlineEntitiesLoader := characters_tracker_trackable_online_entities_loader.New(
-		trackingSettingsLoader,
+		storage.TrackingSettings,
 		charactersTrackers,
-	)
-
-	channelTrackingSettingsSaver := sql_tracking_settings_saver.New(
-		storage,
-		trackingSettingsLoader,
 	)
 
 	discordMessages := discord_messages.New()
@@ -429,7 +418,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		func(ctx context.Context, pq discord.PlatformQuery[[]ps2.OutfitId]) (map[ps2.OutfitId]ps2.Outfit, error) {
 			return outfitsLoaders[pq.Platform](ctx, pq.Value)
 		},
-		trackingSettingsLoader,
+		storage.TrackingSettings,
 		func(ctx context.Context, pq discord.PlatformQuery[[]ps2.CharacterId]) ([]string, error) {
 			return characterNamesLoaders[pq.Platform](ctx, pq.Value)
 		},
@@ -442,7 +431,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		func(ctx context.Context, pq discord.PlatformQuery[[]string]) ([]ps2.OutfitId, error) {
 			return outfitIdsLoaders[pq.Platform](ctx, pq.Value)
 		},
-		channelTrackingSettingsSaver,
+		storage.SaveTrackingSettings,
 		storage.SaveChannelLanguage,
 	)
 	m.Append(discordCommands)
