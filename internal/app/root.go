@@ -8,10 +8,10 @@ import (
 	"time"
 
 	"github.com/hashicorp/golang-lru/v2/expirable"
-	loader_adapters "github.com/x0k/ps2-spy/internal/adapters/loader"
 	sql_facility_cache "github.com/x0k/ps2-spy/internal/cache/facility/sql"
 	sql_outfits_cache "github.com/x0k/ps2-spy/internal/cache/outfits/sql"
 	"github.com/x0k/ps2-spy/internal/characters_tracker"
+	census_data_provider "github.com/x0k/ps2-spy/internal/data_providers/census"
 	"github.com/x0k/ps2-spy/internal/discord"
 	discord_commands "github.com/x0k/ps2-spy/internal/discord/commands"
 	discord_events "github.com/x0k/ps2-spy/internal/discord/events"
@@ -30,13 +30,10 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/ps2live/saerro"
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
 	"github.com/x0k/ps2-spy/internal/lib/voidwell"
-	census_alerts_loader "github.com/x0k/ps2-spy/internal/loaders/alerts/census"
 	honu_alerts_loader "github.com/x0k/ps2-spy/internal/loaders/alerts/honu"
 	ps2alerts_alerts_loader "github.com/x0k/ps2-spy/internal/loaders/alerts/ps2alerts"
 	voidwell_alerts_loader "github.com/x0k/ps2-spy/internal/loaders/alerts/voidwell"
 	worlds_tracker_alerts_loader "github.com/x0k/ps2-spy/internal/loaders/alerts/worlds_tracker"
-	census_character_ids_loader "github.com/x0k/ps2-spy/internal/loaders/character_ids/census"
-	census_character_names_loader "github.com/x0k/ps2-spy/internal/loaders/character_names/census"
 	census_characters_loader "github.com/x0k/ps2-spy/internal/loaders/characters/census"
 	census_facility_loader "github.com/x0k/ps2-spy/internal/loaders/facility/census"
 	census_outfit_ids_loader "github.com/x0k/ps2-spy/internal/loaders/outfit_ids/census"
@@ -112,6 +109,11 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	censusClient := census2.NewClient("https://census.daybreakgames.com", cfg.CensusServiceId, httpClient)
 	sanctuaryClient := census2.NewClient("https://census.lithafalcon.cc", cfg.CensusServiceId, httpClient)
 
+	censusDataProvider := census_data_provider.New(
+		log.With(sl.Component("census_data_provider")),
+		censusClient,
+	)
+
 	facilityCache := sql_facility_cache.New(
 		log.With(sl.Component("facility_cache")),
 		storage,
@@ -140,7 +142,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		eventsPubSub := pubsub.New[events.EventType]()
 
 		eventsModule, err := events_module.New(
-			pl.With(sl.Module(fmt.Sprintf("ps2.%s.events", platform))),
+			pl.With(sl.Module("events")),
 			platform,
 			cfg.StreamingEndpoint,
 			cfg.CensusServiceId,
@@ -155,7 +157,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		charactersLoader := metrics.InstrumentMultiKeyedLoaderWithSubjectsCounter(
 			metrics.PlatformLoaderSubjectsCounterMetric(mt, metrics.CharactersPlatformLoaderName, platform),
 			census_characters_loader.New(
-				pl.With(sl.Component("characters_loader"), slog.String("platform", string(platform))),
+				pl.With(sl.Component("characters_loader")),
 				censusClient,
 				platform,
 			).Load,
@@ -170,7 +172,13 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		charactersLoaders[platform] = cachedCharactersLoader
 
 		batchedCharactersLoader := loader.WithBatching(cachedCharactersLoader, 10*time.Second)
-		m.Append(loader_adapters.NewBatchingService("batched_characters_loader", batchedCharactersLoader))
+		m.Append(module.NewService(
+			fmt.Sprintf("%s.batched_characters_loader", platform),
+			func(ctx context.Context) error {
+				batchedCharactersLoader.Start(ctx)
+				return nil
+			},
+		))
 
 		cachedBatchedCharactersLoader := loader.Keyed[ps2.CharacterId, ps2.Character](
 			loader.WithQueriedCache(
@@ -304,8 +312,12 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		}
 
 		// TODO: Use characters cache
-		characterNamesLoaders[platform] = census_character_names_loader.New(censusClient, ns).Load
-		characterIdsLoaders[platform] = census_character_ids_loader.New(censusClient, ns).Load
+		characterNamesLoaders[platform] = func(ctx context.Context, ci []ps2.CharacterId) ([]string, error) {
+			return censusDataProvider.CharacterNames(ctx, ns, ci)
+		}
+		characterIdsLoaders[platform] = func(ctx context.Context, s []string) ([]ps2.CharacterId, error) {
+			return censusDataProvider.CharacterIds(ctx, ns, s)
+		}
 		// TODO: Use outfits cache
 		outfitTagsLoaders[platform] = census_outfit_tags_loader.New(censusClient, ns).Load
 		outfitIdsLoaders[platform] = census_outfit_ids_loader.New(censusClient, ns).Load
@@ -357,11 +369,8 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		),
 		"ps2alerts": ps2alerts_alerts_loader.New(ps2alertsClient),
 		"honu":      honu_alerts_loader.New(honuClient),
-		"census": census_alerts_loader.New(
-			log.With(sl.Component("census_alerts_loader")),
-			censusClient,
-		),
-		"voidwell": voidwell_alerts_loader.New(voidWellClient),
+		"census":    censusDataProvider.Alerts,
+		"voidwell":  voidwell_alerts_loader.New(voidWellClient),
 	}
 
 	trackableOnlineEntitiesLoader := characters_tracker_trackable_online_entities_loader.New(

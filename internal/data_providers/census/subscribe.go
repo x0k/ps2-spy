@@ -1,4 +1,4 @@
-package census2_adapters
+package census_data_provider
 
 import (
 	pubsub_adapters "github.com/x0k/ps2-spy/internal/adapters/pubsub"
