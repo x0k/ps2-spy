@@ -37,15 +37,11 @@ import (
 	worlds_tracker_alerts_loader "github.com/x0k/ps2-spy/internal/loaders/alerts/worlds_tracker"
 	census_character_ids_loader "github.com/x0k/ps2-spy/internal/loaders/character_ids/census"
 	census_character_names_loader "github.com/x0k/ps2-spy/internal/loaders/character_names/census"
-	sql_character_tracking_channels_loader "github.com/x0k/ps2-spy/internal/loaders/character_tracking_channels/sql"
 	census_characters_loader "github.com/x0k/ps2-spy/internal/loaders/characters/census"
 	census_facility_loader "github.com/x0k/ps2-spy/internal/loaders/facility/census"
 	census_outfit_ids_loader "github.com/x0k/ps2-spy/internal/loaders/outfit_ids/census"
 	census_outfit_member_ids_loader "github.com/x0k/ps2-spy/internal/loaders/outfit_member_ids/census"
-	sql_outfit_member_ids_loader "github.com/x0k/ps2-spy/internal/loaders/outfit_member_ids/sql"
-	sql_outfit_sync_at_loader "github.com/x0k/ps2-spy/internal/loaders/outfit_sync_at/sql"
 	census_outfit_tags_loader "github.com/x0k/ps2-spy/internal/loaders/outfit_tags/census"
-	sql_outfit_tracking_channels_loader "github.com/x0k/ps2-spy/internal/loaders/outfit_tracking_channels/sql"
 	census_outfits_loader "github.com/x0k/ps2-spy/internal/loaders/outfits/census"
 	characters_tracker_population_loader "github.com/x0k/ps2-spy/internal/loaders/population/characters_tracker"
 	fisu_population_loader "github.com/x0k/ps2-spy/internal/loaders/population/fisu"
@@ -54,10 +50,7 @@ import (
 	saerro_population_loader "github.com/x0k/ps2-spy/internal/loaders/population/saerro"
 	sanctuary_population_loader "github.com/x0k/ps2-spy/internal/loaders/population/sanctuary"
 	voidwell_population_loader "github.com/x0k/ps2-spy/internal/loaders/population/voidwell"
-	sql_trackable_character_ids_loader "github.com/x0k/ps2-spy/internal/loaders/trackable_character_ids/sql"
 	characters_tracker_trackable_online_entities_loader "github.com/x0k/ps2-spy/internal/loaders/trackable_online_entities/characters_tracker"
-	sql_trackable_outfits_loader "github.com/x0k/ps2-spy/internal/loaders/trackable_outfits/sql"
-	sql_trackable_outfits_with_duplication_loader "github.com/x0k/ps2-spy/internal/loaders/trackable_outfits_with_duplication/sql"
 	census_world_map_loader "github.com/x0k/ps2-spy/internal/loaders/world_map/census"
 	characters_tracker_world_population_loader "github.com/x0k/ps2-spy/internal/loaders/world_population/characters_tracker"
 	honu_world_population_loader "github.com/x0k/ps2-spy/internal/loaders/world_population/honu"
@@ -118,10 +111,6 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	ps2alertsClient := ps2alerts.NewClient("https://api.ps2alerts.com", httpClient)
 	censusClient := census2.NewClient("https://census.daybreakgames.com", cfg.CensusServiceId, httpClient)
 	sanctuaryClient := census2.NewClient("https://census.lithafalcon.cc", cfg.CensusServiceId, httpClient)
-
-	characterTrackingChannelsLoader := sql_character_tracking_channels_loader.New(
-		storage,
-	)
 
 	facilityCache := sql_facility_cache.New(
 		log.With(sl.Component("facility_cache")),
@@ -249,43 +238,29 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			worldsTracker,
 		))
 
-		trackableCharacterIdsLoader := sql_trackable_character_ids_loader.New(
-			storage,
-			platform,
-		)
-		sqlOutfitMemberIdsLoader := sql_outfit_member_ids_loader.New(
-			storage,
-			platform,
-		)
-		outfitTrackingChannelsLoader := sql_outfit_tracking_channels_loader.New(
-			storage,
-			platform,
-		)
-		trackableOutfitsWithDuplicationsLoader := sql_trackable_outfits_with_duplication_loader.New(
-			storage,
-			platform,
-		)
 		trackingManager := tracking_manager.New(
 			fmt.Sprintf("%s.tracking_manager", platform),
 			pl.With(sl.Component("tracking_manager")),
 			cachedBatchedCharactersLoader,
-			characterTrackingChannelsLoader,
-			trackableCharacterIdsLoader,
-			sqlOutfitMemberIdsLoader,
-			outfitTrackingChannelsLoader,
-			trackableOutfitsWithDuplicationsLoader,
+			func(ctx context.Context, c ps2.Character) ([]discord.Channel, error) {
+				return storage.TrackingChannelsForCharacter(ctx, platform, c.Id, c.OutfitId)
+			},
+			func(ctx context.Context) ([]ps2.CharacterId, error) {
+				return storage.AllTrackableCharacterIdsWithDuplicationsForPlatform(ctx, platform)
+			},
+			func(ctx context.Context, oi ps2.OutfitId) ([]ps2.CharacterId, error) {
+				return storage.OutfitMembers(ctx, platform, oi)
+			},
+			func(ctx context.Context, oi ps2.OutfitId) ([]discord.Channel, error) {
+				return storage.TrackingChannelsForOutfit(ctx, platform, oi)
+			},
+			func(ctx context.Context) ([]ps2.OutfitId, error) {
+				return storage.AllTrackableOutfitIdsWithDuplicationsForPlatform(ctx, platform)
+			},
 		)
 		m.Append(trackingManager)
 		trackingManagers[platform] = trackingManager
 
-		trackableOutfitsLoader := sql_trackable_outfits_loader.New(
-			storage,
-			platform,
-		)
-		outfitSyncAtLoader := sql_outfit_sync_at_loader.New(
-			storage,
-			platform,
-		)
 		censusOutfitMemberIdsLoader := census_outfit_member_ids_loader.New(
 			censusClient,
 			ns,
@@ -294,8 +269,12 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		outfitMembersSynchronizer := outfit_members_synchronizer.New(
 			fmt.Sprintf("%s.outfit_members_synchronizer", platform),
 			pl.With(sl.Component("outfit_members_synchronizer")),
-			trackableOutfitsLoader,
-			outfitSyncAtLoader,
+			func(ctx context.Context) ([]ps2.OutfitId, error) {
+				return storage.AllUniqueTrackableOutfitIdsForPlatform(ctx, platform)
+			},
+			func(ctx context.Context, oi ps2.OutfitId) (time.Time, error) {
+				return storage.OutfitSynchronizedAt(ctx, platform, oi)
+			},
 			censusOutfitMemberIdsLoader.Load,
 			func(ctx context.Context, outfitId ps2.OutfitId, members []ps2.CharacterId) error {
 				return storage.SaveOutfitMembers(ctx, platform, outfitId, members)

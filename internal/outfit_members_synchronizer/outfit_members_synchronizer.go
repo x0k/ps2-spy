@@ -15,6 +15,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/retryable/perform"
 	"github.com/x0k/ps2-spy/internal/lib/retryable/while"
 	"github.com/x0k/ps2-spy/internal/ps2"
+	"github.com/x0k/ps2-spy/internal/shared"
 )
 
 type OutfitMembersSaver = func(ctx context.Context, outfit ps2.OutfitId, members []ps2.CharacterId) error
@@ -72,7 +73,7 @@ func (s *OutfitMembersSynchronizer) SyncOutfit(ctx context.Context, wg *sync.Wai
 	log := s.log.With(slog.String("outfit_id", string(outfitId)))
 	err := retryable.New(func(ctx context.Context) error {
 		syncAt, err := s.outfitSyncAtLoader(ctx, outfitId)
-		isNotFound := errors.Is(err, loader.ErrNotFound)
+		isNotFound := errors.Is(err, shared.ErrNotFound)
 		if err != nil && !isNotFound {
 			return fmt.Errorf("failed to load last sync time: %w", err)
 		}

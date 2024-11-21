@@ -7,8 +7,8 @@ import (
 
 	"github.com/x0k/ps2-spy/internal/lib/census2"
 	ps2_collections "github.com/x0k/ps2-spy/internal/lib/census2/collections/ps2"
-	"github.com/x0k/ps2-spy/internal/lib/loader"
 	"github.com/x0k/ps2-spy/internal/ps2"
+	"github.com/x0k/ps2-spy/internal/shared"
 )
 
 type Loader struct {
@@ -54,7 +54,7 @@ func (l *Loader) Load(ctx context.Context, outfitId ps2.OutfitId) ([]ps2.Charact
 		return nil, err
 	}
 	if len(outfits) == 0 {
-		return nil, fmt.Errorf("outfit %q: %w", string(outfitId), loader.ErrNotFound)
+		return nil, fmt.Errorf("outfit %q: %w", string(outfitId), shared.ErrNotFound)
 	}
 	members := make([]ps2.CharacterId, len(outfits[0].OutfitMembers))
 	for i, member := range outfits[0].OutfitMembers {
