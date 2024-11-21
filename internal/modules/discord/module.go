@@ -25,7 +25,7 @@ func New(
 	removeCommands bool,
 	charactersTrackerSubsManagers map[ps2_platforms.Platform]pubsub.SubscriptionsManager[characters_tracker.EventType],
 	trackingManagers map[ps2_platforms.Platform]*tracking_manager.TrackingManager,
-	handlerFactories map[discord.EventType]discord.HandlerFactory,
+	handlerFactories map[discord_events.EventType]discord_events.HandlerFactory,
 ) (*module.Module, error) {
 	m := module.New(log.Logger, "discord")
 	session, err := discordgo.New("Bot " + token)
@@ -42,7 +42,7 @@ func New(
 	))
 
 	for _, platform := range ps2_platforms.Platforms {
-		handlers := make(map[discord.EventType]discord.Handler, len(handlerFactories))
+		handlers := make(map[discord_events.EventType]discord_events.Handler, len(handlerFactories))
 		for t, factory := range handlerFactories {
 			handlers[t] = factory(platform)
 		}

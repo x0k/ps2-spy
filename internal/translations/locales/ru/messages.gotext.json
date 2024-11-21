@@ -72,6 +72,76 @@
             ]
         },
         {
+            "id": "[{OutfitTag}] {Name} ({FactionId}) is now offline ({WorldId})",
+            "message": "[{OutfitTag}] {Name} ({FactionId}) is now offline ({WorldId})",
+            "translation": "[{OutfitTag}] {Name} ({FactionId}) оффлайн ({WorldId})",
+            "placeholders": [
+                {
+                    "id": "OutfitTag",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "char.OutfitTag"
+                },
+                {
+                    "id": "Name",
+                    "string": "%[2]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "char.Name"
+                },
+                {
+                    "id": "FactionId",
+                    "string": "%[3]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 3,
+                    "expr": "ps2_factions.FactionNameById(char.FactionId)"
+                },
+                {
+                    "id": "WorldId",
+                    "string": "%[4]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 4,
+                    "expr": "ps2.WorldNameById(char.WorldId)"
+                }
+            ]
+        },
+        {
+            "id": "{Name} ({FactionId}) is now offline ({WorldId})",
+            "message": "{Name} ({FactionId}) is now offline ({WorldId})",
+            "translation": "{Name} ({FactionId}) оффлайн ({WorldId})",
+            "placeholders": [
+                {
+                    "id": "Name",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "char.Name"
+                },
+                {
+                    "id": "FactionId",
+                    "string": "%[2]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "ps2_factions.FactionNameById(char.FactionId)"
+                },
+                {
+                    "id": "WorldId",
+                    "string": "%[3]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 3,
+                    "expr": "ps2.WorldNameById(char.WorldId)"
+                }
+            ]
+        },
+        {
             "id": "Failed to load character: {CharacterId}",
             "message": "Failed to load character: {CharacterId}",
             "translation": "Ошибка загрузки персонажа: {CharacterId}",

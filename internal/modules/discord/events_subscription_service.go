@@ -18,6 +18,7 @@ func newEventsSubscriptionService(
 	handlersManager *discord_events.HandlersManager,
 ) module.Service {
 	playerLogin := characters_tracker.Subscribe[characters_tracker.PlayerLogin](ps, charactersTrackerSubs)
+	playerLogout := characters_tracker.Subscribe[characters_tracker.PlayerLogout](ps, charactersTrackerSubs)
 	return module.NewService(
 		fmt.Sprintf("discord.%s.characters_tracker_events_subscription", platform),
 		func(ctx context.Context) error {
@@ -27,6 +28,8 @@ func newEventsSubscriptionService(
 					return nil
 				case e := <-playerLogin:
 					handlersManager.HandlePlayerLogin(ctx, e)
+				case e := <-playerLogout:
+					handlersManager.HandlePlayerLogout(ctx, e)
 				}
 			}
 		},

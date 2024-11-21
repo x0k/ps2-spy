@@ -39,6 +39,26 @@ func (m *Messages) CharacterLogin(char ps2.Character) discord.Message {
 	}
 }
 
+func (m *Messages) CharacterLogout(char ps2.Character) discord.Message {
+	return func(p *message.Printer) (string, *discord.Error) {
+		if char.OutfitTag != "" {
+			return p.Sprintf(
+				"[%s] %s (%s) is now offline (%s)",
+				char.OutfitTag,
+				char.Name,
+				ps2_factions.FactionNameById(char.FactionId),
+				ps2.WorldNameById(char.WorldId),
+			), nil
+		}
+		return p.Sprintf(
+			"%s (%s) is now offline (%s)",
+			char.Name,
+			ps2_factions.FactionNameById(char.FactionId),
+			ps2.WorldNameById(char.WorldId),
+		), nil
+	}
+}
+
 func (m *Messages) CharacterLoadError(characterId ps2.CharacterId, err error) discord.Message {
 	return func(p *message.Printer) (string, *discord.Error) {
 		return "", &discord.Error{

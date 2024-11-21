@@ -2,7 +2,6 @@ package discord
 
 import (
 	"context"
-	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
@@ -10,28 +9,6 @@ import (
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 	"golang.org/x/text/message"
 )
-
-type InteractionHandler func(
-	ctx context.Context,
-	log *logger.Logger,
-	s *discordgo.Session,
-	i *discordgo.InteractionCreate,
-) error
-
-func (handler InteractionHandler) Run(
-	ctx context.Context,
-	log *logger.Logger,
-	timeout time.Duration,
-	s *discordgo.Session,
-	i *discordgo.InteractionCreate,
-) {
-	ctx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
-	log.Debug(ctx, "run handler")
-	if err := handler(ctx, log, s, i); err != nil {
-		log.Error(ctx, "error handling", sl.Err(err))
-	}
-}
 
 type Command struct {
 	Cmd            *discordgo.ApplicationCommand

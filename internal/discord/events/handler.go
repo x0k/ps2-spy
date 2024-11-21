@@ -1,4 +1,4 @@
-package discord
+package discord_events
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"slices"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/x0k/ps2-spy/internal/discord"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/lib/slicesx"
@@ -18,7 +19,7 @@ import (
 type Handler func(
 	ctx context.Context,
 	session *discordgo.Session,
-	channelIds []Channel,
+	channelIds []discord.Channel,
 	event Event,
 ) error
 
@@ -37,11 +38,11 @@ var truncation = []rune("... (truncated)")
 
 const msgMaxLen = 2000
 
-func SimpleMessage[E Event](handle func(ctx context.Context, e E) Message) Handler {
-	return func(ctx context.Context, session *discordgo.Session, channels []Channel, event Event) error {
+func SimpleMessage[E Event](handle func(ctx context.Context, e E) discord.Message) Handler {
+	return func(ctx context.Context, session *discordgo.Session, channels []discord.Channel, event Event) error {
 		const op = "discord.SimpleMessage"
 		msgRenderer := handle(ctx, event.(E))
-		channelsByLocale := slicesx.GroupBy(channels, func(c Channel) language.Tag { return c.Locale })
+		channelsByLocale := slicesx.GroupBy(channels, func(c discord.Channel) language.Tag { return c.Locale })
 		handlingErrors := make([]error, 0, len(channels))
 		sendErrors := make([]error, 0, len(channels))
 		for locale, channels := range channelsByLocale {
@@ -90,9 +91,9 @@ func SimpleMessage[E Event](handle func(ctx context.Context, e E) Message) Handl
 	}
 }
 
-func ShowModal(handle func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) Response) InteractionHandler {
+func ShowModal(handle func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) discord.Response) discord.InteractionHandler {
 	return func(ctx context.Context, log *logger.Logger, s *discordgo.Session, i *discordgo.InteractionCreate) error {
-		data, customErr := handle(ctx, s, i)(message.NewPrinter(LangTagFromInteraction(i)))
+		data, customErr := handle(ctx, s, i)(message.NewPrinter(discord.LangTagFromInteraction(i)))
 		if customErr != nil {
 			if _, err := s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
 				Content: customErr.Msg,

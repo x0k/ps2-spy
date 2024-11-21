@@ -38,6 +38,9 @@ mc: env
 migrate: env
   go run -tags migrate cmd/migrate/main.go
 
+lang:
+  go generate ./internal/translations/translations.go 
+
 # Preview
 # Run compiled binary
 p:

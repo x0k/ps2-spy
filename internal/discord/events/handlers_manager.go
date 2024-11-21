@@ -8,7 +8,6 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/x0k/ps2-spy/internal/characters_tracker"
-	"github.com/x0k/ps2-spy/internal/discord"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/ps2"
@@ -18,7 +17,7 @@ import (
 type HandlersManager struct {
 	name            string
 	log             *logger.Logger
-	handlers        map[discord.EventType]discord.Handler
+	handlers        map[EventType]Handler
 	session         *discordgo.Session
 	wg              sync.WaitGroup
 	trackingManager *tracking_manager.TrackingManager
@@ -29,7 +28,7 @@ func NewHandlersManager(
 	name string,
 	log *logger.Logger,
 	session *discordgo.Session,
-	handlers map[discord.EventType]discord.Handler,
+	handlers map[EventType]Handler,
 	trackingManager *tracking_manager.TrackingManager,
 	handlersTimeout time.Duration,
 ) *HandlersManager {
@@ -58,10 +57,15 @@ func (h *HandlersManager) HandlePlayerLogin(ctx context.Context, e characters_tr
 	go h.handleCharacterEventTask(ctx, e.CharacterId, PlayerLogin(e))
 }
 
+func (h *HandlersManager) HandlePlayerLogout(ctx context.Context, e characters_tracker.PlayerLogout) {
+	h.wg.Add(1)
+	go h.handleCharacterEventTask(ctx, e.CharacterId, PlayerLogout(e))
+}
+
 func (h *HandlersManager) handleCharacterEventTask(
 	ctx context.Context,
 	characterId ps2.CharacterId,
-	e discord.Event,
+	e Event,
 ) {
 	defer h.wg.Done()
 	handler, ok := h.handlers[e.Type()]

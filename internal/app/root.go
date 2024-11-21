@@ -13,7 +13,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/characters_tracker"
 	"github.com/x0k/ps2-spy/internal/discord"
 	discord_commands "github.com/x0k/ps2-spy/internal/discord/commands"
-	discord_handlers "github.com/x0k/ps2-spy/internal/discord/handlers"
+	discord_events "github.com/x0k/ps2-spy/internal/discord/events"
 	discord_messages "github.com/x0k/ps2-spy/internal/discord/messages"
 	"github.com/x0k/ps2-spy/internal/lib/cache/memory"
 	"github.com/x0k/ps2-spy/internal/lib/census2"
@@ -388,7 +388,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		cfg.Discord.RemoveCommands,
 		characterTrackerSubsMangers,
 		trackingManagers,
-		discord_handlers.New(
+		discord_events.NewHandlers(
 			discordMessages,
 			characterLoaders,
 		),
