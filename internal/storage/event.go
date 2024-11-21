@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/x0k/ps2-spy/internal/discord"
+	"github.com/x0k/ps2-spy/internal/lib/diff"
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
@@ -18,6 +19,8 @@ const (
 	ChannelOutfitDeletedType    EventType = "channel_outfit_deleted"
 	ChannelCharacterSavedType   EventType = "channel_character_saved"
 	ChannelCharacterDeletedType EventType = "channel_character_deleted"
+	OutfitMembersInitType       EventType = "outfit_members_init"
+	OutfitMembersUpdateType     EventType = "outfit_members_update"
 	OutfitMemberSavedType       EventType = "outfit_member_saved"
 	OutfitMemberDeletedType     EventType = "outfit_member_deleted"
 	OutfitSynchronizedType      EventType = "outfit_synchronized"
@@ -61,6 +64,24 @@ type ChannelCharacterDeleted struct {
 
 func (e ChannelCharacterDeleted) Type() EventType {
 	return ChannelCharacterDeletedType
+}
+
+type OutfitMembersInit struct {
+	OutfitId ps2.OutfitId
+	Members  []ps2.CharacterId
+}
+
+func (e OutfitMembersInit) Type() EventType {
+	return OutfitMembersInitType
+}
+
+type OutfitMembersUpdate struct {
+	OutfitId ps2.OutfitId
+	Members  diff.Diff[ps2.CharacterId]
+}
+
+func (e OutfitMembersUpdate) Type() EventType {
+	return OutfitMembersUpdateType
 }
 
 type OutfitMemberSaved struct {

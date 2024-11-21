@@ -71,7 +71,6 @@ import (
 	"github.com/x0k/ps2-spy/internal/outfit_members_synchronizer"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
-	sql_outfit_members_saver "github.com/x0k/ps2-spy/internal/savers/outfit_members/sql"
 	"github.com/x0k/ps2-spy/internal/storage"
 	sql_storage "github.com/x0k/ps2-spy/internal/storage/sql"
 	"github.com/x0k/ps2-spy/internal/tracking_manager"
@@ -277,13 +276,6 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		m.Append(trackingManager)
 		trackingManagers[platform] = trackingManager
 
-		outfitMembersSaverPubSub := metrics.InstrumentPlatformPublisher(
-			mt,
-			metrics.OutfitsMembersSaverPlatformPublisher,
-			platform,
-			pubsub.New[sql_outfit_members_saver.EventType](),
-		)
-
 		trackableOutfitsLoader := sql_trackable_outfits_loader.New(
 			storage,
 			platform,
@@ -296,19 +288,16 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			censusClient,
 			ns,
 		)
-		outfitMembersSaver := sql_outfit_members_saver.New(
-			pl.With(sl.Component("outfit_members_saver")),
-			storage,
-			outfitMembersSaverPubSub,
-			platform,
-		)
+
 		outfitMembersSynchronizer := outfit_members_synchronizer.New(
 			fmt.Sprintf("%s.outfit_members_synchronizer", platform),
 			pl.With(sl.Component("outfit_members_synchronizer")),
 			trackableOutfitsLoader,
 			outfitSyncAtLoader,
 			censusOutfitMemberIdsLoader.Load,
-			outfitMembersSaver,
+			func(ctx context.Context, outfitId ps2.OutfitId, members []ps2.CharacterId) error {
+				return storage.SaveOutfitMembers(ctx, platform, outfitId, members)
+			},
 			24*time.Hour,
 		)
 		m.Append(outfitMembersSynchronizer)

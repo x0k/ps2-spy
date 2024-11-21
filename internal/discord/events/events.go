@@ -3,7 +3,7 @@ package discord_events
 import (
 	"github.com/x0k/ps2-spy/internal/characters_tracker"
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
-	sql_outfit_members_saver "github.com/x0k/ps2-spy/internal/savers/outfit_members/sql"
+	"github.com/x0k/ps2-spy/internal/storage"
 	"github.com/x0k/ps2-spy/internal/worlds_tracker"
 )
 
@@ -31,7 +31,7 @@ func (e PlayerLogout) Type() EventType {
 	return PlayerLoginType
 }
 
-type OutfitMembersUpdate sql_outfit_members_saver.OutfitMembersUpdate
+type OutfitMembersUpdate storage.OutfitMembersUpdate
 
 func (e OutfitMembersUpdate) Type() EventType {
 	return OutfitMembersUpdateType
