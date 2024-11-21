@@ -1,4 +1,4 @@
-package factions
+package ps2_factions
 
 import "fmt"
 

@@ -1,0 +1,1141 @@
+{
+    "language": "en",
+    "messages": [
+        {
+            "id": "[{OutfitTag}] {Name} ({FactionId}) is now online ({WorldId})",
+            "message": "[{OutfitTag}] {Name} ({FactionId}) is now online ({WorldId})",
+            "translation": "[{OutfitTag}] {Name} ({FactionId}) is now online ({WorldId})",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "OutfitTag",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "char.OutfitTag"
+                },
+                {
+                    "id": "Name",
+                    "string": "%[2]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "char.Name"
+                },
+                {
+                    "id": "FactionId",
+                    "string": "%[3]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 3,
+                    "expr": "ps2_factions.FactionNameById(char.FactionId)"
+                },
+                {
+                    "id": "WorldId",
+                    "string": "%[4]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 4,
+                    "expr": "ps2.WorldNameById(char.WorldId)"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "{Name} ({FactionId}) is now online ({WorldId})",
+            "message": "{Name} ({FactionId}) is now online ({WorldId})",
+            "translation": "{Name} ({FactionId}) is now online ({WorldId})",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Name",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "char.Name"
+                },
+                {
+                    "id": "FactionId",
+                    "string": "%[2]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "ps2_factions.FactionNameById(char.FactionId)"
+                },
+                {
+                    "id": "WorldId",
+                    "string": "%[3]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 3,
+                    "expr": "ps2.WorldNameById(char.WorldId)"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "[{OutfitTag}] {Name} ({FactionId}) is now offline ({WorldId})",
+            "message": "[{OutfitTag}] {Name} ({FactionId}) is now offline ({WorldId})",
+            "translation": "[{OutfitTag}] {Name} ({FactionId}) is now offline ({WorldId})",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "OutfitTag",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "char.OutfitTag"
+                },
+                {
+                    "id": "Name",
+                    "string": "%[2]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "char.Name"
+                },
+                {
+                    "id": "FactionId",
+                    "string": "%[3]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 3,
+                    "expr": "ps2_factions.FactionNameById(char.FactionId)"
+                },
+                {
+                    "id": "WorldId",
+                    "string": "%[4]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 4,
+                    "expr": "ps2.WorldNameById(char.WorldId)"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "{Name} ({FactionId}) is now offline ({WorldId})",
+            "message": "{Name} ({FactionId}) is now offline ({WorldId})",
+            "translation": "{Name} ({FactionId}) is now offline ({WorldId})",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Name",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "char.Name"
+                },
+                {
+                    "id": "FactionId",
+                    "string": "%[2]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "ps2_factions.FactionNameById(char.FactionId)"
+                },
+                {
+                    "id": "WorldId",
+                    "string": "%[3]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 3,
+                    "expr": "ps2.WorldNameById(char.WorldId)"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "Failed to load outfit: {OutfitId} ({Platform})",
+            "message": "Failed to load outfit: {OutfitId} ({Platform})",
+            "translation": "Failed to load outfit: {OutfitId} ({Platform})",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "OutfitId",
+                    "string": "%[1]s",
+                    "type": "github.com/x0k/ps2-spy/internal/ps2.OutfitId",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "outfitId"
+                },
+                {
+                    "id": "Platform",
+                    "string": "%[2]s",
+                    "type": "github.com/x0k/ps2-spy/internal/ps2/platforms.Platform",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "platform"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "Failed to load characters: {CharacterIds} ({Platform})",
+            "message": "Failed to load characters: {CharacterIds} ({Platform})",
+            "translation": "Failed to load characters: {CharacterIds} ({Platform})",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "CharacterIds",
+                    "string": "%[1]v",
+                    "type": "[]github.com/x0k/ps2-spy/internal/ps2.CharacterId",
+                    "underlyingType": "[]github.com/x0k/ps2-spy/internal/ps2.CharacterId",
+                    "argNum": 1,
+                    "expr": "characterIds"
+                },
+                {
+                    "id": "Platform",
+                    "string": "%[2]s",
+                    "type": "github.com/x0k/ps2-spy/internal/ps2/platforms.Platform",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "platform"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "Update of",
+            "message": "Update of",
+            "translation": "Update of",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "] outfit members:",
+            "message": "] outfit members:",
+            "translation": "] outfit members:",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "**Welcome to the outfit:**",
+            "message": "**Welcome to the outfit:**",
+            "translation": "**Welcome to the outfit:**",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "**Left the outfit:**",
+            "message": "**Left the outfit:**",
+            "translation": "**Left the outfit:**",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Failed to load character: {CharacterId}",
+            "message": "Failed to load character: {CharacterId}",
+            "translation": "Failed to load character: {CharacterId}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "CharacterId",
+                    "string": "%[1]s",
+                    "type": "github.com/x0k/ps2-spy/internal/ps2.CharacterId",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "characterId"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "Failed to load facility: {FacilityId}",
+            "message": "Failed to load facility: {FacilityId}",
+            "translation": "Failed to load facility: {FacilityId}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "FacilityId",
+                    "string": "%[1]s",
+                    "type": "github.com/x0k/ps2-spy/internal/ps2.FacilityId",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "facilityId"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "{Name} [{Tag}] captured {Name_1} ({Type}) on {ZoneId} ({WorldNameByIdworldId})",
+            "message": "{Name} [{Tag}] captured {Name_1} ({Type}) on {ZoneId} ({WorldNameByIdworldId})",
+            "translation": "{Name} [{Tag}] captured {Name_1} ({Type}) on {ZoneId} ({WorldNameByIdworldId})",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Name",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "outfit.Name"
+                },
+                {
+                    "id": "Tag",
+                    "string": "%[2]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "outfit.Tag"
+                },
+                {
+                    "id": "Name_1",
+                    "string": "%[3]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 3,
+                    "expr": "facility.Name"
+                },
+                {
+                    "id": "Type",
+                    "string": "%[4]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 4,
+                    "expr": "facility.Type"
+                },
+                {
+                    "id": "ZoneId",
+                    "string": "%[5]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 5,
+                    "expr": "ps2.ZoneNameById(facility.ZoneId)"
+                },
+                {
+                    "id": "WorldNameByIdworldId",
+                    "string": "%[6]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 6,
+                    "expr": "ps2.WorldNameById(worldId)"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "{Name} [{Tag}] lost {Name_1} ({Type}) on {ZoneId} ({WorldNameByIdworldId})",
+            "message": "{Name} [{Tag}] lost {Name_1} ({Type}) on {ZoneId} ({WorldNameByIdworldId})",
+            "translation": "{Name} [{Tag}] lost {Name_1} ({Type}) on {ZoneId} ({WorldNameByIdworldId})",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Name",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "outfit.Name"
+                },
+                {
+                    "id": "Tag",
+                    "string": "%[2]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "outfit.Tag"
+                },
+                {
+                    "id": "Name_1",
+                    "string": "%[3]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 3,
+                    "expr": "facility.Name"
+                },
+                {
+                    "id": "Type",
+                    "string": "%[4]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 4,
+                    "expr": "facility.Type"
+                },
+                {
+                    "id": "ZoneId",
+                    "string": "%[5]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 5,
+                    "expr": "ps2.ZoneNameById(facility.ZoneId)"
+                },
+                {
+                    "id": "WorldNameByIdworldId",
+                    "string": "%[6]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 6,
+                    "expr": "ps2.WorldNameById(worldId)"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "# PlanetSide 2 Spy\n\nSimple discord bot for PlanetSide 2 outfits\n\n## Links\n\n- [GitHub](https://github.com/x0k/ps2-spy)",
+            "message": "# PlanetSide 2 Spy\n\nSimple discord bot for PlanetSide 2 outfits\n\n## Links\n\n- [GitHub](https://github.com/x0k/ps2-spy)",
+            "translation": "# PlanetSide 2 Spy\n\nSimple discord bot for PlanetSide 2 outfits\n\n## Links\n\n- [GitHub](https://github.com/x0k/ps2-spy)",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Invalid population type: {PopType}",
+            "message": "Invalid population type: {PopType}",
+            "translation": "Invalid population type: {PopType}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "PopType",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "popType"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "Failed to load global population with {Provider}",
+            "message": "Failed to load global population with {Provider}",
+            "translation": "Failed to load global population with {Provider}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Provider",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "provider"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "Failed to load {WorldNameByIdworldId} population with {Provider}",
+            "message": "Failed to load {WorldNameByIdworldId} population with {Provider}",
+            "translation": "Failed to load {WorldNameByIdworldId} population with {Provider}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "WorldNameByIdworldId",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "ps2.WorldNameById(worldId)"
+                },
+                {
+                    "id": "Provider",
+                    "string": "%[2]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "provider"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "Failed to load {WorldNameByIdworldId} territory control",
+            "message": "Failed to load {WorldNameByIdworldId} territory control",
+            "translation": "Failed to load {WorldNameByIdworldId} territory control",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "WorldNameByIdworldId",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "ps2.WorldNameById(worldId)"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "Failed to load world alerts for {WorldNameByIdworldId} from {Provider}",
+            "message": "Failed to load world alerts for {WorldNameByIdworldId} from {Provider}",
+            "translation": "Failed to load world alerts for {WorldNameByIdworldId} from {Provider}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "WorldNameByIdworldId",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "ps2.WorldNameById(worldId)"
+                },
+                {
+                    "id": "Provider",
+                    "string": "%[2]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "provider"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "Failed to load global alerts from {Provider}",
+            "message": "Failed to load global alerts from {Provider}",
+            "translation": "Failed to load global alerts from {Provider}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Provider",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "provider"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "Failed to load online members for {ChannelId} channel ({Platform})",
+            "message": "Failed to load online members for {ChannelId} channel ({Platform})",
+            "translation": "Failed to load online members for {ChannelId} channel ({Platform})",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "ChannelId",
+                    "string": "%[1]s",
+                    "type": "github.com/x0k/ps2-spy/internal/discord.ChannelId",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "channelId"
+                },
+                {
+                    "id": "Platform",
+                    "string": "%[2]s",
+                    "type": "github.com/x0k/ps2-spy/internal/ps2/platforms.Platform",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "platform"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "Failed to load outfits {OutfitIds} ({Platform})",
+            "message": "Failed to load outfits {OutfitIds} ({Platform})",
+            "translation": "Failed to load outfits {OutfitIds} ({Platform})",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "OutfitIds",
+                    "string": "%[1]v",
+                    "type": "[]github.com/x0k/ps2-spy/internal/ps2.OutfitId",
+                    "underlyingType": "[]github.com/x0k/ps2-spy/internal/ps2.OutfitId",
+                    "argNum": 1,
+                    "expr": "outfitIds"
+                },
+                {
+                    "id": "Platform",
+                    "string": "%[2]s",
+                    "type": "github.com/x0k/ps2-spy/internal/ps2/platforms.Platform",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "platform"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "Failed to load outfits by tags {OutfitTags} ({Platform})",
+            "message": "Failed to load outfits by tags {OutfitTags} ({Platform})",
+            "translation": "Failed to load outfits by tags {OutfitTags} ({Platform})",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "OutfitTags",
+                    "string": "%[1]v",
+                    "type": "[]string",
+                    "underlyingType": "[]string",
+                    "argNum": 1,
+                    "expr": "outfitTags"
+                },
+                {
+                    "id": "Platform",
+                    "string": "%[2]s",
+                    "type": "github.com/x0k/ps2-spy/internal/ps2/platforms.Platform",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "platform"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "Failed to load characters {CharacterNames} ({Platform})",
+            "message": "Failed to load characters {CharacterNames} ({Platform})",
+            "translation": "Failed to load characters {CharacterNames} ({Platform})",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "CharacterNames",
+                    "string": "%[1]v",
+                    "type": "[]string",
+                    "underlyingType": "[]string",
+                    "argNum": 1,
+                    "expr": "characterNames"
+                },
+                {
+                    "id": "Platform",
+                    "string": "%[2]s",
+                    "type": "github.com/x0k/ps2-spy/internal/ps2/platforms.Platform",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "platform"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "Failed to save tracking settings for {ChannelId} channel ({Platform})",
+            "message": "Failed to save tracking settings for {ChannelId} channel ({Platform})",
+            "translation": "Failed to save tracking settings for {ChannelId} channel ({Platform})",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "ChannelId",
+                    "string": "%[1]s",
+                    "type": "github.com/x0k/ps2-spy/internal/discord.ChannelId",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "channelId"
+                },
+                {
+                    "id": "Platform",
+                    "string": "%[2]s",
+                    "type": "github.com/x0k/ps2-spy/internal/ps2/platforms.Platform",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "platform"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "Settings are saved, but failed to load outfit tags {OutfitIds} ({Platform})",
+            "message": "Settings are saved, but failed to load outfit tags {OutfitIds} ({Platform})",
+            "translation": "Settings are saved, but failed to load outfit tags {OutfitIds} ({Platform})",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "OutfitIds",
+                    "string": "%[1]v",
+                    "type": "[]github.com/x0k/ps2-spy/internal/ps2.OutfitId",
+                    "underlyingType": "[]github.com/x0k/ps2-spy/internal/ps2.OutfitId",
+                    "argNum": 1,
+                    "expr": "outfitIds"
+                },
+                {
+                    "id": "Platform",
+                    "string": "%[2]s",
+                    "type": "github.com/x0k/ps2-spy/internal/ps2/platforms.Platform",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "platform"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "Settings are saved, but failed to load character names {CharacterIds} ({Platform})",
+            "message": "Settings are saved, but failed to load character names {CharacterIds} ({Platform})",
+            "translation": "Settings are saved, but failed to load character names {CharacterIds} ({Platform})",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "CharacterIds",
+                    "string": "%[1]v",
+                    "type": "[]github.com/x0k/ps2-spy/internal/ps2.CharacterId",
+                    "underlyingType": "[]github.com/x0k/ps2-spy/internal/ps2.CharacterId",
+                    "argNum": 1,
+                    "expr": "characterIds"
+                },
+                {
+                    "id": "Platform",
+                    "string": "%[2]s",
+                    "type": "github.com/x0k/ps2-spy/internal/ps2/platforms.Platform",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "platform"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "Failed to load tracking settings for {ChannelId} channel ({Platform})",
+            "message": "Failed to load tracking settings for {ChannelId} channel ({Platform})",
+            "translation": "Failed to load tracking settings for {ChannelId} channel ({Platform})",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "ChannelId",
+                    "string": "%[1]s",
+                    "type": "github.com/x0k/ps2-spy/internal/discord.ChannelId",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "channelId"
+                },
+                {
+                    "id": "Platform",
+                    "string": "%[2]s",
+                    "type": "github.com/x0k/ps2-spy/internal/ps2/platforms.Platform",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "platform"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "Failed to load outfit tags for {OutfitIds} ({Platform})",
+            "message": "Failed to load outfit tags for {OutfitIds} ({Platform})",
+            "translation": "Failed to load outfit tags for {OutfitIds} ({Platform})",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "OutfitIds",
+                    "string": "%[1]v",
+                    "type": "[]github.com/x0k/ps2-spy/internal/ps2.OutfitId",
+                    "underlyingType": "[]github.com/x0k/ps2-spy/internal/ps2.OutfitId",
+                    "argNum": 1,
+                    "expr": "outfitIds"
+                },
+                {
+                    "id": "Platform",
+                    "string": "%[2]s",
+                    "type": "github.com/x0k/ps2-spy/internal/ps2/platforms.Platform",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "platform"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "Failed to load character names for {CharacterIds} ({Platform})",
+            "message": "Failed to load character names for {CharacterIds} ({Platform})",
+            "translation": "Failed to load character names for {CharacterIds} ({Platform})",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "CharacterIds",
+                    "string": "%[1]v",
+                    "type": "[]github.com/x0k/ps2-spy/internal/ps2.CharacterId",
+                    "underlyingType": "[]github.com/x0k/ps2-spy/internal/ps2.CharacterId",
+                    "argNum": 1,
+                    "expr": "characterIds"
+                },
+                {
+                    "id": "Platform",
+                    "string": "%[2]s",
+                    "type": "github.com/x0k/ps2-spy/internal/ps2/platforms.Platform",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "platform"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "Tracking Settings (PC)",
+            "message": "Tracking Settings (PC)",
+            "translation": "Tracking Settings (PC)",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Tracking Settings (PS4 EU)",
+            "message": "Tracking Settings (PS4 EU)",
+            "translation": "Tracking Settings (PS4 EU)",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Tracking Settings (PS4 US)",
+            "message": "Tracking Settings (PS4 US)",
+            "translation": "Tracking Settings (PS4 US)",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Which outfits do you want to track?",
+            "message": "Which outfits do you want to track?",
+            "translation": "Which outfits do you want to track?",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Enter the outfit tags separated by comma",
+            "message": "Enter the outfit tags separated by comma",
+            "translation": "Enter the outfit tags separated by comma",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Which characters do you want to track?",
+            "message": "Which characters do you want to track?",
+            "translation": "Which characters do you want to track?",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Enter the character names separated by comma",
+            "message": "Enter the character names separated by comma",
+            "translation": "Enter the character names separated by comma",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Failed to parse language {Lang}",
+            "message": "Failed to parse language {Lang}",
+            "translation": "Failed to parse language {Lang}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Lang",
+                    "string": "%[1]q",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "lang"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "Failed to save language {Lang}",
+            "message": "Failed to save language {Lang}",
+            "translation": "Failed to save language {Lang}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Lang",
+                    "string": "%[1]q",
+                    "type": "golang.org/x/text/language.Tag",
+                    "underlyingType": "struct{language golang.org/x/text/internal/language/compact.ID; locale golang.org/x/text/internal/language/compact.ID; full golang.org/x/text/internal/language/compact.fullTag}",
+                    "argNum": 1,
+                    "expr": "lang"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "Language for this channel has been set to {String}",
+            "message": "Language for this channel has been set to {String}",
+            "translation": "Language for this channel has been set to {String}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "String",
+                    "string": "%[1]q",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "lang.String()"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "No characters online",
+            "message": "No characters online",
+            "translation": "No characters online",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Characters online:",
+            "message": "Characters online:",
+            "translation": "Characters online:",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "] outfit (",
+            "message": "] outfit (",
+            "translation": "] outfit (",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "**Other characters:**",
+            "message": "**Other characters:**",
+            "translation": "**Other characters:**",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "TR",
+            "message": "TR",
+            "translation": "TR",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "NC",
+            "message": "NC",
+            "translation": "NC",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "VS",
+            "message": "VS",
+            "translation": "VS",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Source: {Source}",
+            "message": "Source: {Source}",
+            "translation": "Source: {Source}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Source",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "loaded.Source"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "{Name} - {All}",
+            "message": "{Name} - {All}",
+            "translation": "{Name} - {All}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Name",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "worldPopulation.Name"
+                },
+                {
+                    "id": "All",
+                    "string": "%[2]d",
+                    "type": "int",
+                    "underlyingType": "int",
+                    "argNum": 2,
+                    "expr": "worldPopulation.StatPerFactions.All"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "Total population - {Total}",
+            "message": "Total population - {Total}",
+            "translation": "Total population - {Total}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Total",
+                    "string": "%[1]d",
+                    "type": "int",
+                    "underlyingType": "int",
+                    "argNum": 1,
+                    "expr": "population.Total"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "Period",
+            "message": "Period",
+            "translation": "Period",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "{StartedAt} - {Duration} (Ends {Duration_1})",
+            "message": "{StartedAt} - {Duration} (Ends {Duration_1})",
+            "translation": "{StartedAt} - {Duration} (Ends {Duration_1})",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "StartedAt",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "renderTime(alert.StartedAt)"
+                },
+                {
+                    "id": "Duration",
+                    "string": "%[2]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "renderTime(alert.StartedAt.Add(alert.Duration))"
+                },
+                {
+                    "id": "Duration_1",
+                    "string": "%[3]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 3,
+                    "expr": "renderRelativeTime(alert.StartedAt.Add(alert.Duration))"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "Territory Control",
+            "message": "Territory Control",
+            "translation": "Territory Control",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "{WorldName} - No alerts",
+            "message": "{WorldName} - No alerts",
+            "translation": "{WorldName} - No alerts",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "WorldName",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "worldName"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "{WorldName} alerts",
+            "message": "{WorldName} alerts",
+            "translation": "{WorldName} alerts",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "WorldName",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "worldName"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "No alerts",
+            "message": "No alerts",
+            "translation": "No alerts",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Settings are updated.\n\n**Outfits:**",
+            "message": "Settings are updated.\n\n**Outfits:**",
+            "translation": "Settings are updated.\n\n**Outfits:**",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "No outfits",
+            "message": "No outfits",
+            "translation": "No outfits",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "**Characters:**",
+            "message": "**Characters:**",
+            "translation": "**Characters:**",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "No characters",
+            "message": "No characters",
+            "translation": "No characters",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Unlocked",
+            "message": "Unlocked",
+            "translation": "Unlocked",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Locked",
+            "message": "Locked",
+            "translation": "Locked",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": ") by `",
+            "message": ") by `",
+            "translation": ") by `",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Status: _",
+            "message": "Status: _",
+            "translation": "Status: _",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Stable",
+            "message": "Stable",
+            "translation": "Stable",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Unstable",
+            "message": "Unstable",
+            "translation": "Unstable",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "_\nAlerts: _",
+            "message": "_\nAlerts: _",
+            "translation": "_\nAlerts: _",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Yes",
+            "message": "Yes",
+            "translation": "Yes",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "No",
+            "message": "No",
+            "translation": "No",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        }
+    ]
+}

@@ -8,17 +8,17 @@ import (
 	"sync"
 	"time"
 
-	"github.com/x0k/ps2-spy/internal/infra"
-	ps2events "github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
-	"github.com/x0k/ps2-spy/internal/lib/loaders"
+	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
+	"github.com/x0k/ps2-spy/internal/lib/loader"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
+	"github.com/x0k/ps2-spy/internal/lib/pubsub"
 	"github.com/x0k/ps2-spy/internal/lib/retryable"
 	"github.com/x0k/ps2-spy/internal/lib/retryable/perform"
 	"github.com/x0k/ps2-spy/internal/lib/retryable/while"
 	"github.com/x0k/ps2-spy/internal/ps2"
-	"github.com/x0k/ps2-spy/internal/ps2/factions"
-	"github.com/x0k/ps2-spy/internal/ps2/platforms"
+	ps2_factions "github.com/x0k/ps2-spy/internal/ps2/factions"
+	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
 
 var ErrWorldNotFound = fmt.Errorf("world not found")
@@ -29,7 +29,7 @@ type metagameEvent struct {
 }
 
 type facilityState struct {
-	FactionId  factions.Id
+	FactionId  ps2_factions.Id
 	OutfitId   ps2.OutfitId
 	CapturedAt time.Time
 }
@@ -37,7 +37,7 @@ type facilityState struct {
 type zoneState struct {
 	IsLocked     bool
 	Since        time.Time
-	ControlledBy factions.Id
+	ControlledBy ps2_factions.Id
 	IsUnstable   bool
 	Events       map[ps2.InstanceId]metagameEvent
 	Facilities   map[ps2.FacilityId]facilityState
@@ -47,7 +47,7 @@ type zoneState struct {
 func (z zoneState) update(
 	isLocked bool,
 	since time.Time,
-	controlledBy factions.Id,
+	controlledBy ps2_factions.Id,
 	isUnstable bool,
 ) zoneState {
 	// Lock state
@@ -69,7 +69,7 @@ func (z zoneState) update(
 		if z.IsLocked {
 			z.IsLocked = false
 			z.Since = since
-			z.ControlledBy = factions.None
+			z.ControlledBy = ps2_factions.None
 		}
 		// This status may be changed during the `unlocked` state
 		z.IsUnstable = isUnstable
@@ -78,21 +78,23 @@ func (z zoneState) update(
 }
 
 type WorldsTracker struct {
+	name                    string
 	log                     *logger.Logger
 	retryableWorldMapLoader *retryable.WithArg[ps2.WorldId, ps2.WorldMap]
 	worldIds                []ps2.WorldId
 	mutex                   sync.RWMutex
 	worlds                  map[ps2.WorldId]map[ps2.ZoneId]zoneState
 	invalidationInterval    time.Duration
-	publisher               *Publisher
+	publisher               pubsub.Publisher[Event]
 }
 
 func New(
+	name string,
 	log *logger.Logger,
-	platform platforms.Platform,
+	platform ps2_platforms.Platform,
 	invalidationInterval time.Duration,
-	publisher *Publisher,
-	worldMapLoader loaders.KeyedLoader[ps2.WorldId, ps2.WorldMap],
+	publisher pubsub.Publisher[Event],
+	worldMapLoader loader.Keyed[ps2.WorldId, ps2.WorldMap],
 ) *WorldsTracker {
 	worldIds := ps2.PlatformWorldIds[platform]
 	worlds := make(map[ps2.WorldId]map[ps2.ZoneId]zoneState, len(worldIds))
@@ -102,7 +104,7 @@ func New(
 		for _, zoneId := range ps2.ZoneIds {
 			world[zoneId] = zoneState{
 				Since:        now,
-				ControlledBy: factions.None,
+				ControlledBy: ps2_factions.None,
 				Events:       make(map[ps2.InstanceId]metagameEvent, 2),
 				Facilities:   make(map[ps2.FacilityId]facilityState, ps2.ZoneFacilitiesCount[zoneId]),
 			}
@@ -110,15 +112,18 @@ func New(
 		worlds[worldId] = world
 	}
 	return &WorldsTracker{
-		log: log.With(
-			slog.String("component", "worlds_tracker.WorldsTracker"),
-		),
+		name:                    name,
+		log:                     log,
 		worldIds:                worldIds,
-		retryableWorldMapLoader: retryable.NewWithArg(worldMapLoader.Load),
+		retryableWorldMapLoader: retryable.NewWithArg(worldMapLoader),
 		worlds:                  worlds,
 		invalidationInterval:    invalidationInterval,
 		publisher:               publisher,
 	}
+}
+
+func (w *WorldsTracker) Name() string {
+	return w.name
 }
 
 func (w *WorldsTracker) invalidateEvents(now time.Time) {
@@ -164,12 +169,12 @@ func (w *WorldsTracker) invalidateWorldFacilitiesTask(
 				if facilityId == "" {
 					continue
 				}
-				if factionId == factions.None {
+				if factionId == ps2_factions.None {
 					isUnstable = true
 					continue
 				}
 				if isLocked {
-					if controlledBy == factions.None {
+					if controlledBy == ps2_factions.None {
 						controlledBy = factionId
 					} else if controlledBy != factionId {
 						isLocked = false
@@ -239,28 +244,25 @@ func (w *WorldsTracker) invalidateFacilities(ctx context.Context, wg *sync.WaitG
 	}
 }
 
-func (w *WorldsTracker) Start(ctx context.Context) {
-	wg := infra.Wg(ctx)
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		w.invalidateFacilities(ctx, wg, time.Now())
-		ticker := time.NewTicker(w.invalidationInterval)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case now := <-ticker.C:
-				w.invalidateEvents(now)
-				// To maintain `unstable` status
-				w.invalidateFacilities(ctx, wg, now)
-			}
+func (w *WorldsTracker) Start(ctx context.Context) error {
+	wg := &sync.WaitGroup{}
+	w.invalidateFacilities(ctx, wg, time.Now())
+	ticker := time.NewTicker(w.invalidationInterval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			wg.Wait()
+			return nil
+		case now := <-ticker.C:
+			w.invalidateEvents(now)
+			// To maintain `unstable` status
+			w.invalidateFacilities(ctx, wg, now)
 		}
-	}()
+	}
 }
 
-func (w *WorldsTracker) HandleMetagameEvent(ctx context.Context, event ps2events.MetagameEvent) error {
+func (w *WorldsTracker) HandleMetagameEvent(ctx context.Context, event events.MetagameEvent) error {
 	const op = "worlds_tracker.WorldsTracker.HandleMetagameEvent"
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
@@ -292,7 +294,7 @@ func (w *WorldsTracker) HandleMetagameEvent(ctx context.Context, event ps2events
 	return nil
 }
 
-func (w *WorldsTracker) updateFacilityState(event ps2events.FacilityControl) (ps2.OutfitId, error) {
+func (w *WorldsTracker) updateFacilityState(event events.FacilityControl) (ps2.OutfitId, error) {
 	const op = "worlds_tracker.WorldsTracker.updateFacilityState"
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
@@ -319,7 +321,7 @@ func (w *WorldsTracker) updateFacilityState(event ps2events.FacilityControl) (ps
 		capturedAt = time.Now()
 	}
 	zone.Facilities[facilityId] = facilityState{
-		FactionId:  factions.Id(event.NewFactionID),
+		FactionId:  ps2_factions.Id(event.NewFactionID),
 		OutfitId:   ps2.OutfitId(event.OutfitID),
 		CapturedAt: capturedAt,
 	}
@@ -328,14 +330,14 @@ func (w *WorldsTracker) updateFacilityState(event ps2events.FacilityControl) (ps
 		world[zoneId] = zone.update(
 			false,
 			capturedAt,
-			factions.None,
+			ps2_factions.None,
 			zone.IsUnstable,
 		)
 	}
 	return oldOutfitId, nil
 }
 
-func (w *WorldsTracker) HandleFacilityControl(ctx context.Context, event ps2events.FacilityControl) error {
+func (w *WorldsTracker) HandleFacilityControl(ctx context.Context, event events.FacilityControl) error {
 	const op = "worlds_tracker.WorldsTracker.HandleFacilityControl"
 	// Defended base
 	if event.OldFactionID == event.NewFactionID {
@@ -366,7 +368,7 @@ func (w *WorldsTracker) HandleFacilityControl(ctx context.Context, event ps2even
 	return nil
 }
 
-func (w *WorldsTracker) HandleContinentLock(ctx context.Context, event ps2events.ContinentLock) error {
+func (w *WorldsTracker) HandleContinentLock(ctx context.Context, event events.ContinentLock) error {
 	const op = "worlds_tracker.WorldsTracker.HandleContinentLock"
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
@@ -390,7 +392,7 @@ func (w *WorldsTracker) HandleContinentLock(ctx context.Context, event ps2events
 	world[zoneId] = zone.update(
 		true,
 		since,
-		factions.Id(event.TriggeringFaction),
+		ps2_factions.Id(event.TriggeringFaction),
 		false,
 	)
 	return nil
@@ -401,15 +403,15 @@ func zoneTerritoryControl(facilities map[ps2.FacilityId]facilityState) ps2.StatP
 	for _, facility := range facilities {
 		stat.All++
 		switch facility.FactionId {
-		case factions.NC:
+		case ps2_factions.NC:
 			stat.NC++
-		case factions.TR:
+		case ps2_factions.TR:
 			stat.TR++
-		case factions.VS:
+		case ps2_factions.VS:
 			stat.VS++
-		case factions.NSO:
+		case ps2_factions.NSO:
 			stat.NS++
-		case factions.None:
+		case ps2_factions.None:
 			stat.Other++
 		}
 	}

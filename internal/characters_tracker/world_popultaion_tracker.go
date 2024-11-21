@@ -2,29 +2,29 @@ package characters_tracker
 
 import (
 	"github.com/x0k/ps2-spy/internal/ps2"
-	"github.com/x0k/ps2-spy/internal/ps2/factions"
+	ps2_factions "github.com/x0k/ps2-spy/internal/ps2/factions"
 )
 
 type worldPopulationTracker struct {
-	population map[factions.Id]int
+	population map[ps2_factions.Id]int
 
-	zonesPopulation map[ps2.ZoneId]map[factions.Id]int
+	zonesPopulation map[ps2.ZoneId]map[ps2_factions.Id]int
 
-	charactersFactions   map[ps2.CharacterId]factions.Id
+	charactersFactions   map[ps2.CharacterId]ps2_factions.Id
 	charactersLastZoneId map[ps2.CharacterId]ps2.ZoneId
 }
 
 func newWorldPopulationTracker() worldPopulationTracker {
-	zonesPopulation := make(map[ps2.ZoneId]map[factions.Id]int, len(ps2.ZoneNames))
+	zonesPopulation := make(map[ps2.ZoneId]map[ps2_factions.Id]int, len(ps2.ZoneNames))
 	for zoneId := range ps2.ZoneNames {
-		zonesPopulation[zoneId] = make(map[factions.Id]int, len(factions.FactionNames))
+		zonesPopulation[zoneId] = make(map[ps2_factions.Id]int, len(ps2_factions.FactionNames))
 	}
 	return worldPopulationTracker{
-		population: make(map[factions.Id]int, len(factions.FactionNames)),
+		population: make(map[ps2_factions.Id]int, len(ps2_factions.FactionNames)),
 
 		zonesPopulation: zonesPopulation,
 
-		charactersFactions:   make(map[ps2.CharacterId]factions.Id),
+		charactersFactions:   make(map[ps2.CharacterId]ps2_factions.Id),
 		charactersLastZoneId: make(map[ps2.CharacterId]ps2.ZoneId),
 	}
 }
@@ -71,10 +71,10 @@ func (w *worldPopulationTracker) HandleZoneAction(charId ps2.CharacterId, strZon
 	w.charactersLastZoneId[charId] = zoneId
 }
 
-func (w *worldPopulationTracker) Population() map[factions.Id]int {
+func (w *worldPopulationTracker) Population() map[ps2_factions.Id]int {
 	return w.population
 }
 
-func (w *worldPopulationTracker) ZonesPopulation() map[ps2.ZoneId]map[factions.Id]int {
+func (w *worldPopulationTracker) ZonesPopulation() map[ps2.ZoneId]map[ps2_factions.Id]int {
 	return w.zonesPopulation
 }

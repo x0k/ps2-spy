@@ -3,12 +3,17 @@ package characters_tracker
 import (
 	"time"
 
+	"github.com/x0k/ps2-spy/internal/lib/pubsub"
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
+type EventType string
+
+type Event = pubsub.Event[EventType]
+
 const (
-	PlayerLoginType  = "player_login"
-	PlayerLogoutType = "player_logout"
+	PlayerLoginType  EventType = "player_login"
+	PlayerLogoutType EventType = "player_logout"
 )
 
 type PlayerLogin struct {
@@ -17,7 +22,7 @@ type PlayerLogin struct {
 	WorldId     ps2.WorldId
 }
 
-func (e PlayerLogin) Type() string {
+func (e PlayerLogin) Type() EventType {
 	return PlayerLoginType
 }
 
@@ -27,6 +32,6 @@ type PlayerLogout struct {
 	WorldId     ps2.WorldId
 }
 
-func (e PlayerLogout) Type() string {
+func (e PlayerLogout) Type() EventType {
 	return PlayerLogoutType
 }

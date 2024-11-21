@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"sync"
 	"time"
 
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
@@ -16,20 +15,20 @@ type Fallbacks[T any] struct {
 	log                  *slog.Logger
 	entities             map[string]T
 	priority             []string
-	lastSuccessfulEntity *Expiable[string]
+	lastSuccessfulEntity *Expirable[string]
 }
 
 func NewFallbacks[T any](log *slog.Logger, entities map[string]T, priority []string, ttl time.Duration) *Fallbacks[T] {
 	return &Fallbacks[T]{
-		log:                  log.With(slog.String("component", "containers.Fallbacks")),
+		log:                  log,
 		entities:             entities,
 		priority:             priority,
-		lastSuccessfulEntity: NewExpiable[string](ttl),
+		lastSuccessfulEntity: NewExpirable[string](ttl),
 	}
 }
 
-func (f *Fallbacks[T]) Start(ctx context.Context, wg *sync.WaitGroup) {
-	f.lastSuccessfulEntity.Start(ctx, wg)
+func (f *Fallbacks[T]) Start(ctx context.Context) {
+	f.lastSuccessfulEntity.Start(ctx)
 }
 
 func (f *Fallbacks[T]) Exec(executor func(T) error) error {

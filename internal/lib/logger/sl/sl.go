@@ -15,6 +15,13 @@ func Err(err error) slog.Attr {
 	}
 }
 
+func Module(module string) slog.Attr {
+	return slog.Attr{
+		Key:   "module",
+		Value: slog.StringValue(module),
+	}
+}
+
 func Component(component string) slog.Attr {
 	return slog.Attr{
 		Key:   "component",

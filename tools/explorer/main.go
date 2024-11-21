@@ -5,14 +5,13 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"log/slog"
 	"net/http"
 	"os"
 	"path"
 	"strings"
 
 	"github.com/x0k/ps2-spy/internal/lib/census2"
-	collections "github.com/x0k/ps2-spy/internal/lib/census2/collections/ps2"
+	ps2_collections "github.com/x0k/ps2-spy/internal/lib/census2/collections/ps2"
 	"github.com/x0k/ps2-spy/internal/lib/stringsx"
 	"gopkg.in/yaml.v3"
 )
@@ -34,13 +33,13 @@ func loadOutfitInfo(c *census2.Client, tag string) (any, error) {
 	const op = "loadOutfitInfo"
 	outfits, err := c.Execute(
 		context.Background(),
-		census2.NewQuery(census2.GetQuery, census2.Ps2_v2_NS, collections.Outfit).
+		census2.NewQuery(census2.GetQuery, census2.Ps2_v2_NS, ps2_collections.Outfit).
 			Where(
 				census2.Cond("alias_lower").
 					Equals(census2.Str(strings.ToLower(tag))),
 			).
 			WithJoin(
-				census2.Join(collections.CharactersWorld).
+				census2.Join(ps2_collections.CharactersWorld).
 					On("leader_character_id").
 					To("character_id").
 					InjectAt("characters_world"),
@@ -59,7 +58,7 @@ func loadOutfitInfo(c *census2.Client, tag string) (any, error) {
 func loadOutfits(c *census2.Client, tagsStr string) (any, error) {
 	const op = "loadOutfits"
 	tags := stringsx.SplitAndTrim(strings.ToLower(tagsStr), ",")
-	q := census2.NewQuery(census2.GetQuery, census2.Ps2_v2_NS, collections.Outfit).
+	q := census2.NewQuery(census2.GetQuery, census2.Ps2_v2_NS, ps2_collections.Outfit).
 		Where(
 			census2.Cond("alias_lower").Equals(census2.StrList(tags...)),
 		).
@@ -73,7 +72,7 @@ func loadOutfits(c *census2.Client, tagsStr string) (any, error) {
 
 func loadCharacterInfo(c *census2.Client, name string) (any, error) {
 	const op = "loadCharacterInfo"
-	q := census2.NewQuery(census2.GetQuery, census2.Ps2_v2_NS, collections.Character).
+	q := census2.NewQuery(census2.GetQuery, census2.Ps2_v2_NS, ps2_collections.Character).
 		Where(
 			census2.Cond("name.first_lower").
 				Equals(census2.Str(strings.ToLower(name))),
@@ -92,7 +91,7 @@ func loadCharacterInfo(c *census2.Client, name string) (any, error) {
 func loadCharacters(c *census2.Client, namesStr string) (any, error) {
 	const op = "loadCharacters"
 	names := stringsx.SplitAndTrim(strings.ToLower(namesStr), ",")
-	q := census2.NewQuery(census2.GetQuery, census2.Ps2_v2_NS, collections.Character).
+	q := census2.NewQuery(census2.GetQuery, census2.Ps2_v2_NS, ps2_collections.Character).
 		Where(
 			census2.Cond("name.first_lower").
 				Equals(census2.StrList(names...)),
@@ -107,13 +106,13 @@ func loadCharacters(c *census2.Client, namesStr string) (any, error) {
 
 func loadOutfitMembers(c *census2.Client, outfitTag string) (any, error) {
 	const op = "loadOutfitMembers"
-	q := census2.NewQuery(census2.GetQuery, census2.Ps2_v2_NS, collections.Outfit).
+	q := census2.NewQuery(census2.GetQuery, census2.Ps2_v2_NS, ps2_collections.Outfit).
 		Where(
 			census2.Cond("alias_lower").Equals(census2.Str(strings.ToLower(outfitTag))),
 		).
 		Show("outfit_id").
 		WithJoin(
-			census2.Join(collections.OutfitMember).
+			census2.Join(ps2_collections.OutfitMember).
 				Show("character_id").
 				InjectAt("members").
 				IsList(true),
@@ -130,13 +129,13 @@ func loadOutfitMembers(c *census2.Client, outfitTag string) (any, error) {
 
 func loadWorldState(c *census2.Client, query string) (any, error) {
 	const op = "loadWorldState"
-	q := census2.NewQuery(census2.GetQuery, census2.Ps2_v2_NS, collections.Map).
+	q := census2.NewQuery(census2.GetQuery, census2.Ps2_v2_NS, ps2_collections.Map).
 		Where(
 			census2.Cond("world_id").Equals(census2.Str(query)),
 			census2.Cond("zone_ids").Equals(census2.Str("2,4,6,8,14,344")),
 		).
 		WithJoin(
-			census2.Join(collections.MapRegion).
+			census2.Join(ps2_collections.MapRegion).
 				Show(
 					"zone_id",
 					"facility_id",
@@ -165,8 +164,7 @@ var handlers = map[string]func(c *census2.Client, query string) (any, error){
 
 func main() {
 	httpClient := &http.Client{}
-	l := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
-	censusClient := census2.NewClient(l, "https://census.daybreakgames.com", "", httpClient)
+	censusClient := census2.NewClient("https://census.daybreakgames.com", "", httpClient)
 	handler, ok := handlers[resource]
 	if !ok {
 		log.Fatalf("unknown resource: %s", resource)

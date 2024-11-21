@@ -3,12 +3,9 @@ package census2
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"strings"
-	"time"
 
-	"github.com/hashicorp/golang-lru/v2/expirable"
 	"github.com/mitchellh/mapstructure"
 	"github.com/x0k/ps2-spy/internal/lib/httpx"
 )
@@ -16,23 +13,16 @@ import (
 var ErrFailedToDecode = fmt.Errorf("failed to decode")
 
 type Client struct {
-	log            *slog.Logger
 	httpClient     *http.Client
 	censusEndpoint string
 	serviceId      string
-	cache          *expirable.LRU[string, []any]
 }
 
-func NewClient(log *slog.Logger, censusEndpoint string, serviceId string, httpClient *http.Client) *Client {
+func NewClient(censusEndpoint string, serviceId string, httpClient *http.Client) *Client {
 	return &Client{
-		log: log.With(
-			slog.String("component", "census2.Client"),
-			slog.String("endpoint", censusEndpoint),
-		),
 		httpClient:     httpClient,
 		censusEndpoint: censusEndpoint,
 		serviceId:      serviceId,
-		cache:          expirable.NewLRU[string, []any](100, nil, time.Minute),
 	}
 }
 
@@ -54,11 +44,7 @@ func (c *Client) ToURL(q *Query) string {
 }
 
 func (c *Client) ExecutePrepared(ctx context.Context, collection, url string) ([]any, error) {
-	const op = "census2.client.Client.ExecutePrepared"
-	if cached, ok := c.cache.Get(url); ok {
-		return cached, nil
-	}
-	c.log.Debug("fetching", slog.String("url", url))
+	const op = "census2.Client.ExecutePrepared"
 	content, err := httpx.GetJson[map[string]any](ctx, c.httpClient, url)
 	if err != nil {
 		return nil, err
@@ -67,7 +53,6 @@ func (c *Client) ExecutePrepared(ctx context.Context, collection, url string) ([
 	if !ok {
 		return nil, fmt.Errorf("%s decoding %v: %w", op, content, ErrFailedToDecode)
 	}
-	c.cache.Add(url, data)
 	return data, nil
 }
 

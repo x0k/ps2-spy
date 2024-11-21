@@ -1,19 +1,23 @@
 package metrics
 
 import (
+	"errors"
+
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/x0k/ps2-spy/internal/lib/publisher"
+	"github.com/x0k/ps2-spy/internal/lib/pubsub"
 )
 
-type instrumentedPublisher[E publisher.Event] struct {
-	publisher.Publisher[E]
+var ErrInvalidEventType = errors.New("invalid event type")
+
+type instrumentedPublisher[T pubsub.EventType] struct {
+	pubsub.Publisher[pubsub.Event[T]]
 	counter *prometheus.CounterVec
 }
 
-func (p *instrumentedPublisher[E]) Publish(event E) error {
+func (p *instrumentedPublisher[T]) Publish(event pubsub.Event[T]) error {
 	err := p.Publisher.Publish(event)
 	labels := prometheus.Labels{
-		"event_type": event.Type(),
+		"event_type": string(event.Type()),
 		"status":     string(SuccessStatus),
 	}
 	if err != nil {
@@ -23,8 +27,11 @@ func (p *instrumentedPublisher[E]) Publish(event E) error {
 	return err
 }
 
-func instrumentPublisher[E publisher.Event](counter *prometheus.CounterVec, publisher publisher.Publisher[E]) publisher.Publisher[E] {
-	return &instrumentedPublisher[E]{
+func newInstrumentPublisher[T pubsub.EventType](
+	counter *prometheus.CounterVec,
+	publisher pubsub.Publisher[pubsub.Event[T]],
+) pubsub.Publisher[pubsub.Event[T]] {
+	return &instrumentedPublisher[T]{
 		Publisher: publisher,
 		counter:   counter,
 	}

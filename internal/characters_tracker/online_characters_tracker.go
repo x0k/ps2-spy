@@ -1,7 +1,7 @@
 package characters_tracker
 
 import (
-	"github.com/x0k/ps2-spy/internal/meta"
+	"github.com/x0k/ps2-spy/internal/discord"
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
@@ -46,7 +46,9 @@ func (o *onlineCharactersTracker) HandleInactive(charId ps2.CharacterId) bool {
 	return false
 }
 
-func (o *onlineCharactersTracker) TrackableOnlineEntities(settings meta.SubscriptionSettings) meta.TrackableEntities[map[ps2.OutfitId][]ps2.Character, []ps2.Character] {
+func (o *onlineCharactersTracker) TrackableOnlineEntities(
+	settings discord.TrackableEntities[[]ps2.OutfitId, []ps2.CharacterId],
+) discord.TrackableEntities[map[ps2.OutfitId][]ps2.Character, []ps2.Character] {
 	outfits := make(map[ps2.OutfitId][]ps2.Character, len(settings.Outfits))
 	for _, outfitId := range settings.Outfits {
 		if characters, ok := o.onlineCharactersByOutfit[outfitId]; ok {
@@ -63,7 +65,7 @@ func (o *onlineCharactersTracker) TrackableOnlineEntities(settings meta.Subscrip
 			characters = append(characters, o.onlineCharactersByOutfit[outfitId][charId])
 		}
 	}
-	return meta.TrackableEntities[map[ps2.OutfitId][]ps2.Character, []ps2.Character]{
+	return discord.TrackableEntities[map[ps2.OutfitId][]ps2.Character, []ps2.Character]{
 		Outfits:    outfits,
 		Characters: characters,
 	}

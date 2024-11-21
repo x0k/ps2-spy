@@ -3,14 +3,11 @@ package main
 import (
 	"context"
 	"flag"
-	"log/slog"
 	"os"
-	"os/signal"
-	"sync"
-	"syscall"
 
-	"github.com/x0k/ps2-spy/internal/config"
-	"github.com/x0k/ps2-spy/internal/infra"
+	"log/slog"
+
+	"github.com/x0k/ps2-spy/internal/app"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 )
 
@@ -24,33 +21,17 @@ func init() {
 }
 
 func main() {
+	cfg := app.MustLoadConfig(config_path)
+	log := app.MustNewLogger(&cfg.Logger)
 	ctx := context.Background()
-	cfg := config.MustLoad(config_path)
-
-	log := mustSetupLogger(&cfg.Logger)
-	log.Info(ctx, "starting...", slog.String("log_level", cfg.Logger.Level))
-	ctx = context.WithValue(ctx, infra.LoggerKey, log)
-
-	wg := &sync.WaitGroup{}
-	ctx = context.WithValue(ctx, infra.WgKey, wg)
-
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-	err := start(ctx, wg, log, cfg)
+	log.Info(ctx, "starting application", slog.String("log_level", cfg.Logger.Level))
+	root, err := app.NewRoot(cfg, log)
 	if err != nil {
-		log.Error(ctx, "unsuccess start, shutting down", sl.Err(err))
-		cancel()
-		wg.Wait()
-		os.Exit(1)
+		log.Error(ctx, "failed to run", sl.Err(err))
+		return
 	}
-
-	log.Info(ctx, "press CTRL-C to exit.")
-	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
-	<-stop
-
-	log.Info(ctx, "gracefully shutting down.")
-	cancel()
-	wg.Wait()
-	log.Info(ctx, "shutdown complete.")
+	if err := root.Start(ctx); err != nil {
+		log.Error(ctx, "fatal error", sl.Err(err))
+	}
+	log.Info(ctx, "application stopped")
 }

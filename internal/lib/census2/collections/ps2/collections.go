@@ -1,4 +1,4 @@
-package collections
+package ps2_collections
 
 const WorldEvent = "world_event"
 

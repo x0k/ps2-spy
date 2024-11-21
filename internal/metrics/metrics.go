@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/x0k/ps2-spy/internal/lib/publisher"
-	"github.com/x0k/ps2-spy/internal/ps2/platforms"
+	"github.com/x0k/ps2-spy/internal/lib/pubsub"
+	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
 
 type PublisherName string
@@ -58,19 +58,7 @@ const (
 	LogoutEventsQueueName  PlatformQueueName = "logout_events"
 )
 
-type Metrics interface {
-	PlatformLoadsCounterMetric(PlatformLoaderName, platforms.Platform) *prometheus.CounterVec
-	PlatformLoaderInFlightMetric(PlatformLoaderName, platforms.Platform) *prometheus.Gauge
-	PlatformLoaderSubjectsCounterMetric(PlatformLoaderName, platforms.Platform) *prometheus.CounterVec
-
-	InstrumentPublisher(PublisherName, publisher.Publisher[publisher.Event]) publisher.Publisher[publisher.Event]
-	InstrumentPlatformPublisher(PlatformPublisherName, platforms.Platform, publisher.Publisher[publisher.Event]) publisher.Publisher[publisher.Event]
-	InstrumentTransport(TransportName, http.RoundTripper) http.RoundTripper
-
-	SetPlatformQueueSize(PlatformQueueName, platforms.Platform, int)
-}
-
-type metrics struct {
+type Metrics struct {
 	eventsCounter       *prometheus.CounterVec
 	httpRequestsCounter *prometheus.CounterVec
 
@@ -83,8 +71,8 @@ type metrics struct {
 	platformCacheSize *prometheus.GaugeVec
 }
 
-func New(ns string) *metrics {
-	return &metrics{
+func New(ns string) *Metrics {
+	return &Metrics{
 		eventsCounter: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
 				Namespace: ns,
@@ -152,7 +140,7 @@ func New(ns string) *metrics {
 	}
 }
 
-func (m *metrics) Register(reg prometheus.Registerer) {
+func (m *Metrics) Register(reg prometheus.Registerer) {
 	reg.MustRegister(
 		m.eventsCounter,
 		m.httpRequestsCounter,
@@ -167,11 +155,15 @@ func (m *metrics) Register(reg prometheus.Registerer) {
 	)
 }
 
-func (m *metrics) InstrumentPublisher(
+func InstrumentPublisher[T pubsub.EventType](
+	m *Metrics,
 	name PublisherName,
-	pub publisher.Publisher[publisher.Event],
-) publisher.Publisher[publisher.Event] {
-	return instrumentPublisher[publisher.Event](
+	pub pubsub.Publisher[pubsub.Event[T]],
+) pubsub.Publisher[pubsub.Event[T]] {
+	if m == nil {
+		return pub
+	}
+	return newInstrumentPublisher(
 		m.eventsCounter.MustCurryWith(prometheus.Labels{
 			"publisher_name": string(name),
 		}),
@@ -179,12 +171,16 @@ func (m *metrics) InstrumentPublisher(
 	)
 }
 
-func (m *metrics) InstrumentPlatformPublisher(
+func InstrumentPlatformPublisher[T pubsub.EventType](
+	m *Metrics,
 	name PlatformPublisherName,
-	platform platforms.Platform,
-	pub publisher.Publisher[publisher.Event],
-) publisher.Publisher[publisher.Event] {
-	return instrumentPublisher[publisher.Event](
+	platform ps2_platforms.Platform,
+	pub pubsub.Publisher[pubsub.Event[T]],
+) pubsub.Publisher[pubsub.Event[T]] {
+	if m == nil {
+		return pub
+	}
+	return newInstrumentPublisher(
 		m.platformEventsCounter.MustCurryWith(prometheus.Labels{
 			"publisher_name": string(name),
 			"platform":       string(platform),
@@ -193,7 +189,10 @@ func (m *metrics) InstrumentPlatformPublisher(
 	)
 }
 
-func (m *metrics) InstrumentTransport(name TransportName, transport http.RoundTripper) http.RoundTripper {
+func InstrumentTransport(m *Metrics, name TransportName, transport http.RoundTripper) http.RoundTripper {
+	if m == nil {
+		return transport
+	}
 	return instrumentTransport(
 		m.httpRequestsCounter.MustCurryWith(prometheus.Labels{
 			"transport_name": string(name),
@@ -202,20 +201,28 @@ func (m *metrics) InstrumentTransport(name TransportName, transport http.RoundTr
 	)
 }
 
-func (m *metrics) PlatformLoadsCounterMetric(
+func PlatformLoadsCounterMetric(
+	m *Metrics,
 	name PlatformLoaderName,
-	platform platforms.Platform,
+	platform ps2_platforms.Platform,
 ) *prometheus.CounterVec {
+	if m == nil {
+		return nil
+	}
 	return m.platformLoadsCounter.MustCurryWith(prometheus.Labels{
 		"loader_name": string(name),
 		"platform":    string(platform),
 	})
 }
 
-func (m *metrics) PlatformLoaderInFlightMetric(
+func PlatformLoaderInFlightMetric(
+	m *Metrics,
 	name PlatformLoaderName,
-	platform platforms.Platform,
+	platform ps2_platforms.Platform,
 ) *prometheus.Gauge {
+	if m == nil {
+		return nil
+	}
 	g := m.platformLoadersInFlight.With(prometheus.Labels{
 		"loader_name": string(name),
 		"platform":    string(platform),
@@ -223,21 +230,29 @@ func (m *metrics) PlatformLoaderInFlightMetric(
 	return &g
 }
 
-func (m *metrics) PlatformLoaderSubjectsCounterMetric(
+func PlatformLoaderSubjectsCounterMetric(
+	m *Metrics,
 	name PlatformLoaderName,
-	platform platforms.Platform,
+	platform ps2_platforms.Platform,
 ) *prometheus.CounterVec {
+	if m == nil {
+		return nil
+	}
 	return m.platformLoadersSubjects.MustCurryWith(prometheus.Labels{
 		"loader_name": string(name),
 		"platform":    string(platform),
 	})
 }
 
-func (m *metrics) SetPlatformQueueSize(
+func SetPlatformQueueSize(
+	m *Metrics,
 	name PlatformQueueName,
-	platform platforms.Platform,
+	platform ps2_platforms.Platform,
 	size int,
 ) {
+	if m == nil {
+		return
+	}
 	m.platformQueueSize.With(prometheus.Labels{
 		"queue_name": string(name),
 		"platform":   string(platform),

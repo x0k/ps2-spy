@@ -8,21 +8,20 @@ import (
 	"sync"
 	"time"
 
-	"github.com/x0k/ps2-spy/internal/infra"
-	ps2events "github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
+	"github.com/x0k/ps2-spy/internal/discord"
+	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
 	"github.com/x0k/ps2-spy/internal/lib/containers"
-	"github.com/x0k/ps2-spy/internal/lib/loaders"
+	"github.com/x0k/ps2-spy/internal/lib/loader"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
-	"github.com/x0k/ps2-spy/internal/lib/publisher"
+	"github.com/x0k/ps2-spy/internal/lib/pubsub"
 	"github.com/x0k/ps2-spy/internal/lib/retryable"
 	"github.com/x0k/ps2-spy/internal/lib/retryable/perform"
 	"github.com/x0k/ps2-spy/internal/lib/retryable/while"
-	"github.com/x0k/ps2-spy/internal/meta"
 	"github.com/x0k/ps2-spy/internal/metrics"
 	"github.com/x0k/ps2-spy/internal/ps2"
-	"github.com/x0k/ps2-spy/internal/ps2/factions"
-	"github.com/x0k/ps2-spy/internal/ps2/platforms"
+	ps2_factions "github.com/x0k/ps2-spy/internal/ps2/factions"
+	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
 
 var ErrWorldPopulationTrackerNotFound = fmt.Errorf("world population tracker not found")
@@ -33,8 +32,9 @@ type player struct {
 }
 
 type CharactersTracker struct {
+	name                     string
 	log                      *logger.Logger
-	platform                 platforms.Platform
+	platform                 ps2_platforms.Platform
 	mutex                    sync.RWMutex
 	worldPopulationTrackers  map[ps2.WorldId]worldPopulationTracker
 	onlineCharactersTracker  onlineCharactersTracker
@@ -42,39 +42,40 @@ type CharactersTracker struct {
 	inactivityCheckInterval  time.Duration
 	inactiveTimeout          time.Duration
 	retryableCharacterLoader *retryable.WithArg[ps2.CharacterId, ps2.Character]
-	publisher                publisher.Abstract[publisher.Event]
-	mt                       metrics.Metrics
+	publisher                pubsub.Publisher[Event]
+	mt                       *metrics.Metrics
 }
 
 func New(
+	name string,
 	log *logger.Logger,
-	platform platforms.Platform,
+	platform ps2_platforms.Platform,
 	worldIds []ps2.WorldId,
-	characterLoader loaders.KeyedLoader[ps2.CharacterId, ps2.Character],
-	publisher publisher.Abstract[publisher.Event],
-	mt metrics.Metrics,
+	characterLoader loader.Keyed[ps2.CharacterId, ps2.Character],
+	publisher pubsub.Publisher[Event],
+	mt *metrics.Metrics,
 ) *CharactersTracker {
 	trackers := make(map[ps2.WorldId]worldPopulationTracker, len(ps2.WorldNames))
 	for _, worldId := range worldIds {
 		trackers[worldId] = newWorldPopulationTracker()
 	}
 	return &CharactersTracker{
-		log: log.With(
-			slog.String("component", "characters_tracker.CharactersTracker"),
-			slog.String("platform", string(platform)),
-		),
-		platform:                platform,
-		worldPopulationTrackers: trackers,
-		onlineCharactersTracker: newOnlineCharactersTracker(),
-		activePlayers:           containers.NewExpirationQueue[player](),
-		inactivityCheckInterval: time.Minute,
-		inactiveTimeout:         10 * time.Minute,
-		retryableCharacterLoader: retryable.NewWithArg(
-			characterLoader.Load,
-		),
-		publisher: publisher,
-		mt:        mt,
+		name:                     name,
+		log:                      log,
+		platform:                 platform,
+		worldPopulationTrackers:  trackers,
+		onlineCharactersTracker:  newOnlineCharactersTracker(),
+		activePlayers:            containers.NewExpirationQueue[player](),
+		inactivityCheckInterval:  time.Minute,
+		inactiveTimeout:          10 * time.Minute,
+		retryableCharacterLoader: retryable.NewWithArg(characterLoader),
+		publisher:                publisher,
+		mt:                       mt,
 	}
+}
+
+func (p *CharactersTracker) Name() string {
+	return p.name
 }
 
 func (p *CharactersTracker) handleInactive(ctx context.Context, now time.Time) []player {
@@ -91,7 +92,8 @@ func (p *CharactersTracker) handleInactive(ctx context.Context, now time.Time) [
 			removedPlayers = append(removedPlayers, pl)
 		}
 	})
-	p.mt.SetPlatformQueueSize(
+	metrics.SetPlatformQueueSize(
+		p.mt,
 		metrics.ActivePlayersQueueName,
 		p.platform,
 		p.activePlayers.Len(),
@@ -117,25 +119,20 @@ func (p *CharactersTracker) publishPlayerLogout(ctx context.Context, t time.Time
 	}
 }
 
-func (p *CharactersTracker) Start(ctx context.Context) {
-	wg := infra.Wg(ctx)
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		ticker := time.NewTicker(p.inactivityCheckInterval)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case t := <-ticker.C:
-				removedPlayers := p.handleInactive(ctx, t)
-				for _, pl := range removedPlayers {
-					p.publishPlayerLogout(ctx, t, pl)
-				}
+func (p *CharactersTracker) Start(ctx context.Context) error {
+	ticker := time.NewTicker(p.inactivityCheckInterval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case t := <-ticker.C:
+			removedPlayers := p.handleInactive(ctx, t)
+			for _, pl := range removedPlayers {
+				p.publishPlayerLogout(ctx, t, pl)
 			}
 		}
-	}()
+	}
 }
 
 func (p *CharactersTracker) handleLogin(ctx context.Context, char ps2.Character) bool {
@@ -150,9 +147,9 @@ func (p *CharactersTracker) handleLogin(ctx context.Context, char ps2.Character)
 	return p.onlineCharactersTracker.HandleLogin(char)
 }
 
-func (p *CharactersTracker) publishPlayerLogin(ctx context.Context, event ps2events.PlayerLogin) {
+func (p *CharactersTracker) publishPlayerLogin(ctx context.Context, event events.PlayerLogin) {
 	var t time.Time
-	// TODO: extract this somewhere
+	// TODO: move this somewhere
 	if timestamp, err := strconv.ParseInt(event.Timestamp, 10, 64); err == nil {
 		t = time.Unix(timestamp, 0)
 	} else {
@@ -167,8 +164,7 @@ func (p *CharactersTracker) publishPlayerLogin(ctx context.Context, event ps2eve
 	}
 }
 
-func (p *CharactersTracker) HandleLoginTask(ctx context.Context, wg *sync.WaitGroup, event ps2events.PlayerLogin) {
-	defer wg.Done()
+func (p *CharactersTracker) HandleLogin(ctx context.Context, event events.PlayerLogin) {
 	charId := ps2.CharacterId(event.CharacterID)
 	char, err := p.retryableCharacterLoader.Run(
 		ctx,
@@ -204,7 +200,7 @@ func (p *CharactersTracker) handleLogout(ctx context.Context, charId ps2.Charact
 	return p.onlineCharactersTracker.HandleInactive(charId)
 }
 
-func (p *CharactersTracker) HandleLogout(ctx context.Context, event ps2events.PlayerLogout) {
+func (p *CharactersTracker) HandleLogout(ctx context.Context, event events.PlayerLogout) {
 	worldId := ps2.WorldId(event.WorldID)
 	charId := ps2.CharacterId(event.CharacterID)
 	if p.handleLogout(ctx, charId, worldId) {
@@ -232,7 +228,9 @@ func (p *CharactersTracker) HandleWorldZoneAction(ctx context.Context, worldId, 
 	}
 }
 
-func (p *CharactersTracker) TrackableOnlineEntities(settings meta.SubscriptionSettings) meta.TrackableEntities[map[ps2.OutfitId][]ps2.Character, []ps2.Character] {
+func (p *CharactersTracker) TrackableOnlineEntities(
+	settings discord.TrackableEntities[[]ps2.OutfitId, []ps2.CharacterId],
+) discord.TrackableEntities[map[ps2.OutfitId][]ps2.Character, []ps2.Character] {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
 	return p.onlineCharactersTracker.TrackableOnlineEntities(settings)
@@ -245,11 +243,11 @@ func (p *CharactersTracker) WorldsPopulation() ps2.WorldsPopulation {
 	worlds := make([]ps2.WorldPopulation, 0, len(p.worldPopulationTrackers))
 	for worldId, worldTracker := range p.worldPopulationTrackers {
 		worldPopulation := worldTracker.Population()
-		other := worldPopulation[factions.None]
-		vs := worldPopulation[factions.VS]
-		nc := worldPopulation[factions.NC]
-		tr := worldPopulation[factions.TR]
-		ns := worldPopulation[factions.NSO]
+		other := worldPopulation[ps2_factions.None]
+		vs := worldPopulation[ps2_factions.VS]
+		nc := worldPopulation[ps2_factions.NC]
+		tr := worldPopulation[ps2_factions.TR]
+		ns := worldPopulation[ps2_factions.NSO]
 		all := vs + nc + tr + ns + other
 		total += all
 		worlds = append(worlds, ps2.WorldPopulation{
@@ -282,11 +280,11 @@ func (p *CharactersTracker) DetailedWorldPopulation(worldId ps2.WorldId) (ps2.De
 	total := 0
 	zones := make([]ps2.ZonePopulation, 0, len(zonesPopulation))
 	for zoneId, zonePopulation := range zonesPopulation {
-		other := zonePopulation[factions.None]
-		vs := zonePopulation[factions.VS]
-		nc := zonePopulation[factions.NC]
-		tr := zonePopulation[factions.TR]
-		ns := zonePopulation[factions.NSO]
+		other := zonePopulation[ps2_factions.None]
+		vs := zonePopulation[ps2_factions.VS]
+		nc := zonePopulation[ps2_factions.NC]
+		tr := zonePopulation[ps2_factions.TR]
+		ns := zonePopulation[ps2_factions.NSO]
 		all := vs + nc + tr + ns + other
 		total += all
 		zones = append(zones, ps2.ZonePopulation{
