@@ -34,9 +34,9 @@ type HttpClientConfig struct {
 }
 
 type Config struct {
-	AppName           string `yaml:"app_name" env:"PS2_APP_NAME" env-default:"PS 2 Spy"`
-	StreamingEndpoint string `yaml:"streaming_endpoint" env:"PS2_STREAMING_ENDPOINT" env-default:"wss://push.planetside2.com/streaming"`
-	CensusServiceId   string `yaml:"census_service_id" env:"PS2_CENSUS_SERVICE_ID" env-required:"true"`
+	AppName           string `yaml:"app_name" env:"APP_NAME" env-default:"PS 2 Spy"`
+	StreamingEndpoint string `yaml:"streaming_endpoint" env:"STREAMING_ENDPOINT" env-default:"wss://push.planetside2.com/streaming"`
+	CensusServiceId   string `yaml:"census_service_id" env:"CENSUS_SERVICE_ID" env-required:"true"`
 
 	Logger     LoggerConfig     `yaml:"logger"`
 	Profiler   ProfilerConfig   `yaml:"profiler"`
