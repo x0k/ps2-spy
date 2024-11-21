@@ -17,9 +17,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
-type Saver interface {
-	Save(ctx context.Context, outfit ps2.OutfitId, members []ps2.CharacterId) error
-}
+type OutfitMembersSaver = func(ctx context.Context, outfit ps2.OutfitId, members []ps2.CharacterId) error
 
 type OutfitMembersSynchronizer struct {
 	name string
@@ -28,7 +26,7 @@ type OutfitMembersSynchronizer struct {
 	outfitMembersLoader    loader.Keyed[ps2.OutfitId, []ps2.CharacterId]
 	outfitSyncAtLoader     loader.Keyed[ps2.OutfitId, time.Time]
 	trackableOutfitsLoader loader.Simple[[]ps2.OutfitId]
-	membersSaver           Saver
+	membersSaver           OutfitMembersSaver
 	refreshInterval        time.Duration
 	ticker                 *time.Ticker
 }
@@ -39,7 +37,7 @@ func New(
 	trackableOutfitsLoader loader.Simple[[]ps2.OutfitId],
 	outfitSyncAtLoader loader.Keyed[ps2.OutfitId, time.Time],
 	outfitMembersLoader loader.Keyed[ps2.OutfitId, []ps2.CharacterId],
-	membersSaver Saver,
+	membersSaver OutfitMembersSaver,
 	refreshInterval time.Duration,
 ) *OutfitMembersSynchronizer {
 	return &OutfitMembersSynchronizer{
@@ -59,7 +57,7 @@ func (s *OutfitMembersSynchronizer) Name() string {
 
 func (s *OutfitMembersSynchronizer) saveMembersTask(ctx context.Context, wg *sync.WaitGroup, outfitId ps2.OutfitId, members []ps2.CharacterId) {
 	defer wg.Done()
-	if err := s.membersSaver.Save(ctx, outfitId, members); err != nil {
+	if err := s.membersSaver(ctx, outfitId, members); err != nil {
 		s.log.Error(
 			ctx,
 			"failed to save members",
