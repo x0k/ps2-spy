@@ -8,11 +8,11 @@ env:
   if [ -d ~/Sync/ps2-spy ]
   then
     export DISCORD_TOKEN=$(cat ~/Sync/ps2-spy/test-token)
-    export PS2_CENSUS_SERVICE_ID=$(cat ~/Sync/ps2-spy/test-service)
+    export CENSUS_SERVICE_ID=$(cat ~/Sync/ps2-spy/test-service)
   fi
   export STORAGE_PATH=storage/storage.db
   export STORAGE_MIGRATIONS_PATH=db/migrations
-  export PS2_STREAMING_ENDPOINT=wss://push.nanite-systems.net/streaming
+  export STREAMING_ENDPOINT=wss://push.nanite-systems.net/streaming
 
 # Dev
 d: env
