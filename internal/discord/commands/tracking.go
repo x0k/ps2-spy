@@ -10,9 +10,16 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/stringsx"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
+	"golang.org/x/text/language"
 )
 
-type ChannelTrackingSettingsSaver = func(ctx context.Context, channelId discord.ChannelId, platform ps2_platforms.Platform, settings discord.TrackingSettings) error
+type ChannelTrackingSettingsSaver = func(
+	ctx context.Context,
+	channelId discord.ChannelId,
+	platform ps2_platforms.Platform,
+	settings discord.TrackingSettings,
+	lang language.Tag,
+) error
 
 func NewTracking(
 	messages *discord_messages.Messages,
@@ -61,6 +68,10 @@ func NewTracking(
 				}
 			}
 			channelId := discord.ChannelId(i.ChannelID)
+			langTag := discord.DEFAULT_LANG_TAG
+			if i.GuildLocale != nil {
+				langTag = discord.LangTagFromInteraction(i)
+			}
 			err = channelTrackingSettingsSaver(
 				ctx,
 				channelId,
@@ -69,6 +80,7 @@ func NewTracking(
 					Outfits:    outfitsIds,
 					Characters: charIds,
 				},
+				langTag,
 			)
 			if err != nil {
 				return messages.TrackingSettingsSaveError(channelId, platform, err)

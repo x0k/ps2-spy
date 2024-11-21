@@ -40,7 +40,7 @@ type PlatformQuery[T any] struct {
 
 var DEFAULT_LANG_TAG = language.English
 
-func langTagFromInteraction(i *discordgo.InteractionCreate) language.Tag {
+func LangTagFromInteraction(i *discordgo.InteractionCreate) language.Tag {
 	if t, err := language.Parse(string(i.Locale)); err == nil {
 		return t
 	}

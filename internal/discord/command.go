@@ -57,7 +57,7 @@ func DeferredEphemeralResponse(handle func(ctx context.Context, s *discordgo.Ses
 		if err != nil {
 			return err
 		}
-		data, customErr := handle(ctx, s, i)(message.NewPrinter(langTagFromInteraction(i)))
+		data, customErr := handle(ctx, s, i)(message.NewPrinter(LangTagFromInteraction(i)))
 		if customErr != nil {
 			if _, err := s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
 				Content: customErr.Msg,

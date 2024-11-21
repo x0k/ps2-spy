@@ -36,11 +36,11 @@ import (
 	sql_outfit_tracking_channels_loader "github.com/x0k/ps2-spy/internal/loaders/outfit_tracking_channels/sql"
 	census_outfits_loader "github.com/x0k/ps2-spy/internal/loaders/outfits/census"
 	characters_tracker_population_loader "github.com/x0k/ps2-spy/internal/loaders/population/characters_tracker"
-	sql_subscription_settings_loader "github.com/x0k/ps2-spy/internal/loaders/subscription_settings/sql"
 	sql_trackable_character_ids_loader "github.com/x0k/ps2-spy/internal/loaders/trackable_character_ids/sql"
 	characters_tracker_trackable_online_entities_loader "github.com/x0k/ps2-spy/internal/loaders/trackable_online_entities/characters_tracker"
 	sql_trackable_outfits_loader "github.com/x0k/ps2-spy/internal/loaders/trackable_outfits/sql"
 	sql_trackable_outfits_with_duplication_loader "github.com/x0k/ps2-spy/internal/loaders/trackable_outfits_with_duplication/sql"
+	sql_tracking_settings_loader "github.com/x0k/ps2-spy/internal/loaders/tracking_settings/sql"
 	census_world_map_loader "github.com/x0k/ps2-spy/internal/loaders/world_map/census"
 	characters_tracker_world_population_loader "github.com/x0k/ps2-spy/internal/loaders/world_population/characters_tracker"
 	worlds_tracker_world_territory_control_loader "github.com/x0k/ps2-spy/internal/loaders/world_territory_control/worlds_tracker"
@@ -329,18 +329,18 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	)
 	_ = facilityCache
 
-	subscriptionSettingsLoader := sql_subscription_settings_loader.New(
+	trackingSettingsLoader := sql_tracking_settings_loader.New(
 		storage,
 	)
 
 	trackableOnlineEntitiesLoader := characters_tracker_trackable_online_entities_loader.New(
-		subscriptionSettingsLoader,
+		trackingSettingsLoader,
 		charactersTrackers,
 	)
 
-	channelSubscriptionSettingsSaver := sql_tracking_settings_saver.New(
+	channelTrackingSettingsSaver := sql_tracking_settings_saver.New(
 		storage,
-		subscriptionSettingsLoader,
+		trackingSettingsLoader,
 	)
 
 	discordMessages := discord_messages.New()
@@ -362,7 +362,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		func(ctx context.Context, pq discord.PlatformQuery[[]ps2.OutfitId]) (map[ps2.OutfitId]ps2.Outfit, error) {
 			return outfitsLoaders[pq.Platform](ctx, pq.Value)
 		},
-		subscriptionSettingsLoader,
+		trackingSettingsLoader,
 		func(ctx context.Context, pq discord.PlatformQuery[[]ps2.CharacterId]) ([]string, error) {
 			return characterNamesLoaders[pq.Platform](ctx, pq.Value)
 		},
@@ -375,7 +375,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		func(ctx context.Context, pq discord.PlatformQuery[[]string]) ([]ps2.OutfitId, error) {
 			return outfitIdsLoaders[pq.Platform](ctx, pq.Value)
 		},
-		channelSubscriptionSettingsSaver,
+		channelTrackingSettingsSaver,
 		storage.SaveChannelLanguage,
 	)
 	m.Append(discordCommands)

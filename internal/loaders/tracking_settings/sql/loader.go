@@ -1,4 +1,4 @@
-package sql_subscription_settings_loader
+package sql_tracking_settings_loader
 
 import (
 	"context"

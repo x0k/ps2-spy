@@ -7,17 +7,19 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/loader"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 	sql_storage "github.com/x0k/ps2-spy/internal/storage/sql"
+	"golang.org/x/text/language"
 )
 
 func New(
 	storage *sql_storage.Storage,
 	settingsLoader loader.Keyed[discord.SettingsQuery, discord.TrackingSettings],
-) func(context.Context, discord.ChannelId, ps2_platforms.Platform, discord.TrackingSettings) error {
+) func(context.Context, discord.ChannelId, ps2_platforms.Platform, discord.TrackingSettings, language.Tag) error {
 	return func(
 		ctx context.Context,
 		channelId discord.ChannelId,
 		platform ps2_platforms.Platform,
 		settings discord.TrackingSettings,
+		lang language.Tag,
 	) error {
 		old, err := settingsLoader(ctx, discord.SettingsQuery{ChannelId: channelId, Platform: platform})
 		if err != nil {
@@ -45,6 +47,12 @@ func New(
 				}
 				for _, characterId := range diff.Characters.ToAdd {
 					if err := tx.SaveChannelCharacter(ctx, channelId, platform, characterId); err != nil {
+						return err
+					}
+				}
+				// Probably this is first settings update
+				if len(old.Characters) == 0 && len(old.Outfits) == 0 {
+					if err := tx.SaveChannelLanguage(ctx, channelId, lang); err != nil {
 						return err
 					}
 				}

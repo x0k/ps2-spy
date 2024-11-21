@@ -495,7 +495,7 @@
         {
             "id": "Language for this channel has been set to {String}",
             "message": "Language for this channel has been set to {String}",
-            "translation": "Язык для этого канала был установлен в {String}",
+            "translation": "Для этого канала был установлен язык {String}",
             "placeholders": [
                 {
                     "id": "String",
