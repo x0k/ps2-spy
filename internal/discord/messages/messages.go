@@ -113,6 +113,51 @@ func (m *Messages) CharacterLoadError(characterId ps2.CharacterId, err error) di
 	}
 }
 
+func (m *Messages) FacilityLoadError(facilityId ps2.FacilityId, err error) discord.Message {
+	return func(p *message.Printer) (string, *discord.Error) {
+		return "", &discord.Error{
+			Msg: p.Sprintf("Failed to load facility: %s", facilityId),
+			Err: err,
+		}
+	}
+}
+
+func (m *Messages) FacilityControl(
+	worldId ps2.WorldId,
+	outfit ps2.Outfit,
+	facility ps2.Facility,
+) discord.Message {
+	return func(p *message.Printer) (string, *discord.Error) {
+		return p.Sprintf(
+			"%s [%s] captured %s (%s) on %s (%s)",
+			outfit.Name,
+			outfit.Tag,
+			facility.Name,
+			facility.Type,
+			ps2.ZoneNameById(facility.ZoneId),
+			ps2.WorldNameById(worldId),
+		), nil
+	}
+}
+
+func (m *Messages) FacilityLoss(
+	worldId ps2.WorldId,
+	outfit ps2.Outfit,
+	facility ps2.Facility,
+) discord.Message {
+	return func(p *message.Printer) (string, *discord.Error) {
+		return p.Sprintf(
+			"%s [%s] lost %s (%s) on %s (%s)",
+			outfit.Name,
+			outfit.Tag,
+			facility.Name,
+			facility.Type,
+			ps2.ZoneNameById(facility.ZoneId),
+			ps2.WorldNameById(worldId),
+		), nil
+	}
+}
+
 func (m *Messages) About() discord.Edit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
 		content := p.Sprintf(`# PlanetSide 2 Spy

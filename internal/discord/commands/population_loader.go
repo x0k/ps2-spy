@@ -31,7 +31,7 @@ func newPopulationLoader(
 		time.Hour,
 	)
 	fallbackLoader := loader.NewFallback(fallbacks)
-	cached := loader.WithQueriedCache(
+	cached := loader.WithKeyedCache(
 		log.Logger.With(sl.Component("population_loader_cache")),
 		func(ctx context.Context, provider string) (meta.Loaded[ps2.WorldsPopulation], error) {
 			if loader, ok := loaders[provider]; ok {
@@ -49,7 +49,7 @@ func newPopulationLoader(
 	)
 	return &populationLoader{
 		fallbacks: fallbacks,
-		load:      loader.Keyed[string, meta.Loaded[ps2.WorldsPopulation]](cached),
+		load:      cached,
 	}
 }
 

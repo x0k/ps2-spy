@@ -142,6 +142,72 @@
             ]
         },
         {
+            "id": "Failed to load outfit: {OutfitId} ({Platform})",
+            "message": "Failed to load outfit: {OutfitId} ({Platform})",
+            "translation": "Ошибка загрузки аутфита: {OutfitId} ({Platform})",
+            "placeholders": [
+                {
+                    "id": "OutfitId",
+                    "string": "%[1]s",
+                    "type": "github.com/x0k/ps2-spy/internal/ps2.OutfitId",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "outfitId"
+                },
+                {
+                    "id": "Platform",
+                    "string": "%[2]s",
+                    "type": "github.com/x0k/ps2-spy/internal/ps2/platforms.Platform",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "platform"
+                }
+            ]
+        },
+        {
+            "id": "Failed to load characters: {CharacterIds} ({Platform})",
+            "message": "Failed to load characters: {CharacterIds} ({Platform})",
+            "translation": "Ошибка загрузки персонажей: {CharacterIds} ({Platform})",
+            "placeholders": [
+                {
+                    "id": "CharacterIds",
+                    "string": "%[1]v",
+                    "type": "[]github.com/x0k/ps2-spy/internal/ps2.CharacterId",
+                    "underlyingType": "[]github.com/x0k/ps2-spy/internal/ps2.CharacterId",
+                    "argNum": 1,
+                    "expr": "characterIds"
+                },
+                {
+                    "id": "Platform",
+                    "string": "%[2]s",
+                    "type": "github.com/x0k/ps2-spy/internal/ps2/platforms.Platform",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "platform"
+                }
+            ]
+        },
+        {
+            "id": "Update of",
+            "message": "Update of",
+            "translation": "Обновление"
+        },
+        {
+            "id": "] outfit members:",
+            "message": "] outfit members:",
+            "translation": "] члены аутфита:"
+        },
+        {
+            "id": "**Welcome to the outfit:**",
+            "message": "**Welcome to the outfit:**",
+            "translation": "**Добро пожаловать в аутфит:**"
+        },
+        {
+            "id": "**Left the outfit:**",
+            "message": "**Left the outfit:**",
+            "translation": "**Покинули аутфит:**"
+        },
+        {
             "id": "Failed to load character: {CharacterId}",
             "message": "Failed to load character: {CharacterId}",
             "translation": "Ошибка загрузки персонажа: {CharacterId}",
@@ -153,6 +219,131 @@
                     "underlyingType": "string",
                     "argNum": 1,
                     "expr": "characterId"
+                }
+            ]
+        },
+        {
+            "id": "Failed to load facility: {FacilityId}",
+            "message": "Failed to load facility: {FacilityId}",
+            "translation": "Ошибка загрузки объекта: {FacilityId}",
+            "placeholders": [
+                {
+                    "id": "FacilityId",
+                    "string": "%[1]s",
+                    "type": "github.com/x0k/ps2-spy/internal/ps2.FacilityId",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "facilityId"
+                }
+            ]
+        },
+        {
+            "id": "{Name} [{Tag}] captured {Name_1} ({Type}) on {ZoneId} ({WorldNameByIdworldId})",
+            "message": "{Name} [{Tag}] captured {Name_1} ({Type}) on {ZoneId} ({WorldNameByIdworldId})",
+            "translation": "{Name} [{Tag}] захватил {Name_1} ({Type}) в {ZoneId} ({WorldNameByIdworldId})",
+            "placeholders": [
+                {
+                    "id": "Name",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "outfit.Name"
+                },
+                {
+                    "id": "Tag",
+                    "string": "%[2]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "outfit.Tag"
+                },
+                {
+                    "id": "Name_1",
+                    "string": "%[3]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 3,
+                    "expr": "facility.Name"
+                },
+                {
+                    "id": "Type",
+                    "string": "%[4]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 4,
+                    "expr": "facility.Type"
+                },
+                {
+                    "id": "ZoneId",
+                    "string": "%[5]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 5,
+                    "expr": "ps2.ZoneNameById(facility.ZoneId)"
+                },
+                {
+                    "id": "WorldNameByIdworldId",
+                    "string": "%[6]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 6,
+                    "expr": "ps2.WorldNameById(worldId)"
+                }
+            ]
+        },
+        {
+            "id": "{Name} [{Tag}] lost {Name_1} ({Type}) on {ZoneId} ({WorldNameByIdworldId})",
+            "message": "{Name} [{Tag}] lost {Name_1} ({Type}) on {ZoneId} ({WorldNameByIdworldId})",
+            "translation": "{Name} [{Tag}] потерял {Name_1} ({Type}) в {ZoneId} ({WorldNameByIdworldId})",
+            "placeholders": [
+                {
+                    "id": "Name",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "outfit.Name"
+                },
+                {
+                    "id": "Tag",
+                    "string": "%[2]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "outfit.Tag"
+                },
+                {
+                    "id": "Name_1",
+                    "string": "%[3]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 3,
+                    "expr": "facility.Name"
+                },
+                {
+                    "id": "Type",
+                    "string": "%[4]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 4,
+                    "expr": "facility.Type"
+                },
+                {
+                    "id": "ZoneId",
+                    "string": "%[5]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 5,
+                    "expr": "ps2.ZoneNameById(facility.ZoneId)"
+                },
+                {
+                    "id": "WorldNameByIdworldId",
+                    "string": "%[6]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 6,
+                    "expr": "ps2.WorldNameById(worldId)"
                 }
             ]
         },

@@ -150,6 +150,84 @@
             "fuzzy": true
         },
         {
+            "id": "Failed to load outfit: {OutfitId} ({Platform})",
+            "message": "Failed to load outfit: {OutfitId} ({Platform})",
+            "translation": "Failed to load outfit: {OutfitId} ({Platform})",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "OutfitId",
+                    "string": "%[1]s",
+                    "type": "github.com/x0k/ps2-spy/internal/ps2.OutfitId",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "outfitId"
+                },
+                {
+                    "id": "Platform",
+                    "string": "%[2]s",
+                    "type": "github.com/x0k/ps2-spy/internal/ps2/platforms.Platform",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "platform"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "Failed to load characters: {CharacterIds} ({Platform})",
+            "message": "Failed to load characters: {CharacterIds} ({Platform})",
+            "translation": "Failed to load characters: {CharacterIds} ({Platform})",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "CharacterIds",
+                    "string": "%[1]v",
+                    "type": "[]github.com/x0k/ps2-spy/internal/ps2.CharacterId",
+                    "underlyingType": "[]github.com/x0k/ps2-spy/internal/ps2.CharacterId",
+                    "argNum": 1,
+                    "expr": "characterIds"
+                },
+                {
+                    "id": "Platform",
+                    "string": "%[2]s",
+                    "type": "github.com/x0k/ps2-spy/internal/ps2/platforms.Platform",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "platform"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "Update of",
+            "message": "Update of",
+            "translation": "Update of",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "] outfit members:",
+            "message": "] outfit members:",
+            "translation": "] outfit members:",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "**Welcome to the outfit:**",
+            "message": "**Welcome to the outfit:**",
+            "translation": "**Welcome to the outfit:**",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "**Left the outfit:**",
+            "message": "**Left the outfit:**",
+            "translation": "**Left the outfit:**",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
             "id": "Failed to load character: {CharacterId}",
             "message": "Failed to load character: {CharacterId}",
             "translation": "Failed to load character: {CharacterId}",
@@ -162,6 +240,137 @@
                     "underlyingType": "string",
                     "argNum": 1,
                     "expr": "characterId"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "Failed to load facility: {FacilityId}",
+            "message": "Failed to load facility: {FacilityId}",
+            "translation": "Failed to load facility: {FacilityId}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "FacilityId",
+                    "string": "%[1]s",
+                    "type": "github.com/x0k/ps2-spy/internal/ps2.FacilityId",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "facilityId"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "{Name} [{Tag}] captured {Name_1} ({Type}) on {ZoneId} ({WorldNameByIdworldId})",
+            "message": "{Name} [{Tag}] captured {Name_1} ({Type}) on {ZoneId} ({WorldNameByIdworldId})",
+            "translation": "{Name} [{Tag}] captured {Name_1} ({Type}) on {ZoneId} ({WorldNameByIdworldId})",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Name",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "outfit.Name"
+                },
+                {
+                    "id": "Tag",
+                    "string": "%[2]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "outfit.Tag"
+                },
+                {
+                    "id": "Name_1",
+                    "string": "%[3]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 3,
+                    "expr": "facility.Name"
+                },
+                {
+                    "id": "Type",
+                    "string": "%[4]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 4,
+                    "expr": "facility.Type"
+                },
+                {
+                    "id": "ZoneId",
+                    "string": "%[5]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 5,
+                    "expr": "ps2.ZoneNameById(facility.ZoneId)"
+                },
+                {
+                    "id": "WorldNameByIdworldId",
+                    "string": "%[6]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 6,
+                    "expr": "ps2.WorldNameById(worldId)"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "{Name} [{Tag}] lost {Name_1} ({Type}) on {ZoneId} ({WorldNameByIdworldId})",
+            "message": "{Name} [{Tag}] lost {Name_1} ({Type}) on {ZoneId} ({WorldNameByIdworldId})",
+            "translation": "{Name} [{Tag}] lost {Name_1} ({Type}) on {ZoneId} ({WorldNameByIdworldId})",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Name",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "outfit.Name"
+                },
+                {
+                    "id": "Tag",
+                    "string": "%[2]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "outfit.Tag"
+                },
+                {
+                    "id": "Name_1",
+                    "string": "%[3]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 3,
+                    "expr": "facility.Name"
+                },
+                {
+                    "id": "Type",
+                    "string": "%[4]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 4,
+                    "expr": "facility.Type"
+                },
+                {
+                    "id": "ZoneId",
+                    "string": "%[5]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 5,
+                    "expr": "ps2.ZoneNameById(facility.ZoneId)"
+                },
+                {
+                    "id": "WorldNameByIdworldId",
+                    "string": "%[6]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 6,
+                    "expr": "ps2.WorldNameById(worldId)"
                 }
             ],
             "fuzzy": true

@@ -29,6 +29,7 @@ import (
 	census_character_names_loader "github.com/x0k/ps2-spy/internal/loaders/character_names/census"
 	sql_character_tracking_channels_loader "github.com/x0k/ps2-spy/internal/loaders/character_tracking_channels/sql"
 	census_characters_loader "github.com/x0k/ps2-spy/internal/loaders/characters/census"
+	census_facility_loader "github.com/x0k/ps2-spy/internal/loaders/facility/census"
 	census_outfit_ids_loader "github.com/x0k/ps2-spy/internal/loaders/outfit_ids/census"
 	census_outfit_member_ids_loader "github.com/x0k/ps2-spy/internal/loaders/outfit_member_ids/census"
 	sql_outfit_member_ids_loader "github.com/x0k/ps2-spy/internal/loaders/outfit_member_ids/sql"
@@ -99,6 +100,11 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		storage,
 	)
 
+	facilityCache := sql_facility_cache.New(
+		log.With(sl.Component("facility_cache")),
+		storage,
+	)
+
 	characterTrackerSubsMangers := make(map[ps2_platforms.Platform]pubsub.SubscriptionsManager[characters_tracker.EventType], len(ps2_platforms.Platforms))
 	charactersTrackers := make(map[ps2_platforms.Platform]*characters_tracker.CharactersTracker, len(ps2_platforms.Platforms))
 	worldTrackers := make(map[ps2_platforms.Platform]*worlds_tracker.WorldsTracker, len(ps2_platforms.Platforms))
@@ -112,6 +118,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	characterIdsLoaders := make(map[ps2_platforms.Platform]loader.Queried[[]string, []ps2.CharacterId], len(ps2_platforms.Platforms))
 	outfitTagsLoaders := make(map[ps2_platforms.Platform]loader.Queried[[]ps2.OutfitId, []string], len(ps2_platforms.Platforms))
 	outfitIdsLoaders := make(map[ps2_platforms.Platform]loader.Queried[[]string, []ps2.OutfitId], len(ps2_platforms.Platforms))
+	facilityLoaders := make(map[ps2_platforms.Platform]loader.Keyed[ps2.FacilityId, ps2.Facility], len(ps2_platforms.Platforms))
 
 	for _, platform := range ps2_platforms.Platforms {
 		pl := log.With(slog.String("platform", string(platform)))
@@ -308,6 +315,12 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		// TODO: Use outfits cache
 		outfitTagsLoaders[platform] = census_outfit_tags_loader.New(censusClient, ns).Load
 		outfitIdsLoaders[platform] = census_outfit_ids_loader.New(censusClient, ns).Load
+
+		facilityLoaders[platform] = loader.WithKeyedCache(
+			log.Logger.With(sl.Component("facilities_loader_cache")),
+			census_facility_loader.NewCensus(censusClient, ns).Load,
+			facilityCache,
+		)
 	}
 
 	m.Append(newStorageEventsSubscriptionService(
@@ -340,12 +353,6 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			worldTrackers,
 		),
 	}
-
-	facilityCache := sql_facility_cache.New(
-		log.With(sl.Component("facility_cache")),
-		storage,
-	)
-	_ = facilityCache
 
 	trackingSettingsLoader := sql_tracking_settings_loader.New(
 		storage,
@@ -412,6 +419,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			characterLoaders,
 			outfitLoaders,
 			charactersLoaders,
+			facilityLoaders,
 		),
 	)
 	if err != nil {

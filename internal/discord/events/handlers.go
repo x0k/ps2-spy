@@ -15,6 +15,7 @@ func NewHandlers(
 	characterLoaders map[ps2_platforms.Platform]loader.Keyed[ps2.CharacterId, ps2.Character],
 	outfitLoaders map[ps2_platforms.Platform]loader.Keyed[ps2.OutfitId, ps2.Outfit],
 	charactersLoaders map[ps2_platforms.Platform]loader.Multi[ps2.CharacterId, ps2.Character],
+	facilityLoaders map[ps2_platforms.Platform]loader.Keyed[ps2.FacilityId, ps2.Facility],
 ) map[EventType]HandlerFactory {
 	return map[EventType]HandlerFactory{
 		PlayerLoginType: NewLoginHandlerFactory(
@@ -30,6 +31,16 @@ func NewHandlers(
 			messages,
 			outfitLoaders,
 			charactersLoaders,
+		),
+		FacilityControlType: NewFacilityControlHandlerFactory(
+			messages,
+			outfitLoaders,
+			facilityLoaders,
+		),
+		FacilityLossType: NewFacilityLossHandlerFactory(
+			messages,
+			outfitLoaders,
+			facilityLoaders,
 		),
 	}
 }

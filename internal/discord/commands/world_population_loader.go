@@ -49,7 +49,7 @@ func newWorldPopulationLoader(
 	)
 	return &worldPopulationLoader{
 		fallbacks: fallbacks,
-		load:      loader.Queried[query[ps2.WorldId], meta.Loaded[ps2.DetailedWorldPopulation]](cached),
+		load:      cached,
 	}
 }
 

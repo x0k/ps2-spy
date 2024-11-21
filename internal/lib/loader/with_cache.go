@@ -59,6 +59,14 @@ func WithQueriedCache[K any, T any](
 	}
 }
 
+func WithKeyedCache[K comparable, T any](
+	log *slog.Logger,
+	loader Keyed[K, T],
+	cache cache.Keyed[K, T],
+) Keyed[K, T] {
+	return Keyed[K, T](WithQueriedCache(log, Queried[K, T](loader), cache))
+}
+
 func WithMultiCache[K comparable, T any](
 	log *slog.Logger,
 	loader Multi[K, T],
