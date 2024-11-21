@@ -35,7 +35,12 @@ func New(
 
 	rawEventsPublisher := events.NewPublisher(reLoginOmitter)
 
-	serviceMessagePayloadPublisher := newServiceMessagePayloadPublisher(rawEventsPublisher)
+	serviceMessagePayloadPublisher := metrics.InstrumentPlatformPublisher(
+		mt,
+		metrics.Ps2MessagesPlatformPublisher,
+		platform,
+		newServiceMessagePayloadPublisher(rawEventsPublisher),
+	)
 
 	streamingPublisher := streaming.NewPublisher(serviceMessagePayloadPublisher)
 
