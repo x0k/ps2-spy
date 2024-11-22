@@ -8,10 +8,17 @@ import (
 	"time"
 
 	"github.com/hashicorp/golang-lru/v2/expirable"
-	loader_adapters "github.com/x0k/ps2-spy/internal/adapters/loader"
 	sql_facility_cache "github.com/x0k/ps2-spy/internal/cache/facility/sql"
 	sql_outfits_cache "github.com/x0k/ps2-spy/internal/cache/outfits/sql"
 	"github.com/x0k/ps2-spy/internal/characters_tracker"
+	census_data_provider "github.com/x0k/ps2-spy/internal/data_providers/census"
+	fisu_data_provider "github.com/x0k/ps2-spy/internal/data_providers/fisu"
+	honu_data_provider "github.com/x0k/ps2-spy/internal/data_providers/honu"
+	ps2alerts_data_provider "github.com/x0k/ps2-spy/internal/data_providers/ps2alerts"
+	ps2live_data_provider "github.com/x0k/ps2-spy/internal/data_providers/ps2live"
+	saerro_data_provider "github.com/x0k/ps2-spy/internal/data_providers/saerro"
+	sanctuary_data_provider "github.com/x0k/ps2-spy/internal/data_providers/sanctuary"
+	voidwell_data_provider "github.com/x0k/ps2-spy/internal/data_providers/voidwell"
 	"github.com/x0k/ps2-spy/internal/discord"
 	discord_commands "github.com/x0k/ps2-spy/internal/discord/commands"
 	discord_events "github.com/x0k/ps2-spy/internal/discord/events"
@@ -30,33 +37,6 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/ps2live/saerro"
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
 	"github.com/x0k/ps2-spy/internal/lib/voidwell"
-	census_alerts_loader "github.com/x0k/ps2-spy/internal/loaders/alerts/census"
-	honu_alerts_loader "github.com/x0k/ps2-spy/internal/loaders/alerts/honu"
-	ps2alerts_alerts_loader "github.com/x0k/ps2-spy/internal/loaders/alerts/ps2alerts"
-	voidwell_alerts_loader "github.com/x0k/ps2-spy/internal/loaders/alerts/voidwell"
-	worlds_tracker_alerts_loader "github.com/x0k/ps2-spy/internal/loaders/alerts/worlds_tracker"
-	census_character_ids_loader "github.com/x0k/ps2-spy/internal/loaders/character_ids/census"
-	census_character_names_loader "github.com/x0k/ps2-spy/internal/loaders/character_names/census"
-	census_characters_loader "github.com/x0k/ps2-spy/internal/loaders/characters/census"
-	census_facility_loader "github.com/x0k/ps2-spy/internal/loaders/facility/census"
-	census_outfit_ids_loader "github.com/x0k/ps2-spy/internal/loaders/outfit_ids/census"
-	census_outfit_member_ids_loader "github.com/x0k/ps2-spy/internal/loaders/outfit_member_ids/census"
-	census_outfit_tags_loader "github.com/x0k/ps2-spy/internal/loaders/outfit_tags/census"
-	census_outfits_loader "github.com/x0k/ps2-spy/internal/loaders/outfits/census"
-	characters_tracker_population_loader "github.com/x0k/ps2-spy/internal/loaders/population/characters_tracker"
-	fisu_population_loader "github.com/x0k/ps2-spy/internal/loaders/population/fisu"
-	honu_population_loader "github.com/x0k/ps2-spy/internal/loaders/population/honu"
-	ps2live_population_loader "github.com/x0k/ps2-spy/internal/loaders/population/ps2live"
-	saerro_population_loader "github.com/x0k/ps2-spy/internal/loaders/population/saerro"
-	sanctuary_population_loader "github.com/x0k/ps2-spy/internal/loaders/population/sanctuary"
-	voidwell_population_loader "github.com/x0k/ps2-spy/internal/loaders/population/voidwell"
-	characters_tracker_trackable_online_entities_loader "github.com/x0k/ps2-spy/internal/loaders/trackable_online_entities/characters_tracker"
-	census_world_map_loader "github.com/x0k/ps2-spy/internal/loaders/world_map/census"
-	characters_tracker_world_population_loader "github.com/x0k/ps2-spy/internal/loaders/world_population/characters_tracker"
-	honu_world_population_loader "github.com/x0k/ps2-spy/internal/loaders/world_population/honu"
-	saerro_world_population_loader "github.com/x0k/ps2-spy/internal/loaders/world_population/saerro"
-	voidwell_world_population_loader "github.com/x0k/ps2-spy/internal/loaders/world_population/voidwell"
-	worlds_tracker_world_territory_control_loader "github.com/x0k/ps2-spy/internal/loaders/world_territory_control/worlds_tracker"
 	"github.com/x0k/ps2-spy/internal/meta"
 	"github.com/x0k/ps2-spy/internal/metrics"
 	discord_module "github.com/x0k/ps2-spy/internal/modules/discord"
@@ -103,14 +83,31 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		),
 	}
 
-	honuClient := honu.NewClient("https://wt.honu.pw", httpClient)
-	fisuClient := fisu.NewClient("https://ps2.fisu.pw", httpClient)
-	voidWellClient := voidwell.NewClient("https://api.voidwell.com", httpClient)
-	populationClient := population.NewClient("https://agg.ps2.live", httpClient)
-	saerroClient := saerro.NewClient("https://saerro.ps2.live", httpClient)
-	ps2alertsClient := ps2alerts.NewClient("https://api.ps2alerts.com", httpClient)
-	censusClient := census2.NewClient("https://census.daybreakgames.com", cfg.CensusServiceId, httpClient)
-	sanctuaryClient := census2.NewClient("https://census.lithafalcon.cc", cfg.CensusServiceId, httpClient)
+	censusDataProvider := census_data_provider.New(
+		log.With(sl.Component("census_data_provider")),
+		census2.NewClient("https://census.daybreakgames.com", cfg.CensusServiceId, httpClient),
+	)
+	honuDataProvider := honu_data_provider.New(
+		honu.NewClient("https://wt.honu.pw", httpClient),
+	)
+	ps2alertsDataProvider := ps2alerts_data_provider.New(
+		ps2alerts.NewClient("https://api.ps2alerts.com", httpClient),
+	)
+	voidwellDataProvider := voidwell_data_provider.New(
+		voidwell.NewClient("https://api.voidwell.com", httpClient),
+	)
+	fisuDataProvider := fisu_data_provider.New(
+		fisu.NewClient("https://ps2.fisu.pw", httpClient),
+	)
+	ps2LiveDataProvider := ps2live_data_provider.New(
+		population.NewClient("https://agg.ps2.live", httpClient),
+	)
+	sanctuaryDataProvider := sanctuary_data_provider.New(
+		census2.NewClient("https://census.lithafalcon.cc", cfg.CensusServiceId, httpClient),
+	)
+	saerroDataProvider := saerro_data_provider.New(
+		saerro.NewClient("https://saerro.ps2.live", httpClient),
+	)
 
 	facilityCache := sql_facility_cache.New(
 		log.With(sl.Component("facility_cache")),
@@ -127,10 +124,6 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	characterLoaders := make(map[ps2_platforms.Platform]loader.Keyed[ps2.CharacterId, ps2.Character], len(ps2_platforms.Platforms))
 	outfitsLoaders := make(map[ps2_platforms.Platform]loader.Multi[ps2.OutfitId, ps2.Outfit], len(ps2_platforms.Platforms))
 	outfitLoaders := make(map[ps2_platforms.Platform]loader.Keyed[ps2.OutfitId, ps2.Outfit], len(ps2_platforms.Platforms))
-	characterNamesLoaders := make(map[ps2_platforms.Platform]loader.Queried[[]ps2.CharacterId, []string], len(ps2_platforms.Platforms))
-	characterIdsLoaders := make(map[ps2_platforms.Platform]loader.Queried[[]string, []ps2.CharacterId], len(ps2_platforms.Platforms))
-	outfitTagsLoaders := make(map[ps2_platforms.Platform]loader.Queried[[]ps2.OutfitId, []string], len(ps2_platforms.Platforms))
-	outfitIdsLoaders := make(map[ps2_platforms.Platform]loader.Queried[[]string, []ps2.OutfitId], len(ps2_platforms.Platforms))
 	facilityLoaders := make(map[ps2_platforms.Platform]loader.Keyed[ps2.FacilityId, ps2.Facility], len(ps2_platforms.Platforms))
 
 	for _, platform := range ps2_platforms.Platforms {
@@ -140,7 +133,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		eventsPubSub := pubsub.New[events.EventType]()
 
 		eventsModule, err := events_module.New(
-			pl.With(sl.Module(fmt.Sprintf("ps2.%s.events", platform))),
+			pl.With(sl.Module("events")),
 			platform,
 			cfg.StreamingEndpoint,
 			cfg.CensusServiceId,
@@ -154,11 +147,9 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 
 		charactersLoader := metrics.InstrumentMultiKeyedLoaderWithSubjectsCounter(
 			metrics.PlatformLoaderSubjectsCounterMetric(mt, metrics.CharactersPlatformLoaderName, platform),
-			census_characters_loader.New(
-				pl.With(sl.Component("characters_loader"), slog.String("platform", string(platform))),
-				censusClient,
-				platform,
-			).Load,
+			func(ctx context.Context, k []ps2.CharacterId) (map[ps2.CharacterId]ps2.Character, error) {
+				return censusDataProvider.Characters(ctx, platform, k)
+			},
 		)
 
 		charactersCache := expirable.NewLRU[ps2.CharacterId, ps2.Character](0, nil, 24*time.Hour)
@@ -170,7 +161,13 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		charactersLoaders[platform] = cachedCharactersLoader
 
 		batchedCharactersLoader := loader.WithBatching(cachedCharactersLoader, 10*time.Second)
-		m.Append(loader_adapters.NewBatchingService("batched_characters_loader", batchedCharactersLoader))
+		m.Append(module.NewService(
+			fmt.Sprintf("%s.batched_characters_loader", platform),
+			func(ctx context.Context) error {
+				batchedCharactersLoader.Start(ctx)
+				return nil
+			},
+		))
 
 		cachedBatchedCharactersLoader := loader.Keyed[ps2.CharacterId, ps2.Character](
 			loader.WithQueriedCache(
@@ -214,17 +211,16 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			worldsTrackerPubSub,
 		)
 		worldTrackerSubsMangers[platform] = worldsTrackerPubSub
-		worldMapLoader := census_world_map_loader.New(
-			censusClient,
-			platform,
-		)
+
 		worldsTracker := worlds_tracker.New(
 			fmt.Sprintf("%s.worlds_tracker", platform),
 			pl.With(sl.Component("worlds_tracker")),
 			platform,
 			5*time.Minute,
 			worldsTackerPublisher,
-			worldMapLoader.Load,
+			func(ctx context.Context, wi ps2.WorldId) (ps2.WorldMap, error) {
+				return censusDataProvider.WorldMap(ctx, ns, wi)
+			},
 		)
 		m.Append(worldsTracker)
 		worldTrackers[platform] = worldsTracker
@@ -261,11 +257,6 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		m.Append(trackingManager)
 		trackingManagers[platform] = trackingManager
 
-		censusOutfitMemberIdsLoader := census_outfit_member_ids_loader.New(
-			censusClient,
-			ns,
-		)
-
 		outfitMembersSynchronizer := outfit_members_synchronizer.New(
 			fmt.Sprintf("%s.outfit_members_synchronizer", platform),
 			pl.With(sl.Component("outfit_members_synchronizer")),
@@ -275,7 +266,9 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			func(ctx context.Context, oi ps2.OutfitId) (time.Time, error) {
 				return storage.OutfitSynchronizedAt(ctx, platform, oi)
 			},
-			censusOutfitMemberIdsLoader.Load,
+			func(ctx context.Context, oi ps2.OutfitId) ([]ps2.CharacterId, error) {
+				return censusDataProvider.OutfitMemberIds(ctx, ns, oi)
+			},
 			func(ctx context.Context, outfitId ps2.OutfitId, members []ps2.CharacterId) error {
 				return storage.SaveOutfitMembers(ctx, platform, outfitId, members)
 			},
@@ -286,7 +279,9 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 
 		outfitsLoader := loader.WithMultiCache(
 			log.Logger.With(sl.Component("outfits_loader_cache")),
-			census_outfits_loader.New(censusClient, platform).Load,
+			func(ctx context.Context, k []ps2.OutfitId) (map[ps2.OutfitId]ps2.Outfit, error) {
+				return censusDataProvider.Outfits(ctx, platform, k)
+			},
 			sql_outfits_cache.New(
 				log.With(sl.Component("outfits_cache")),
 				storage,
@@ -303,16 +298,11 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			return outfit[oi], nil
 		}
 
-		// TODO: Use characters cache
-		characterNamesLoaders[platform] = census_character_names_loader.New(censusClient, ns).Load
-		characterIdsLoaders[platform] = census_character_ids_loader.New(censusClient, ns).Load
-		// TODO: Use outfits cache
-		outfitTagsLoaders[platform] = census_outfit_tags_loader.New(censusClient, ns).Load
-		outfitIdsLoaders[platform] = census_outfit_ids_loader.New(censusClient, ns).Load
-
 		facilityLoaders[platform] = loader.WithKeyedCache(
 			log.Logger.With(sl.Component("facilities_loader_cache")),
-			census_facility_loader.New(censusClient, ns).Load,
+			func(ctx context.Context, id ps2.FacilityId) (ps2.Facility, error) {
+				return censusDataProvider.Facility(ctx, ns, id)
+			},
 			facilityCache,
 		)
 	}
@@ -326,48 +316,67 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	))
 
 	populationLoaders := map[string]loader.Simple[meta.Loaded[ps2.WorldsPopulation]]{
-		"spy": characters_tracker_population_loader.New(
-			log.With(sl.Component("characters_tracker_population_loader")),
-			cfg.AppName,
-			charactersTrackers,
-		),
-		"honu":      honu_population_loader.New(honuClient),
-		"ps2live":   ps2live_population_loader.New(populationClient),
-		"saerro":    saerro_population_loader.New(saerroClient),
-		"fisu":      fisu_population_loader.New(fisuClient),
-		"sanctuary": sanctuary_population_loader.New(sanctuaryClient),
-		"voidwell":  voidwell_population_loader.New(voidWellClient),
+		"spy": func(ctx context.Context) (meta.Loaded[ps2.WorldsPopulation], error) {
+			total := 0
+			worlds := make([]ps2.WorldPopulation, 0)
+			for _, platform := range ps2_platforms.Platforms {
+				tracker, ok := charactersTrackers[platform]
+				if !ok {
+					log.Warn(ctx, "no population tracker for platform", slog.String("platform", string(platform)))
+					continue
+				}
+				population := tracker.WorldsPopulation()
+				total += population.Total
+				worlds = append(worlds, population.Worlds...)
+			}
+			return meta.LoadedNow(cfg.AppName, ps2.WorldsPopulation{
+				Total:  total,
+				Worlds: worlds,
+			}), nil
+		},
+		"honu":      honuDataProvider.Population,
+		"ps2live":   ps2LiveDataProvider.Population,
+		"saerro":    saerroDataProvider.Population,
+		"fisu":      fisuDataProvider.Population,
+		"sanctuary": sanctuaryDataProvider.Population,
+		"voidwell":  voidwellDataProvider.Population,
 	}
 
 	worldPopulationLoaders := map[string]loader.Keyed[ps2.WorldId, meta.Loaded[ps2.DetailedWorldPopulation]]{
-		"spy": characters_tracker_world_population_loader.New(
-			cfg.AppName,
-			charactersTrackers,
-		),
-		"honu":     honu_world_population_loader.New(honuClient),
-		"saerro":   saerro_world_population_loader.New(saerroClient),
-		"voidwell": voidwell_world_population_loader.New(voidWellClient),
+		"spy": func(ctx context.Context, worldId ps2.WorldId) (meta.Loaded[ps2.DetailedWorldPopulation], error) {
+			platform, ok := ps2.WorldPlatforms[worldId]
+			if !ok {
+				return meta.Loaded[ps2.DetailedWorldPopulation]{}, fmt.Errorf("unknown world %q", worldId)
+			}
+			population, err := charactersTrackers[platform].DetailedWorldPopulation(worldId)
+			if err != nil {
+				return meta.Loaded[ps2.DetailedWorldPopulation]{}, fmt.Errorf("getting population: %w", err)
+			}
+			return meta.LoadedNow(cfg.AppName, population), nil
+		},
+		"honu":     honuDataProvider.WorldPopulation,
+		"saerro":   saerroDataProvider.WorldPopulation,
+		"voidwell": voidwellDataProvider.WorldPopulation,
 	}
 
 	alertsLoaders := map[string]loader.Simple[meta.Loaded[ps2.Alerts]]{
-		"spy": worlds_tracker_alerts_loader.New(
-			log.With(sl.Component("worlds_tracker_alerts_loader")),
-			cfg.AppName,
-			worldTrackers,
-		),
-		"ps2alerts": ps2alerts_alerts_loader.New(ps2alertsClient),
-		"honu":      honu_alerts_loader.New(honuClient),
-		"census": census_alerts_loader.New(
-			log.With(sl.Component("census_alerts_loader")),
-			censusClient,
-		),
-		"voidwell": voidwell_alerts_loader.New(voidWellClient),
+		"spy": func(ctx context.Context) (meta.Loaded[ps2.Alerts], error) {
+			alerts := make(ps2.Alerts, 0)
+			for _, platform := range ps2_platforms.Platforms {
+				tracker, ok := worldTrackers[platform]
+				if !ok {
+					log.Warn(ctx, "no alerts tracker for platform", slog.String("platform", string(platform)))
+					continue
+				}
+				alerts = append(alerts, tracker.Alerts()...)
+			}
+			return meta.LoadedNow(cfg.AppName, alerts), nil
+		},
+		"ps2alerts": ps2alertsDataProvider.Alerts,
+		"honu":      honuDataProvider.Alerts,
+		"census":    censusDataProvider.Alerts,
+		"voidwell":  voidwellDataProvider.Alerts,
 	}
-
-	trackableOnlineEntitiesLoader := characters_tracker_trackable_online_entities_loader.New(
-		storage.TrackingSettings,
-		charactersTrackers,
-	)
 
 	discordMessages := discord_messages.New()
 	discordCommands := discord_commands.New(
@@ -378,28 +387,41 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		[]string{"spy", "honu", "ps2live", "saerro", "fisu", "sanctuary", "voidwell"},
 		worldPopulationLoaders,
 		[]string{"spy", "honu", "saerro", "voidwell"},
-		worlds_tracker_world_territory_control_loader.New(
-			cfg.AppName,
-			worldTrackers,
-		),
+		func(ctx context.Context, worldId ps2.WorldId) (meta.Loaded[ps2.WorldTerritoryControl], error) {
+			platform, ok := ps2.WorldPlatforms[worldId]
+			if !ok {
+				return meta.Loaded[ps2.WorldTerritoryControl]{}, fmt.Errorf("unknown world %q", worldId)
+			}
+			control, err := worldTrackers[platform].WorldTerritoryControl(ctx, worldId)
+			if err != nil {
+				return meta.Loaded[ps2.WorldTerritoryControl]{}, err
+			}
+			return meta.LoadedNow(cfg.AppName, control), nil
+		},
 		alertsLoaders,
 		[]string{"spy", "ps2alerts", "honu", "census", "voidwell"},
-		trackableOnlineEntitiesLoader,
+		func(ctx context.Context, sq discord.SettingsQuery) (discord.TrackableEntities[map[ps2.OutfitId][]ps2.Character, []ps2.Character], error) {
+			settings, err := storage.TrackingSettings(ctx, sq)
+			if err != nil {
+				return discord.TrackableEntities[map[ps2.OutfitId][]ps2.Character, []ps2.Character]{}, err
+			}
+			return charactersTrackers[sq.Platform].TrackableOnlineEntities(settings), nil
+		},
 		func(ctx context.Context, pq discord.PlatformQuery[[]ps2.OutfitId]) (map[ps2.OutfitId]ps2.Outfit, error) {
 			return outfitsLoaders[pq.Platform](ctx, pq.Value)
 		},
 		storage.TrackingSettings,
 		func(ctx context.Context, pq discord.PlatformQuery[[]ps2.CharacterId]) ([]string, error) {
-			return characterNamesLoaders[pq.Platform](ctx, pq.Value)
+			return censusDataProvider.CharacterNames(ctx, ps2_platforms.PlatformNamespace(pq.Platform), pq.Value)
 		},
 		func(ctx context.Context, pq discord.PlatformQuery[[]string]) ([]ps2.CharacterId, error) {
-			return characterIdsLoaders[pq.Platform](ctx, pq.Value)
+			return censusDataProvider.CharacterIds(ctx, ps2_platforms.PlatformNamespace(pq.Platform), pq.Value)
 		},
 		func(ctx context.Context, pq discord.PlatformQuery[[]ps2.OutfitId]) ([]string, error) {
-			return outfitTagsLoaders[pq.Platform](ctx, pq.Value)
+			return censusDataProvider.OutfitTags(ctx, ps2_platforms.PlatformNamespace(pq.Platform), pq.Value)
 		},
 		func(ctx context.Context, pq discord.PlatformQuery[[]string]) ([]ps2.OutfitId, error) {
-			return outfitIdsLoaders[pq.Platform](ctx, pq.Value)
+			return censusDataProvider.OutfitIds(ctx, ps2_platforms.PlatformNamespace(pq.Platform), pq.Value)
 		},
 		storage.SaveTrackingSettings,
 		storage.SaveChannelLanguage,
