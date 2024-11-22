@@ -12,6 +12,7 @@ import (
 	sql_outfits_cache "github.com/x0k/ps2-spy/internal/cache/outfits/sql"
 	"github.com/x0k/ps2-spy/internal/characters_tracker"
 	census_data_provider "github.com/x0k/ps2-spy/internal/data_providers/census"
+	honu_data_provider "github.com/x0k/ps2-spy/internal/data_providers/honu"
 	"github.com/x0k/ps2-spy/internal/discord"
 	discord_commands "github.com/x0k/ps2-spy/internal/discord/commands"
 	discord_events "github.com/x0k/ps2-spy/internal/discord/events"
@@ -30,19 +31,16 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/ps2live/saerro"
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
 	"github.com/x0k/ps2-spy/internal/lib/voidwell"
-	honu_alerts_loader "github.com/x0k/ps2-spy/internal/loaders/alerts/honu"
 	ps2alerts_alerts_loader "github.com/x0k/ps2-spy/internal/loaders/alerts/ps2alerts"
 	voidwell_alerts_loader "github.com/x0k/ps2-spy/internal/loaders/alerts/voidwell"
 	worlds_tracker_alerts_loader "github.com/x0k/ps2-spy/internal/loaders/alerts/worlds_tracker"
 	characters_tracker_population_loader "github.com/x0k/ps2-spy/internal/loaders/population/characters_tracker"
 	fisu_population_loader "github.com/x0k/ps2-spy/internal/loaders/population/fisu"
-	honu_population_loader "github.com/x0k/ps2-spy/internal/loaders/population/honu"
 	ps2live_population_loader "github.com/x0k/ps2-spy/internal/loaders/population/ps2live"
 	saerro_population_loader "github.com/x0k/ps2-spy/internal/loaders/population/saerro"
 	sanctuary_population_loader "github.com/x0k/ps2-spy/internal/loaders/population/sanctuary"
 	voidwell_population_loader "github.com/x0k/ps2-spy/internal/loaders/population/voidwell"
 	characters_tracker_world_population_loader "github.com/x0k/ps2-spy/internal/loaders/world_population/characters_tracker"
-	honu_world_population_loader "github.com/x0k/ps2-spy/internal/loaders/world_population/honu"
 	saerro_world_population_loader "github.com/x0k/ps2-spy/internal/loaders/world_population/saerro"
 	voidwell_world_population_loader "github.com/x0k/ps2-spy/internal/loaders/world_population/voidwell"
 	"github.com/x0k/ps2-spy/internal/meta"
@@ -104,6 +102,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		log.With(sl.Component("census_data_provider")),
 		censusClient,
 	)
+	honuDataProvider := honu_data_provider.New(honuClient)
 
 	facilityCache := sql_facility_cache.New(
 		log.With(sl.Component("facility_cache")),
@@ -317,7 +316,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			cfg.AppName,
 			charactersTrackers,
 		),
-		"honu":      honu_population_loader.New(honuClient),
+		"honu":      honuDataProvider.Population,
 		"ps2live":   ps2live_population_loader.New(populationClient),
 		"saerro":    saerro_population_loader.New(saerroClient),
 		"fisu":      fisu_population_loader.New(fisuClient),
@@ -330,7 +329,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			cfg.AppName,
 			charactersTrackers,
 		),
-		"honu":     honu_world_population_loader.New(honuClient),
+		"honu":     honuDataProvider.WorldPopulation,
 		"saerro":   saerro_world_population_loader.New(saerroClient),
 		"voidwell": voidwell_world_population_loader.New(voidWellClient),
 	}
@@ -342,7 +341,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			worldTrackers,
 		),
 		"ps2alerts": ps2alerts_alerts_loader.New(ps2alertsClient),
-		"honu":      honu_alerts_loader.New(honuClient),
+		"honu":      honuDataProvider.Alerts,
 		"census":    censusDataProvider.Alerts,
 		"voidwell":  voidwell_alerts_loader.New(voidWellClient),
 	}
