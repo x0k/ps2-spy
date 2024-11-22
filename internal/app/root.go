@@ -13,6 +13,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/characters_tracker"
 	census_data_provider "github.com/x0k/ps2-spy/internal/data_providers/census"
 	honu_data_provider "github.com/x0k/ps2-spy/internal/data_providers/honu"
+	ps2alerts_data_provider "github.com/x0k/ps2-spy/internal/data_providers/ps2alerts"
 	"github.com/x0k/ps2-spy/internal/discord"
 	discord_commands "github.com/x0k/ps2-spy/internal/discord/commands"
 	discord_events "github.com/x0k/ps2-spy/internal/discord/events"
@@ -31,7 +32,6 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/ps2live/saerro"
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
 	"github.com/x0k/ps2-spy/internal/lib/voidwell"
-	ps2alerts_alerts_loader "github.com/x0k/ps2-spy/internal/loaders/alerts/ps2alerts"
 	voidwell_alerts_loader "github.com/x0k/ps2-spy/internal/loaders/alerts/voidwell"
 	worlds_tracker_alerts_loader "github.com/x0k/ps2-spy/internal/loaders/alerts/worlds_tracker"
 	characters_tracker_population_loader "github.com/x0k/ps2-spy/internal/loaders/population/characters_tracker"
@@ -89,20 +89,22 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		),
 	}
 
-	honuClient := honu.NewClient("https://wt.honu.pw", httpClient)
 	fisuClient := fisu.NewClient("https://ps2.fisu.pw", httpClient)
 	voidWellClient := voidwell.NewClient("https://api.voidwell.com", httpClient)
 	populationClient := population.NewClient("https://agg.ps2.live", httpClient)
 	saerroClient := saerro.NewClient("https://saerro.ps2.live", httpClient)
-	ps2alertsClient := ps2alerts.NewClient("https://api.ps2alerts.com", httpClient)
-	censusClient := census2.NewClient("https://census.daybreakgames.com", cfg.CensusServiceId, httpClient)
 	sanctuaryClient := census2.NewClient("https://census.lithafalcon.cc", cfg.CensusServiceId, httpClient)
 
 	censusDataProvider := census_data_provider.New(
 		log.With(sl.Component("census_data_provider")),
-		censusClient,
+		census2.NewClient("https://census.daybreakgames.com", cfg.CensusServiceId, httpClient),
 	)
-	honuDataProvider := honu_data_provider.New(honuClient)
+	honuDataProvider := honu_data_provider.New(
+		honu.NewClient("https://wt.honu.pw", httpClient),
+	)
+	ps2alertsDataProvider := ps2alerts_data_provider.New(
+		ps2alerts.NewClient("https://api.ps2alerts.com", httpClient),
+	)
 
 	facilityCache := sql_facility_cache.New(
 		log.With(sl.Component("facility_cache")),
@@ -340,7 +342,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			cfg.AppName,
 			worldTrackers,
 		),
-		"ps2alerts": ps2alerts_alerts_loader.New(ps2alertsClient),
+		"ps2alerts": ps2alertsDataProvider.Alerts,
 		"honu":      honuDataProvider.Alerts,
 		"census":    censusDataProvider.Alerts,
 		"voidwell":  voidwell_alerts_loader.New(voidWellClient),
