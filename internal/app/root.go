@@ -33,13 +33,10 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/ps2live/saerro"
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
 	"github.com/x0k/ps2-spy/internal/lib/voidwell"
-	worlds_tracker_alerts_loader "github.com/x0k/ps2-spy/internal/loaders/alerts/worlds_tracker"
-	characters_tracker_population_loader "github.com/x0k/ps2-spy/internal/loaders/population/characters_tracker"
 	fisu_population_loader "github.com/x0k/ps2-spy/internal/loaders/population/fisu"
 	ps2live_population_loader "github.com/x0k/ps2-spy/internal/loaders/population/ps2live"
 	saerro_population_loader "github.com/x0k/ps2-spy/internal/loaders/population/saerro"
 	sanctuary_population_loader "github.com/x0k/ps2-spy/internal/loaders/population/sanctuary"
-	characters_tracker_world_population_loader "github.com/x0k/ps2-spy/internal/loaders/world_population/characters_tracker"
 	saerro_world_population_loader "github.com/x0k/ps2-spy/internal/loaders/world_population/saerro"
 	"github.com/x0k/ps2-spy/internal/meta"
 	"github.com/x0k/ps2-spy/internal/metrics"
@@ -313,11 +310,24 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	))
 
 	populationLoaders := map[string]loader.Simple[meta.Loaded[ps2.WorldsPopulation]]{
-		"spy": characters_tracker_population_loader.New(
-			log.With(sl.Component("characters_tracker_population_loader")),
-			cfg.AppName,
-			charactersTrackers,
-		),
+		"spy": func(ctx context.Context) (meta.Loaded[ps2.WorldsPopulation], error) {
+			total := 0
+			worlds := make([]ps2.WorldPopulation, 0)
+			for _, platform := range ps2_platforms.Platforms {
+				tracker, ok := charactersTrackers[platform]
+				if !ok {
+					log.Warn(ctx, "no population tracker for platform", slog.String("platform", string(platform)))
+					continue
+				}
+				population := tracker.WorldsPopulation()
+				total += population.Total
+				worlds = append(worlds, population.Worlds...)
+			}
+			return meta.LoadedNow(cfg.AppName, ps2.WorldsPopulation{
+				Total:  total,
+				Worlds: worlds,
+			}), nil
+		},
 		"honu":      honuDataProvider.Population,
 		"ps2live":   ps2live_population_loader.New(populationClient),
 		"saerro":    saerro_population_loader.New(saerroClient),
@@ -327,21 +337,35 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	}
 
 	worldPopulationLoaders := map[string]loader.Keyed[ps2.WorldId, meta.Loaded[ps2.DetailedWorldPopulation]]{
-		"spy": characters_tracker_world_population_loader.New(
-			cfg.AppName,
-			charactersTrackers,
-		),
+		"spy": func(ctx context.Context, worldId ps2.WorldId) (meta.Loaded[ps2.DetailedWorldPopulation], error) {
+			platform, ok := ps2.WorldPlatforms[worldId]
+			if !ok {
+				return meta.Loaded[ps2.DetailedWorldPopulation]{}, fmt.Errorf("unknown world %q", worldId)
+			}
+			population, err := charactersTrackers[platform].DetailedWorldPopulation(worldId)
+			if err != nil {
+				return meta.Loaded[ps2.DetailedWorldPopulation]{}, fmt.Errorf("getting population: %w", err)
+			}
+			return meta.LoadedNow(cfg.AppName, population), nil
+		},
 		"honu":     honuDataProvider.WorldPopulation,
 		"saerro":   saerro_world_population_loader.New(saerroClient),
 		"voidwell": voidwellDataProvider.WorldPopulation,
 	}
 
 	alertsLoaders := map[string]loader.Simple[meta.Loaded[ps2.Alerts]]{
-		"spy": worlds_tracker_alerts_loader.New(
-			log.With(sl.Component("worlds_tracker_alerts_loader")),
-			cfg.AppName,
-			worldTrackers,
-		),
+		"spy": func(ctx context.Context) (meta.Loaded[ps2.Alerts], error) {
+			alerts := make(ps2.Alerts, 0)
+			for _, platform := range ps2_platforms.Platforms {
+				tracker, ok := worldTrackers[platform]
+				if !ok {
+					log.Warn(ctx, "no alerts tracker for platform", slog.String("platform", string(platform)))
+					continue
+				}
+				alerts = append(alerts, tracker.Alerts()...)
+			}
+			return meta.LoadedNow(cfg.AppName, alerts), nil
+		},
 		"ps2alerts": ps2alertsDataProvider.Alerts,
 		"honu":      honuDataProvider.Alerts,
 		"census":    censusDataProvider.Alerts,
