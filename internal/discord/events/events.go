@@ -28,7 +28,7 @@ func (e PlayerLogin) Type() EventType {
 type PlayerLogout characters_tracker.PlayerLogout
 
 func (e PlayerLogout) Type() EventType {
-	return PlayerLoginType
+	return PlayerLogoutType
 }
 
 type OutfitMembersUpdate storage.OutfitMembersUpdate
