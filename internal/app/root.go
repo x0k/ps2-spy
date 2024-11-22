@@ -14,6 +14,7 @@ import (
 	census_data_provider "github.com/x0k/ps2-spy/internal/data_providers/census"
 	honu_data_provider "github.com/x0k/ps2-spy/internal/data_providers/honu"
 	ps2alerts_data_provider "github.com/x0k/ps2-spy/internal/data_providers/ps2alerts"
+	voidwell_data_provider "github.com/x0k/ps2-spy/internal/data_providers/voidwell"
 	"github.com/x0k/ps2-spy/internal/discord"
 	discord_commands "github.com/x0k/ps2-spy/internal/discord/commands"
 	discord_events "github.com/x0k/ps2-spy/internal/discord/events"
@@ -32,17 +33,14 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/ps2live/saerro"
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
 	"github.com/x0k/ps2-spy/internal/lib/voidwell"
-	voidwell_alerts_loader "github.com/x0k/ps2-spy/internal/loaders/alerts/voidwell"
 	worlds_tracker_alerts_loader "github.com/x0k/ps2-spy/internal/loaders/alerts/worlds_tracker"
 	characters_tracker_population_loader "github.com/x0k/ps2-spy/internal/loaders/population/characters_tracker"
 	fisu_population_loader "github.com/x0k/ps2-spy/internal/loaders/population/fisu"
 	ps2live_population_loader "github.com/x0k/ps2-spy/internal/loaders/population/ps2live"
 	saerro_population_loader "github.com/x0k/ps2-spy/internal/loaders/population/saerro"
 	sanctuary_population_loader "github.com/x0k/ps2-spy/internal/loaders/population/sanctuary"
-	voidwell_population_loader "github.com/x0k/ps2-spy/internal/loaders/population/voidwell"
 	characters_tracker_world_population_loader "github.com/x0k/ps2-spy/internal/loaders/world_population/characters_tracker"
 	saerro_world_population_loader "github.com/x0k/ps2-spy/internal/loaders/world_population/saerro"
-	voidwell_world_population_loader "github.com/x0k/ps2-spy/internal/loaders/world_population/voidwell"
 	"github.com/x0k/ps2-spy/internal/meta"
 	"github.com/x0k/ps2-spy/internal/metrics"
 	discord_module "github.com/x0k/ps2-spy/internal/modules/discord"
@@ -90,7 +88,6 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	}
 
 	fisuClient := fisu.NewClient("https://ps2.fisu.pw", httpClient)
-	voidWellClient := voidwell.NewClient("https://api.voidwell.com", httpClient)
 	populationClient := population.NewClient("https://agg.ps2.live", httpClient)
 	saerroClient := saerro.NewClient("https://saerro.ps2.live", httpClient)
 	sanctuaryClient := census2.NewClient("https://census.lithafalcon.cc", cfg.CensusServiceId, httpClient)
@@ -104,6 +101,9 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	)
 	ps2alertsDataProvider := ps2alerts_data_provider.New(
 		ps2alerts.NewClient("https://api.ps2alerts.com", httpClient),
+	)
+	voidwellDataProvider := voidwell_data_provider.New(
+		voidwell.NewClient("https://api.voidwell.com", httpClient),
 	)
 
 	facilityCache := sql_facility_cache.New(
@@ -323,7 +323,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		"saerro":    saerro_population_loader.New(saerroClient),
 		"fisu":      fisu_population_loader.New(fisuClient),
 		"sanctuary": sanctuary_population_loader.New(sanctuaryClient),
-		"voidwell":  voidwell_population_loader.New(voidWellClient),
+		"voidwell":  voidwellDataProvider.Population,
 	}
 
 	worldPopulationLoaders := map[string]loader.Keyed[ps2.WorldId, meta.Loaded[ps2.DetailedWorldPopulation]]{
@@ -333,7 +333,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		),
 		"honu":     honuDataProvider.WorldPopulation,
 		"saerro":   saerro_world_population_loader.New(saerroClient),
-		"voidwell": voidwell_world_population_loader.New(voidWellClient),
+		"voidwell": voidwellDataProvider.WorldPopulation,
 	}
 
 	alertsLoaders := map[string]loader.Simple[meta.Loaded[ps2.Alerts]]{
@@ -345,7 +345,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		"ps2alerts": ps2alertsDataProvider.Alerts,
 		"honu":      honuDataProvider.Alerts,
 		"census":    censusDataProvider.Alerts,
-		"voidwell":  voidwell_alerts_loader.New(voidWellClient),
+		"voidwell":  voidwellDataProvider.Alerts,
 	}
 
 	discordMessages := discord_messages.New()
