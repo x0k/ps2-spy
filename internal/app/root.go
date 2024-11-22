@@ -41,12 +41,10 @@ import (
 	saerro_population_loader "github.com/x0k/ps2-spy/internal/loaders/population/saerro"
 	sanctuary_population_loader "github.com/x0k/ps2-spy/internal/loaders/population/sanctuary"
 	voidwell_population_loader "github.com/x0k/ps2-spy/internal/loaders/population/voidwell"
-	characters_tracker_trackable_online_entities_loader "github.com/x0k/ps2-spy/internal/loaders/trackable_online_entities/characters_tracker"
 	characters_tracker_world_population_loader "github.com/x0k/ps2-spy/internal/loaders/world_population/characters_tracker"
 	honu_world_population_loader "github.com/x0k/ps2-spy/internal/loaders/world_population/honu"
 	saerro_world_population_loader "github.com/x0k/ps2-spy/internal/loaders/world_population/saerro"
 	voidwell_world_population_loader "github.com/x0k/ps2-spy/internal/loaders/world_population/voidwell"
-	worlds_tracker_world_territory_control_loader "github.com/x0k/ps2-spy/internal/loaders/world_territory_control/worlds_tracker"
 	"github.com/x0k/ps2-spy/internal/meta"
 	"github.com/x0k/ps2-spy/internal/metrics"
 	discord_module "github.com/x0k/ps2-spy/internal/modules/discord"
@@ -349,11 +347,6 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		"voidwell":  voidwell_alerts_loader.New(voidWellClient),
 	}
 
-	trackableOnlineEntitiesLoader := characters_tracker_trackable_online_entities_loader.New(
-		storage.TrackingSettings,
-		charactersTrackers,
-	)
-
 	discordMessages := discord_messages.New()
 	discordCommands := discord_commands.New(
 		"discord_commands",
@@ -363,13 +356,26 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		[]string{"spy", "honu", "ps2live", "saerro", "fisu", "sanctuary", "voidwell"},
 		worldPopulationLoaders,
 		[]string{"spy", "honu", "saerro", "voidwell"},
-		worlds_tracker_world_territory_control_loader.New(
-			cfg.AppName,
-			worldTrackers,
-		),
+		func(ctx context.Context, worldId ps2.WorldId) (meta.Loaded[ps2.WorldTerritoryControl], error) {
+			platform, ok := ps2.WorldPlatforms[worldId]
+			if !ok {
+				return meta.Loaded[ps2.WorldTerritoryControl]{}, fmt.Errorf("unknown world %q", worldId)
+			}
+			control, err := worldTrackers[platform].WorldTerritoryControl(ctx, worldId)
+			if err != nil {
+				return meta.Loaded[ps2.WorldTerritoryControl]{}, err
+			}
+			return meta.LoadedNow(cfg.AppName, control), nil
+		},
 		alertsLoaders,
 		[]string{"spy", "ps2alerts", "honu", "census", "voidwell"},
-		trackableOnlineEntitiesLoader,
+		func(ctx context.Context, sq discord.SettingsQuery) (discord.TrackableEntities[map[ps2.OutfitId][]ps2.Character, []ps2.Character], error) {
+			settings, err := storage.TrackingSettings(ctx, sq)
+			if err != nil {
+				return discord.TrackableEntities[map[ps2.OutfitId][]ps2.Character, []ps2.Character]{}, err
+			}
+			return charactersTrackers[sq.Platform].TrackableOnlineEntities(settings), nil
+		},
 		func(ctx context.Context, pq discord.PlatformQuery[[]ps2.OutfitId]) (map[ps2.OutfitId]ps2.Outfit, error) {
 			return outfitsLoaders[pq.Platform](ctx, pq.Value)
 		},
