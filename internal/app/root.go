@@ -44,6 +44,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/outfit_members_synchronizer"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
+	"github.com/x0k/ps2-spy/internal/shared"
 	"github.com/x0k/ps2-spy/internal/storage"
 	sql_storage "github.com/x0k/ps2-spy/internal/storage/sql"
 	"github.com/x0k/ps2-spy/internal/tracking_manager"
@@ -160,7 +161,11 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		)
 		charactersLoaders[platform] = cachedCharactersLoader
 
-		batchedCharactersLoader := loader.WithBatching(cachedCharactersLoader, 10*time.Second)
+		batchedCharactersLoader := loader.WithBatching(
+			cachedCharactersLoader,
+			10*time.Second,
+			shared.ErrNotFound,
+		)
 		m.Append(module.NewService(
 			fmt.Sprintf("%s.batched_characters_loader", platform),
 			func(ctx context.Context) error {

@@ -86,7 +86,7 @@ func (l *DataProvider) charactersUrl(ns string, charIds []census2.Str) string {
 	defer l.charactersMu.Unlock()
 	l.charactersOperand.Set(census2.NewList(charIds, ","))
 	l.charactersQuery.SetNamespace(ns)
-	return l.client.ToURL(l.characterIdsQuery)
+	return l.client.ToURL(l.charactersQuery)
 }
 
 func (l *DataProvider) characters(ctx context.Context, ns string, charIds []ps2.CharacterId) ([]ps2_collections.CharacterItem, error) {

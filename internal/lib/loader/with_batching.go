@@ -2,15 +2,17 @@ package loader
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 )
 
 type Batched[K comparable, T any] struct {
-	loader     Multi[K, T]
-	awaitersMu sync.Mutex
-	awaiters   map[K][]chan result[T]
-	checkRate  time.Duration
+	loader        Multi[K, T]
+	awaitersMu    sync.Mutex
+	awaiters      map[K][]chan result[T]
+	checkRate     time.Duration
+	notFoundError error
 }
 
 type result[T any] struct {
@@ -21,11 +23,13 @@ type result[T any] struct {
 func WithBatching[K comparable, T any](
 	loader Multi[K, T],
 	checkRate time.Duration,
+	notFoundError error,
 ) *Batched[K, T] {
 	return &Batched[K, T]{
-		loader:    loader,
-		awaiters:  make(map[K][]chan result[T]),
-		checkRate: checkRate,
+		loader:        loader,
+		awaiters:      make(map[K][]chan result[T]),
+		checkRate:     checkRate,
+		notFoundError: notFoundError,
 	}
 }
 
@@ -48,7 +52,7 @@ func (b *Batched[K, T]) releaseAwaiters(_ context.Context, batch []K, results ma
 			if val, ok := results[key]; ok {
 				res.value = val
 			} else {
-				res.err = ErrNotFound
+				res.err = fmt.Errorf("awaiter result not found: %w", b.notFoundError)
 			}
 			for _, channel := range channels {
 				channel <- res
