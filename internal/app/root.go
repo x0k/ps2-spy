@@ -34,12 +34,6 @@ import (
 	ps2alerts_alerts_loader "github.com/x0k/ps2-spy/internal/loaders/alerts/ps2alerts"
 	voidwell_alerts_loader "github.com/x0k/ps2-spy/internal/loaders/alerts/voidwell"
 	worlds_tracker_alerts_loader "github.com/x0k/ps2-spy/internal/loaders/alerts/worlds_tracker"
-	census_characters_loader "github.com/x0k/ps2-spy/internal/loaders/characters/census"
-	census_facility_loader "github.com/x0k/ps2-spy/internal/loaders/facility/census"
-	census_outfit_ids_loader "github.com/x0k/ps2-spy/internal/loaders/outfit_ids/census"
-	census_outfit_member_ids_loader "github.com/x0k/ps2-spy/internal/loaders/outfit_member_ids/census"
-	census_outfit_tags_loader "github.com/x0k/ps2-spy/internal/loaders/outfit_tags/census"
-	census_outfits_loader "github.com/x0k/ps2-spy/internal/loaders/outfits/census"
 	characters_tracker_population_loader "github.com/x0k/ps2-spy/internal/loaders/population/characters_tracker"
 	fisu_population_loader "github.com/x0k/ps2-spy/internal/loaders/population/fisu"
 	honu_population_loader "github.com/x0k/ps2-spy/internal/loaders/population/honu"
@@ -48,7 +42,6 @@ import (
 	sanctuary_population_loader "github.com/x0k/ps2-spy/internal/loaders/population/sanctuary"
 	voidwell_population_loader "github.com/x0k/ps2-spy/internal/loaders/population/voidwell"
 	characters_tracker_trackable_online_entities_loader "github.com/x0k/ps2-spy/internal/loaders/trackable_online_entities/characters_tracker"
-	census_world_map_loader "github.com/x0k/ps2-spy/internal/loaders/world_map/census"
 	characters_tracker_world_population_loader "github.com/x0k/ps2-spy/internal/loaders/world_population/characters_tracker"
 	honu_world_population_loader "github.com/x0k/ps2-spy/internal/loaders/world_population/honu"
 	saerro_world_population_loader "github.com/x0k/ps2-spy/internal/loaders/world_population/saerro"
@@ -129,10 +122,6 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	characterLoaders := make(map[ps2_platforms.Platform]loader.Keyed[ps2.CharacterId, ps2.Character], len(ps2_platforms.Platforms))
 	outfitsLoaders := make(map[ps2_platforms.Platform]loader.Multi[ps2.OutfitId, ps2.Outfit], len(ps2_platforms.Platforms))
 	outfitLoaders := make(map[ps2_platforms.Platform]loader.Keyed[ps2.OutfitId, ps2.Outfit], len(ps2_platforms.Platforms))
-	characterNamesLoaders := make(map[ps2_platforms.Platform]loader.Queried[[]ps2.CharacterId, []string], len(ps2_platforms.Platforms))
-	characterIdsLoaders := make(map[ps2_platforms.Platform]loader.Queried[[]string, []ps2.CharacterId], len(ps2_platforms.Platforms))
-	outfitTagsLoaders := make(map[ps2_platforms.Platform]loader.Queried[[]ps2.OutfitId, []string], len(ps2_platforms.Platforms))
-	outfitIdsLoaders := make(map[ps2_platforms.Platform]loader.Queried[[]string, []ps2.OutfitId], len(ps2_platforms.Platforms))
 	facilityLoaders := make(map[ps2_platforms.Platform]loader.Keyed[ps2.FacilityId, ps2.Facility], len(ps2_platforms.Platforms))
 
 	for _, platform := range ps2_platforms.Platforms {
@@ -156,11 +145,9 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 
 		charactersLoader := metrics.InstrumentMultiKeyedLoaderWithSubjectsCounter(
 			metrics.PlatformLoaderSubjectsCounterMetric(mt, metrics.CharactersPlatformLoaderName, platform),
-			census_characters_loader.New(
-				pl.With(sl.Component("characters_loader")),
-				censusClient,
-				platform,
-			).Load,
+			func(ctx context.Context, k []ps2.CharacterId) (map[ps2.CharacterId]ps2.Character, error) {
+				return censusDataProvider.Characters(ctx, platform, k)
+			},
 		)
 
 		charactersCache := expirable.NewLRU[ps2.CharacterId, ps2.Character](0, nil, 24*time.Hour)
@@ -222,17 +209,16 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			worldsTrackerPubSub,
 		)
 		worldTrackerSubsMangers[platform] = worldsTrackerPubSub
-		worldMapLoader := census_world_map_loader.New(
-			censusClient,
-			platform,
-		)
+
 		worldsTracker := worlds_tracker.New(
 			fmt.Sprintf("%s.worlds_tracker", platform),
 			pl.With(sl.Component("worlds_tracker")),
 			platform,
 			5*time.Minute,
 			worldsTackerPublisher,
-			worldMapLoader.Load,
+			func(ctx context.Context, wi ps2.WorldId) (ps2.WorldMap, error) {
+				return censusDataProvider.WorldMap(ctx, ns, wi)
+			},
 		)
 		m.Append(worldsTracker)
 		worldTrackers[platform] = worldsTracker
@@ -269,11 +255,6 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		m.Append(trackingManager)
 		trackingManagers[platform] = trackingManager
 
-		censusOutfitMemberIdsLoader := census_outfit_member_ids_loader.New(
-			censusClient,
-			ns,
-		)
-
 		outfitMembersSynchronizer := outfit_members_synchronizer.New(
 			fmt.Sprintf("%s.outfit_members_synchronizer", platform),
 			pl.With(sl.Component("outfit_members_synchronizer")),
@@ -283,7 +264,9 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			func(ctx context.Context, oi ps2.OutfitId) (time.Time, error) {
 				return storage.OutfitSynchronizedAt(ctx, platform, oi)
 			},
-			censusOutfitMemberIdsLoader.Load,
+			func(ctx context.Context, oi ps2.OutfitId) ([]ps2.CharacterId, error) {
+				return censusDataProvider.OutfitMemberIds(ctx, ns, oi)
+			},
 			func(ctx context.Context, outfitId ps2.OutfitId, members []ps2.CharacterId) error {
 				return storage.SaveOutfitMembers(ctx, platform, outfitId, members)
 			},
@@ -294,7 +277,9 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 
 		outfitsLoader := loader.WithMultiCache(
 			log.Logger.With(sl.Component("outfits_loader_cache")),
-			census_outfits_loader.New(censusClient, platform).Load,
+			func(ctx context.Context, k []ps2.OutfitId) (map[ps2.OutfitId]ps2.Outfit, error) {
+				return censusDataProvider.Outfits(ctx, platform, k)
+			},
 			sql_outfits_cache.New(
 				log.With(sl.Component("outfits_cache")),
 				storage,
@@ -311,20 +296,11 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			return outfit[oi], nil
 		}
 
-		// TODO: Use characters cache
-		characterNamesLoaders[platform] = func(ctx context.Context, ci []ps2.CharacterId) ([]string, error) {
-			return censusDataProvider.CharacterNames(ctx, ns, ci)
-		}
-		characterIdsLoaders[platform] = func(ctx context.Context, s []string) ([]ps2.CharacterId, error) {
-			return censusDataProvider.CharacterIds(ctx, ns, s)
-		}
-		// TODO: Use outfits cache
-		outfitTagsLoaders[platform] = census_outfit_tags_loader.New(censusClient, ns).Load
-		outfitIdsLoaders[platform] = census_outfit_ids_loader.New(censusClient, ns).Load
-
 		facilityLoaders[platform] = loader.WithKeyedCache(
 			log.Logger.With(sl.Component("facilities_loader_cache")),
-			census_facility_loader.New(censusClient, ns).Load,
+			func(ctx context.Context, id ps2.FacilityId) (ps2.Facility, error) {
+				return censusDataProvider.Facility(ctx, ns, id)
+			},
 			facilityCache,
 		)
 	}
@@ -399,16 +375,16 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		},
 		storage.TrackingSettings,
 		func(ctx context.Context, pq discord.PlatformQuery[[]ps2.CharacterId]) ([]string, error) {
-			return characterNamesLoaders[pq.Platform](ctx, pq.Value)
+			return censusDataProvider.CharacterNames(ctx, ps2_platforms.PlatformNamespace(pq.Platform), pq.Value)
 		},
 		func(ctx context.Context, pq discord.PlatformQuery[[]string]) ([]ps2.CharacterId, error) {
-			return characterIdsLoaders[pq.Platform](ctx, pq.Value)
+			return censusDataProvider.CharacterIds(ctx, ps2_platforms.PlatformNamespace(pq.Platform), pq.Value)
 		},
 		func(ctx context.Context, pq discord.PlatformQuery[[]ps2.OutfitId]) ([]string, error) {
-			return outfitTagsLoaders[pq.Platform](ctx, pq.Value)
+			return censusDataProvider.OutfitTags(ctx, ps2_platforms.PlatformNamespace(pq.Platform), pq.Value)
 		},
 		func(ctx context.Context, pq discord.PlatformQuery[[]string]) ([]ps2.OutfitId, error) {
-			return outfitIdsLoaders[pq.Platform](ctx, pq.Value)
+			return censusDataProvider.OutfitIds(ctx, ps2_platforms.PlatformNamespace(pq.Platform), pq.Value)
 		},
 		storage.SaveTrackingSettings,
 		storage.SaveChannelLanguage,

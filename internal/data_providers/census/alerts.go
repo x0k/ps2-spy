@@ -15,7 +15,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
-func (p *DataProvider) load(ctx context.Context, url string) (ps2.Alerts, error) {
+func (p *DataProvider) alerts(ctx context.Context, url string) (ps2.Alerts, error) {
 	events, err := census2.ExecutePreparedAndDecode[ps2_collections.MetagameWorldEventItem](ctx, p.client, ps2_collections.WorldEvent, url)
 	if err != nil {
 		return ps2.Alerts{}, err
@@ -73,15 +73,15 @@ func (p *DataProvider) load(ctx context.Context, url string) (ps2.Alerts, error)
 
 func (p *DataProvider) Alerts(ctx context.Context) (meta.Loaded[ps2.Alerts], error) {
 	errs := make([]error, 0, 3)
-	pcAlerts, err := p.load(ctx, p.pcUrl)
+	pcAlerts, err := p.alerts(ctx, p.pcUrl)
 	if err != nil {
 		errs = append(errs, err)
 	}
-	ps4euAlerts, err := p.load(ctx, p.ps4euUrl)
+	ps4euAlerts, err := p.alerts(ctx, p.ps4euUrl)
 	if err != nil {
 		errs = append(errs, err)
 	}
-	ps4usAlerts, err := p.load(ctx, p.ps4usUrl)
+	ps4usAlerts, err := p.alerts(ctx, p.ps4usUrl)
 	if err != nil {
 		errs = append(errs, err)
 	}
