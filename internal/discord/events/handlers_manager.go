@@ -80,13 +80,22 @@ func (h *HandlersManager) HandleFacilityLoss(ctx context.Context, e worlds_track
 	go h.handleOutfitEventTask(ctx, e.OldOutfitId, FacilityLoss(e))
 }
 
+func (h *HandlersManager) HandleChannelLanguageUpdate(ctx context.Context, e storage.ChannelLanguageUpdated) {
+	handlers, ok := h.handlers[ChannelLanguageUpdatedType]
+	if !ok {
+		h.log.Debug(ctx, "no handler for event", slog.String("event_type", string(ChannelLanguageUpdatedType)))
+		return
+	}
+	h.runHandlers(ctx, handlers, []discord.Channel{discord.NewChannel(e.ChannelId, e.Language)}, ChannelLanguageUpdated(e))
+}
+
 func (h *HandlersManager) handleCharacterEventTask(
 	ctx context.Context,
 	characterId ps2.CharacterId,
 	e Event,
 ) {
 	defer h.wg.Done()
-	handler, ok := h.handlers[e.Type()]
+	handlers, ok := h.handlers[e.Type()]
 	if !ok {
 		h.log.Debug(ctx, "no handler for event", slog.String("event_type", string(e.Type())))
 		return
@@ -95,7 +104,7 @@ func (h *HandlersManager) handleCharacterEventTask(
 	if err != nil {
 		h.log.Error(ctx, "cannot get channels for character", slog.String("character_id", string(characterId)), sl.Err(err))
 	}
-	h.runHandlers(ctx, handler, channels, e)
+	h.runHandlers(ctx, handlers, channels, e)
 }
 
 func (h *HandlersManager) handleOutfitEventTask(

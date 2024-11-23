@@ -769,6 +769,21 @@
             ]
         },
         {
+            "id": "{Count}・online",
+            "message": "{Count}・online",
+            "translation": "{Count}・онлайн",
+            "placeholders": [
+                {
+                    "id": "Count",
+                    "string": "%[1]d",
+                    "type": "int",
+                    "underlyingType": "int",
+                    "argNum": 1,
+                    "expr": "count"
+                }
+            ]
+        },
+        {
             "id": "No characters online",
             "message": "No characters online",
             "translation": "Нет персонажей онлайн"

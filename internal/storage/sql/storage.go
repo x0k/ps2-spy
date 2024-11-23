@@ -416,9 +416,13 @@ func (s *Storage) SaveChannelLanguage(
 	channelId discord.ChannelId,
 	lang language.Tag,
 ) error {
-	return s.queries.UpsertChannelLocale(ctx, db.UpsertChannelLocaleParams{
+	err := s.queries.UpsertChannelLocale(ctx, db.UpsertChannelLocaleParams{
 		ChannelID: string(channelId),
 		Locale:    lang.String(),
+	})
+	return s.publish(err, storage.ChannelLanguageUpdated{
+		ChannelId: channelId,
+		Language:  lang,
 	})
 }
 

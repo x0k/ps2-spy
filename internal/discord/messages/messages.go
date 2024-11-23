@@ -460,3 +460,23 @@ func (m *Messages) ChannelLanguageSaved(channelId discord.ChannelId, lang langua
 		}, nil
 	}
 }
+
+func (m *Messages) OnlineCountTitleUpdate(title string, count int) discord.Message {
+	return func(p *message.Printer) (string, *discord.Error) {
+		onlineCount := p.Sprintf("%d・online", count)
+		const separator = "│"
+		index := strings.LastIndex(title, separator)
+		if index == -1 {
+			if count == 0 {
+				return title, nil
+			}
+			return title + separator + onlineCount, nil
+		} else {
+			originalTitle := string([]rune(title)[:index])
+			if count == 0 {
+				return originalTitle, nil
+			}
+			return originalTitle + separator + onlineCount, nil
+		}
+	}
+}

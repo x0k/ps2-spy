@@ -38,6 +38,10 @@ func (m *Module) Append(services ...Service) {
 	m.services = append(m.services, services...)
 }
 
+func (m *Module) AppendServiceFn(name string, run func(ctx context.Context) error) {
+	m.services = append(m.services, NewService(name, run))
+}
+
 func (m *Module) PreStart(hooks ...Hook) {
 	m.preStart = append(m.preStart, hooks...)
 }

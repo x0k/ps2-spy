@@ -24,6 +24,7 @@ func newEventsSubscriptionService(
 	playerLogin := characters_tracker.Subscribe[characters_tracker.PlayerLogin](ps, charactersTrackerSubs)
 	playerLogout := characters_tracker.Subscribe[characters_tracker.PlayerLogout](ps, charactersTrackerSubs)
 	outfitMembersUpdate := storage.Subscribe[storage.OutfitMembersUpdate](ps, storageSubs)
+	channelLanguageUpdate := storage.Subscribe[storage.ChannelLanguageUpdated](ps, storageSubs)
 	facilityControl := worlds_tracker.Subscribe[worlds_tracker.FacilityControl](ps, worldsTrackerSubs)
 	facilityLoss := worlds_tracker.Subscribe[worlds_tracker.FacilityLoss](ps, worldsTrackerSubs)
 	return module.NewService(
@@ -40,6 +41,12 @@ func newEventsSubscriptionService(
 				case e := <-outfitMembersUpdate:
 					if e.Platform == platform {
 						handlersManager.HandleOutfitMembersUpdate(ctx, e)
+					}
+				case e := <-channelLanguageUpdate:
+					// Since this is not a platform event, we want to
+					// trigger handler only once, platform doesn't matter
+					if platform == ps2_platforms.PC {
+						handlersManager.HandleChannelLanguageUpdate(ctx, e)
 					}
 				case e := <-facilityControl:
 					handlersManager.HandleFacilityControl(ctx, e)

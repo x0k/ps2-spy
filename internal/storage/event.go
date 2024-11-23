@@ -8,6 +8,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
+	"golang.org/x/text/language"
 )
 
 type EventType string
@@ -24,6 +25,7 @@ const (
 	OutfitMemberSavedType       EventType = "outfit_member_saved"
 	OutfitMemberDeletedType     EventType = "outfit_member_deleted"
 	OutfitSynchronizedType      EventType = "outfit_synchronized"
+	ChannelLanguageUpdatedType  EventType = "channel_language_updated"
 )
 
 type ChannelOutfitSaved struct {
@@ -114,4 +116,13 @@ type OutfitSynchronized struct {
 
 func (e OutfitSynchronized) Type() EventType {
 	return OutfitSynchronizedType
+}
+
+type ChannelLanguageUpdated struct {
+	ChannelId discord.ChannelId
+	Language  language.Tag
+}
+
+func (e ChannelLanguageUpdated) Type() EventType {
+	return ChannelLanguageUpdatedType
 }
