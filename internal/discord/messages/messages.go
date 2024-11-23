@@ -128,6 +128,8 @@ func (m *Messages) FacilityControl(
 	facility ps2.Facility,
 ) discord.Message {
 	return func(p *message.Printer) (string, *discord.Error) {
+		// TODO: Fix this
+		// outfit[tag] захватил Regent Rock Garrison (Large Outpost) в Indar (server)
 		return p.Sprintf(
 			"%s [%s] captured %s (%s) on %s (%s)",
 			outfit.Name,
