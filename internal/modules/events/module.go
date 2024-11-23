@@ -24,10 +24,17 @@ func New(
 ) (*module.Module, error) {
 	m := module.New(log.Logger, "ps2.events")
 
+	instrumentedEventsPublisher := metrics.InstrumentPlatformPublisher(
+		mt,
+		metrics.Ps2EventsPlatformPublisher,
+		platform,
+		eventsPublisher,
+	)
+
 	reLoginOmitter := relogin_omitter.NewReLoginOmitter(
 		fmt.Sprintf("%s.relogin_omitter", platform),
 		log.With(sl.Component("relogin_omitter")),
-		eventsPublisher,
+		instrumentedEventsPublisher,
 		mt,
 		platform,
 	)
