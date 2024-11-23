@@ -18,7 +18,7 @@ func NewFacilityLossHandlerFactory(
 	outfitLoader := outfitLoaders[ps2_platforms.PC]
 	facilityLoader := facilityLoaders[ps2_platforms.PC]
 	return func(platform ps2_platforms.Platform) Handler {
-		return SimpleMessage(func(ctx context.Context, event FacilityControl) discord.Message {
+		return SimpleMessage(func(ctx context.Context, event FacilityLoss) discord.Message {
 			facilityId := ps2.FacilityId(event.FacilityID)
 			facility, err := facilityLoader(ctx, facilityId)
 			if err != nil {
