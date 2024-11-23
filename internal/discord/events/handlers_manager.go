@@ -122,15 +122,15 @@ func (h *HandlersManager) runHandlers(
 	channels []discord.Channel,
 	e Event,
 ) {
-	if len(channels) == 0 || len(handlers) == 0 {
+	if len(channels) == 0 {
 		return
 	}
-	ctx, cancel := context.WithTimeout(ctx, h.handlersTimeout)
-	defer cancel()
 	for _, handler := range handlers {
 		h.wg.Add(1)
 		go func(handler Handler) {
 			defer h.wg.Done()
+			ctx, cancel := context.WithTimeout(ctx, h.handlersTimeout)
+			defer cancel()
 			if err := handler(ctx, h.session, channels, e); err != nil {
 				h.log.Error(ctx, "cannot handle event", sl.Err(err))
 			}
