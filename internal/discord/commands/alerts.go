@@ -58,7 +58,7 @@ func NewAlerts(
 				},
 			},
 		},
-		Handler: discord.DeferredEphemeralResponse(func(
+		Handler: discord.DeferredEphemeralEdit(func(
 			ctx context.Context,
 			s *discordgo.Session,
 			i *discordgo.InteractionCreate,
