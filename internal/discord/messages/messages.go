@@ -128,6 +128,8 @@ func (m *Messages) FacilityControl(
 	facility ps2.Facility,
 ) discord.Message {
 	return func(p *message.Printer) (string, *discord.Error) {
+		// TODO: Fix this
+		// outfit[tag] захватил Regent Rock Garrison (Large Outpost) в Indar (server)
 		return p.Sprintf(
 			"%s [%s] captured %s (%s) on %s (%s)",
 			outfit.Name,
@@ -456,5 +458,25 @@ func (m *Messages) ChannelLanguageSaved(channelId discord.ChannelId, lang langua
 		return &discordgo.WebhookEdit{
 			Content: &content,
 		}, nil
+	}
+}
+
+func (m *Messages) OnlineCountTitleUpdate(title string, count int) discord.Message {
+	return func(p *message.Printer) (string, *discord.Error) {
+		onlineCount := p.Sprintf("%d・online", count)
+		const separator = "│"
+		index := strings.LastIndex(title, separator)
+		if index == -1 {
+			if count == 0 {
+				return title, nil
+			}
+			return title + separator + onlineCount, nil
+		} else {
+			originalTitle := string([]rune(title)[:index])
+			if count == 0 {
+				return originalTitle, nil
+			}
+			return originalTitle + separator + onlineCount, nil
+		}
 	}
 }

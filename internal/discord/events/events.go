@@ -12,11 +12,12 @@ type EventType string
 type Event = pubsub.Event[EventType]
 
 const (
-	PlayerLoginType         EventType = "player_login"
-	PlayerLogoutType        EventType = "player_logout"
-	OutfitMembersUpdateType EventType = "outfit_members_update"
-	FacilityControlType     EventType = "facility_control"
-	FacilityLossType        EventType = "facility_loss"
+	PlayerLoginType            EventType = "player_login"
+	PlayerLogoutType           EventType = "player_logout"
+	OutfitMembersUpdateType    EventType = "outfit_members_update"
+	FacilityControlType        EventType = "facility_control"
+	FacilityLossType           EventType = "facility_loss"
+	ChannelLanguageUpdatedType EventType = "channel_language_updated"
 )
 
 type PlayerLogin characters_tracker.PlayerLogin
@@ -47,4 +48,10 @@ type FacilityLoss worlds_tracker.FacilityLoss
 
 func (e FacilityLoss) Type() EventType {
 	return FacilityLossType
+}
+
+type ChannelLanguageUpdated storage.ChannelLanguageUpdated
+
+func (e ChannelLanguageUpdated) Type() EventType {
+	return ChannelLanguageUpdatedType
 }

@@ -32,7 +32,7 @@ func NewTracking(
 ) *discord.Command {
 	submitHandlers := make(map[string]discord.InteractionHandler, len(ps2_platforms.Platforms))
 	for _, platform := range ps2_platforms.Platforms {
-		submitHandlers[discord.TRACKING_MODAL_CUSTOM_IDS[platform]] = discord.DeferredEphemeralResponse(func(
+		submitHandlers[discord.TRACKING_MODAL_CUSTOM_IDS[platform]] = discord.DeferredEphemeralEdit(func(
 			ctx context.Context,
 			s *discordgo.Session,
 			i *discordgo.InteractionCreate,

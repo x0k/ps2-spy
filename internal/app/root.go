@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -20,9 +21,6 @@ import (
 	sanctuary_data_provider "github.com/x0k/ps2-spy/internal/data_providers/sanctuary"
 	voidwell_data_provider "github.com/x0k/ps2-spy/internal/data_providers/voidwell"
 	"github.com/x0k/ps2-spy/internal/discord"
-	discord_commands "github.com/x0k/ps2-spy/internal/discord/commands"
-	discord_events "github.com/x0k/ps2-spy/internal/discord/events"
-	discord_messages "github.com/x0k/ps2-spy/internal/discord/messages"
 	"github.com/x0k/ps2-spy/internal/lib/cache/memory"
 	"github.com/x0k/ps2-spy/internal/lib/census2"
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
@@ -383,15 +381,18 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		"voidwell":  voidwellDataProvider.Alerts,
 	}
 
-	discordMessages := discord_messages.New()
-	discordCommands := discord_commands.New(
-		"discord_commands",
-		log.With(sl.Component("commands")),
-		discordMessages,
+	discordModule, err := discord_module.New(
+		log.With(sl.Module("discord")),
+		cfg.Discord.Token,
+		cfg.Discord.CommandHandlerTimeout,
+		cfg.Discord.EventHandlerTimeout,
+		cfg.Discord.RemoveCommands,
+		characterTrackerSubsMangers,
+		trackingManagers,
+		storagePubSub,
+		worldTrackerSubsMangers,
 		populationLoaders,
-		[]string{"spy", "honu", "ps2live", "saerro", "fisu", "sanctuary", "voidwell"},
 		worldPopulationLoaders,
-		[]string{"spy", "honu", "saerro", "voidwell"},
 		func(ctx context.Context, worldId ps2.WorldId) (meta.Loaded[ps2.WorldTerritoryControl], error) {
 			platform, ok := ps2.WorldPlatforms[worldId]
 			if !ok {
@@ -404,7 +405,6 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			return meta.LoadedNow(cfg.AppName, control), nil
 		},
 		alertsLoaders,
-		[]string{"spy", "ps2alerts", "honu", "census", "voidwell"},
 		func(ctx context.Context, sq discord.SettingsQuery) (discord.TrackableEntities[map[ps2.OutfitId][]ps2.Character, []ps2.Character], error) {
 			settings, err := storage.TrackingSettings(ctx, sq)
 			if err != nil {
@@ -430,27 +430,30 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		},
 		storage.SaveTrackingSettings,
 		storage.SaveChannelLanguage,
-	)
-	m.Append(discordCommands)
-	discordModule, err := discord_module.New(
-		log.With(sl.Module("discord")),
-		cfg.Discord.Token,
-		discordCommands.Commands(),
-		cfg.Discord.CommandHandlerTimeout,
-		cfg.Discord.EventHandlerTimeout,
-		cfg.Discord.RemoveCommands,
-		characterTrackerSubsMangers,
-		trackingManagers,
-		discord_events.NewHandlers(
-			log.With(sl.Component("discord_event_handlers")),
-			discordMessages,
-			characterLoaders,
-			outfitLoaders,
-			charactersLoaders,
-			facilityLoaders,
-		),
-		storagePubSub,
-		worldTrackerSubsMangers,
+		characterLoaders,
+		outfitLoaders,
+		charactersLoaders,
+		facilityLoaders,
+		func(ctx context.Context, channelId discord.ChannelId) (int, error) {
+			count := 0
+			errs := make([]error, 0, len(ps2_platforms.Platforms))
+			for _, platform := range ps2_platforms.Platforms {
+				settings, err := storage.TrackingSettings(ctx, discord.SettingsQuery{
+					ChannelId: channelId,
+					Platform:  platform,
+				})
+				if err != nil {
+					errs = append(errs, err)
+					continue
+				}
+				entities := charactersTrackers[platform].TrackableOnlineEntities(settings)
+				for _, outfit := range entities.Outfits {
+					count += len(outfit)
+				}
+				count += len(entities.Characters)
+			}
+			return count, errors.Join(errs...)
+		},
 	)
 	if err != nil {
 		return nil, err

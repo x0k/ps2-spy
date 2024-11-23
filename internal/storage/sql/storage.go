@@ -55,6 +55,10 @@ func (s *Storage) Open(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	// s.db.SetMaxOpenConns(1)
+	if _, err := s.db.Exec("PRAGMA journal_mode = WAL"); err != nil {
+		return err
+	}
 	s.queries, err = db.Prepare(ctx, s.db)
 	if err != nil {
 		return err
@@ -412,9 +416,13 @@ func (s *Storage) SaveChannelLanguage(
 	channelId discord.ChannelId,
 	lang language.Tag,
 ) error {
-	return s.queries.UpsertChannelLocale(ctx, db.UpsertChannelLocaleParams{
+	err := s.queries.UpsertChannelLocale(ctx, db.UpsertChannelLocaleParams{
 		ChannelID: string(channelId),
 		Locale:    lang.String(),
+	})
+	return s.publish(err, storage.ChannelLanguageUpdated{
+		ChannelId: channelId,
+		Language:  lang,
 	})
 }
 

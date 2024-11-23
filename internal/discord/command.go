@@ -23,7 +23,7 @@ var TRACKING_MODAL_CUSTOM_IDS = map[ps2_platforms.Platform]string{
 	ps2_platforms.PS4_US: "tracking_setup_ps4_us",
 }
 
-func DeferredEphemeralResponse(handle func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) Edit) InteractionHandler {
+func DeferredEphemeralEdit(handle func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) Edit) InteractionHandler {
 	return func(ctx context.Context, log *logger.Logger, s *discordgo.Session, i *discordgo.InteractionCreate) error {
 		err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
@@ -44,6 +44,31 @@ func DeferredEphemeralResponse(handle func(ctx context.Context, s *discordgo.Ses
 			return customErr.Err
 		}
 		_, err = s.InteractionResponseEdit(i.Interaction, data)
+		return err
+	}
+}
+
+func DeferredEphemeralFollowUp(handle func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) FollowUp) InteractionHandler {
+	return func(ctx context.Context, log *logger.Logger, s *discordgo.Session, i *discordgo.InteractionCreate) error {
+		err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Flags: discordgo.MessageFlagsEphemeral,
+			},
+		})
+		if err != nil {
+			return err
+		}
+		data, customErr := handle(ctx, s, i)(message.NewPrinter(LangTagFromInteraction(i)))
+		if customErr != nil {
+			if _, err := s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
+				Content: customErr.Msg,
+			}); err != nil {
+				log.Error(ctx, "error sending followup message", sl.Err(err))
+			}
+			return customErr.Err
+		}
+		_, err = s.FollowupMessageCreate(i.Interaction, false, data)
 		return err
 	}
 }
