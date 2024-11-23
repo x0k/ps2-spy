@@ -27,7 +27,7 @@ func New(
 	removeCommands bool,
 	charactersTrackerSubsManagers map[ps2_platforms.Platform]pubsub.SubscriptionsManager[characters_tracker.EventType],
 	trackingManagers map[ps2_platforms.Platform]*tracking_manager.TrackingManager,
-	handlerFactories map[discord_events.EventType]discord_events.HandlerFactory,
+	handlerFactories map[discord_events.EventType][]discord_events.HandlerFactory,
 	storageSubs pubsub.SubscriptionsManager[storage.EventType],
 	worldTrackerSubsMangers map[ps2_platforms.Platform]pubsub.SubscriptionsManager[worlds_tracker.EventType],
 ) (*module.Module, error) {
@@ -46,9 +46,13 @@ func New(
 	))
 
 	for _, platform := range ps2_platforms.Platforms {
-		handlers := make(map[discord_events.EventType]discord_events.Handler, len(handlerFactories))
-		for t, factory := range handlerFactories {
-			handlers[t] = factory(platform)
+		handlers := make(map[discord_events.EventType][]discord_events.Handler, len(handlerFactories))
+		for t, factories := range handlerFactories {
+			eventHandlers := make([]discord_events.Handler, 0, len(factories))
+			for _, factory := range factories {
+				eventHandlers = append(eventHandlers, factory(platform))
+			}
+			handlers[t] = eventHandlers
 		}
 		handlersManager := discord_events.NewHandlersManager(
 			fmt.Sprintf("discord.%s.handlers", platform),

@@ -8,6 +8,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/x0k/ps2-spy/internal/characters_tracker"
+	"github.com/x0k/ps2-spy/internal/discord"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/ps2"
@@ -19,7 +20,7 @@ import (
 type HandlersManager struct {
 	name            string
 	log             *logger.Logger
-	handlers        map[EventType]Handler
+	handlers        map[EventType][]Handler
 	session         *discordgo.Session
 	wg              sync.WaitGroup
 	trackingManager *tracking_manager.TrackingManager
@@ -30,7 +31,7 @@ func NewHandlersManager(
 	name string,
 	log *logger.Logger,
 	session *discordgo.Session,
-	handlers map[EventType]Handler,
+	handlers map[EventType][]Handler,
 	trackingManager *tracking_manager.TrackingManager,
 	handlersTimeout time.Duration,
 ) *HandlersManager {
@@ -94,14 +95,7 @@ func (h *HandlersManager) handleCharacterEventTask(
 	if err != nil {
 		h.log.Error(ctx, "cannot get channels for character", slog.String("character_id", string(characterId)), sl.Err(err))
 	}
-	if len(channels) == 0 {
-		return
-	}
-	ctx, cancel := context.WithTimeout(ctx, h.handlersTimeout)
-	defer cancel()
-	if err := handler(ctx, h.session, channels, e); err != nil {
-		h.log.Error(ctx, "cannot handle event", sl.Err(err))
-	}
+	h.runHandlers(ctx, handler, channels, e)
 }
 
 func (h *HandlersManager) handleOutfitEventTask(
@@ -110,7 +104,7 @@ func (h *HandlersManager) handleOutfitEventTask(
 	e Event,
 ) {
 	defer h.wg.Done()
-	handler, ok := h.handlers[e.Type()]
+	handlers, ok := h.handlers[e.Type()]
 	if !ok {
 		h.log.Debug(ctx, "no handler for event", slog.String("event_type", string(e.Type())))
 		return
@@ -119,12 +113,27 @@ func (h *HandlersManager) handleOutfitEventTask(
 	if err != nil {
 		h.log.Error(ctx, "cannot get channels for outfit", slog.String("outfit_id", string(outfitId)), sl.Err(err))
 	}
-	if len(channels) == 0 {
+	h.runHandlers(ctx, handlers, channels, e)
+}
+
+func (h *HandlersManager) runHandlers(
+	ctx context.Context,
+	handlers []Handler,
+	channels []discord.Channel,
+	e Event,
+) {
+	if len(channels) == 0 || len(handlers) == 0 {
 		return
 	}
 	ctx, cancel := context.WithTimeout(ctx, h.handlersTimeout)
 	defer cancel()
-	if err := handler(ctx, h.session, channels, e); err != nil {
-		h.log.Error(ctx, "cannot handle event", sl.Err(err))
+	for _, handler := range handlers {
+		h.wg.Add(1)
+		go func(handler Handler) {
+			defer h.wg.Done()
+			if err := handler(ctx, h.session, channels, e); err != nil {
+				h.log.Error(ctx, "cannot handle event", sl.Err(err))
+			}
+		}(handler)
 	}
 }
