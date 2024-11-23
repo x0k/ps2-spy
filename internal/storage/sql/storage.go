@@ -55,6 +55,10 @@ func (s *Storage) Open(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	// s.db.SetMaxOpenConns(1)
+	if _, err := s.db.Exec("PRAGMA journal_mode = WAL"); err != nil {
+		return err
+	}
 	s.queries, err = db.Prepare(ctx, s.db)
 	if err != nil {
 		return err
