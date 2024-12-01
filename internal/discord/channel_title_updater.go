@@ -55,7 +55,6 @@ func (c *ChannelTitleUpdater) takeTitles() map[ChannelId]string {
 
 func (c *ChannelTitleUpdater) update(ctx context.Context) {
 	titles := c.takeTitles()
-	println("updating channel titles", len(titles))
 	for channelId, title := range titles {
 		if _, err := c.session.ChannelEdit(string(channelId), &discordgo.ChannelEdit{
 			Name: title,
