@@ -2,7 +2,6 @@ package module
 
 import (
 	"context"
-	"runtime"
 	"sync"
 	"sync/atomic"
 
@@ -105,7 +104,6 @@ func (m *Module) start(ctx context.Context, awaiter func(context.Context) error)
 			}
 			m.log.LogAttrs(ctx, slog.LevelInfo, "stopped", slog.String("service", service.Name()))
 		}()
-		runtime.Gosched()
 	}
 
 	for _, hook := range m.postStart {
