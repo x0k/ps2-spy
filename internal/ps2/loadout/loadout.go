@@ -21,6 +21,7 @@ const (
 	Engineer
 	HeavyAssault
 	MAX
+	LoadoutTypeCount
 )
 
 var toFaction = map[Loadout]ps2_factions.Id{
