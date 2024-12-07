@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"fmt"
-	"sync"
 
 	"github.com/x0k/ps2-spy/internal/characters_tracker"
 	census_data_provider "github.com/x0k/ps2-spy/internal/data_providers/census"
@@ -43,18 +42,12 @@ func newEventsSubscriptionService(
 	return module.NewService(
 		fmt.Sprintf("ps2.%s.events_subscription", platform),
 		func(ctx context.Context) error {
-			wg := sync.WaitGroup{}
 			for {
 				select {
 				case <-ctx.Done():
-					wg.Wait()
 					return nil
 				case e := <-playerLogin:
-					wg.Add(1)
-					go func() {
-						defer wg.Done()
-						charactersTracker.HandleLogin(ctx, e)
-					}()
+					charactersTracker.HandleLogin(ctx, e)
 				case e := <-playerLogout:
 					charactersTracker.HandleLogout(ctx, e)
 				case e := <-achievementEarned:

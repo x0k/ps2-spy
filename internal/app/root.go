@@ -194,7 +194,6 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		characterTrackerSubsMangers[platform] = ps
 
 		charactersTracker := characters_tracker.New(
-			fmt.Sprintf("%s.characters_tracker", platform),
 			pl.With(sl.Component("characters_tracker")),
 			platform,
 			ps2.PlatformWorldIds[platform],
@@ -202,7 +201,13 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			charactersTrackerPublisher,
 			mt,
 		)
-		m.Append(charactersTracker)
+		m.AppendServiceFn(
+			fmt.Sprintf("%s.characters_tracker", platform),
+			func(ctx context.Context) error {
+				charactersTracker.Start(ctx)
+				return nil
+			},
+		)
 		charactersTrackers[platform] = charactersTracker
 
 		worldsTrackerPubSub := pubsub.New[worlds_tracker.EventType]()
