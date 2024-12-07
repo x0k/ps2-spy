@@ -266,7 +266,6 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		trackingManagers[platform] = trackingManager
 
 		outfitMembersSynchronizer := outfit_members_synchronizer.New(
-			fmt.Sprintf("%s.outfit_members_synchronizer", platform),
 			pl.With(sl.Component("outfit_members_synchronizer")),
 			func(ctx context.Context) ([]ps2.OutfitId, error) {
 				return storage.AllUniqueTrackableOutfitIdsForPlatform(ctx, platform)
@@ -282,7 +281,13 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			},
 			24*time.Hour,
 		)
-		m.Append(outfitMembersSynchronizer)
+		m.AppendServiceFn(
+			fmt.Sprintf("%s.outfit_members_synchronizer", platform),
+			func(ctx context.Context) error {
+				outfitMembersSynchronizer.Start(ctx)
+				return nil
+			},
+		)
 		outfitMembersSynchronizers[platform] = outfitMembersSynchronizer
 
 		outfitsLoader := loader.WithMultiCache(
