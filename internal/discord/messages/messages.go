@@ -365,6 +365,15 @@ func (m *Messages) TrackingSettingsUpdate(entities discord.TrackableEntities[[]s
 	}
 }
 
+func (m *Messages) InvalidStatsTrackerSubcommand(cmd string, err error) discord.Edit {
+	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
+		return nil, &discord.Error{
+			Msg: p.Sprintf("Invalid stats tracker subcommand: %s", cmd),
+			Err: err,
+		}
+	}
+}
+
 func (m *Messages) TrackingSettingsLoadError(channelId discord.ChannelId, platform ps2_platforms.Platform, err error) discord.Response {
 	return func(p *message.Printer) (*discordgo.InteractionResponseData, *discord.Error) {
 		return nil, &discord.Error{
