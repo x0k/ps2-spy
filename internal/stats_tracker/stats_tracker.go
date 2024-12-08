@@ -145,6 +145,8 @@ func (s *StatsTracker) stopChannelTracker(channelId discord.ChannelId) error {
 	}
 	return s.publisher.Publish(ChannelTrackerStopped{
 		ChannelId: channelId,
+		StartedAt: pt.startedAt,
+		StoppedAt: time.Now(),
 		Platforms: stats,
 	})
 }
@@ -184,10 +186,13 @@ func (s *StatsTracker) handleGainExperienceEvent(ctx context.Context, platform p
 func (s *StatsTracker) handleDeathEvent(ctx context.Context, platform ps2_platforms.Platform, event events.Death) error {
 	var errs []error
 	charId := ps2.CharacterId(event.CharacterID)
-	isSuicide := event.AttackerCharacterID == "0" || event.AttackerCharacterID == event.CharacterID
+	isDeathByRestrictedArea := event.AttackerCharacterID == "0"
+	isSuicide := event.AttackerCharacterID == event.CharacterID
 	deathAdder := addDeath
 	if isSuicide {
 		deathAdder = addSuicide
+	} else if isDeathByRestrictedArea {
+		deathAdder = addDeathByRestrictedArea
 	}
 	if channels, err := s.channelsLoader(ctx, discord.PlatformQuery[ps2.CharacterId]{Platform: platform, Value: charId}); err == nil {
 		s.handleCharacterEvent(
@@ -201,7 +206,7 @@ func (s *StatsTracker) handleDeathEvent(ctx context.Context, platform ps2_platfo
 	} else {
 		errs = append(errs, fmt.Errorf("cannot get channels for character %q: %w", charId, err))
 	}
-	if isSuicide {
+	if isSuicide || isDeathByRestrictedArea {
 		return errors.Join(errs...)
 	}
 	charId = ps2.CharacterId(event.AttackerCharacterID)

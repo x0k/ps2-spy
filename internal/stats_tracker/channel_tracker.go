@@ -8,22 +8,22 @@ import (
 	ps2_loadout "github.com/x0k/ps2-spy/internal/ps2/loadout"
 )
 
-type CharacterStats struct {
+type characterTracker struct {
 	// Kills
-	HeadShotsKills uint
-	BodyKills      uint
-	TeamKills      uint
-	// Deaths
-	Deaths uint
-	// With deaths by restricted area
-	Suicides uint
+	bodyKills      uint
+	headShotsKills uint
+	teamKills      uint
+	// deaths
+	deaths                 uint
+	deathsByRestrictedArea uint
+	suicides               uint
 
 	LoadoutsDistribution [ps2_loadout.LoadoutTypeCount]time.Duration
 	lastLoadoutType      ps2_loadout.LoadoutType
 	lastLoadoutUpdate    time.Time
 }
 
-func (c *CharacterStats) updateLoadout(loadout ps2_loadout.LoadoutType) {
+func (c *characterTracker) updateLoadout(loadout ps2_loadout.LoadoutType) {
 	now := time.Now()
 	if c.lastLoadoutUpdate.IsZero() {
 		c.lastLoadoutUpdate = now
@@ -38,21 +38,27 @@ func (c *CharacterStats) updateLoadout(loadout ps2_loadout.LoadoutType) {
 	c.lastLoadoutType = loadout
 }
 
+func (c *characterTracker) toStats() {
+	if !c.lastLoadoutUpdate.IsZero() {
+		c.LoadoutsDistribution[c.lastLoadoutType] += time.Since(c.lastLoadoutUpdate)
+	}
+}
+
 type ChannelTracker struct {
 	mu         sync.Mutex
-	characters map[ps2.CharacterId]*CharacterStats
+	characters map[ps2.CharacterId]*characterTracker
 }
 
 func newChannelTracker() *ChannelTracker {
 	return &ChannelTracker{
-		characters: make(map[ps2.CharacterId]*CharacterStats),
+		characters: make(map[ps2.CharacterId]*characterTracker),
 	}
 }
 
-func (c *ChannelTracker) getCharacterStats(characterId ps2.CharacterId) *CharacterStats {
+func (c *ChannelTracker) characterTracker(characterId ps2.CharacterId) *characterTracker {
 	character, ok := c.characters[characterId]
 	if !ok {
-		character = &CharacterStats{}
+		character = &characterTracker{}
 		c.characters[characterId] = character
 	}
 	return character
@@ -61,33 +67,37 @@ func (c *ChannelTracker) getCharacterStats(characterId ps2.CharacterId) *Charact
 func (c *ChannelTracker) handleCharacterEvent(
 	characterId ps2.CharacterId,
 	loadout ps2_loadout.LoadoutType,
-	update func(*CharacterStats),
+	update func(*characterTracker),
 ) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	character := c.getCharacterStats(characterId)
+	character := c.characterTracker(characterId)
 	update(character)
 	character.updateLoadout(loadout)
 }
 
-func addDeath(character *CharacterStats) {
-	character.Deaths++
+func addDeath(character *characterTracker) {
+	character.deaths++
 }
 
-func addSuicide(character *CharacterStats) {
-	character.Suicides++
+func addDeathByRestrictedArea(character *characterTracker) {
+	character.deathsByRestrictedArea++
 }
 
-func addBodyKill(character *CharacterStats) {
-	character.BodyKills++
+func addSuicide(character *characterTracker) {
+	character.suicides++
 }
 
-func addHeadShotKill(character *CharacterStats) {
-	character.HeadShotsKills++
+func addBodyKill(character *characterTracker) {
+	character.bodyKills++
 }
 
-func addTeamKill(character *CharacterStats) {
-	character.TeamKills++
+func addHeadShotKill(character *characterTracker) {
+	character.headShotsKills++
 }
 
-func updateLoadout(character *CharacterStats) {}
+func addTeamKill(character *characterTracker) {
+	character.teamKills++
+}
+
+func updateLoadout(character *characterTracker) {}
