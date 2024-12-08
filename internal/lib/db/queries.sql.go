@@ -69,6 +69,22 @@ func (q *Queries) DeleteOutfitMember(ctx context.Context, arg DeleteOutfitMember
 	return err
 }
 
+const getChannelLocale = `-- name: GetChannelLocale :one
+SELECT
+  locale
+FROM
+  channel_locale
+WHERE
+  channel_id = ?
+`
+
+func (q *Queries) GetChannelLocale(ctx context.Context, channelID string) (string, error) {
+	row := q.queryRow(ctx, q.getChannelLocaleStmt, getChannelLocale, channelID)
+	var locale string
+	err := row.Scan(&locale)
+	return locale, err
+}
+
 const getFacility = `-- name: GetFacility :one
 SELECT
   facility_id, facility_name, facility_type, zone_id

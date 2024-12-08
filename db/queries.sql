@@ -202,6 +202,14 @@ UPDATE
 SET
   locale = EXCLUDED.locale;
 
+-- name: GetChannelLocale :one
+SELECT
+  locale
+FROM
+  channel_locale
+WHERE
+  channel_id = ?;
+
 -- name: ListChannelTrackablePlatforms :many
 SELECT DISTINCT
   platform

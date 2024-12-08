@@ -33,6 +33,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.deleteOutfitMemberStmt, err = db.PrepareContext(ctx, deleteOutfitMember); err != nil {
 		return nil, fmt.Errorf("error preparing query DeleteOutfitMember: %w", err)
 	}
+	if q.getChannelLocaleStmt, err = db.PrepareContext(ctx, getChannelLocale); err != nil {
+		return nil, fmt.Errorf("error preparing query GetChannelLocale: %w", err)
+	}
 	if q.getFacilityStmt, err = db.PrepareContext(ctx, getFacility); err != nil {
 		return nil, fmt.Errorf("error preparing query GetFacility: %w", err)
 	}
@@ -111,6 +114,11 @@ func (q *Queries) Close() error {
 	if q.deleteOutfitMemberStmt != nil {
 		if cerr := q.deleteOutfitMemberStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing deleteOutfitMemberStmt: %w", cerr)
+		}
+	}
+	if q.getChannelLocaleStmt != nil {
+		if cerr := q.getChannelLocaleStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getChannelLocaleStmt: %w", cerr)
 		}
 	}
 	if q.getFacilityStmt != nil {
@@ -255,6 +263,7 @@ type Queries struct {
 	deleteChannelCharacterStmt                              *sql.Stmt
 	deleteChannelOutfitStmt                                 *sql.Stmt
 	deleteOutfitMemberStmt                                  *sql.Stmt
+	getChannelLocaleStmt                                    *sql.Stmt
 	getFacilityStmt                                         *sql.Stmt
 	getPlatformOutfitStmt                                   *sql.Stmt
 	getPlatformOutfitSynchronizedAtStmt                     *sql.Stmt
@@ -284,6 +293,7 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		deleteChannelCharacterStmt:                   q.deleteChannelCharacterStmt,
 		deleteChannelOutfitStmt:                      q.deleteChannelOutfitStmt,
 		deleteOutfitMemberStmt:                       q.deleteOutfitMemberStmt,
+		getChannelLocaleStmt:                         q.getChannelLocaleStmt,
 		getFacilityStmt:                              q.getFacilityStmt,
 		getPlatformOutfitStmt:                        q.getPlatformOutfitStmt,
 		getPlatformOutfitSynchronizedAtStmt:          q.getPlatformOutfitSynchronizedAtStmt,

@@ -223,7 +223,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			charactersTrackerPublisher,
 			mt,
 		)
-		m.AppendServiceFn(
+		m.AppendS(
 			fmt.Sprintf("%s.characters_tracker", platform),
 			func(ctx context.Context) error {
 				charactersTracker.Start(ctx)
@@ -304,7 +304,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			},
 			24*time.Hour,
 		)
-		m.AppendServiceFn(
+		m.AppendS(
 			fmt.Sprintf("%s.outfit_members_synchronizer", platform),
 			func(ctx context.Context) error {
 				outfitMembersSynchronizer.Start(ctx)
@@ -488,6 +488,8 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			return count, errors.Join(errs...)
 		},
 		statsTracker,
+		statsTrackerPubSub,
+		storage.ChannelLanguage,
 	)
 	if err != nil {
 		return nil, err

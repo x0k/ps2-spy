@@ -16,7 +16,6 @@ import (
 )
 
 type commands struct {
-	name                  string
 	commands              []*discord.Command
 	populationLoader      *populationLoader
 	worldPopulationLoader *worldPopulationLoader
@@ -24,7 +23,6 @@ type commands struct {
 }
 
 func New(
-	name string,
 	log *logger.Logger,
 	messages *discord_messages.Messages,
 	populationLoaders map[string]loader.Simple[meta.Loaded[ps2.WorldsPopulation]],
@@ -64,7 +62,6 @@ func New(
 		alertsLoadersPriority,
 	)
 	return &commands{
-		name:                  name,
 		populationLoader:      populationLoader,
 		worldPopulationLoader: worldPopulationLoader,
 		alertsLoader:          alertsLoader,
@@ -126,10 +123,6 @@ func New(
 			),
 		},
 	}
-}
-
-func (c *commands) Name() string {
-	return c.name
 }
 
 func (c *commands) Commands() []*discord.Command {
