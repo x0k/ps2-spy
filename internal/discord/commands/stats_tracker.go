@@ -2,15 +2,18 @@ package discord_commands
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/x0k/ps2-spy/internal/discord"
 	discord_messages "github.com/x0k/ps2-spy/internal/discord/messages"
+	"github.com/x0k/ps2-spy/internal/stats_tracker"
 )
 
 func NewStatsTracker(
 	messages *discord_messages.Messages,
+	statsTracker *stats_tracker.StatsTracker,
 ) *discord.Command {
 	return &discord.Command{
 		Cmd: &discordgo.ApplicationCommand{
@@ -53,31 +56,22 @@ func NewStatsTracker(
 			channelId := discord.ChannelId(i.ChannelID)
 			switch cmd {
 			case "start":
-				return handleStartStatsTracker(ctx, messages, channelId)
+				if err := statsTracker.StartChannelTracker(ctx, channelId); errors.Is(err, stats_tracker.ErrNothingToTrack) {
+					return messages.NothingToTrack()
+				} else if err != nil {
+					return messages.StartChannelStatsTrackerError(err)
+				}
 			case "stop":
-				return handleStopStatsTracker(ctx, messages, channelId)
-			default:
-				return messages.InvalidStatsTrackerSubcommand(
-					cmd,
-					fmt.Errorf("invalid subcommand: %s", cmd),
-				)
+				if err := statsTracker.StopChannelTracker(channelId); errors.Is(err, stats_tracker.ErrNoChannelTrackerToStop) {
+					return messages.NoChannelTrackerToStop()
+				} else if err != nil {
+					return messages.StopChannelStatsTrackerError(err)
+				}
 			}
+			return messages.InvalidStatsTrackerSubcommand(
+				cmd,
+				fmt.Errorf("invalid subcommand: %s", cmd),
+			)
 		}),
 	}
-}
-
-func handleStartStatsTracker(
-	ctx context.Context,
-	messages *discord_messages.Messages,
-	channelId discord.ChannelId,
-) discord.Edit {
-
-}
-
-func handleStopStatsTracker(
-	ctx context.Context,
-	messages *discord_messages.Messages,
-	channelId discord.ChannelId,
-) discord.Edit {
-
 }

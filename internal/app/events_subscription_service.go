@@ -12,6 +12,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/module"
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
+	"github.com/x0k/ps2-spy/internal/stats_tracker"
 	"github.com/x0k/ps2-spy/internal/worlds_tracker"
 )
 
@@ -22,6 +23,7 @@ func newEventsSubscriptionService(
 	subs pubsub.SubscriptionsManager[events.EventType],
 	charactersTracker *characters_tracker.CharactersTracker,
 	worldsTracker *worlds_tracker.WorldsTracker,
+	statsTracker *stats_tracker.StatsTracker,
 ) module.Service {
 	playerLogin := census_data_provider.Subscribe[events.PlayerLogin](ps, subs)
 	playerLogout := census_data_provider.Subscribe[events.PlayerLogout](ps, subs)
@@ -56,8 +58,10 @@ func newEventsSubscriptionService(
 					charactersTracker.HandleWorldZoneAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
 				case e := <-death:
 					charactersTracker.HandleWorldZoneAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
+					statsTracker.HandleDeathEvent(ctx, platform, e)
 				case e := <-gainExperience:
 					charactersTracker.HandleWorldZoneAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
+					statsTracker.HandleGainExperienceEvent(ctx, platform, e)
 				case e := <-itemAdded:
 					charactersTracker.HandleWorldZoneAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
 				case e := <-playerFacilityCapture:

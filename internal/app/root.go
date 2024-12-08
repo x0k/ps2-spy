@@ -43,6 +43,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/ps2"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 	"github.com/x0k/ps2-spy/internal/shared"
+	"github.com/x0k/ps2-spy/internal/stats_tracker"
 	"github.com/x0k/ps2-spy/internal/storage"
 	sql_storage "github.com/x0k/ps2-spy/internal/storage/sql"
 	"github.com/x0k/ps2-spy/internal/tracking_manager"
@@ -124,6 +125,27 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	outfitsLoaders := make(map[ps2_platforms.Platform]loader.Multi[ps2.OutfitId, ps2.Outfit], len(ps2_platforms.Platforms))
 	outfitLoaders := make(map[ps2_platforms.Platform]loader.Keyed[ps2.OutfitId, ps2.Outfit], len(ps2_platforms.Platforms))
 	facilityLoaders := make(map[ps2_platforms.Platform]loader.Keyed[ps2.FacilityId, ps2.Facility], len(ps2_platforms.Platforms))
+
+	statsTrackerPubSub := pubsub.New[stats_tracker.EventType]()
+
+	statsTracker := stats_tracker.New(
+		log.With(sl.Component("stats_tracker")),
+		statsTrackerPubSub,
+		func(ctx context.Context, pq discord.PlatformQuery[ps2.CharacterId]) ([]discord.ChannelId, error) {
+			manager := trackingManagers[pq.Platform]
+			channels, err := manager.ChannelIdsForCharacter(ctx, pq.Value)
+			if err != nil {
+				return nil, err
+			}
+			channelIds := make([]discord.ChannelId, 0, len(channels))
+			for _, channel := range channels {
+				channelIds = append(channelIds, channel.ChannelId)
+			}
+			return channelIds, nil
+		},
+		storage.ChannelTrackablePlatforms,
+		cfg.MaxTrackingDuration,
+	)
 
 	for _, platform := range ps2_platforms.Platforms {
 		pl := log.With(slog.String("platform", string(platform)))
@@ -240,6 +262,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			eventsPubSub,
 			charactersTracker,
 			worldsTracker,
+			statsTracker,
 		))
 
 		trackingManager := tracking_manager.New(
@@ -464,6 +487,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			}
 			return count, errors.Join(errs...)
 		},
+		statsTracker,
 	)
 	if err != nil {
 		return nil, err

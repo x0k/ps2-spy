@@ -365,10 +365,46 @@ func (m *Messages) TrackingSettingsUpdate(entities discord.TrackableEntities[[]s
 	}
 }
 
+func (m *Messages) NothingToTrack() discord.Edit {
+	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
+		content := p.Sprintf("Nothing to track, please set tracking settings")
+		return &discordgo.WebhookEdit{
+			Content: &content,
+		}, nil
+	}
+}
+
 func (m *Messages) InvalidStatsTrackerSubcommand(cmd string, err error) discord.Edit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
 		return nil, &discord.Error{
 			Msg: p.Sprintf("Invalid stats tracker subcommand: %s", cmd),
+			Err: err,
+		}
+	}
+}
+
+func (m *Messages) StartChannelStatsTrackerError(err error) discord.Edit {
+	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
+		return nil, &discord.Error{
+			Msg: p.Sprintf("Failed to start channel stats tracker"),
+			Err: err,
+		}
+	}
+}
+
+func (m *Messages) NoChannelTrackerToStop() discord.Edit {
+	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
+		content := p.Sprintf("There is no channel tracker to stop")
+		return &discordgo.WebhookEdit{
+			Content: &content,
+		}, nil
+	}
+}
+
+func (m *Messages) StopChannelStatsTrackerError(err error) discord.Edit {
+	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
+		return nil, &discord.Error{
+			Msg: p.Sprintf("Failed to stop channel stats tracker"),
 			Err: err,
 		}
 	}

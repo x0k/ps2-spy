@@ -63,6 +63,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.listChannelOutfitIdsForPlatformStmt, err = db.PrepareContext(ctx, listChannelOutfitIdsForPlatform); err != nil {
 		return nil, fmt.Errorf("error preparing query ListChannelOutfitIdsForPlatform: %w", err)
 	}
+	if q.listChannelTrackablePlatformsStmt, err = db.PrepareContext(ctx, listChannelTrackablePlatforms); err != nil {
+		return nil, fmt.Errorf("error preparing query ListChannelTrackablePlatforms: %w", err)
+	}
 	if q.listPlatformOutfitMembersStmt, err = db.PrepareContext(ctx, listPlatformOutfitMembers); err != nil {
 		return nil, fmt.Errorf("error preparing query ListPlatformOutfitMembers: %w", err)
 	}
@@ -158,6 +161,11 @@ func (q *Queries) Close() error {
 	if q.listChannelOutfitIdsForPlatformStmt != nil {
 		if cerr := q.listChannelOutfitIdsForPlatformStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing listChannelOutfitIdsForPlatformStmt: %w", cerr)
+		}
+	}
+	if q.listChannelTrackablePlatformsStmt != nil {
+		if cerr := q.listChannelTrackablePlatformsStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing listChannelTrackablePlatformsStmt: %w", cerr)
 		}
 	}
 	if q.listPlatformOutfitMembersStmt != nil {
@@ -257,6 +265,7 @@ type Queries struct {
 	insertOutfitMemberStmt                                  *sql.Stmt
 	listChannelCharacterIdsForPlatformStmt                  *sql.Stmt
 	listChannelOutfitIdsForPlatformStmt                     *sql.Stmt
+	listChannelTrackablePlatformsStmt                       *sql.Stmt
 	listPlatformOutfitMembersStmt                           *sql.Stmt
 	listPlatformOutfitsStmt                                 *sql.Stmt
 	listPlatformTrackingChannelsForCharacterStmt            *sql.Stmt
@@ -285,6 +294,7 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		insertOutfitMemberStmt:                       q.insertOutfitMemberStmt,
 		listChannelCharacterIdsForPlatformStmt:       q.listChannelCharacterIdsForPlatformStmt,
 		listChannelOutfitIdsForPlatformStmt:          q.listChannelOutfitIdsForPlatformStmt,
+		listChannelTrackablePlatformsStmt:            q.listChannelTrackablePlatformsStmt,
 		listPlatformOutfitMembersStmt:                q.listPlatformOutfitMembersStmt,
 		listPlatformOutfitsStmt:                      q.listPlatformOutfitsStmt,
 		listPlatformTrackingChannelsForCharacterStmt: q.listPlatformTrackingChannelsForCharacterStmt,

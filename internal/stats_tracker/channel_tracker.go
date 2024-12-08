@@ -39,14 +39,12 @@ func (c *CharacterStats) updateLoadout(loadout ps2_loadout.LoadoutType) {
 }
 
 type ChannelTracker struct {
-	startedAt  time.Time
 	mu         sync.Mutex
 	characters map[ps2.CharacterId]*CharacterStats
 }
 
 func newChannelTracker() *ChannelTracker {
 	return &ChannelTracker{
-		startedAt:  time.Now(),
 		characters: make(map[ps2.CharacterId]*CharacterStats),
 	}
 }

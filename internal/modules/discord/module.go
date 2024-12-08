@@ -19,6 +19,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/meta"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
+	"github.com/x0k/ps2-spy/internal/stats_tracker"
 	"github.com/x0k/ps2-spy/internal/storage"
 	"github.com/x0k/ps2-spy/internal/tracking_manager"
 	"github.com/x0k/ps2-spy/internal/worlds_tracker"
@@ -52,6 +53,7 @@ func New(
 	charactersLoaders map[ps2_platforms.Platform]loader.Multi[ps2.CharacterId, ps2.Character],
 	facilityLoaders map[ps2_platforms.Platform]loader.Keyed[ps2.FacilityId, ps2.Facility],
 	onlineTrackableEntitiesCountLoader loader.Keyed[discord.ChannelId, int],
+	statsTracker *stats_tracker.StatsTracker,
 ) (*module.Module, error) {
 	m := module.New(log.Logger, "discord")
 	session, err := discordgo.New("Bot " + token)
@@ -80,6 +82,7 @@ func New(
 		outfitIdsLoader,
 		saveChannelTrackingSettings,
 		saveChannelLanguage,
+		statsTracker,
 	)
 	m.Append(commands)
 

@@ -319,6 +319,18 @@ func (s *Storage) AllUniqueTrackableOutfitIdsForPlatform(ctx context.Context, pl
 	return ids, nil
 }
 
+func (s *Storage) ChannelTrackablePlatforms(ctx context.Context, channelId discord.ChannelId) ([]ps2_platforms.Platform, error) {
+	ps, err := s.queries.ListChannelTrackablePlatforms(ctx, string(channelId))
+	if err != nil {
+		return nil, err
+	}
+	platforms := make([]ps2_platforms.Platform, 0, len(ps))
+	for _, p := range ps {
+		platforms = append(platforms, ps2_platforms.Platform(p))
+	}
+	return platforms, nil
+}
+
 func (s *Storage) OutfitMembers(ctx context.Context, platform ps2_platforms.Platform, outfitId ps2.OutfitId) ([]ps2.CharacterId, error) {
 	list, err := s.queries.ListPlatformOutfitMembers(ctx, db.ListPlatformOutfitMembersParams{
 		Platform: string(platform),

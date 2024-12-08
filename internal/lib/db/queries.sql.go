@@ -322,6 +322,45 @@ func (q *Queries) ListChannelOutfitIdsForPlatform(ctx context.Context, arg ListC
 	return items, nil
 }
 
+const listChannelTrackablePlatforms = `-- name: ListChannelTrackablePlatforms :many
+SELECT DISTINCT
+  platform
+FROM
+  channel_to_character
+WHERE
+  channel_to_character.channel_id = ?1
+UNION
+SELECT DISTINCT
+  platform
+FROM
+  channel_to_outfit
+WHERE
+  channel_to_outfit.channel_id = ?1
+`
+
+func (q *Queries) ListChannelTrackablePlatforms(ctx context.Context, channelID string) ([]string, error) {
+	rows, err := q.query(ctx, q.listChannelTrackablePlatformsStmt, listChannelTrackablePlatforms, channelID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var platform string
+		if err := rows.Scan(&platform); err != nil {
+			return nil, err
+		}
+		items = append(items, platform)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listPlatformOutfitMembers = `-- name: ListPlatformOutfitMembers :many
 SELECT
   character_id
