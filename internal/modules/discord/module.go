@@ -86,7 +86,7 @@ func New(
 		saveChannelLanguage,
 		statsTracker,
 	)
-	m.AppendS("discord_commands", commands.Start)
+	m.AppendS("discord.commands", commands.Start)
 
 	channelTitleUpdater := discord.NewChannelTitleUpdater(
 		log.With(sl.Component("channel_title_updater")),
@@ -128,11 +128,11 @@ func New(
 		eventsPubSub,
 		channelLanguageLoader,
 	)
-	m.AppendSS("discord_events_publisher", eventsPublisher.Start)
+	m.AppendSS("discord.events_publisher", eventsPublisher.Start)
 	channelLanguageUpdate := storage.Subscribe[storage.ChannelLanguageUpdated](m, storageSubs)
 	channelTrackerStarted := stats_tracker.Subscribe[stats_tracker.ChannelTrackerStarted](m, statsTrackerSubs)
 	channelTrackerStopped := stats_tracker.Subscribe[stats_tracker.ChannelTrackerStopped](m, statsTrackerSubs)
-	m.AppendSS("discord_events_subscription", func(ctx context.Context) {
+	m.AppendSS("discord.events_subscription", func(ctx context.Context) {
 		for {
 			select {
 			case <-ctx.Done():
