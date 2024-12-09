@@ -43,7 +43,7 @@ type CharacterStats struct {
 }
 
 type PlatformStats struct {
-	Characters map[ps2.CharacterId]CharacterStats
+	Characters []CharacterStats
 }
 
 type ChannelTrackerStopped struct {

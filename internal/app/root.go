@@ -144,6 +144,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			return channelIds, nil
 		},
 		storage.ChannelTrackablePlatforms,
+		charactersLoaders,
 		cfg.MaxTrackingDuration,
 	)
 

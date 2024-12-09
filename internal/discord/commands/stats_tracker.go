@@ -63,7 +63,7 @@ func NewStatsTracker(
 				}
 				return messages.ChannelTrackerWillStartedSoon()
 			case "stop":
-				if err := statsTracker.StopChannelTracker(channelId); errors.Is(err, stats_tracker.ErrNoChannelTrackerToStop) {
+				if err := statsTracker.StopChannelTracker(ctx, channelId); errors.Is(err, stats_tracker.ErrNoChannelTrackerToStop) {
 					return messages.NoChannelTrackerToStop()
 				} else if err != nil {
 					return messages.StopChannelStatsTrackerError(err)

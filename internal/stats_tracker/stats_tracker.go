@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"sync"
 	"time"
 
@@ -25,7 +26,7 @@ type TrackablePlatformsLoader = loader.Keyed[discord.ChannelId, []ps2_platforms.
 type CharacterTrackingChannelsLoader = loader.Keyed[discord.PlatformQuery[ps2.CharacterId], []discord.ChannelId]
 
 type ChannelPlatformsTracker struct {
-	trackers  map[ps2_platforms.Platform]*ChannelTracker
+	trackers  map[ps2_platforms.Platform]*platformTracker
 	startedAt time.Time
 }
 
@@ -38,6 +39,7 @@ type StatsTracker struct {
 	channelsLoader           CharacterTrackingChannelsLoader
 	maxTracingDuration       time.Duration
 	trackablePlatformsLoader TrackablePlatformsLoader
+	charactersLoaders        map[ps2_platforms.Platform]CharactersLoader
 }
 
 func New(
@@ -45,6 +47,7 @@ func New(
 	publisher pubsub.Publisher[Event],
 	channelsLoader CharacterTrackingChannelsLoader,
 	trackablePlatformsLoader TrackablePlatformsLoader,
+	charactersLoaders map[ps2_platforms.Platform]CharactersLoader,
 	maxTrackingDuration time.Duration,
 ) *StatsTracker {
 	return &StatsTracker{
@@ -52,6 +55,7 @@ func New(
 		trackers:                 make(map[discord.ChannelId]ChannelPlatformsTracker),
 		publisher:                publisher,
 		channelsLoader:           channelsLoader,
+		charactersLoaders:        charactersLoaders,
 		maxTracingDuration:       maxTrackingDuration,
 		trackablePlatformsLoader: trackablePlatformsLoader,
 	}
@@ -66,7 +70,7 @@ func (s *StatsTracker) Start(ctx context.Context) {
 			s.wg.Wait()
 			return
 		case <-ticker.C:
-			if err := s.handleTrackersOvertime(); err != nil {
+			if err := s.handleTrackersOvertime(ctx); err != nil {
 				s.log.Error(ctx, "error during handleTrackersOvertime", sl.Err(err))
 			}
 		}
@@ -83,7 +87,7 @@ func (s *StatsTracker) StartChannelTracker(ctx context.Context, channelId discor
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	stopErr := s.stopChannelTracker(channelId)
+	stopErr := s.stopChannelTracker(ctx, channelId)
 	if errors.Is(stopErr, ErrNoChannelTrackerToStop) {
 		stopErr = nil
 	}
@@ -91,10 +95,10 @@ func (s *StatsTracker) StartChannelTracker(ctx context.Context, channelId discor
 	return errors.Join(stopErr, startErr)
 }
 
-func (s *StatsTracker) StopChannelTracker(channelId discord.ChannelId) error {
+func (s *StatsTracker) StopChannelTracker(ctx context.Context, channelId discord.ChannelId) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return s.stopChannelTracker(channelId)
+	return s.stopChannelTracker(ctx, channelId)
 }
 
 func (s *StatsTracker) HandleDeathEvent(ctx context.Context, platform ps2_platforms.Platform, event events.Death) {
@@ -119,13 +123,13 @@ func (s *StatsTracker) HandleGainExperienceEvent(ctx context.Context, platform p
 
 func (s *StatsTracker) startChannelTracker(channelId discord.ChannelId, trackablePlatforms []ps2_platforms.Platform) error {
 	now := time.Now()
-	trackers := make(map[ps2_platforms.Platform]*ChannelTracker, len(trackablePlatforms))
+	trackers := make(map[ps2_platforms.Platform]*platformTracker, len(trackablePlatforms))
 	s.trackers[channelId] = ChannelPlatformsTracker{
 		startedAt: now,
 		trackers:  trackers,
 	}
 	for _, platform := range trackablePlatforms {
-		trackers[platform] = newChannelTracker()
+		trackers[platform] = newPlatformTracker(platform, s.charactersLoaders[platform])
 	}
 	return s.publisher.Publish(ChannelTrackerStarted{
 		ChannelId: channelId,
@@ -133,32 +137,37 @@ func (s *StatsTracker) startChannelTracker(channelId discord.ChannelId, trackabl
 	})
 }
 
-func (s *StatsTracker) stopChannelTracker(channelId discord.ChannelId) error {
+func (s *StatsTracker) stopChannelTracker(ctx context.Context, channelId discord.ChannelId) error {
 	pt, ok := s.trackers[channelId]
 	if !ok {
 		return ErrNoChannelTrackerToStop
 	}
+	stoppedAt := time.Now()
 	delete(s.trackers, channelId)
-	stats := make(map[ps2_platforms.Platform]map[ps2.CharacterId]*CharacterStats, len(pt.trackers))
+	stats := make(map[ps2_platforms.Platform]PlatformStats, len(pt.trackers))
 	for platform, tracker := range pt.trackers {
-		stats[platform] = tracker.characters
+		var err error
+		stats[platform], err = tracker.toStats(ctx, stoppedAt)
+		if err != nil {
+			s.log.Warn(ctx, "failed to get stats for platform", slog.String("channel_id", string(channelId)), slog.String("platform", string(platform)), sl.Err(err))
+		}
 	}
 	return s.publisher.Publish(ChannelTrackerStopped{
 		ChannelId: channelId,
 		StartedAt: pt.startedAt,
-		StoppedAt: time.Now(),
+		StoppedAt: stoppedAt,
 		Platforms: stats,
 	})
 }
 
-func (s *StatsTracker) handleTrackersOvertime() error {
+func (s *StatsTracker) handleTrackersOvertime(ctx context.Context) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	var errs []error
 	for channelId, tracker := range s.trackers {
 		if time.Since(tracker.startedAt) > s.maxTracingDuration {
 			// NOTE: We are modifying the map while iterating over it
-			if err := s.stopChannelTracker(channelId); err != nil {
+			if err := s.stopChannelTracker(ctx, channelId); err != nil {
 				errs = append(errs, err)
 			}
 		}
@@ -237,7 +246,7 @@ func (s *StatsTracker) handleCharacterEvent(
 	platform ps2_platforms.Platform,
 	characterId ps2.CharacterId,
 	loadout ps2_loadout.Loadout,
-	update func(*CharacterStats),
+	update func(*characterTracker),
 ) {
 	if len(channels) == 0 {
 		return
