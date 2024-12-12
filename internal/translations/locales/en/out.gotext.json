@@ -2,6 +2,104 @@
     "language": "en",
     "messages": [
         {
+            "id": "INF",
+            "message": "INF",
+            "translation": "INF",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "LA",
+            "message": "LA",
+            "translation": "LA",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "MED",
+            "message": "MED",
+            "translation": "MED",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "ENG",
+            "message": "ENG",
+            "translation": "ENG",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "HA",
+            "message": "HA",
+            "translation": "HA",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "MAX",
+            "message": "MAX",
+            "translation": "MAX",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Unknown",
+            "message": "Unknown",
+            "translation": "Unknown",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Faction",
+            "message": "Faction",
+            "translation": "Faction",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Outfit",
+            "message": "Outfit",
+            "translation": "Outfit",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Character",
+            "message": "Character",
+            "translation": "Character",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Kills",
+            "message": "Kills",
+            "translation": "Kills",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "HS%",
+            "message": "HS%",
+            "translation": "HS%",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "KD",
+            "message": "KD",
+            "translation": "KD",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Loadout",
+            "message": "Loadout",
+            "translation": "Loadout",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
             "id": "[{OutfitTag}] {Name} ({FactionId}) is now online ({WorldId})",
             "message": "[{OutfitTag}] {Name} ({FactionId}) is now online ({WorldId})",
             "translation": "[{OutfitTag}] {Name} ({FactionId}) is now online ({WorldId})",
@@ -259,6 +357,61 @@
                     "expr": "facilityId"
                 }
             ],
+            "fuzzy": true
+        },
+        {
+            "id": "Stats tracker started",
+            "message": "Stats tracker started",
+            "translation": "Stats tracker started",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Platform: {ToUpperstringplatform}, started at: {RenderTimestartedAt}, stopped: {RenderRelativeTimestoppedAt}, duration: {SubstartedAt}\n```",
+            "message": "Platform: {ToUpperstringplatform}, started at: {RenderTimestartedAt}, stopped: {RenderRelativeTimestoppedAt}, duration: {SubstartedAt}\n```",
+            "translation": "Platform: {ToUpperstringplatform}, started at: {RenderTimestartedAt}, stopped: {RenderRelativeTimestoppedAt}, duration: {SubstartedAt}\n```",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "ToUpperstringplatform",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "strings.ToUpper(string(platform))"
+                },
+                {
+                    "id": "RenderTimestartedAt",
+                    "string": "%[2]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "renderTime(startedAt)"
+                },
+                {
+                    "id": "RenderRelativeTimestoppedAt",
+                    "string": "%[3]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 3,
+                    "expr": "renderRelativeTime(stoppedAt)"
+                },
+                {
+                    "id": "SubstartedAt",
+                    "string": "%[4]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 4,
+                    "expr": "renderDuration(p, stoppedAt.Sub(startedAt))"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "No data collected",
+            "message": "No data collected",
+            "translation": "No data collected",
+            "translatorComment": "Copied from source.",
             "fuzzy": true
         },
         {
@@ -673,6 +826,65 @@
                     "expr": "platform"
                 }
             ],
+            "fuzzy": true
+        },
+        {
+            "id": "Nothing to track, please set tracking settings first",
+            "message": "Nothing to track, please set tracking settings first",
+            "translation": "Nothing to track, please set tracking settings first",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Invalid stats tracker subcommand: {Cmd}",
+            "message": "Invalid stats tracker subcommand: {Cmd}",
+            "translation": "Invalid stats tracker subcommand: {Cmd}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Cmd",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "cmd"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "Failed to start stats tracker",
+            "message": "Failed to start stats tracker",
+            "translation": "Failed to start stats tracker",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "There is no stats tracker to stop",
+            "message": "There is no stats tracker to stop",
+            "translation": "There is no stats tracker to stop",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Failed to stop stats tracker",
+            "message": "Failed to stop stats tracker",
+            "translation": "Failed to stop stats tracker",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Stats tracker will be started soon",
+            "message": "Stats tracker will be started soon",
+            "translation": "Stats tracker will be started soon",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Stats tracker will be stopped soon",
+            "message": "Stats tracker will be stopped soon",
+            "translation": "Stats tracker will be stopped soon",
+            "translatorComment": "Copied from source.",
             "fuzzy": true
         },
         {
@@ -1152,6 +1364,40 @@
             "message": "No",
             "translation": "No",
             "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "{H}h",
+            "message": "{H}h",
+            "translation": "{H}h",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "H",
+                    "string": "%[1]d",
+                    "type": "int",
+                    "underlyingType": "int",
+                    "argNum": 1,
+                    "expr": "h"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "{M}m",
+            "message": "{M}m",
+            "translation": "{M}m",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "M",
+                    "string": "%[1]d",
+                    "type": "int",
+                    "underlyingType": "int",
+                    "argNum": 1,
+                    "expr": "m"
+                }
+            ],
             "fuzzy": true
         }
     ]
