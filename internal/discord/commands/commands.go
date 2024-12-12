@@ -12,10 +12,10 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/meta"
 	"github.com/x0k/ps2-spy/internal/ps2"
+	"github.com/x0k/ps2-spy/internal/stats_tracker"
 )
 
 type commands struct {
-	name                  string
 	commands              []*discord.Command
 	populationLoader      *populationLoader
 	worldPopulationLoader *worldPopulationLoader
@@ -23,7 +23,6 @@ type commands struct {
 }
 
 func New(
-	name string,
 	log *logger.Logger,
 	messages *discord_messages.Messages,
 	populationLoaders map[string]loader.Simple[meta.Loaded[ps2.WorldsPopulation]],
@@ -45,6 +44,7 @@ func New(
 	outfitIdsLoader loader.Queried[discord.PlatformQuery[[]string], []ps2.OutfitId],
 	channelTrackingSettingsSaver ChannelTrackingSettingsSaver,
 	channelLanguageSaver ChannelLanguageSaver,
+	statsTracker *stats_tracker.StatsTracker,
 ) *commands {
 	populationLoader := newPopulationLoader(
 		log.With(sl.Component("population_loader")),
@@ -62,7 +62,6 @@ func New(
 		alertsLoadersPriority,
 	)
 	return &commands{
-		name:                  name,
 		populationLoader:      populationLoader,
 		worldPopulationLoader: worldPopulationLoader,
 		alertsLoader:          alertsLoader,
@@ -118,12 +117,12 @@ func New(
 				messages,
 				channelLanguageSaver,
 			),
+			NewStatsTracker(
+				messages,
+				statsTracker,
+			),
 		},
 	}
-}
-
-func (c *commands) Name() string {
-	return c.name
 }
 
 func (c *commands) Commands() []*discord.Command {

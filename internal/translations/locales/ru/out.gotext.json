@@ -2,6 +2,76 @@
     "language": "ru",
     "messages": [
         {
+            "id": "INF",
+            "message": "INF",
+            "translation": "ИНФ"
+        },
+        {
+            "id": "LA",
+            "message": "LA",
+            "translation": "ЛШ"
+        },
+        {
+            "id": "MED",
+            "message": "MED",
+            "translation": "МЕД"
+        },
+        {
+            "id": "ENG",
+            "message": "ENG",
+            "translation": "ИНЖ"
+        },
+        {
+            "id": "HA",
+            "message": "HA",
+            "translation": "ТШ"
+        },
+        {
+            "id": "MAX",
+            "message": "MAX",
+            "translation": "МАКС"
+        },
+        {
+            "id": "Unknown",
+            "message": "Unknown",
+            "translation": "Неизвестно"
+        },
+        {
+            "id": "Faction",
+            "message": "Faction",
+            "translation": "Фракция"
+        },
+        {
+            "id": "Outfit",
+            "message": "Outfit",
+            "translation": "Аутфит"
+        },
+        {
+            "id": "Character",
+            "message": "Character",
+            "translation": "Персонаж"
+        },
+        {
+            "id": "Kills",
+            "message": "Kills",
+            "translation": "Убийства"
+        },
+        {
+            "id": "HS%",
+            "message": "HS%",
+            "translation": "HS%"
+        },
+        {
+            "id": "KD",
+            "message": "KD",
+            "translation": "У/C"
+        },
+        {
+            "id": "Loadout",
+            "message": "Loadout",
+            "translation": "Класс"
+        },
+        {
             "id": "[{OutfitTag}] {Name} ({FactionId}) is now online ({WorldId})",
             "message": "[{OutfitTag}] {Name} ({FactionId}) is now online ({WorldId})",
             "translation": "[{OutfitTag}] {Name} ({FactionId}) онлайн ({WorldId})",
@@ -236,6 +306,55 @@
                     "expr": "facilityId"
                 }
             ]
+        },
+        {
+            "id": "Stats tracker started",
+            "message": "Stats tracker started",
+            "translation": "Трекер статистики запущен"
+        },
+        {
+            "id": "Platform: {ToUpperstringplatform}, started at: {RenderTimestartedAt}, stopped: {RenderRelativeTimestoppedAt}, duration: {SubstartedAt}\n```",
+            "message": "Platform: {ToUpperstringplatform}, started at: {RenderTimestartedAt}, stopped: {RenderRelativeTimestoppedAt}, duration: {SubstartedAt}\n```",
+            "translation": "Платформа: {ToUpperstringplatform}, запущен: {RenderTimestartedAt}, остановлен: {RenderRelativeTimestoppedAt}, продолжительность: {SubstartedAt}\n```",
+            "placeholders": [
+                {
+                    "id": "ToUpperstringplatform",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "strings.ToUpper(string(platform))"
+                },
+                {
+                    "id": "RenderTimestartedAt",
+                    "string": "%[2]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "renderTime(startedAt)"
+                },
+                {
+                    "id": "RenderRelativeTimestoppedAt",
+                    "string": "%[3]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 3,
+                    "expr": "renderRelativeTime(stoppedAt)"
+                },
+                {
+                    "id": "SubstartedAt",
+                    "string": "%[4]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 4,
+                    "expr": "renderDuration(p, stoppedAt.Sub(startedAt))"
+                }
+            ]
+        },
+        {
+            "id": "No data collected",
+            "message": "No data collected",
+            "translation": "Нет данных"
         },
         {
             "id": "{Name} [{Tag}] captured {Name_1} ({Type}) on {ZoneId} ({WorldNameByIdworldId})",
@@ -618,6 +737,51 @@
                     "expr": "platform"
                 }
             ]
+        },
+        {
+            "id": "Nothing to track, please set tracking settings first",
+            "message": "Nothing to track, please set tracking settings first",
+            "translation": "Нечего отслеживать, пожалуйста, установите настройки отслеживания"
+        },
+        {
+            "id": "Invalid stats tracker subcommand: {Cmd}",
+            "message": "Invalid stats tracker subcommand: {Cmd}",
+            "translation": "Неверная команда отслеживания статистики: {Cmd}",
+            "placeholders": [
+                {
+                    "id": "Cmd",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "cmd"
+                }
+            ]
+        },
+        {
+            "id": "Failed to start stats tracker",
+            "message": "Failed to start stats tracker",
+            "translation": "Не удалось запустить отслеживание статистики"
+        },
+        {
+            "id": "There is no stats tracker to stop",
+            "message": "There is no stats tracker to stop",
+            "translation": "Отслеживание статистики не запущено"
+        },
+        {
+            "id": "Failed to stop stats tracker",
+            "message": "Failed to stop stats tracker",
+            "translation": "Не удалось остановить отслеживание статистики"
+        },
+        {
+            "id": "Stats tracker will be started soon",
+            "message": "Stats tracker will be started soon",
+            "translation": "Отслеживание статистики скоро запустится"
+        },
+        {
+            "id": "Stats tracker will be stopped soon",
+            "message": "Stats tracker will be stopped soon",
+            "translation": "Отслеживание статистики скоро остановится"
         },
         {
             "id": "Failed to load tracking settings for {ChannelId} channel ({Platform})",
@@ -1011,6 +1175,36 @@
             "id": "No",
             "message": "No",
             "translation": "Нет"
+        },
+        {
+            "id": "{H}h",
+            "message": "{H}h",
+            "translation": "{H}ч",
+            "placeholders": [
+                {
+                    "id": "H",
+                    "string": "%[1]d",
+                    "type": "int",
+                    "underlyingType": "int",
+                    "argNum": 1,
+                    "expr": "h"
+                }
+            ]
+        },
+        {
+            "id": "{M}m",
+            "message": "{M}m",
+            "translation": "{M}м",
+            "placeholders": [
+                {
+                    "id": "M",
+                    "string": "%[1]d",
+                    "type": "int",
+                    "underlyingType": "int",
+                    "argNum": 1,
+                    "expr": "m"
+                }
+            ]
         }
     ]
 }

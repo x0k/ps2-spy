@@ -43,6 +43,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/ps2"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 	"github.com/x0k/ps2-spy/internal/shared"
+	"github.com/x0k/ps2-spy/internal/stats_tracker"
 	"github.com/x0k/ps2-spy/internal/storage"
 	sql_storage "github.com/x0k/ps2-spy/internal/storage/sql"
 	"github.com/x0k/ps2-spy/internal/tracking_manager"
@@ -125,6 +126,28 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	outfitLoaders := make(map[ps2_platforms.Platform]loader.Keyed[ps2.OutfitId, ps2.Outfit], len(ps2_platforms.Platforms))
 	facilityLoaders := make(map[ps2_platforms.Platform]loader.Keyed[ps2.FacilityId, ps2.Facility], len(ps2_platforms.Platforms))
 
+	statsTrackerPubSub := pubsub.New[stats_tracker.EventType]()
+
+	statsTracker := stats_tracker.New(
+		log.With(sl.Component("stats_tracker")),
+		statsTrackerPubSub,
+		func(ctx context.Context, pq discord.PlatformQuery[ps2.CharacterId]) ([]discord.ChannelId, error) {
+			manager := trackingManagers[pq.Platform]
+			channels, err := manager.ChannelIdsForCharacter(ctx, pq.Value)
+			if err != nil {
+				return nil, err
+			}
+			channelIds := make([]discord.ChannelId, 0, len(channels))
+			for _, channel := range channels {
+				channelIds = append(channelIds, channel.ChannelId)
+			}
+			return channelIds, nil
+		},
+		storage.ChannelTrackablePlatforms,
+		charactersLoaders,
+		cfg.MaxTrackingDuration,
+	)
+
 	for _, platform := range ps2_platforms.Platforms {
 		pl := log.With(slog.String("platform", string(platform)))
 		ns := ps2_platforms.PlatformNamespace(platform)
@@ -194,7 +217,6 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		characterTrackerSubsMangers[platform] = ps
 
 		charactersTracker := characters_tracker.New(
-			fmt.Sprintf("%s.characters_tracker", platform),
 			pl.With(sl.Component("characters_tracker")),
 			platform,
 			ps2.PlatformWorldIds[platform],
@@ -202,7 +224,13 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			charactersTrackerPublisher,
 			mt,
 		)
-		m.Append(charactersTracker)
+		m.AppendS(
+			fmt.Sprintf("%s.characters_tracker", platform),
+			func(ctx context.Context) error {
+				charactersTracker.Start(ctx)
+				return nil
+			},
+		)
 		charactersTrackers[platform] = charactersTracker
 
 		worldsTrackerPubSub := pubsub.New[worlds_tracker.EventType]()
@@ -235,6 +263,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			eventsPubSub,
 			charactersTracker,
 			worldsTracker,
+			statsTracker,
 		))
 
 		trackingManager := tracking_manager.New(
@@ -261,7 +290,6 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		trackingManagers[platform] = trackingManager
 
 		outfitMembersSynchronizer := outfit_members_synchronizer.New(
-			fmt.Sprintf("%s.outfit_members_synchronizer", platform),
 			pl.With(sl.Component("outfit_members_synchronizer")),
 			func(ctx context.Context) ([]ps2.OutfitId, error) {
 				return storage.AllUniqueTrackableOutfitIdsForPlatform(ctx, platform)
@@ -277,7 +305,13 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			},
 			24*time.Hour,
 		)
-		m.Append(outfitMembersSynchronizer)
+		m.AppendS(
+			fmt.Sprintf("%s.outfit_members_synchronizer", platform),
+			func(ctx context.Context) error {
+				outfitMembersSynchronizer.Start(ctx)
+				return nil
+			},
+		)
 		outfitMembersSynchronizers[platform] = outfitMembersSynchronizer
 
 		outfitsLoader := loader.WithMultiCache(
@@ -454,6 +488,9 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			}
 			return count, errors.Join(errs...)
 		},
+		statsTracker,
+		statsTrackerPubSub,
+		storage.ChannelLanguage,
 	)
 	if err != nil {
 		return nil, err

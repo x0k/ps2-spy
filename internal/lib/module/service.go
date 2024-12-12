@@ -2,6 +2,10 @@ package module
 
 import "context"
 
+type StartFn func(ctx context.Context) error
+
+type SimpleStartFn func(ctx context.Context)
+
 type Service interface {
 	Name() string
 	Start(ctx context.Context) error
@@ -9,10 +13,10 @@ type Service interface {
 
 type starter struct {
 	name  string
-	start func(ctx context.Context) error
+	start StartFn
 }
 
-func NewService(name string, start func(ctx context.Context) error) Service {
+func NewService(name string, start StartFn) Service {
 	return &starter{name: name, start: start}
 }
 

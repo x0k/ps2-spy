@@ -21,8 +21,8 @@ import (
 type OutfitMembersSaver = func(ctx context.Context, outfit ps2.OutfitId, members []ps2.CharacterId) error
 
 type OutfitMembersSynchronizer struct {
-	name string
-	log  *logger.Logger
+	log *logger.Logger
+	wg  sync.WaitGroup
 	// Loaders and saver are platform specific
 	outfitMembersLoader    loader.Keyed[ps2.OutfitId, []ps2.CharacterId]
 	outfitSyncAtLoader     loader.Keyed[ps2.OutfitId, time.Time]
@@ -33,7 +33,6 @@ type OutfitMembersSynchronizer struct {
 }
 
 func New(
-	name string,
 	log *logger.Logger,
 	trackableOutfitsLoader loader.Simple[[]ps2.OutfitId],
 	outfitSyncAtLoader loader.Keyed[ps2.OutfitId, time.Time],
@@ -42,7 +41,6 @@ func New(
 	refreshInterval time.Duration,
 ) *OutfitMembersSynchronizer {
 	return &OutfitMembersSynchronizer{
-		name:                   name,
 		log:                    log,
 		trackableOutfitsLoader: trackableOutfitsLoader,
 		outfitSyncAtLoader:     outfitSyncAtLoader,
@@ -52,24 +50,47 @@ func New(
 	}
 }
 
-func (s *OutfitMembersSynchronizer) Name() string {
-	return s.name
-}
-
-func (s *OutfitMembersSynchronizer) saveMembersTask(ctx context.Context, wg *sync.WaitGroup, outfitId ps2.OutfitId, members []ps2.CharacterId) {
-	defer wg.Done()
-	if err := s.membersSaver(ctx, outfitId, members); err != nil {
-		s.log.Error(
-			ctx,
-			"failed to save members",
-			slog.String("outfit_id", string(outfitId)),
-			slog.Int("members_count", len(members)),
-			sl.Err(err),
-		)
+func (s *OutfitMembersSynchronizer) Start(ctx context.Context) {
+	s.ticker = time.NewTicker(s.refreshInterval)
+	defer s.ticker.Stop()
+	s.syncOutfits(ctx)
+	for {
+		select {
+		case <-ctx.Done():
+			s.wg.Wait()
+			return
+		case <-s.ticker.C:
+			s.syncOutfits(ctx)
+		}
 	}
 }
 
-func (s *OutfitMembersSynchronizer) SyncOutfit(ctx context.Context, wg *sync.WaitGroup, outfitId ps2.OutfitId) {
+func (s *OutfitMembersSynchronizer) SyncOutfit(ctx context.Context, outfitId ps2.OutfitId) {
+	s.wg.Add(1)
+	go func() {
+		defer s.wg.Done()
+		s.syncOutfit(ctx, outfitId)
+	}()
+}
+
+func (s *OutfitMembersSynchronizer) syncOutfits(ctx context.Context) {
+	outfits, err := s.trackableOutfitsLoader(ctx)
+	s.log.Info(ctx, "synchronizing", slog.Int("outfits", len(outfits)))
+	if err != nil {
+		s.log.Error(ctx, "failed to load trackable outfits", sl.Err(err))
+		return
+	}
+	for _, outfit := range outfits {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			s.syncOutfit(ctx, outfit)
+		}
+	}
+}
+
+func (s *OutfitMembersSynchronizer) syncOutfit(ctx context.Context, outfitId ps2.OutfitId) {
 	log := s.log.With(slog.String("outfit_id", string(outfitId)))
 	err := retryable.New(func(ctx context.Context) error {
 		syncAt, err := s.outfitSyncAtLoader(ctx, outfitId)
@@ -86,8 +107,9 @@ func (s *OutfitMembersSynchronizer) SyncOutfit(ctx context.Context, wg *sync.Wai
 		if err != nil {
 			return fmt.Errorf("failed to load members from census: %w", err)
 		}
-		wg.Add(1)
-		go s.saveMembersTask(ctx, wg, outfitId, members)
+		if err := s.membersSaver(ctx, outfitId, members); err != nil {
+			return fmt.Errorf("failed to save members: %w", err)
+		}
 		return nil
 	}).Run(
 		ctx,
@@ -97,38 +119,5 @@ func (s *OutfitMembersSynchronizer) SyncOutfit(ctx context.Context, wg *sync.Wai
 	)
 	if err != nil {
 		log.Error(ctx, "failed to sync", sl.Err(err))
-	}
-}
-
-func (s *OutfitMembersSynchronizer) sync(ctx context.Context, wg *sync.WaitGroup) {
-	outfits, err := s.trackableOutfitsLoader(ctx)
-	s.log.Info(ctx, "synchronizing", slog.Int("outfits", len(outfits)))
-	if err != nil {
-		s.log.Error(ctx, "failed to load trackable outfits", sl.Err(err))
-		return
-	}
-	for _, outfit := range outfits {
-		select {
-		case <-ctx.Done():
-			return
-		default:
-			s.SyncOutfit(ctx, wg, outfit)
-		}
-	}
-}
-
-func (s *OutfitMembersSynchronizer) Start(ctx context.Context) error {
-	s.ticker = time.NewTicker(s.refreshInterval)
-	defer s.ticker.Stop()
-	wg := &sync.WaitGroup{}
-	s.sync(ctx, wg)
-	for {
-		select {
-		case <-ctx.Done():
-			wg.Wait()
-			return nil
-		case <-s.ticker.C:
-			s.sync(ctx, wg)
-		}
 	}
 }

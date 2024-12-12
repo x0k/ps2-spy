@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"log/slog"
 	"time"
 
 	"github.com/x0k/ps2-spy/internal/discord"
@@ -223,9 +224,10 @@ func (s *Storage) TrackingChannelsForCharacter(
 	}
 	channels := make([]discord.Channel, 0, len(rows))
 	for _, row := range rows {
+		channelId := discord.ChannelId(row.ChannelID)
 		channels = append(channels, discord.NewChannel(
-			discord.ChannelId(row.ChannelID),
-			langTag(row.Locale),
+			channelId,
+			s.nLangTag(ctx, channelId, row.Locale),
 		))
 	}
 	return channels, nil
@@ -245,9 +247,10 @@ func (s *Storage) TrackingChannelsForOutfit(
 	}
 	channels := make([]discord.Channel, 0, len(rows))
 	for _, row := range rows {
+		channelId := discord.ChannelId(row.ChannelID)
 		channels = append(channels, discord.NewChannel(
-			discord.ChannelId(row.ChannelID),
-			langTag(row.Locale),
+			channelId,
+			s.nLangTag(ctx, channelId, row.Locale),
 		))
 	}
 	return channels, nil
@@ -317,6 +320,18 @@ func (s *Storage) AllUniqueTrackableOutfitIdsForPlatform(ctx context.Context, pl
 		ids = append(ids, ps2.OutfitId(id))
 	}
 	return ids, nil
+}
+
+func (s *Storage) ChannelTrackablePlatforms(ctx context.Context, channelId discord.ChannelId) ([]ps2_platforms.Platform, error) {
+	ps, err := s.queries.ListChannelTrackablePlatforms(ctx, string(channelId))
+	if err != nil {
+		return nil, err
+	}
+	platforms := make([]ps2_platforms.Platform, 0, len(ps))
+	for _, p := range ps {
+		platforms = append(platforms, ps2_platforms.Platform(p))
+	}
+	return platforms, nil
 }
 
 func (s *Storage) OutfitMembers(ctx context.Context, platform ps2_platforms.Platform, outfitId ps2.OutfitId) ([]ps2.CharacterId, error) {
@@ -411,6 +426,20 @@ func (s *Storage) SaveFacility(ctx context.Context, facility ps2.Facility) error
 	})
 }
 
+func (s *Storage) ChannelLanguage(
+	ctx context.Context,
+	channelId discord.ChannelId,
+) (language.Tag, error) {
+	locale, err := s.queries.GetChannelLocale(ctx, string(channelId))
+	if err == nil {
+		return s.langTag(ctx, channelId, locale), nil
+	}
+	if errors.Is(err, sql.ErrNoRows) {
+		return discord.DEFAULT_LANG_TAG, nil
+	}
+	return discord.DEFAULT_LANG_TAG, err
+}
+
 func (s *Storage) SaveChannelLanguage(
 	ctx context.Context,
 	channelId discord.ChannelId,
@@ -427,21 +456,27 @@ func (s *Storage) SaveChannelLanguage(
 }
 
 func (s *Storage) publish(err error, event storage.Event) error {
+	if errors.Is(err, sql.ErrNoRows) {
+		return shared.ErrNotFound
+	}
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return shared.ErrNotFound
-		}
 		return err
 	}
 	return s.publisher.Publish(event)
 }
 
-func langTag(str sql.NullString) language.Tag {
+func (s *Storage) nLangTag(ctx context.Context, channelId discord.ChannelId, str sql.NullString) language.Tag {
 	if !str.Valid {
 		return discord.DEFAULT_LANG_TAG
 	}
-	if tag, err := language.Parse(str.String); err == nil {
+	return s.langTag(ctx, channelId, str.String)
+}
+
+func (s *Storage) langTag(ctx context.Context, channelId discord.ChannelId, locale string) language.Tag {
+	if tag, err := language.Parse(locale); err == nil {
 		return tag
+	} else {
+		s.log.Warn(ctx, "failed to parse locale", slog.String("channel_id", string(channelId)), slog.String("locale", locale), sl.Err(err))
+		return discord.DEFAULT_LANG_TAG
 	}
-	return discord.DEFAULT_LANG_TAG
 }

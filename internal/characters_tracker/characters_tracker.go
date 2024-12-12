@@ -32,7 +32,7 @@ type player struct {
 }
 
 type CharactersTracker struct {
-	name                     string
+	wg                       sync.WaitGroup
 	log                      *logger.Logger
 	platform                 ps2_platforms.Platform
 	mutex                    sync.RWMutex
@@ -47,7 +47,6 @@ type CharactersTracker struct {
 }
 
 func New(
-	name string,
 	log *logger.Logger,
 	platform ps2_platforms.Platform,
 	worldIds []ps2.WorldId,
@@ -60,7 +59,6 @@ func New(
 		trackers[worldId] = newWorldPopulationTracker()
 	}
 	return &CharactersTracker{
-		name:                     name,
 		log:                      log,
 		platform:                 platform,
 		worldPopulationTrackers:  trackers,
@@ -72,10 +70,6 @@ func New(
 		publisher:                publisher,
 		mt:                       mt,
 	}
-}
-
-func (p *CharactersTracker) Name() string {
-	return p.name
 }
 
 func (p *CharactersTracker) handleInactive(ctx context.Context, now time.Time) []player {
@@ -119,13 +113,14 @@ func (p *CharactersTracker) publishPlayerLogout(ctx context.Context, t time.Time
 	}
 }
 
-func (p *CharactersTracker) Start(ctx context.Context) error {
+func (p *CharactersTracker) Start(ctx context.Context) {
 	ticker := time.NewTicker(p.inactivityCheckInterval)
 	defer ticker.Stop()
 	for {
 		select {
 		case <-ctx.Done():
-			return nil
+			p.wg.Wait()
+			return
 		case t := <-ticker.C:
 			removedPlayers := p.handleInactive(ctx, t)
 			for _, pl := range removedPlayers {
@@ -165,27 +160,31 @@ func (p *CharactersTracker) publishPlayerLogin(ctx context.Context, event events
 }
 
 func (p *CharactersTracker) HandleLogin(ctx context.Context, event events.PlayerLogin) {
-	charId := ps2.CharacterId(event.CharacterID)
-	char, err := p.retryableCharacterLoader.Run(
-		ctx,
-		charId,
-		while.ErrorIsHere,
-		while.RetryCountIsLessThan(3),
-		while.ContextIsNotCancelled,
-		perform.Log(
-			p.log.Logger,
-			slog.LevelDebug,
-			"[ERROR] failed to get character, retrying",
-			slog.String("character_id", string(charId)),
-		),
-	)
-	if err != nil {
-		p.log.Debug(ctx, "failed to get character", slog.String("character_id", string(charId)), sl.Err(err))
-		return
-	}
-	if p.handleLogin(ctx, char) {
-		p.publishPlayerLogin(ctx, event)
-	}
+	p.wg.Add(1)
+	go func() {
+		defer p.wg.Done()
+		charId := ps2.CharacterId(event.CharacterID)
+		char, err := p.retryableCharacterLoader.Run(
+			ctx,
+			charId,
+			while.ErrorIsHere,
+			while.RetryCountIsLessThan(3),
+			while.ContextIsNotCancelled,
+			perform.Log(
+				p.log.Logger,
+				slog.LevelDebug,
+				"[ERROR] failed to get character, retrying",
+				slog.String("character_id", string(charId)),
+			),
+		)
+		if err != nil {
+			p.log.Debug(ctx, "failed to get character", slog.String("character_id", string(charId)), sl.Err(err))
+			return
+		}
+		if p.handleLogin(ctx, char) {
+			p.publishPlayerLogin(ctx, event)
+		}
+	}()
 }
 
 func (p *CharactersTracker) handleLogout(ctx context.Context, charId ps2.CharacterId, worldId ps2.WorldId) bool {

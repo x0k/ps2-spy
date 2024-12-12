@@ -201,3 +201,26 @@ VALUES
 UPDATE
 SET
   locale = EXCLUDED.locale;
+
+-- name: GetChannelLocale :one
+SELECT
+  locale
+FROM
+  channel_locale
+WHERE
+  channel_id = ?;
+
+-- name: ListChannelTrackablePlatforms :many
+SELECT DISTINCT
+  platform
+FROM
+  channel_to_character
+WHERE
+  channel_to_character.channel_id = sqlc.arg (channel_id)
+UNION
+SELECT DISTINCT
+  platform
+FROM
+  channel_to_outfit
+WHERE
+  channel_to_outfit.channel_id = sqlc.arg (channel_id);

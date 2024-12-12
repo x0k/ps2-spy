@@ -10,6 +10,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/discord"
 	discord_commands "github.com/x0k/ps2-spy/internal/discord/commands"
 	discord_events "github.com/x0k/ps2-spy/internal/discord/events"
+	discord_event_handlers "github.com/x0k/ps2-spy/internal/discord/events/handlers"
 	discord_messages "github.com/x0k/ps2-spy/internal/discord/messages"
 	"github.com/x0k/ps2-spy/internal/lib/loader"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
@@ -19,6 +20,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/meta"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
+	"github.com/x0k/ps2-spy/internal/stats_tracker"
 	"github.com/x0k/ps2-spy/internal/storage"
 	"github.com/x0k/ps2-spy/internal/tracking_manager"
 	"github.com/x0k/ps2-spy/internal/worlds_tracker"
@@ -52,6 +54,9 @@ func New(
 	charactersLoaders map[ps2_platforms.Platform]loader.Multi[ps2.CharacterId, ps2.Character],
 	facilityLoaders map[ps2_platforms.Platform]loader.Keyed[ps2.FacilityId, ps2.Facility],
 	onlineTrackableEntitiesCountLoader loader.Keyed[discord.ChannelId, int],
+	statsTracker *stats_tracker.StatsTracker,
+	statsTrackerSubs pubsub.SubscriptionsManager[stats_tracker.EventType],
+	channelLanguageLoader discord_events.ChannelLanguageLoader,
 ) (*module.Module, error) {
 	m := module.New(log.Logger, "discord")
 	session, err := discordgo.New("Bot " + token)
@@ -61,7 +66,6 @@ func New(
 
 	messages := discord_messages.New()
 	commands := discord_commands.New(
-		"discord_commands",
 		log.With(sl.Component("commands")),
 		messages,
 		populationLoaders,
@@ -80,33 +84,21 @@ func New(
 		outfitIdsLoader,
 		saveChannelTrackingSettings,
 		saveChannelLanguage,
+		statsTracker,
 	)
-	m.Append(commands)
+	m.AppendS("discord.commands", commands.Start)
 
 	channelTitleUpdater := discord.NewChannelTitleUpdater(
 		log.With(sl.Component("channel_title_updater")),
 		session,
 	)
-	m.AppendServiceFn("channel_title_updater", func(ctx context.Context) error {
-		channelTitleUpdater.Start(ctx)
+	m.AppendSS("discord.channel_title_updater", channelTitleUpdater.Start)
+	handlersChannelTitleUpdater := func(ctx context.Context, channelId discord.ChannelId, title string) error {
+		channelTitleUpdater.UpdateTitle(channelId, title)
 		return nil
-	})
+	}
 
-	handlerFactories := discord_events.NewHandlers(
-		log.With(sl.Component("discord_event_handlers")),
-		messages,
-		characterLoaders,
-		outfitLoaders,
-		charactersLoaders,
-		facilityLoaders,
-		onlineTrackableEntitiesCountLoader,
-		func(_ context.Context, channelId discord.ChannelId, title string) error {
-			channelTitleUpdater.UpdateTitle(channelId, title)
-			return nil
-		},
-	)
-
-	m.Append(NewSessionService(
+	m.AppendS("discord.session", sessionStart(
 		log.With(sl.Component("session")),
 		m,
 		session,
@@ -115,33 +107,104 @@ func New(
 		removeCommands,
 	))
 
-	for _, platform := range ps2_platforms.Platforms {
-		handlers := make(map[discord_events.EventType][]discord_events.Handler, len(handlerFactories))
-		for t, factories := range handlerFactories {
-			eventHandlers := make([]discord_events.Handler, 0, len(factories))
-			for _, factory := range factories {
-				eventHandlers = append(eventHandlers, factory(platform))
+	handlersManager := discord_event_handlers.NewHandlersManager(
+		log.With(sl.Component("handlers_manager")),
+		session,
+		eventHandlerTimeout,
+	)
+	m.AppendSS("discord.handlers_manager", handlersManager.Start)
+
+	eventsPubSub := pubsub.New[discord_events.EventType]()
+	for _, handler := range discord_event_handlers.New(
+		handlersManager,
+		messages,
+		onlineTrackableEntitiesCountLoader,
+		handlersChannelTitleUpdater,
+	) {
+		eventsPubSub.AddHandler(handler)
+	}
+	eventsPublisher := discord_events.NewEventsPublisher(
+		log.With(sl.Component("events_publisher")),
+		eventsPubSub,
+		channelLanguageLoader,
+	)
+	m.AppendSS("discord.events_publisher", eventsPublisher.Start)
+	channelLanguageUpdate := storage.Subscribe[storage.ChannelLanguageUpdated](m, storageSubs)
+	channelTrackerStarted := stats_tracker.Subscribe[stats_tracker.ChannelTrackerStarted](m, statsTrackerSubs)
+	channelTrackerStopped := stats_tracker.Subscribe[stats_tracker.ChannelTrackerStopped](m, statsTrackerSubs)
+	m.AppendSS("discord.events_subscription", func(ctx context.Context) {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case e := <-channelLanguageUpdate:
+				eventsPublisher.PublishChannelLanguageUpdated(ctx, e)
+			case e := <-channelTrackerStarted:
+				eventsPublisher.PublishChannelTrackerStarted(ctx, e)
+			case e := <-channelTrackerStopped:
+				eventsPublisher.PublishChannelTrackerStopped(ctx, e)
 			}
-			handlers[t] = eventHandlers
 		}
-		handlersManager := discord_events.NewHandlersManager(
-			fmt.Sprintf("discord.%s.handlers", platform),
-			log.With(sl.Component("handlers_manager")),
-			session,
-			handlers,
-			trackingManagers[platform],
-			eventHandlerTimeout,
-		)
-		m.Append(
+	})
+
+	for _, platform := range ps2_platforms.Platforms {
+
+		platformEventsPubSub := pubsub.New[discord_events.EventType]()
+
+		for _, handler := range discord_event_handlers.NewPlatform(
 			handlersManager,
-			newEventsSubscriptionService(
-				m,
-				platform,
-				charactersTrackerSubsManagers[platform],
-				storageSubs,
-				worldTrackerSubsMangers[platform],
-				handlersManager,
-			),
+			messages,
+			platform,
+			outfitLoaders[platform],
+			facilityLoaders[platform],
+			charactersLoaders[platform],
+			characterLoaders[platform],
+			onlineTrackableEntitiesCountLoader,
+			handlersChannelTitleUpdater,
+		) {
+			platformEventsPubSub.AddHandler(handler)
+		}
+		platformEventsPublisher := discord_events.NewPlatformEventsPublisher(
+			log.With(sl.Component("platform_events_publisher")),
+			platformEventsPubSub,
+			func(ctx context.Context, oi ps2.CharacterId) ([]discord.Channel, error) {
+				return trackingManagers[platform].ChannelIdsForCharacter(ctx, oi)
+			},
+			func(ctx context.Context, oi ps2.OutfitId) ([]discord.Channel, error) {
+				return trackingManagers[platform].ChannelIdsForOutfit(ctx, oi)
+			},
+		)
+		m.AppendSS(
+			fmt.Sprintf("discord.%s.events_subscription", platform),
+			platformEventsPublisher.Start,
+		)
+		playerLogin := characters_tracker.Subscribe[characters_tracker.PlayerLogin](m, charactersTrackerSubsManagers[platform])
+		playerLogout := characters_tracker.Subscribe[characters_tracker.PlayerLogout](m, charactersTrackerSubsManagers[platform])
+		facilityControl := worlds_tracker.Subscribe[worlds_tracker.FacilityControl](m, worldTrackerSubsMangers[platform])
+		facilityLoss := worlds_tracker.Subscribe[worlds_tracker.FacilityLoss](m, worldTrackerSubsMangers[platform])
+		outfitMembersUpdate := storage.Subscribe[storage.OutfitMembersUpdate](m, storageSubs)
+		m.AppendSS(
+			fmt.Sprintf("discord.%s.events_subscription", platform),
+			func(ctx context.Context) {
+				for {
+					select {
+					case <-ctx.Done():
+						return
+					case e := <-playerLogin:
+						platformEventsPublisher.PublishPlayerLogin(ctx, e)
+					case e := <-playerLogout:
+						platformEventsPublisher.PublishPlayerLogout(ctx, e)
+					case e := <-facilityControl:
+						platformEventsPublisher.PublishFacilityControl(ctx, e)
+					case e := <-facilityLoss:
+						platformEventsPublisher.PublishFacilityLoss(ctx, e)
+					case e := <-outfitMembersUpdate:
+						if e.Platform == platform {
+							platformEventsPublisher.PublishOutfitMembersUpdate(ctx, e)
+						}
+					}
+				}
+			},
 		)
 	}
 

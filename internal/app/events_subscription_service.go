@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"fmt"
-	"sync"
 
 	"github.com/x0k/ps2-spy/internal/characters_tracker"
 	census_data_provider "github.com/x0k/ps2-spy/internal/data_providers/census"
@@ -13,6 +12,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/module"
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
+	"github.com/x0k/ps2-spy/internal/stats_tracker"
 	"github.com/x0k/ps2-spy/internal/worlds_tracker"
 )
 
@@ -23,6 +23,7 @@ func newEventsSubscriptionService(
 	subs pubsub.SubscriptionsManager[events.EventType],
 	charactersTracker *characters_tracker.CharactersTracker,
 	worldsTracker *worlds_tracker.WorldsTracker,
+	statsTracker *stats_tracker.StatsTracker,
 ) module.Service {
 	playerLogin := census_data_provider.Subscribe[events.PlayerLogin](ps, subs)
 	playerLogout := census_data_provider.Subscribe[events.PlayerLogout](ps, subs)
@@ -43,18 +44,12 @@ func newEventsSubscriptionService(
 	return module.NewService(
 		fmt.Sprintf("ps2.%s.events_subscription", platform),
 		func(ctx context.Context) error {
-			wg := sync.WaitGroup{}
 			for {
 				select {
 				case <-ctx.Done():
-					wg.Wait()
 					return nil
 				case e := <-playerLogin:
-					wg.Add(1)
-					go func() {
-						defer wg.Done()
-						charactersTracker.HandleLogin(ctx, e)
-					}()
+					charactersTracker.HandleLogin(ctx, e)
 				case e := <-playerLogout:
 					charactersTracker.HandleLogout(ctx, e)
 				case e := <-achievementEarned:
@@ -63,8 +58,10 @@ func newEventsSubscriptionService(
 					charactersTracker.HandleWorldZoneAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
 				case e := <-death:
 					charactersTracker.HandleWorldZoneAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
+					statsTracker.HandleDeathEvent(ctx, platform, e)
 				case e := <-gainExperience:
 					charactersTracker.HandleWorldZoneAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
+					statsTracker.HandleGainExperienceEvent(ctx, platform, e)
 				case e := <-itemAdded:
 					charactersTracker.HandleWorldZoneAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
 				case e := <-playerFacilityCapture:

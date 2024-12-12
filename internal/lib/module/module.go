@@ -37,8 +37,15 @@ func (m *Module) Append(services ...Service) {
 	m.services = append(m.services, services...)
 }
 
-func (m *Module) AppendServiceFn(name string, run func(ctx context.Context) error) {
+func (m *Module) AppendS(name string, run StartFn) {
 	m.services = append(m.services, NewService(name, run))
+}
+
+func (m *Module) AppendSS(name string, run SimpleStartFn) {
+	m.services = append(m.services, NewService(name, func(ctx context.Context) error {
+		run(ctx)
+		return nil
+	}))
 }
 
 func (m *Module) PreStart(hooks ...Hook) {

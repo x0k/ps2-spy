@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"log/slog"
-	"sync"
 
 	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
@@ -32,11 +31,9 @@ func newStorageEventsSubscriptionService(
 	return module.NewService(
 		"ps2.storage_events_subscription",
 		func(ctx context.Context) error {
-			wg := &sync.WaitGroup{}
 			for {
 				select {
 				case <-ctx.Done():
-					wg.Wait()
 					return nil
 				case e := <-outfitMemberSaved:
 					tm := tms[e.Platform]
@@ -62,11 +59,7 @@ func newStorageEventsSubscriptionService(
 						)
 					}
 					os := oss[e.Platform]
-					wg.Add(1)
-					go func() {
-						defer wg.Done()
-						os.SyncOutfit(ctx, wg, e.OutfitId)
-					}()
+					os.SyncOutfit(ctx, e.OutfitId)
 				case e := <-channelOutfitDeleted:
 					tm := tms[e.Platform]
 					if err := tm.UntrackOutfit(ctx, e.OutfitId); err != nil {
