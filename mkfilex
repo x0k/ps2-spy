@@ -20,6 +20,9 @@ d: env
 b:
   go build -tags "migrate" -o bin/app cmd/ps2-spy/main.go
 
+debug-env: env
+    env > .env.debug.local
+
 ## DATABASE
 
 db:

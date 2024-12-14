@@ -39,7 +39,7 @@ func (m *Migrator) Migrate(ctx context.Context) error {
 	)
 
 	for {
-		mg, err = migrate.New(m.connectionURI, m.migrationsURI)
+		mg, err = migrate.New(m.migrationsURI, m.connectionURI)
 		if err == nil {
 			break
 		}

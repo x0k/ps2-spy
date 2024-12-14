@@ -83,7 +83,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		storagePubSub,
 	)
 	m.PreStartR("storage", storage.Open)
-	m.PreStopR("storage", storage.Close)
+	m.PostStopR("storage", storage.Close)
 
 	httpClient := &http.Client{
 		Timeout: cfg.HttpClient.Timeout,

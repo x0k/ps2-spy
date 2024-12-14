@@ -39,10 +39,14 @@
             pkgs.golangci-lint
             pkgs.sqlc
             gotext
+            pkgs.gotests
+            pkgs.delve
           ];
           shellHook = ''
             source <(COMPLETE=bash mk)
           '';
+          # CGO_CFLAGS="-U_FORTIFY_SOURCE -Wno-error";
+          # CGO_CPPFLAGS="-U_FORTIFY_SOURCE -Wno-error";
         };
       };
     };

@@ -1,6 +1,6 @@
 storage:
-  path: "file://../../../storage/storage.db"
-  migrations_path: "sqlite://db/migrations"
+  path: "sqlite://storage/storage.db"
+  migrations_path: "file://db/migrations"
 logger:
   level: debug
   handler_type: pretty
