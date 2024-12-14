@@ -18,12 +18,11 @@ var ErrDuplicateSubmitHandler = errors.New("duplicate submit handler")
 
 func sessionStart(
 	log *logger.Logger,
-	fataler module.Fataler,
 	session *discordgo.Session,
 	commands []*discord.Command,
 	commandHandlerTimeout time.Duration,
 	removeCommands bool,
-) module.StartFn {
+) module.Run {
 	return func(ctx context.Context) error {
 		handlers := make(map[string]discord.InteractionHandler, len(commands))
 		appCommands := make([]*discordgo.ApplicationCommand, 0, len(commands))

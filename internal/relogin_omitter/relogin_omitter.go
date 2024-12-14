@@ -21,7 +21,6 @@ var ErrConvertEvent = fmt.Errorf("failed to convert event")
 
 type ReLoginOmitter struct {
 	pubsub.Publisher[events.Event]
-	name              string
 	log               *logger.Logger
 	batchMu           sync.Mutex
 	logoutEventsQueue *containers.ExpirationQueue[ps2.CharacterId]
@@ -33,14 +32,12 @@ type ReLoginOmitter struct {
 }
 
 func NewReLoginOmitter(
-	name string,
 	log *logger.Logger,
 	pub pubsub.Publisher[events.Event],
 	mt *metrics.Metrics,
 	platform ps2_platforms.Platform,
 ) *ReLoginOmitter {
 	return &ReLoginOmitter{
-		name:              name,
 		Publisher:         pub,
 		log:               log,
 		logoutEventsQueue: containers.NewExpirationQueue[ps2.CharacterId](),
@@ -50,10 +47,6 @@ func NewReLoginOmitter(
 		mt:                mt,
 		platform:          platform,
 	}
-}
-
-func (r *ReLoginOmitter) Name() string {
-	return r.name
 }
 
 func (r *ReLoginOmitter) addLogoutEvent(event events.PlayerLogout) {

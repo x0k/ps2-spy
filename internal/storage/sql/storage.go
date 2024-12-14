@@ -22,7 +22,6 @@ import (
 )
 
 type Storage struct {
-	name        string
 	log         *logger.Logger
 	storagePath string
 	db          *sql.DB
@@ -31,23 +30,17 @@ type Storage struct {
 }
 
 func New(
-	name string,
 	log *logger.Logger,
 	storagePath string,
 	publisher pubsub.Publisher[storage.Event],
 ) *Storage {
 	return &Storage{
-		name:        name,
 		log:         log,
 		storagePath: storagePath,
 		publisher:   publisher,
 		db:          nil,
 		queries:     nil,
 	}
-}
-
-func (s *Storage) Name() string {
-	return s.name
 }
 
 func (s *Storage) Open(ctx context.Context) error {

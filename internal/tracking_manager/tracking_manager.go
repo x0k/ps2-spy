@@ -17,7 +17,6 @@ import (
 var ErrUnknownEvent = fmt.Errorf("unknown event")
 
 type TrackingManager struct {
-	name                            string
 	log                             *logger.Logger
 	charactersFilterMu              sync.RWMutex
 	charactersFilter                map[ps2.CharacterId]int
@@ -33,7 +32,6 @@ type TrackingManager struct {
 }
 
 func New(
-	name string,
 	log *logger.Logger,
 	charLoader loader.Keyed[ps2.CharacterId, ps2.Character],
 	characterTrackingChannelsLoader loader.Keyed[ps2.Character, []discord.Channel],
@@ -43,7 +41,6 @@ func New(
 	trackableOutfitsLoader loader.Simple[[]ps2.OutfitId],
 ) *TrackingManager {
 	return &TrackingManager{
-		name:                            name,
 		log:                             log,
 		charactersFilter:                make(map[ps2.CharacterId]int),
 		outfitsFilter:                   make(map[ps2.OutfitId]int),
@@ -55,10 +52,6 @@ func New(
 		trackableOutfitsLoader:          trackableOutfitsLoader,
 		rebuildFiltersInterval:          time.Hour * 12,
 	}
-}
-
-func (tm *TrackingManager) Name() string {
-	return tm.name
 }
 
 func (tm *TrackingManager) rebuildCharactersFilterTask(ctx context.Context, wg *sync.WaitGroup) {

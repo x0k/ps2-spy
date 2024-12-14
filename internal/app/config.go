@@ -26,7 +26,8 @@ type DiscordConfig struct {
 }
 
 type StorageConfig struct {
-	Path string `yaml:"path" env:"STORAGE_PATH"`
+	Path           string `yaml:"path" env:"STORAGE_PATH" env-required:"true"`
+	MigrationsPath string `yaml:"migrations_path" env:"STORAGE_MIGRATIONS_PATH" env-required:"true"`
 }
 
 type HttpClientConfig struct {

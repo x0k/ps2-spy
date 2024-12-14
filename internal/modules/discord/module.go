@@ -86,21 +86,20 @@ func New(
 		saveChannelLanguage,
 		statsTracker,
 	)
-	m.AppendS("discord.commands", commands.Start)
+	m.AppendR("discord.commands", commands.Start)
 
 	channelTitleUpdater := discord.NewChannelTitleUpdater(
 		log.With(sl.Component("channel_title_updater")),
 		session,
 	)
-	m.AppendSS("discord.channel_title_updater", channelTitleUpdater.Start)
+	m.AppendVR("discord.channel_title_updater", channelTitleUpdater.Start)
 	handlersChannelTitleUpdater := func(ctx context.Context, channelId discord.ChannelId, title string) error {
 		channelTitleUpdater.UpdateTitle(channelId, title)
 		return nil
 	}
 
-	m.AppendS("discord.session", sessionStart(
+	m.AppendR("discord.session", sessionStart(
 		log.With(sl.Component("session")),
-		m,
 		session,
 		commands.Commands(),
 		commandHandlerTimeout,
@@ -112,7 +111,7 @@ func New(
 		session,
 		eventHandlerTimeout,
 	)
-	m.AppendSS("discord.handlers_manager", handlersManager.Start)
+	m.AppendVR("discord.handlers_manager", handlersManager.Start)
 
 	eventsPubSub := pubsub.New[discord_events.EventType]()
 	for _, handler := range discord_event_handlers.New(
@@ -128,11 +127,11 @@ func New(
 		eventsPubSub,
 		channelLanguageLoader,
 	)
-	m.AppendSS("discord.events_publisher", eventsPublisher.Start)
+	m.AppendVR("discord.events_publisher", eventsPublisher.Start)
 	channelLanguageUpdate := storage.Subscribe[storage.ChannelLanguageUpdated](m, storageSubs)
 	channelTrackerStarted := stats_tracker.Subscribe[stats_tracker.ChannelTrackerStarted](m, statsTrackerSubs)
 	channelTrackerStopped := stats_tracker.Subscribe[stats_tracker.ChannelTrackerStopped](m, statsTrackerSubs)
-	m.AppendSS("discord.events_subscription", func(ctx context.Context) {
+	m.AppendVR("discord.events_subscription", func(ctx context.Context) {
 		for {
 			select {
 			case <-ctx.Done():
@@ -174,7 +173,7 @@ func New(
 				return trackingManagers[platform].ChannelIdsForOutfit(ctx, oi)
 			},
 		)
-		m.AppendSS(
+		m.AppendVR(
 			fmt.Sprintf("discord.%s.events_subscription", platform),
 			platformEventsPublisher.Start,
 		)
@@ -183,7 +182,7 @@ func New(
 		facilityControl := worlds_tracker.Subscribe[worlds_tracker.FacilityControl](m, worldTrackerSubsMangers[platform])
 		facilityLoss := worlds_tracker.Subscribe[worlds_tracker.FacilityLoss](m, worldTrackerSubsMangers[platform])
 		outfitMembersUpdate := storage.Subscribe[storage.OutfitMembersUpdate](m, storageSubs)
-		m.AppendSS(
+		m.AppendVR(
 			fmt.Sprintf("discord.%s.events_subscription", platform),
 			func(ctx context.Context) {
 				for {

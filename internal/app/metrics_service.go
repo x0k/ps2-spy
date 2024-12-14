@@ -15,7 +15,7 @@ func newMetricsService(
 	m *metrics.Metrics,
 	address string,
 	fataler module.Fataler,
-) module.Service {
+) module.Runnable {
 	mux := http.NewServeMux()
 	reg := prometheus.NewRegistry()
 	m.Register(reg)

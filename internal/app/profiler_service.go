@@ -11,7 +11,7 @@ import (
 func newProfilerService(
 	address string,
 	fataler module.Fataler,
-) module.Service {
+) module.Runnable {
 	mux := http.NewServeMux()
 	mux.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
 	mux.Handle("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))

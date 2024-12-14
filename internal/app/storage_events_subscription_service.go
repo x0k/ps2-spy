@@ -20,7 +20,7 @@ func newStorageEventsSubscriptionService(
 	tms map[ps2_platforms.Platform]*tracking_manager.TrackingManager,
 	oss map[ps2_platforms.Platform]*outfit_members_synchronizer.OutfitMembersSynchronizer,
 	subs pubsub.SubscriptionsManager[storage.EventType],
-) module.Service {
+) module.Runnable {
 	outfitMemberSaved := storage.Subscribe[storage.OutfitMemberSaved](ps, subs)
 	outfitMemberDeleted := storage.Subscribe[storage.OutfitMemberDeleted](ps, subs)
 	channelCharacterSaved := storage.Subscribe[storage.ChannelCharacterSaved](ps, subs)
@@ -28,7 +28,7 @@ func newStorageEventsSubscriptionService(
 	channelOutfitSaved := storage.Subscribe[storage.ChannelOutfitSaved](ps, subs)
 	channelOutfitDeleted := storage.Subscribe[storage.ChannelOutfitDeleted](ps, subs)
 
-	return module.NewService(
+	return module.NewRun(
 		"ps2.storage_events_subscription",
 		func(ctx context.Context) error {
 			for {

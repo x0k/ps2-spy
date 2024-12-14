@@ -7,8 +7,8 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/module"
 )
 
-func NewService(name string, srv *http.Server, fataler module.Fataler) module.Service {
-	return module.NewService(name, func(ctx context.Context) error {
+func NewService(name string, srv *http.Server, fataler module.Fataler) module.Runnable {
+	return module.NewRun(name, func(ctx context.Context) error {
 		context.AfterFunc(ctx, func() {
 			if err := srv.Shutdown(ctx); err != nil {
 				fataler.Fatal(ctx, err)

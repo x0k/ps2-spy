@@ -10,8 +10,6 @@ env:
     export DISCORD_TOKEN=$(cat ~/Sync/ps2-spy/test-token)
     export CENSUS_SERVICE_ID=$(cat ~/Sync/ps2-spy/test-service)
   fi
-  export STORAGE_PATH=storage/storage.db
-  export STORAGE_MIGRATIONS_PATH=db/migrations
   export STREAMING_ENDPOINT=wss://push.nanite-systems.net/streaming
 
 # Dev
@@ -33,7 +31,7 @@ qlint:
 
 # Migration create
 mc: env
-  migrate create -ext sql -dir $STORAGE_MIGRATIONS_PATH -seq $1
+  migrate create -ext sql -dir db/migrations -seq $1
 
 migrate: env
   go run -tags migrate cmd/migrate/main.go

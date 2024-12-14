@@ -32,6 +32,6 @@ func (r *Root) awaiter(ctx context.Context) error {
 	}
 }
 
-func (r *Root) Start(ctx context.Context) error {
-	return r.start(ctx, r.awaiter)
+func (r *Root) Run(ctx context.Context) error {
+	return r.run(ctx, r.awaiter)
 }

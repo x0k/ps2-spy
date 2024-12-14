@@ -24,7 +24,7 @@ func newEventsSubscriptionService(
 	charactersTracker *characters_tracker.CharactersTracker,
 	worldsTracker *worlds_tracker.WorldsTracker,
 	statsTracker *stats_tracker.StatsTracker,
-) module.Service {
+) module.Runnable {
 	playerLogin := census_data_provider.Subscribe[events.PlayerLogin](ps, subs)
 	playerLogout := census_data_provider.Subscribe[events.PlayerLogout](ps, subs)
 	achievementEarned := census_data_provider.Subscribe[events.AchievementEarned](ps, subs)
@@ -41,7 +41,7 @@ func newEventsSubscriptionService(
 	facilityControl := census_data_provider.Subscribe[events.FacilityControl](ps, subs)
 	continentLock := census_data_provider.Subscribe[events.ContinentLock](ps, subs)
 
-	return module.NewService(
+	return module.NewRun(
 		fmt.Sprintf("ps2.%s.events_subscription", platform),
 		func(ctx context.Context) error {
 			for {

@@ -29,6 +29,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/loader"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
+	"github.com/x0k/ps2-spy/internal/lib/migrator"
 	"github.com/x0k/ps2-spy/internal/lib/module"
 	"github.com/x0k/ps2-spy/internal/lib/ps2alerts"
 	"github.com/x0k/ps2-spy/internal/lib/ps2live/population"
@@ -48,6 +49,10 @@ import (
 	sql_storage "github.com/x0k/ps2-spy/internal/storage/sql"
 	"github.com/x0k/ps2-spy/internal/tracking_manager"
 	"github.com/x0k/ps2-spy/internal/worlds_tracker"
+
+	// migration tools
+	_ "github.com/golang-migrate/migrate/v4/database/sqlite"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
 func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
@@ -63,16 +68,22 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		m.Append(newMetricsService(mt, cfg.Metrics.Address, m))
 	}
 
+	mig := migrator.New(
+		log.Logger.With(sl.Component("migrator")),
+		cfg.Storage.Path,
+		cfg.Storage.MigrationsPath,
+	)
+	m.PreStartR("migrator", mig.Migrate)
+
 	storagePubSub := pubsub.New[storage.EventType]()
 
 	storage := sql_storage.New(
-		"storage",
 		log.With(sl.Component("storage")),
 		cfg.Storage.Path,
 		storagePubSub,
 	)
-	m.PreStart(module.NewHook(storage.Name(), storage.Open))
-	m.PreStop(module.NewHook(storage.Name(), storage.Close))
+	m.PreStartR("storage", storage.Open)
+	m.PreStopR("storage", storage.Close)
 
 	httpClient := &http.Client{
 		Timeout: cfg.HttpClient.Timeout,
@@ -187,7 +198,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			10*time.Second,
 			shared.ErrNotFound,
 		)
-		m.Append(module.NewService(
+		m.Append(module.NewRun(
 			fmt.Sprintf("%s.batched_characters_loader", platform),
 			func(ctx context.Context) error {
 				batchedCharactersLoader.Start(ctx)
@@ -224,7 +235,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			charactersTrackerPublisher,
 			mt,
 		)
-		m.AppendS(
+		m.AppendR(
 			fmt.Sprintf("%s.characters_tracker", platform),
 			func(ctx context.Context) error {
 				charactersTracker.Start(ctx)
@@ -244,7 +255,6 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		worldTrackerSubsMangers[platform] = worldsTrackerPubSub
 
 		worldsTracker := worlds_tracker.New(
-			fmt.Sprintf("%s.worlds_tracker", platform),
 			pl.With(sl.Component("worlds_tracker")),
 			platform,
 			5*time.Minute,
@@ -253,7 +263,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 				return censusDataProvider.WorldMap(ctx, ns, wi)
 			},
 		)
-		m.Append(worldsTracker)
+		m.AppendR(fmt.Sprintf("%s.worlds_tracker", platform), worldsTracker.Start)
 		worldTrackers[platform] = worldsTracker
 
 		m.Append(newEventsSubscriptionService(
@@ -267,7 +277,6 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		))
 
 		trackingManager := tracking_manager.New(
-			fmt.Sprintf("%s.tracking_manager", platform),
 			pl.With(sl.Component("tracking_manager")),
 			cachedBatchedCharactersLoader,
 			func(ctx context.Context, c ps2.Character) ([]discord.Channel, error) {
@@ -286,7 +295,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 				return storage.AllTrackableOutfitIdsWithDuplicationsForPlatform(ctx, platform)
 			},
 		)
-		m.Append(trackingManager)
+		m.AppendR(fmt.Sprintf("%s.tracking_manager", platform), trackingManager.Start)
 		trackingManagers[platform] = trackingManager
 
 		outfitMembersSynchronizer := outfit_members_synchronizer.New(
@@ -305,7 +314,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			},
 			24*time.Hour,
 		)
-		m.AppendS(
+		m.AppendR(
 			fmt.Sprintf("%s.outfit_members_synchronizer", platform),
 			func(ctx context.Context) error {
 				outfitMembersSynchronizer.Start(ctx)

@@ -32,13 +32,12 @@ func New(
 	)
 
 	reLoginOmitter := relogin_omitter.NewReLoginOmitter(
-		fmt.Sprintf("%s.relogin_omitter", platform),
 		log.With(sl.Component("relogin_omitter")),
 		instrumentedEventsPublisher,
 		mt,
 		platform,
 	)
-	m.Append(reLoginOmitter)
+	m.AppendR(fmt.Sprintf("%s.relogin_omitter", platform), reLoginOmitter.Start)
 
 	rawEventsPublisher := events.NewPublisher(reLoginOmitter)
 

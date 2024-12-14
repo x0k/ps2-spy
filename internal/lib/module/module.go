@@ -12,11 +12,11 @@ type Module struct {
 	name      string
 	log       *slog.Logger
 	wg        sync.WaitGroup
-	services  []Service
-	preStart  []Hook
-	postStart []Hook
-	preStop   []Hook
-	postStop  []Hook
+	services  []Runnable
+	preStart  []Runnable
+	postStart []Runnable
+	preStop   []Runnable
+	postStop  []Runnable
 	fatal     chan error
 	stopped   atomic.Bool
 }
@@ -33,46 +33,6 @@ func (m *Module) Name() string {
 	return m.name
 }
 
-func (m *Module) Append(services ...Service) {
-	m.services = append(m.services, services...)
-}
-
-func (m *Module) AppendS(name string, run StartFn) {
-	m.services = append(m.services, NewService(name, run))
-}
-
-func (m *Module) AppendSS(name string, run SimpleStartFn) {
-	m.services = append(m.services, NewService(name, func(ctx context.Context) error {
-		run(ctx)
-		return nil
-	}))
-}
-
-func (m *Module) PreStart(hooks ...Hook) {
-	m.preStart = append(m.preStart, hooks...)
-}
-
-func (m *Module) PostStart(hooks ...Hook) {
-	m.postStart = append(m.postStart, hooks...)
-}
-
-func (m *Module) PreStop(hooks ...Hook) {
-	m.preStop = append(m.preStop, hooks...)
-}
-
-func (m *Module) PostStop(hooks ...Hook) {
-	m.postStop = append(m.postStop, hooks...)
-}
-
-func (m *Module) Fatal(ctx context.Context, err error) {
-	if m.stopped.Swap(true) {
-		m.log.LogAttrs(ctx, slog.LevelError, "fatal error", slog.String("error", err.Error()))
-		return
-	}
-	m.fatal <- err
-	close(m.fatal)
-}
-
 func (m *Module) awaiter(ctx context.Context) error {
 	select {
 	case <-ctx.Done():
@@ -82,7 +42,7 @@ func (m *Module) awaiter(ctx context.Context) error {
 	}
 }
 
-func (m *Module) start(ctx context.Context, awaiter func(context.Context) error) error {
+func (m *Module) run(ctx context.Context, awaiter func(context.Context) error) error {
 	if len(m.services) == 0 && len(m.postStart) == 0 && len(m.preStop) == 0 {
 		return nil
 	}
@@ -97,7 +57,7 @@ func (m *Module) start(ctx context.Context, awaiter func(context.Context) error)
 	for _, hook := range m.preStart {
 		m.log.LogAttrs(ctx, slog.LevelInfo, "run pre start", slog.String("hook", hook.Name()))
 		if err := hook.Run(ctx); err != nil {
-			m.Fatal(ctx, err)
+			return err
 		}
 	}
 
@@ -106,7 +66,7 @@ func (m *Module) start(ctx context.Context, awaiter func(context.Context) error)
 		go func() {
 			defer m.wg.Done()
 			m.log.LogAttrs(ctx, slog.LevelInfo, "starting", slog.String("service", service.Name()))
-			if err := service.Start(ctx); err != nil {
+			if err := service.Run(ctx); err != nil {
 				m.Fatal(ctx, err)
 			}
 			m.log.LogAttrs(ctx, slog.LevelInfo, "stopped", slog.String("service", service.Name()))
@@ -145,6 +105,6 @@ func (m *Module) start(ctx context.Context, awaiter func(context.Context) error)
 	return err
 }
 
-func (m *Module) Start(ctx context.Context) error {
-	return m.start(ctx, m.awaiter)
+func (m *Module) Run(ctx context.Context) error {
+	return m.run(ctx, m.awaiter)
 }

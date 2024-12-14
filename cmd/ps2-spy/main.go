@@ -30,7 +30,7 @@ func main() {
 		log.Error(ctx, "failed to run", sl.Err(err))
 		return
 	}
-	if err := root.Start(ctx); err != nil {
+	if err := root.Run(ctx); err != nil {
 		log.Error(ctx, "fatal error", sl.Err(err))
 	}
 	log.Info(ctx, "application stopped")
