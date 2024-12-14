@@ -11,6 +11,9 @@
             "mode": "auto",
             "cwd": "${workspaceFolder}",
             "program": "${workspaceFolder}/cmd/ps2-spy/",
+            "env": {
+                "CGO_ENABLED": "0"
+            },
             "envFile": "${workspaceFolder}/.env.local.debug",
             "args": [
                 "--config",

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"log/slog"
+	"net/url"
 	"time"
 
 	"github.com/x0k/ps2-spy/internal/discord"
@@ -45,7 +46,11 @@ func New(
 
 func (s *Storage) Open(ctx context.Context) error {
 	var err error
-	s.db, err = sql.Open("sqlite", s.storagePath)
+	u, err := url.Parse(s.storagePath)
+	if err != nil {
+		return err
+	}
+	s.db, err = sql.Open(u.Scheme, u.Host+u.Path)
 	if err != nil {
 		return err
 	}
