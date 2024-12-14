@@ -28,6 +28,6 @@ WORKDIR /app
 # Copy the binary from the builder stage
 COPY --from=builder /app/app .
 COPY ./db/migrations ./migrations
-ENV STORAGE_MIGRATIONS_PATH=migrations
+ENV STORAGE_MIGRATIONS_PATH=file://migrations
 
 ENTRYPOINT [ "./app" ]
