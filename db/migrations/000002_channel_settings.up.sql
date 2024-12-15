@@ -1,0 +1,7 @@
+ALTER TABLE channel_locale RENAME TO channel;
+
+ALTER TABLE channel ADD COLUMN character_notifications BOOLEAN NOT NULL DEFAULT TRUE;
+
+ALTER TABLE channel ADD COLUMN outfit_notifications BOOLEAN NOT NULL DEFAULT TRUE;
+
+ALTER TABLE channel ADD COLUMN title_updates BOOLEAN NOT NULL DEFAULT TRUE;

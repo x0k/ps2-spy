@@ -16,6 +16,9 @@ func sendChunkableMessage(
 	channels []discord.Channel,
 	discordMsg discord.ChunkableMessage,
 ) error {
+	if len(channels) == 0 {
+		return nil
+	}
 	channelsByLocale := slicesx.GroupBy(channels, func(c discord.Channel) language.Tag {
 		return c.Locale
 	})

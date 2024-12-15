@@ -5,12 +5,11 @@ import (
 	"log/slog"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/x0k/ps2-spy/internal/discord"
 	discord_events "github.com/x0k/ps2-spy/internal/discord/events"
 	discord_messages "github.com/x0k/ps2-spy/internal/discord/messages"
 )
 
-func NewChannelLanguageUpdate(
+func NewChannelSaved(
 	m *HandlersManager,
 	messages *discord_messages.Messages,
 	onlineTrackableEntitiesCountLoader OnlineTrackableEntitiesCountLoader,
@@ -19,14 +18,17 @@ func NewChannelLanguageUpdate(
 	return newHandler(m, func(
 		ctx context.Context,
 		session *discordgo.Session,
-		e discord_events.ChannelLanguageUpdated,
+		e discord_events.ChannelSaved,
 	) error {
+		if e.Event.OldChannel.TitleUpdates == e.Event.NewChannel.TitleUpdates {
+			return nil
+		}
 		updateOnlineCountInTitle(
 			ctx,
-			m.log.With(slog.String("channel_id", string(e.Event.ChannelId))),
+			m.log.With(slog.String("channel_id", string(e.Event.NewChannel.Id))),
 			session,
 			messages,
-			discord.NewChannel(e.Event.ChannelId, e.Event.Language),
+			e.Event.NewChannel,
 			onlineTrackableEntitiesCountLoader,
 			channelTitleUpdater,
 		)

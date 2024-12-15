@@ -49,6 +49,7 @@ import (
 	sql_storage "github.com/x0k/ps2-spy/internal/storage/sql"
 	"github.com/x0k/ps2-spy/internal/tracking_manager"
 	"github.com/x0k/ps2-spy/internal/worlds_tracker"
+	"golang.org/x/text/language"
 
 	// migration tools
 	_ "github.com/golang-migrate/migrate/v4/database/sqlite"
@@ -150,7 +151,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			}
 			channelIds := make([]discord.ChannelId, 0, len(channels))
 			for _, channel := range channels {
-				channelIds = append(channelIds, channel.ChannelId)
+				channelIds = append(channelIds, channel.Id)
 			}
 			return channelIds, nil
 		},
@@ -472,7 +473,11 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			return censusDataProvider.OutfitIds(ctx, ps2_platforms.PlatformNamespace(pq.Platform), pq.Value)
 		},
 		storage.SaveTrackingSettings,
-		storage.SaveChannelLanguage,
+		func(ctx context.Context, channelId discord.ChannelId, language language.Tag) error {
+			channel := discord.NewDefaultChannel(channelId)
+			channel.Locale = language
+			return storage.SaveChannel(ctx, channel)
+		},
 		characterLoaders,
 		outfitLoaders,
 		charactersLoaders,
@@ -499,7 +504,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		},
 		statsTracker,
 		statsTrackerPubSub,
-		storage.ChannelLanguage,
+		storage.Channel,
 	)
 	if err != nil {
 		return nil, err

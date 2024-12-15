@@ -33,8 +33,8 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.deleteOutfitMemberStmt, err = db.PrepareContext(ctx, deleteOutfitMember); err != nil {
 		return nil, fmt.Errorf("error preparing query DeleteOutfitMember: %w", err)
 	}
-	if q.getChannelLocaleStmt, err = db.PrepareContext(ctx, getChannelLocale); err != nil {
-		return nil, fmt.Errorf("error preparing query GetChannelLocale: %w", err)
+	if q.getChannelStmt, err = db.PrepareContext(ctx, getChannel); err != nil {
+		return nil, fmt.Errorf("error preparing query GetChannel: %w", err)
 	}
 	if q.getFacilityStmt, err = db.PrepareContext(ctx, getFacility); err != nil {
 		return nil, fmt.Errorf("error preparing query GetFacility: %w", err)
@@ -90,8 +90,8 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.listUniqueTrackableOutfitIdsForPlatformStmt, err = db.PrepareContext(ctx, listUniqueTrackableOutfitIdsForPlatform); err != nil {
 		return nil, fmt.Errorf("error preparing query ListUniqueTrackableOutfitIdsForPlatform: %w", err)
 	}
-	if q.upsertChannelLocaleStmt, err = db.PrepareContext(ctx, upsertChannelLocale); err != nil {
-		return nil, fmt.Errorf("error preparing query UpsertChannelLocale: %w", err)
+	if q.upsertChannelStmt, err = db.PrepareContext(ctx, upsertChannel); err != nil {
+		return nil, fmt.Errorf("error preparing query UpsertChannel: %w", err)
 	}
 	if q.upsertPlatformOutfitSynchronizedAtStmt, err = db.PrepareContext(ctx, upsertPlatformOutfitSynchronizedAt); err != nil {
 		return nil, fmt.Errorf("error preparing query UpsertPlatformOutfitSynchronizedAt: %w", err)
@@ -116,9 +116,9 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing deleteOutfitMemberStmt: %w", cerr)
 		}
 	}
-	if q.getChannelLocaleStmt != nil {
-		if cerr := q.getChannelLocaleStmt.Close(); cerr != nil {
-			err = fmt.Errorf("error closing getChannelLocaleStmt: %w", cerr)
+	if q.getChannelStmt != nil {
+		if cerr := q.getChannelStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getChannelStmt: %w", cerr)
 		}
 	}
 	if q.getFacilityStmt != nil {
@@ -211,9 +211,9 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing listUniqueTrackableOutfitIdsForPlatformStmt: %w", cerr)
 		}
 	}
-	if q.upsertChannelLocaleStmt != nil {
-		if cerr := q.upsertChannelLocaleStmt.Close(); cerr != nil {
-			err = fmt.Errorf("error closing upsertChannelLocaleStmt: %w", cerr)
+	if q.upsertChannelStmt != nil {
+		if cerr := q.upsertChannelStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing upsertChannelStmt: %w", cerr)
 		}
 	}
 	if q.upsertPlatformOutfitSynchronizedAtStmt != nil {
@@ -263,7 +263,7 @@ type Queries struct {
 	deleteChannelCharacterStmt                              *sql.Stmt
 	deleteChannelOutfitStmt                                 *sql.Stmt
 	deleteOutfitMemberStmt                                  *sql.Stmt
-	getChannelLocaleStmt                                    *sql.Stmt
+	getChannelStmt                                          *sql.Stmt
 	getFacilityStmt                                         *sql.Stmt
 	getPlatformOutfitStmt                                   *sql.Stmt
 	getPlatformOutfitSynchronizedAtStmt                     *sql.Stmt
@@ -282,7 +282,7 @@ type Queries struct {
 	listTrackableCharacterIdsWithDuplicationForPlatformStmt *sql.Stmt
 	listTrackableOutfitIdsWithDuplicationForPlatformStmt    *sql.Stmt
 	listUniqueTrackableOutfitIdsForPlatformStmt             *sql.Stmt
-	upsertChannelLocaleStmt                                 *sql.Stmt
+	upsertChannelStmt                                       *sql.Stmt
 	upsertPlatformOutfitSynchronizedAtStmt                  *sql.Stmt
 }
 
@@ -293,7 +293,7 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		deleteChannelCharacterStmt:                   q.deleteChannelCharacterStmt,
 		deleteChannelOutfitStmt:                      q.deleteChannelOutfitStmt,
 		deleteOutfitMemberStmt:                       q.deleteOutfitMemberStmt,
-		getChannelLocaleStmt:                         q.getChannelLocaleStmt,
+		getChannelStmt:                               q.getChannelStmt,
 		getFacilityStmt:                              q.getFacilityStmt,
 		getPlatformOutfitStmt:                        q.getPlatformOutfitStmt,
 		getPlatformOutfitSynchronizedAtStmt:          q.getPlatformOutfitSynchronizedAtStmt,
@@ -312,7 +312,7 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		listTrackableCharacterIdsWithDuplicationForPlatformStmt: q.listTrackableCharacterIdsWithDuplicationForPlatformStmt,
 		listTrackableOutfitIdsWithDuplicationForPlatformStmt:    q.listTrackableOutfitIdsWithDuplicationForPlatformStmt,
 		listUniqueTrackableOutfitIdsForPlatformStmt:             q.listUniqueTrackableOutfitIdsForPlatformStmt,
-		upsertChannelLocaleStmt:                                 q.upsertChannelLocaleStmt,
-		upsertPlatformOutfitSynchronizedAtStmt:                  q.upsertPlatformOutfitSynchronizedAtStmt,
+		upsertChannelStmt:                      q.upsertChannelStmt,
+		upsertPlatformOutfitSynchronizedAtStmt: q.upsertPlatformOutfitSynchronizedAtStmt,
 	}
 }

@@ -12,27 +12,26 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
 	"github.com/x0k/ps2-spy/internal/stats_tracker"
 	"github.com/x0k/ps2-spy/internal/storage"
-	"golang.org/x/text/language"
 )
 
-type ChannelLanguageLoader = loader.Keyed[discord.ChannelId, language.Tag]
+type ChannelLoader = loader.Keyed[discord.ChannelId, discord.Channel]
 
 type EventsPublisher struct {
-	publisher             pubsub.Publisher[Event]
-	log                   *logger.Logger
-	wg                    sync.WaitGroup
-	channelLanguageLoader ChannelLanguageLoader
+	publisher     pubsub.Publisher[Event]
+	log           *logger.Logger
+	wg            sync.WaitGroup
+	channelLoader ChannelLoader
 }
 
 func NewEventsPublisher(
 	log *logger.Logger,
 	pubsub pubsub.Publisher[Event],
-	channelLanguageLoader ChannelLanguageLoader,
+	channelLanguageLoader ChannelLoader,
 ) *EventsPublisher {
 	return &EventsPublisher{
-		log:                   log,
-		publisher:             pubsub,
-		channelLanguageLoader: channelLanguageLoader,
+		log:           log,
+		publisher:     pubsub,
+		channelLoader: channelLanguageLoader,
 	}
 }
 
@@ -43,9 +42,9 @@ func (p *EventsPublisher) Start(ctx context.Context) {
 
 func (p *EventsPublisher) PublishChannelLanguageUpdated(
 	ctx context.Context,
-	event storage.ChannelLanguageUpdated,
+	event storage.ChannelSaved,
 ) {
-	p.publish(ctx, ChannelLanguageUpdated{Event: event})
+	p.publish(ctx, ChannelSaved{Event: event})
 }
 
 func (p *EventsPublisher) PublishChannelTrackerStarted(
@@ -74,17 +73,17 @@ func (p *EventsPublisher) publish(ctx context.Context, event Event) {
 func publishChannelEventTask[T pubsub.EventType, E pubsub.Event[T]](
 	ctx context.Context,
 	p *EventsPublisher,
-	channel discord.ChannelId,
+	channelId discord.ChannelId,
 	event E,
 ) {
 	defer p.wg.Done()
-	locale, err := p.channelLanguageLoader(ctx, channel)
+	channel, err := p.channelLoader(ctx, channelId)
 	if err != nil {
-		p.log.Error(ctx, "cannot get channel language", slog.String("channel_id", string(channel)), sl.Err(err))
+		p.log.Error(ctx, "cannot get channel language", slog.String("channel_id", string(channelId)), sl.Err(err))
 		return
 	}
-	p.publish(ctx, localizedEvent[T, E]{
-		Event:    event,
-		Language: locale,
+	p.publish(ctx, channelEvent[T, E]{
+		Event:   event,
+		Channel: channel,
 	})
 }

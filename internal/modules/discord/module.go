@@ -56,7 +56,7 @@ func New(
 	onlineTrackableEntitiesCountLoader loader.Keyed[discord.ChannelId, int],
 	statsTracker *stats_tracker.StatsTracker,
 	statsTrackerSubs pubsub.SubscriptionsManager[stats_tracker.EventType],
-	channelLanguageLoader discord_events.ChannelLanguageLoader,
+	channelLoader discord_events.ChannelLoader,
 ) (*module.Module, error) {
 	m := module.New(log.Logger, "discord")
 	session, err := discordgo.New("Bot " + token)
@@ -125,10 +125,10 @@ func New(
 	eventsPublisher := discord_events.NewEventsPublisher(
 		log.With(sl.Component("events_publisher")),
 		eventsPubSub,
-		channelLanguageLoader,
+		channelLoader,
 	)
 	m.AppendVR("discord.events_publisher", eventsPublisher.Start)
-	channelLanguageUpdate := storage.Subscribe[storage.ChannelLanguageUpdated](m, storageSubs)
+	channelLanguageUpdate := storage.Subscribe[storage.ChannelSaved](m, storageSubs)
 	channelTrackerStarted := stats_tracker.Subscribe[stats_tracker.ChannelTrackerStarted](m, statsTrackerSubs)
 	channelTrackerStopped := stats_tracker.Subscribe[stats_tracker.ChannelTrackerStopped](m, statsTrackerSubs)
 	m.AppendVR("discord.events_subscription", func(ctx context.Context) {

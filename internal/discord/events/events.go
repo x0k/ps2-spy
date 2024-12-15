@@ -7,7 +7,6 @@ import (
 	"github.com/x0k/ps2-spy/internal/stats_tracker"
 	"github.com/x0k/ps2-spy/internal/storage"
 	"github.com/x0k/ps2-spy/internal/worlds_tracker"
-	"golang.org/x/text/language"
 )
 
 type EventType string
@@ -20,7 +19,7 @@ const (
 	OutfitMembersUpdateType    = EventType(storage.OutfitMembersUpdateType)
 	FacilityControlType        = EventType(worlds_tracker.FacilityControlType)
 	FacilityLossType           = EventType(worlds_tracker.FacilityLossType)
-	ChannelLanguageUpdatedType = EventType(storage.ChannelLanguageUpdatedType)
+	ChannelLanguageUpdatedType = EventType(storage.ChannelSavedType)
 	ChannelTrackerStartedType  = EventType(stats_tracker.ChannelTrackerStartedType)
 	ChannelTrackerStoppedType  = EventType(stats_tracker.ChannelTrackerStoppedType)
 )
@@ -42,19 +41,19 @@ func (e channelsEvent[T, Event]) Type() EventType {
 	return EventType(e.Event.Type())
 }
 
-type localizedEvent[T pubsub.EventType, E pubsub.Event[T]] struct {
-	Event    E
-	Language language.Tag
+type channelEvent[T pubsub.EventType, E pubsub.Event[T]] struct {
+	Event   E
+	Channel discord.Channel
 }
 
-func (e localizedEvent[T, Event]) Type() EventType {
+func (e channelEvent[T, Event]) Type() EventType {
 	return EventType(e.Event.Type())
 }
 
-type ChannelLanguageUpdated = adoptedEvent[storage.EventType, storage.ChannelLanguageUpdated]
+type ChannelSaved = adoptedEvent[storage.EventType, storage.ChannelSaved]
 
-type ChannelTrackerStarted = localizedEvent[stats_tracker.EventType, stats_tracker.ChannelTrackerStarted]
-type ChannelTrackerStopped = localizedEvent[stats_tracker.EventType, stats_tracker.ChannelTrackerStopped]
+type ChannelTrackerStarted = channelEvent[stats_tracker.EventType, stats_tracker.ChannelTrackerStarted]
+type ChannelTrackerStopped = channelEvent[stats_tracker.EventType, stats_tracker.ChannelTrackerStopped]
 
 type PlayerLogin = channelsEvent[characters_tracker.EventType, characters_tracker.PlayerLogin]
 type PlayerLogout = channelsEvent[characters_tracker.EventType, characters_tracker.PlayerLogout]

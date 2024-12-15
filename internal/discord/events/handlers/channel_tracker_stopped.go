@@ -14,22 +14,26 @@ func NewChannelTrackerStopped(
 	m *HandlersManager,
 	messages *discord_messages.Messages,
 ) Handler {
-	return newHandler(m, func(ctx context.Context, session *discordgo.Session, event discord_events.ChannelTrackerStopped) error {
-		platforms := event.Event.Platforms
+	return newHandler(m, func(
+		ctx context.Context,
+		session *discordgo.Session,
+		e discord_events.ChannelTrackerStopped,
+	) error {
+		platforms := e.Event.Platforms
 		// Unreachable
 		if len(platforms) == 0 {
 			return nil
 		}
 		var errs []error
-		channels := []discord.Channel{discord.NewChannel(event.Event.ChannelId, event.Language)}
+		channels := []discord.Channel{e.Channel}
 		for platform, stats := range platforms {
 			if err := sendChunkableMessage(
 				session,
 				channels,
 				messages.ChannelTrackerStopped(
 					platform,
-					event.Event.StartedAt,
-					event.Event.StoppedAt,
+					e.Event.StartedAt,
+					e.Event.StoppedAt,
 					stats,
 				),
 			); err != nil {

@@ -21,25 +21,23 @@ func lastIndexRune(runes []rune, target rune) int {
 }
 
 func sendSimpleMessage(session *discordgo.Session, channels []discord.Channel, discordMsg discord.Message) error {
-	const op = "discord.sendSimpleMessage"
+	if len(channels) == 0 {
+		return nil
+	}
 	channelsByLocale := slicesx.GroupBy(channels, func(c discord.Channel) language.Tag { return c.Locale })
-	handlingErrors := make([]error, 0, len(channels))
-	sendErrors := make([]error, 0, len(channels))
+	errs := make([]error, 0, len(channels))
 	for locale, channels := range channelsByLocale {
 		msgContent, err := discordMsg(message.NewPrinter(locale))
 		if err != nil {
 			msgContent = err.Msg
-			handlingErrors = append(handlingErrors, err.Err)
+			errs = append(errs, err.Err)
 		}
 		if err := sendChannelMessage(session, channels, msgContent); err != nil {
-			sendErrors = append(sendErrors, err)
+			errs = append(errs, err)
 		}
 	}
-	if len(handlingErrors) > 0 {
-		return fmt.Errorf("%s handling event: %w", op, errors.Join(handlingErrors...))
-	}
-	if len(sendErrors) > 0 {
-		return fmt.Errorf("%s sending messages: %s", op, errors.Join(sendErrors...))
+	if len(errs) > 0 {
+		return fmt.Errorf("send simple message: %w", errors.Join(errs...))
 	}
 	return nil
 }

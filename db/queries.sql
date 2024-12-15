@@ -57,10 +57,11 @@ WHERE
 
 -- name: ListPlatformTrackingChannelsForCharacter :many
 SELECT
-  channel.channel_id,
-  channel_locale.locale
+  *
 FROM
-  (
+  channel
+WHERE
+  channel.channel_id IN (
     SELECT
       channel_id
     FROM
@@ -76,19 +77,23 @@ FROM
     WHERE
       channel_to_outfit.platform = sqlc.arg (platform)
       AND outfit_id = sqlc.arg (outfit_id)
-  ) AS channel
-  LEFT JOIN channel_locale ON channel_locale.channel_id = channel.channel_id;
+  );
 
 -- name: ListPlatformTrackingChannelsForOutfit :many
 SELECT
-  channel_to_outfit.channel_id,
-  channel_locale.locale
+  *
 FROM
-  channel_to_outfit
-  LEFT JOIN channel_locale ON channel_locale.channel_id = channel_to_outfit.channel_id
+  channel
 WHERE
-  platform = ?
-  AND outfit_id = ?;
+  channel_id IN (
+    SELECT
+      channel_id
+    FROM
+      channel_to_outfit
+    WHERE
+      platform = ?
+      AND outfit_id = ?
+  );
 
 -- name: ListChannelOutfitIdsForPlatform :many
 SELECT
@@ -193,20 +198,29 @@ WHERE
   platform = ?
   AND outfit_id IN (sqlc.slice (outfit_ids));
 
--- name: UpsertChannelLocale :exec
+-- name: UpsertChannel :exec
 INSERT INTO
-  channel_locale (channel_id, locale)
+  channel (
+    channel_id,
+    locale,
+    character_notifications,
+    outfit_notifications,
+    title_updates
+  )
 VALUES
-  (?, ?) ON CONFLICT (channel_id) DO
+  (?, ?, ?, ?, ?) ON CONFLICT (channel_id) DO
 UPDATE
 SET
-  locale = EXCLUDED.locale;
+  locale = EXCLUDED.locale,
+  character_notifications = EXCLUDED.character_notifications,
+  outfit_notifications = EXCLUDED.outfit_notifications,
+  title_updates = EXCLUDED.title_updates;
 
--- name: GetChannelLocale :one
+-- name: GetChannel :one
 SELECT
-  locale
+  *
 FROM
-  channel_locale
+  channel
 WHERE
   channel_id = ?;
 

@@ -8,6 +8,7 @@ import (
 	discord_events "github.com/x0k/ps2-spy/internal/discord/events"
 	discord_messages "github.com/x0k/ps2-spy/internal/discord/messages"
 	"github.com/x0k/ps2-spy/internal/lib/loader"
+	"github.com/x0k/ps2-spy/internal/lib/slicesx"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
@@ -27,19 +28,25 @@ func NewFacilityControl(
 		session *discordgo.Session,
 		e discord_events.FacilityControl,
 	) error {
-		return sendSimpleMessage(session, e.Channels, func() discord.Message {
-			facilityId := ps2.FacilityId(e.Event.FacilityID)
-			facility, err := facilityLoader(ctx, facilityId)
-			if err != nil {
-				return messages.FacilityLoadError(facilityId, err)
-			}
-			outfitId := ps2.OutfitId(e.Event.OutfitID)
-			outfitTag, err := outfitLoader(ctx, outfitId)
-			if err != nil {
-				return messages.OutfitLoadError(outfitId, platform, err)
-			}
-			worldId := ps2.WorldId(e.Event.WorldID)
-			return messages.FacilityControl(worldId, outfitTag, facility)
-		}())
+		return sendSimpleMessage(
+			session,
+			slicesx.Filter(e.Channels, func(i int) bool {
+				return e.Channels[i].OutfitNotifications
+			}),
+			func() discord.Message {
+				facilityId := ps2.FacilityId(e.Event.FacilityID)
+				facility, err := facilityLoader(ctx, facilityId)
+				if err != nil {
+					return messages.FacilityLoadError(facilityId, err)
+				}
+				outfitId := ps2.OutfitId(e.Event.OutfitID)
+				outfitTag, err := outfitLoader(ctx, outfitId)
+				if err != nil {
+					return messages.OutfitLoadError(outfitId, platform, err)
+				}
+				worldId := ps2.WorldId(e.Event.WorldID)
+				return messages.FacilityControl(worldId, outfitTag, facility)
+			}(),
+		)
 	})
 }

@@ -13,10 +13,14 @@ func NewChannelTrackerStarted(
 	m *HandlersManager,
 	messages *discord_messages.Messages,
 ) Handler {
-	return newHandler(m, func(ctx context.Context, session *discordgo.Session, event discord_events.ChannelTrackerStarted) error {
+	return newHandler(m, func(
+		ctx context.Context,
+		session *discordgo.Session,
+		e discord_events.ChannelTrackerStarted,
+	) error {
 		return sendSimpleMessage(
 			session,
-			[]discord.Channel{discord.NewChannel(event.Event.ChannelId, event.Language)},
+			[]discord.Channel{e.Channel},
 			messages.ChannelTrackerStarted(),
 		)
 	})
