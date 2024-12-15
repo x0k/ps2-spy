@@ -9,7 +9,7 @@
         {
             "id": "LA",
             "message": "LA",
-            "translation": "ЛШ"
+            "translation": "ЛАЙТ"
         },
         {
             "id": "MED",
@@ -24,7 +24,7 @@
         {
             "id": "HA",
             "message": "HA",
-            "translation": "ТШ"
+            "translation": "ШТУРМ"
         },
         {
             "id": "MAX",
@@ -57,9 +57,9 @@
             "translation": "Убийства"
         },
         {
-            "id": "HS%",
-            "message": "HS%",
-            "translation": "HS%"
+            "id": "HS",
+            "message": "HS",
+            "translation": "HS"
         },
         {
             "id": "KD",
@@ -70,6 +70,11 @@
             "id": "Loadout",
             "message": "Loadout",
             "translation": "Класс"
+        },
+        {
+            "id": "Duration",
+            "message": "Duration",
+            "translation": "Время"
         },
         {
             "id": "[{OutfitTag}] {Name} ({FactionId}) is now online ({WorldId})",
@@ -1182,21 +1187,6 @@
             "translation": "Нет"
         },
         {
-            "id": "{H}h",
-            "message": "{H}h",
-            "translation": "{H}ч",
-            "placeholders": [
-                {
-                    "id": "H",
-                    "string": "%[1]d",
-                    "type": "int",
-                    "underlyingType": "int",
-                    "argNum": 1,
-                    "expr": "h"
-                }
-            ]
-        },
-        {
             "id": "{M}m",
             "message": "{M}m",
             "translation": "{M}м",
@@ -1208,6 +1198,21 @@
                     "underlyingType": "int",
                     "argNum": 1,
                     "expr": "m"
+                }
+            ]
+        },
+        {
+            "id": "{H}h",
+            "message": "{H}h",
+            "translation": "{H}ч",
+            "placeholders": [
+                {
+                    "id": "H",
+                    "string": "%[1]d",
+                    "type": "int",
+                    "underlyingType": "int",
+                    "argNum": 1,
+                    "expr": "h"
                 }
             ]
         }

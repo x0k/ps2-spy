@@ -30,19 +30,26 @@ func renderLoadoutType(p *message.Printer, lt ps2_loadout.LoadoutType) string {
 	return p.Sprintf("Unknown")
 }
 
-func renderPlatformStats(p *message.Printer, sb *strings.Builder, stats stats_tracker.PlatformStats) {
+func renderCharactersStatsTable(
+	p *message.Printer,
+	sb *strings.Builder,
+	characters []stats_tracker.CharacterStats,
+	initialIndex int,
+) {
 	t := tablewriter.NewWriter(sb)
 	t.SetHeader([]string{
+		"№",
 		p.Sprintf("Faction"),
 		p.Sprintf("Outfit"),
 		p.Sprintf("Character"),
 		p.Sprintf("Kills"),
-		p.Sprintf("HS%%"),
+		p.Sprintf("HS") + "%",
 		p.Sprintf("KD"),
 		p.Sprintf("Loadout"),
+		p.Sprintf("Duration"),
 	})
 	t.SetBorder(false)
-	for _, char := range stats.Characters {
+	for i, char := range characters {
 		allKills := char.BodyKills + char.HeadShotsKills
 		headShotsRatio := float64(0)
 		if allKills > 0 {
@@ -54,14 +61,17 @@ func renderPlatformStats(p *message.Printer, sb *strings.Builder, stats stats_tr
 			killDeathRatio = float64(allKills) / float64(allDeaths)
 		}
 		mainLoadoutType := ps2_loadout.HeavyAssault
+		totalDuration := time.Duration(0)
 		maxDuration := time.Duration(0)
 		for i, d := range char.LoadoutsDistribution {
+			totalDuration += d
 			if d > maxDuration {
 				maxDuration = d
 				mainLoadoutType = ps2_loadout.LoadoutType(i)
 			}
 		}
 		t.Append([]string{
+			strconv.FormatInt(int64(initialIndex+i+1), 10),
 			ps2_factions.FactionNameById(char.Character.FactionId),
 			char.Character.OutfitTag,
 			char.Character.Name,
@@ -69,6 +79,7 @@ func renderPlatformStats(p *message.Printer, sb *strings.Builder, stats stats_tr
 			strconv.FormatFloat(headShotsRatio, 'f', 2, 64),
 			strconv.FormatFloat(killDeathRatio, 'f', 2, 64),
 			renderLoadoutType(p, mainLoadoutType),
+			renderDuration(p, totalDuration),
 		})
 	}
 	t.Render()

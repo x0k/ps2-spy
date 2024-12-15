@@ -79,9 +79,9 @@
             "fuzzy": true
         },
         {
-            "id": "HS%",
-            "message": "HS%",
-            "translation": "HS%",
+            "id": "HS",
+            "message": "HS",
+            "translation": "HS",
             "translatorComment": "Copied from source.",
             "fuzzy": true
         },
@@ -96,6 +96,13 @@
             "id": "Loadout",
             "message": "Loadout",
             "translation": "Loadout",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Duration",
+            "message": "Duration",
+            "translation": "Duration",
             "translatorComment": "Copied from source.",
             "fuzzy": true
         },
@@ -1367,23 +1374,6 @@
             "fuzzy": true
         },
         {
-            "id": "{H}h",
-            "message": "{H}h",
-            "translation": "{H}h",
-            "translatorComment": "Copied from source.",
-            "placeholders": [
-                {
-                    "id": "H",
-                    "string": "%[1]d",
-                    "type": "int",
-                    "underlyingType": "int",
-                    "argNum": 1,
-                    "expr": "h"
-                }
-            ],
-            "fuzzy": true
-        },
-        {
             "id": "{M}m",
             "message": "{M}m",
             "translation": "{M}m",
@@ -1396,6 +1386,23 @@
                     "underlyingType": "int",
                     "argNum": 1,
                     "expr": "m"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "{H}h",
+            "message": "{H}h",
+            "translation": "{H}h",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "H",
+                    "string": "%[1]d",
+                    "type": "int",
+                    "underlyingType": "int",
+                    "argNum": 1,
+                    "expr": "h"
                 }
             ],
             "fuzzy": true

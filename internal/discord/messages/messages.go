@@ -131,28 +131,36 @@ func (m *Messages) ChannelTrackerStarted() discord.Message {
 }
 
 func (m *Messages) ChannelTrackerStopped(
-	sb *strings.Builder,
 	platform ps2_platforms.Platform,
 	startedAt time.Time,
 	stoppedAt time.Time,
 	stats stats_tracker.PlatformStats,
-) discord.Message {
-	return func(p *message.Printer) (string, *discord.Error) {
-		sb.WriteString(p.Sprintf(
-			"Platform: %s, started at: %s, stopped: %s, duration: %s\n```",
-			strings.ToUpper(string(platform)),
-			renderTime(startedAt),
-			renderRelativeTime(stoppedAt),
-			renderDuration(p, stoppedAt.Sub(startedAt)),
-		))
-		if len(stats.Characters) == 0 {
-			sb.WriteString(p.Sprintf("No data collected"))
-		} else {
-			renderPlatformStats(p, sb, stats)
-		}
-		sb.WriteString("```")
-		return sb.String(), nil
-	}
+) discord.ChunkableMessage {
+	sb := strings.Builder{}
+	return discord.NewChunkableMessage(
+		len(stats.Characters),
+		func(p *message.Printer, start, count int) (string, *discord.Error) {
+			sb.Reset()
+			if start == 0 {
+				sb.WriteString(p.Sprintf(
+					"Platform: %s, started at: %s, stopped: %s, duration: %s\n```",
+					strings.ToUpper(string(platform)),
+					renderTime(startedAt),
+					renderRelativeTime(stoppedAt),
+					renderDuration(p, stoppedAt.Sub(startedAt)),
+				))
+			} else {
+				sb.WriteString("```")
+			}
+			chars := stats.Characters[start : start+count]
+			if len(chars) == 0 {
+				sb.WriteString(p.Sprintf("No data collected"))
+			} else {
+				renderCharactersStatsTable(p, &sb, chars, start)
+			}
+			sb.WriteString("```")
+			return sb.String(), nil
+		})
 }
 
 func (m *Messages) FacilityControl(

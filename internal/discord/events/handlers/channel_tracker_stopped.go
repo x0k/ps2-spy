@@ -3,7 +3,6 @@ package discord_event_handlers
 import (
 	"context"
 	"errors"
-	"strings"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/x0k/ps2-spy/internal/discord"
@@ -23,13 +22,11 @@ func NewChannelTrackerStopped(
 		}
 		var errs []error
 		channels := []discord.Channel{discord.NewChannel(event.Event.ChannelId, event.Language)}
-		sb := strings.Builder{}
 		for platform, stats := range platforms {
-			if err := sendSimpleMessage(
+			if err := sendChunkableMessage(
 				session,
 				channels,
 				messages.ChannelTrackerStopped(
-					&sb,
 					platform,
 					event.Event.StartedAt,
 					event.Event.StoppedAt,
@@ -38,7 +35,6 @@ func NewChannelTrackerStopped(
 			); err != nil {
 				errs = append(errs, err)
 			}
-			sb.Reset()
 		}
 		return errors.Join(errs...)
 	})

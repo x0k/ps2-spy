@@ -18,5 +18,9 @@ func renderRelativeTime(t time.Time) string {
 func renderDuration(p *message.Printer, d time.Duration) string {
 	h := int(d.Hours())
 	m := int(d.Minutes()) % 60
-	return p.Sprintf("%dh ", h) + " " + p.Sprintf("%dm", m)
+	minutes := p.Sprintf("%dm", m)
+	if h == 0 {
+		return minutes
+	}
+	return p.Sprintf("%dh ", h) + " " + minutes
 }
