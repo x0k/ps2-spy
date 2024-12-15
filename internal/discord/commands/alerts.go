@@ -48,7 +48,7 @@ func NewAlerts(
 					Type: discordgo.ApplicationCommandOptionString,
 					Name: "provider",
 					NameLocalizations: map[discordgo.Locale]string{
-						discordgo.Russian: "проваидер",
+						discordgo.Russian: "источник",
 					},
 					Description: "Provider name",
 					DescriptionLocalizations: map[discordgo.Locale]string{

@@ -45,6 +45,7 @@ func New(
 	channelTrackingSettingsSaver ChannelTrackingSettingsSaver,
 	channelLanguageSaver ChannelLanguageSaver,
 	statsTracker *stats_tracker.StatsTracker,
+	channelLoader ChannelLoader,
 ) *commands {
 	populationLoader := newPopulationLoader(
 		log.With(sl.Component("population_loader")),
@@ -112,6 +113,10 @@ func New(
 				outfitTagsLoader,
 				outfitIdsLoader,
 				channelTrackingSettingsSaver,
+			),
+			NewChannelSettings(
+				messages,
+				channelLoader,
 			),
 			NewLanguage(
 				messages,

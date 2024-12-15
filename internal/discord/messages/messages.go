@@ -496,6 +496,120 @@ func (m *Messages) CharacterNamesLoadError(characterIds []ps2.CharacterId, platf
 	}
 }
 
+func (m *Messages) ChannelLoadError(channelId discord.ChannelId, err error) discord.Edit {
+	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
+		return nil, &discord.Error{
+			Msg: p.Sprintf("Failed to load %s channel", channelId),
+			Err: err,
+		}
+	}
+}
+
+func (m *Messages) ChannelSettingsForm(
+	langId string,
+	characterNotificationsId string,
+	outfitNotificationsId string,
+	titleUpdatesId string,
+	channel discord.Channel,
+) discord.Edit {
+	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
+		one := 1
+		localeBase, _ := channel.Locale.Base()
+		return &discordgo.WebhookEdit{
+			Components: &[]discordgo.MessageComponent{
+				discordgo.ActionsRow{
+					Components: []discordgo.MessageComponent{
+						discordgo.SelectMenu{
+							CustomID:    langId,
+							Placeholder: p.Sprintf("Language"),
+							MinValues:   &one,
+							MaxValues:   1,
+							Options: []discordgo.SelectMenuOption{
+								{
+									Label:   p.Sprintf("Language: english"),
+									Value:   "en",
+									Default: localeBase.String() == "en",
+								},
+								{
+									Label:   p.Sprintf("Language: russian"),
+									Value:   "ru",
+									Default: localeBase.String() == "ru",
+								},
+							},
+						},
+					},
+				},
+				discordgo.ActionsRow{
+					Components: []discordgo.MessageComponent{
+						discordgo.SelectMenu{
+							CustomID:    characterNotificationsId,
+							Placeholder: "Character notifications",
+							MinValues:   &one,
+							MaxValues:   1,
+							Options: []discordgo.SelectMenuOption{
+								{
+									Label:   p.Sprintf("Character notifications: on"),
+									Value:   "on",
+									Default: channel.CharacterNotifications,
+								},
+								{
+									Label:   p.Sprintf("Character notifications: off"),
+									Value:   "off",
+									Default: !channel.CharacterNotifications,
+								},
+							},
+						},
+					},
+				},
+				discordgo.ActionsRow{
+					Components: []discordgo.MessageComponent{
+						discordgo.SelectMenu{
+							CustomID:    outfitNotificationsId,
+							Placeholder: "Outfit notifications",
+							MinValues:   &one,
+							MaxValues:   1,
+							Options: []discordgo.SelectMenuOption{
+								{
+									Label:   p.Sprintf("Outfit notifications: on"),
+									Value:   "on",
+									Default: channel.OutfitNotifications,
+								},
+								{
+									Label:   p.Sprintf("Outfit notifications: off"),
+									Value:   "off",
+									Default: !channel.OutfitNotifications,
+								},
+							},
+						},
+					},
+				},
+				discordgo.ActionsRow{
+					Components: []discordgo.MessageComponent{
+						discordgo.SelectMenu{
+							CustomID:    titleUpdatesId,
+							Placeholder: "Title updates",
+							MinValues:   &one,
+							MaxValues:   1,
+							Options: []discordgo.SelectMenuOption{
+								{
+									Label:   p.Sprintf("Title updates: on"),
+									Value:   "on",
+									Default: channel.TitleUpdates,
+								},
+								{
+									Label:   p.Sprintf("Title updates: off"),
+									Value:   "off",
+									Default: !channel.TitleUpdates,
+								},
+							},
+						},
+					},
+				},
+			},
+		}, nil
+	}
+}
+
 func (m *Messages) TrackingSettingsModal(
 	customId string,
 	outfitTags []string,

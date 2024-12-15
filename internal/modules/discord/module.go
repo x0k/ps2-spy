@@ -85,6 +85,7 @@ func New(
 		saveChannelTrackingSettings,
 		saveChannelLanguage,
 		statsTracker,
+		channelLoader,
 	)
 	m.AppendR("discord.commands", commands.Start)
 
