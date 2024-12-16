@@ -9,8 +9,6 @@ import (
 	"golang.org/x/text/language"
 )
 
-type ChannelLanguageSaver = func(ctx context.Context, channelId discord.ChannelId, language language.Tag) error
-
 func NewLanguage(
 	messages *discord_messages.Messages,
 	languageSaver ChannelLanguageSaver,
@@ -56,11 +54,11 @@ func NewLanguage(
 				},
 			},
 		},
-		Handler: discord.DeferredEphemeralEdit(func(
+		Handler: discord.DeferredEphemeralResponse(func(
 			ctx context.Context,
 			s *discordgo.Session,
 			i *discordgo.InteractionCreate,
-		) discord.Edit {
+		) discord.ResponseEdit {
 			option := i.ApplicationCommandData().Options[0].StringValue()
 			channelId := discord.ChannelId(i.ChannelID)
 			lang, err := language.Parse(option)

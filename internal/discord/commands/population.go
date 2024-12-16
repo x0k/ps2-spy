@@ -99,11 +99,11 @@ func NewPopulation(
 				},
 			},
 		},
-		Handler: discord.DeferredEphemeralEdit(func(
+		Handler: discord.DeferredEphemeralResponse(func(
 			ctx context.Context,
 			s *discordgo.Session,
 			i *discordgo.InteractionCreate,
-		) discord.Edit {
+		) discord.ResponseEdit {
 			const op = "discord_commands.NewPopulation.Handle"
 			option := i.ApplicationCommandData().Options[0]
 			populationType := option.Name
@@ -128,7 +128,7 @@ func handleGlobalPopulation(
 	messages *discord_messages.Messages,
 	opts []*discordgo.ApplicationCommandInteractionDataOption,
 	popLoader loader.Keyed[string, meta.Loaded[ps2.WorldsPopulation]],
-) discord.Edit {
+) discord.ResponseEdit {
 	var provider string
 	if len(opts) > 0 {
 		provider = opts[0].StringValue()
@@ -147,7 +147,7 @@ func handleServerPopulation(
 	messages *discord_messages.Messages,
 	opts []*discordgo.ApplicationCommandInteractionDataOption,
 	worldPopLoader loader.Queried[query[ps2.WorldId], meta.Loaded[ps2.DetailedWorldPopulation]],
-) discord.Edit {
+) discord.ResponseEdit {
 	server := opts[0].StringValue()
 	var provider string
 	if len(opts) > 1 {

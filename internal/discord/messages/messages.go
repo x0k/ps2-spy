@@ -201,7 +201,7 @@ func (m *Messages) FacilityLoss(
 	}
 }
 
-func (m *Messages) About() discord.Edit {
+func (m *Messages) About() discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
 		content := p.Sprintf(`# PlanetSide 2 Spy
 
@@ -218,7 +218,7 @@ Simple discord bot for PlanetSide 2 outfits
 	}
 }
 
-func (m *Messages) InvalidPopulationType(popType string, err error) discord.Edit {
+func (m *Messages) InvalidPopulationType(popType string, err error) discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
 		return nil, &discord.Error{
 			Msg: p.Sprintf("Invalid population type: %s", popType),
@@ -227,7 +227,7 @@ func (m *Messages) InvalidPopulationType(popType string, err error) discord.Edit
 	}
 }
 
-func (m *Messages) GlobalPopulationLoadError(provider string, err error) discord.Edit {
+func (m *Messages) GlobalPopulationLoadError(provider string, err error) discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
 		return nil, &discord.Error{
 			Msg: p.Sprintf("Failed to load global population with %s", provider),
@@ -236,7 +236,7 @@ func (m *Messages) GlobalPopulationLoadError(provider string, err error) discord
 	}
 }
 
-func (m *Messages) WorldPopulationLoadError(provider string, worldId ps2.WorldId, err error) discord.Edit {
+func (m *Messages) WorldPopulationLoadError(provider string, worldId ps2.WorldId, err error) discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
 		return nil, &discord.Error{
 			Msg: p.Sprintf("Failed to load %s population with %s", ps2.WorldNameById(worldId), provider),
@@ -245,7 +245,7 @@ func (m *Messages) WorldPopulationLoadError(provider string, worldId ps2.WorldId
 	}
 }
 
-func (m *Messages) GlobalPopulation(population meta.Loaded[ps2.WorldsPopulation]) discord.Edit {
+func (m *Messages) GlobalPopulation(population meta.Loaded[ps2.WorldsPopulation]) discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
 		return &discordgo.WebhookEdit{
 			Embeds: &[]*discordgo.MessageEmbed{
@@ -255,7 +255,7 @@ func (m *Messages) GlobalPopulation(population meta.Loaded[ps2.WorldsPopulation]
 	}
 }
 
-func (m *Messages) WorldPopulation(population meta.Loaded[ps2.DetailedWorldPopulation]) discord.Edit {
+func (m *Messages) WorldPopulation(population meta.Loaded[ps2.DetailedWorldPopulation]) discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
 		return &discordgo.WebhookEdit{
 			Embeds: &[]*discordgo.MessageEmbed{
@@ -265,7 +265,7 @@ func (m *Messages) WorldPopulation(population meta.Loaded[ps2.DetailedWorldPopul
 	}
 }
 
-func (m *Messages) WorldTerritoryControlLoadError(worldId ps2.WorldId, err error) discord.Edit {
+func (m *Messages) WorldTerritoryControlLoadError(worldId ps2.WorldId, err error) discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
 		return nil, &discord.Error{
 			Msg: p.Sprintf("Failed to load %s territory control", ps2.WorldNameById(worldId)),
@@ -274,7 +274,7 @@ func (m *Messages) WorldTerritoryControlLoadError(worldId ps2.WorldId, err error
 	}
 }
 
-func (m *Messages) WorldTerritoryControl(control meta.Loaded[ps2.WorldTerritoryControl]) discord.Edit {
+func (m *Messages) WorldTerritoryControl(control meta.Loaded[ps2.WorldTerritoryControl]) discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
 		return &discordgo.WebhookEdit{
 			Embeds: &[]*discordgo.MessageEmbed{
@@ -284,7 +284,7 @@ func (m *Messages) WorldTerritoryControl(control meta.Loaded[ps2.WorldTerritoryC
 	}
 }
 
-func (m *Messages) WorldAlertsLoadError(provider string, worldId ps2.WorldId, err error) discord.Edit {
+func (m *Messages) WorldAlertsLoadError(provider string, worldId ps2.WorldId, err error) discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
 		return nil, &discord.Error{
 			Msg: p.Sprintf("Failed to load world alerts for %s from %s", ps2.WorldNameById(worldId), provider),
@@ -293,7 +293,7 @@ func (m *Messages) WorldAlertsLoadError(provider string, worldId ps2.WorldId, er
 	}
 }
 
-func (m *Messages) WorldAlerts(worldName string, worldAlerts meta.Loaded[ps2.Alerts]) discord.Edit {
+func (m *Messages) WorldAlerts(worldName string, worldAlerts meta.Loaded[ps2.Alerts]) discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
 		return &discordgo.WebhookEdit{
 			Embeds: &[]*discordgo.MessageEmbed{
@@ -303,7 +303,7 @@ func (m *Messages) WorldAlerts(worldName string, worldAlerts meta.Loaded[ps2.Ale
 	}
 }
 
-func (m *Messages) GlobalAlertsLoadError(provider string, err error) discord.Edit {
+func (m *Messages) GlobalAlertsLoadError(provider string, err error) discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
 		return nil, &discord.Error{
 			Msg: p.Sprintf("Failed to load global alerts from %s", provider),
@@ -312,7 +312,7 @@ func (m *Messages) GlobalAlertsLoadError(provider string, err error) discord.Edi
 	}
 }
 
-func (m *Messages) GlobalAlerts(alerts meta.Loaded[ps2.Alerts]) discord.Edit {
+func (m *Messages) GlobalAlerts(alerts meta.Loaded[ps2.Alerts]) discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
 		embeds := renderAlerts(p, alerts)
 		return &discordgo.WebhookEdit{
@@ -321,7 +321,7 @@ func (m *Messages) GlobalAlerts(alerts meta.Loaded[ps2.Alerts]) discord.Edit {
 	}
 }
 
-func (m *Messages) OnlineMembersLoadError(channelId discord.ChannelId, platform ps2_platforms.Platform, err error) discord.Edit {
+func (m *Messages) OnlineMembersLoadError(channelId discord.ChannelId, platform ps2_platforms.Platform, err error) discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
 		return nil, &discord.Error{
 			Msg: p.Sprintf("Failed to load online members for %s channel (%s)", channelId, platform),
@@ -330,7 +330,7 @@ func (m *Messages) OnlineMembersLoadError(channelId discord.ChannelId, platform 
 	}
 }
 
-func (m *Messages) OutfitsLoadError(outfitIds []ps2.OutfitId, platform ps2_platforms.Platform, err error) discord.Edit {
+func (m *Messages) OutfitsLoadError(outfitIds []ps2.OutfitId, platform ps2_platforms.Platform, err error) discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
 		return nil, &discord.Error{
 			Msg: p.Sprintf("Failed to load outfits %v (%s)", outfitIds, platform),
@@ -343,7 +343,7 @@ func (m *Messages) MembersOnline(
 	outfitCharacters map[ps2.OutfitId][]ps2.Character,
 	characters []ps2.Character,
 	outfits map[ps2.OutfitId]ps2.Outfit,
-) discord.Edit {
+) discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
 		content := renderOnline(p, outfitCharacters, characters, outfits)
 		return &discordgo.WebhookEdit{
@@ -352,7 +352,7 @@ func (m *Messages) MembersOnline(
 	}
 }
 
-func (m *Messages) OutfitIdsLoadError(outfitTags []string, platform ps2_platforms.Platform, err error) discord.Edit {
+func (m *Messages) OutfitIdsLoadError(outfitTags []string, platform ps2_platforms.Platform, err error) discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
 		return nil, &discord.Error{
 			Msg: p.Sprintf("Failed to load outfits by tags %v (%s)", outfitTags, platform),
@@ -361,7 +361,7 @@ func (m *Messages) OutfitIdsLoadError(outfitTags []string, platform ps2_platform
 	}
 }
 
-func (m *Messages) CharacterIdsLoadError(characterNames []string, platform ps2_platforms.Platform, err error) discord.Edit {
+func (m *Messages) CharacterIdsLoadError(characterNames []string, platform ps2_platforms.Platform, err error) discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
 		return nil, &discord.Error{
 			Msg: p.Sprintf("Failed to load characters %v (%s)", characterNames, platform),
@@ -370,7 +370,7 @@ func (m *Messages) CharacterIdsLoadError(characterNames []string, platform ps2_p
 	}
 }
 
-func (m *Messages) TrackingSettingsSaveError(channelId discord.ChannelId, platform ps2_platforms.Platform, err error) discord.Edit {
+func (m *Messages) TrackingSettingsSaveError(channelId discord.ChannelId, platform ps2_platforms.Platform, err error) discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
 		return nil, &discord.Error{
 			Msg: p.Sprintf("Failed to save tracking settings for %s channel (%s)", channelId, platform),
@@ -379,7 +379,7 @@ func (m *Messages) TrackingSettingsSaveError(channelId discord.ChannelId, platfo
 	}
 }
 
-func (m *Messages) TrackingSettingsOutfitTagsLoadError(outfitIds []ps2.OutfitId, platform ps2_platforms.Platform, err error) discord.Edit {
+func (m *Messages) TrackingSettingsOutfitTagsLoadError(outfitIds []ps2.OutfitId, platform ps2_platforms.Platform, err error) discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
 		return nil, &discord.Error{
 			Msg: p.Sprintf("Settings are saved, but failed to load outfit tags %v (%s)", outfitIds, platform),
@@ -388,7 +388,7 @@ func (m *Messages) TrackingSettingsOutfitTagsLoadError(outfitIds []ps2.OutfitId,
 	}
 }
 
-func (m *Messages) TrackingSettingsCharacterNamesLoadError(characterIds []ps2.CharacterId, platform ps2_platforms.Platform, err error) discord.Edit {
+func (m *Messages) TrackingSettingsCharacterNamesLoadError(characterIds []ps2.CharacterId, platform ps2_platforms.Platform, err error) discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
 		return nil, &discord.Error{
 			Msg: p.Sprintf("Settings are saved, but failed to load character names %v (%s)", characterIds, platform),
@@ -397,7 +397,7 @@ func (m *Messages) TrackingSettingsCharacterNamesLoadError(characterIds []ps2.Ch
 	}
 }
 
-func (m *Messages) TrackingSettingsUpdate(entities discord.TrackableEntities[[]string, []string]) discord.Edit {
+func (m *Messages) TrackingSettingsUpdate(entities discord.TrackableEntities[[]string, []string]) discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
 		content := renderSubscriptionsSettingsUpdate(p, entities)
 		return &discordgo.WebhookEdit{
@@ -406,7 +406,7 @@ func (m *Messages) TrackingSettingsUpdate(entities discord.TrackableEntities[[]s
 	}
 }
 
-func (m *Messages) NothingToTrack() discord.Edit {
+func (m *Messages) NothingToTrack() discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
 		content := p.Sprintf("Nothing to track, please set tracking settings first")
 		return &discordgo.WebhookEdit{
@@ -415,7 +415,7 @@ func (m *Messages) NothingToTrack() discord.Edit {
 	}
 }
 
-func (m *Messages) InvalidStatsTrackerSubcommand(cmd string, err error) discord.Edit {
+func (m *Messages) InvalidStatsTrackerSubcommand(cmd string, err error) discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
 		return nil, &discord.Error{
 			Msg: p.Sprintf("Invalid stats tracker subcommand: %s", cmd),
@@ -424,7 +424,7 @@ func (m *Messages) InvalidStatsTrackerSubcommand(cmd string, err error) discord.
 	}
 }
 
-func (m *Messages) StartChannelStatsTrackerError(err error) discord.Edit {
+func (m *Messages) StartChannelStatsTrackerError(err error) discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
 		return nil, &discord.Error{
 			Msg: p.Sprintf("Failed to start stats tracker"),
@@ -433,7 +433,7 @@ func (m *Messages) StartChannelStatsTrackerError(err error) discord.Edit {
 	}
 }
 
-func (m *Messages) NoChannelTrackerToStop() discord.Edit {
+func (m *Messages) NoChannelTrackerToStop() discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
 		content := p.Sprintf("There is no stats tracker to stop")
 		return &discordgo.WebhookEdit{
@@ -442,7 +442,7 @@ func (m *Messages) NoChannelTrackerToStop() discord.Edit {
 	}
 }
 
-func (m *Messages) StopChannelStatsTrackerError(err error) discord.Edit {
+func (m *Messages) StopChannelStatsTrackerError(err error) discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
 		return nil, &discord.Error{
 			Msg: p.Sprintf("Failed to stop stats tracker"),
@@ -451,7 +451,7 @@ func (m *Messages) StopChannelStatsTrackerError(err error) discord.Edit {
 	}
 }
 
-func (m *Messages) ChannelTrackerWillStartedSoon() discord.Edit {
+func (m *Messages) ChannelTrackerWillStartedSoon() discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
 		content := p.Sprintf("Stats tracker will be started soon")
 		return &discordgo.WebhookEdit{
@@ -460,7 +460,7 @@ func (m *Messages) ChannelTrackerWillStartedSoon() discord.Edit {
 	}
 }
 
-func (m *Messages) ChannelTrackerWillStoppedSoon() discord.Edit {
+func (m *Messages) ChannelTrackerWillStoppedSoon() discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
 		content := p.Sprintf("Stats tracker will be stopped soon")
 		return &discordgo.WebhookEdit{
@@ -496,7 +496,7 @@ func (m *Messages) CharacterNamesLoadError(characterIds []ps2.CharacterId, platf
 	}
 }
 
-func (m *Messages) ChannelLoadError(channelId discord.ChannelId, err error) discord.Edit {
+func (m *Messages) ChannelLoadError(channelId discord.ChannelId, err error) discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
 		return nil, &discord.Error{
 			Msg: p.Sprintf("Failed to load %s channel", channelId),
@@ -511,7 +511,7 @@ func (m *Messages) ChannelSettingsForm(
 	outfitNotificationsId string,
 	titleUpdatesId string,
 	channel discord.Channel,
-) discord.Edit {
+) discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
 		one := 1
 		localeBase, _ := channel.Locale.Base()
@@ -652,7 +652,7 @@ func (m *Messages) TrackingSettingsModal(
 	}
 }
 
-func (m *Messages) ChannelLanguageParseError(channelId discord.ChannelId, lang string, err error) discord.Edit {
+func (m *Messages) ChannelLanguageParseError(channelId discord.ChannelId, lang string, err error) discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
 		return nil, &discord.Error{
 			Msg: p.Sprintf("Failed to parse language %q", lang),
@@ -661,7 +661,7 @@ func (m *Messages) ChannelLanguageParseError(channelId discord.ChannelId, lang s
 	}
 }
 
-func (m *Messages) ChannelLanguageSaveError(channelId discord.ChannelId, lang language.Tag, err error) discord.Edit {
+func (m *Messages) ChannelLanguageSaveError(channelId discord.ChannelId, lang language.Tag, err error) discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
 		return nil, &discord.Error{
 			Msg: p.Sprintf("Failed to save language %q", lang),
@@ -670,7 +670,7 @@ func (m *Messages) ChannelLanguageSaveError(channelId discord.ChannelId, lang la
 	}
 }
 
-func (m *Messages) ChannelLanguageSaved(channelId discord.ChannelId, lang language.Tag) discord.Edit {
+func (m *Messages) ChannelLanguageSaved(channelId discord.ChannelId, lang language.Tag) discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
 		content := p.Sprintf("Language for this channel has been set to %q", lang.String())
 		return &discordgo.WebhookEdit{

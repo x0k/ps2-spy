@@ -505,6 +505,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		statsTracker,
 		statsTrackerPubSub,
 		storage.Channel,
+		storage.SaveChannel,
 	)
 	if err != nil {
 		return nil, err

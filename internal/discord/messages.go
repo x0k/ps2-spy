@@ -33,7 +33,9 @@ func NewChunkableMessage(
 
 type ChunkableMessage = func(*message.Printer) Chunkable
 
-type Edit = func(*message.Printer) (*discordgo.WebhookEdit, *Error)
+type MessageEdit = func(*message.Printer) (*discordgo.MessageEdit, *Error)
+
+type ResponseEdit = func(*message.Printer) (*discordgo.WebhookEdit, *Error)
 
 type Response = func(*message.Printer) (*discordgo.InteractionResponseData, *Error)
 

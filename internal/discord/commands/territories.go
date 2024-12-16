@@ -41,11 +41,11 @@ func NewTerritories(
 				},
 			},
 		},
-		Handler: discord.DeferredEphemeralEdit(func(
+		Handler: discord.DeferredEphemeralResponse(func(
 			ctx context.Context,
 			s *discordgo.Session,
 			i *discordgo.InteractionCreate,
-		) discord.Edit {
+		) discord.ResponseEdit {
 			server := i.ApplicationCommandData().Options[0].StringValue()
 			worldId := ps2.WorldId(server)
 			loaded, err := WorldTerritoryControlLoader(ctx, worldId)

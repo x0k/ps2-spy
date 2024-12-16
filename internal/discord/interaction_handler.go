@@ -32,7 +32,13 @@ func (handler InteractionHandler) Run(
 	}
 }
 
-func ShowModal(handle func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) Response) InteractionHandler {
+type interactionHandler[R any] func(
+	ctx context.Context,
+	s *discordgo.Session,
+	i *discordgo.InteractionCreate,
+) R
+
+func ShowModal(handle interactionHandler[Response]) InteractionHandler {
 	return func(ctx context.Context, log *logger.Logger, s *discordgo.Session, i *discordgo.InteractionCreate) error {
 		data, customErr := handle(ctx, s, i)(message.NewPrinter(LangTagFromInteraction(i)))
 		if customErr != nil {
@@ -50,8 +56,40 @@ func ShowModal(handle func(ctx context.Context, s *discordgo.Session, i *discord
 	}
 }
 
-func DeferredEphemeralEdit(handle func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) Edit) InteractionHandler {
-	return func(ctx context.Context, log *logger.Logger, s *discordgo.Session, i *discordgo.InteractionCreate) error {
+func DeferredMessageEdit(handle interactionHandler[MessageEdit]) InteractionHandler {
+	return func(
+		ctx context.Context,
+		log *logger.Logger,
+		s *discordgo.Session,
+		i *discordgo.InteractionCreate,
+	) error {
+		err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseDeferredMessageUpdate,
+		})
+		if err != nil {
+			return err
+		}
+		data, customErr := handle(ctx, s, i)(message.NewPrinter(LangTagFromInteraction(i)))
+		if customErr != nil {
+			if _, err := s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
+				Content: customErr.Msg,
+			}); err != nil {
+				log.Error(ctx, "error sending followup message", sl.Err(err))
+			}
+			return customErr.Err
+		}
+		_, err = s.ChannelMessageEditComplex(data)
+		return err
+	}
+}
+
+func DeferredEphemeralResponse(handle interactionHandler[ResponseEdit]) InteractionHandler {
+	return func(
+		ctx context.Context,
+		log *logger.Logger,
+		s *discordgo.Session,
+		i *discordgo.InteractionCreate,
+	) error {
 		err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
@@ -75,7 +113,7 @@ func DeferredEphemeralEdit(handle func(ctx context.Context, s *discordgo.Session
 	}
 }
 
-func DeferredEphemeralFollowUp(handle func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) FollowUp) InteractionHandler {
+func DeferredEphemeralFollowUp(handle interactionHandler[FollowUp]) InteractionHandler {
 	return func(ctx context.Context, log *logger.Logger, s *discordgo.Session, i *discordgo.InteractionCreate) error {
 		err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
