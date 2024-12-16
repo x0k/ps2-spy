@@ -37,7 +37,10 @@ func NewChannelSettings(
 			channelId := discord.ChannelId(i.Interaction.ChannelID)
 			channel, err := channelLoader(ctx, channelId)
 			if err != nil {
-				return messages.ChannelLoadError(channelId, err)
+				return discord_messages.ChannelLoadError[discordgo.WebhookEdit](
+					channelId,
+					err,
+				)
 			}
 			return messages.ChannelSettingsForm(
 				discord.CHANNEL_LANGUAGE_COMPONENT_CUSTOM_ID,
@@ -48,13 +51,27 @@ func NewChannelSettings(
 			)
 		}),
 		ComponentHandlers: map[string]discord.InteractionHandler{
-			discord.CHANNEL_LANGUAGE_COMPONENT_CUSTOM_ID: discord.DeferredEphemeralFollowUp(func(
-				ctx context.Context,
-				s *discordgo.Session,
-				i *discordgo.InteractionCreate,
-			) discord.FollowUp {
-
-			}),
+			discord.CHANNEL_LANGUAGE_COMPONENT_CUSTOM_ID: discord.DeferredEphemeralFollowUp(
+				true,
+				func(
+					ctx context.Context,
+					s *discordgo.Session,
+					i *discordgo.InteractionCreate,
+				) discord.FollowUp {
+					value := i.MessageComponentData().Values[0]
+					tag, err := language.Parse(value)
+					if err != nil {
+						return messages.LanguageParseError(value, err)
+					}
+					channelId := discord.ChannelId(i.Interaction.ChannelID)
+					if err := channelLanguageSaver(ctx, channelId, tag); err != nil {
+						return discord_messages.ChannelLanguageSaveError[discordgo.WebhookParams](
+							channelId,
+							err,
+						)
+					}
+					return messages.EmptyFollowUp()
+				}),
 		},
 	}
 }

@@ -43,10 +43,9 @@ func New(
 	outfitTagsLoader loader.Queried[discord.PlatformQuery[[]ps2.OutfitId], []string],
 	outfitIdsLoader loader.Queried[discord.PlatformQuery[[]string], []ps2.OutfitId],
 	channelTrackingSettingsSaver ChannelTrackingSettingsSaver,
-	channelLanguageSaver ChannelLanguageSaver,
 	statsTracker *stats_tracker.StatsTracker,
 	channelLoader ChannelLoader,
-	channelSaver ChannelSaver,
+	channelLanguageSaver ChannelLanguageSaver,
 ) *commands {
 	populationLoader := newPopulationLoader(
 		log.With(sl.Component("population_loader")),
@@ -118,7 +117,7 @@ func New(
 			NewChannelSettings(
 				messages,
 				channelLoader,
-				channelSaver,
+				channelLanguageSaver,
 			),
 			NewLanguage(
 				messages,

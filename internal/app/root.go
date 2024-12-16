@@ -473,11 +473,6 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			return censusDataProvider.OutfitIds(ctx, ps2_platforms.PlatformNamespace(pq.Platform), pq.Value)
 		},
 		storage.SaveTrackingSettings,
-		func(ctx context.Context, channelId discord.ChannelId, language language.Tag) error {
-			channel := discord.NewDefaultChannel(channelId)
-			channel.Locale = language
-			return storage.SaveChannel(ctx, channel)
-		},
 		characterLoaders,
 		outfitLoaders,
 		charactersLoaders,
@@ -505,7 +500,11 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		statsTracker,
 		statsTrackerPubSub,
 		storage.Channel,
-		storage.SaveChannel,
+		func(ctx context.Context, channelId discord.ChannelId, language language.Tag) error {
+			channel := discord.NewDefaultChannel(channelId)
+			channel.Locale = language
+			return storage.SaveChannel(ctx, channel)
+		},
 	)
 	if err != nil {
 		return nil, err

@@ -66,7 +66,7 @@ func NewLanguage(
 				return messages.ChannelLanguageParseError(channelId, option, err)
 			}
 			if err := languageSaver(ctx, channelId, lang); err != nil {
-				return messages.ChannelLanguageSaveError(channelId, lang, err)
+				return discord_messages.ChannelLanguageSaveError[discordgo.WebhookEdit](channelId, err)
 			}
 			return messages.ChannelLanguageSaved(channelId, lang)
 		}),

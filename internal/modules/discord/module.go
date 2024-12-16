@@ -48,7 +48,6 @@ func New(
 	outfitTagsLoader loader.Queried[discord.PlatformQuery[[]ps2.OutfitId], []string],
 	outfitIdsLoader loader.Queried[discord.PlatformQuery[[]string], []ps2.OutfitId],
 	saveChannelTrackingSettings discord_commands.ChannelTrackingSettingsSaver,
-	saveChannelLanguage discord_commands.ChannelLanguageSaver,
 	characterLoaders map[ps2_platforms.Platform]loader.Keyed[ps2.CharacterId, ps2.Character],
 	outfitLoaders map[ps2_platforms.Platform]loader.Keyed[ps2.OutfitId, ps2.Outfit],
 	charactersLoaders map[ps2_platforms.Platform]loader.Multi[ps2.CharacterId, ps2.Character],
@@ -57,7 +56,7 @@ func New(
 	statsTracker *stats_tracker.StatsTracker,
 	statsTrackerSubs pubsub.SubscriptionsManager[stats_tracker.EventType],
 	channelLoader discord_events.ChannelLoader,
-	channelSaver discord_commands.ChannelSaver,
+	saveChannelLanguage discord_commands.ChannelLanguageSaver,
 ) (*module.Module, error) {
 	m := module.New(log.Logger, "discord")
 	session, err := discordgo.New("Bot " + token)
@@ -84,10 +83,9 @@ func New(
 		outfitTagsLoader,
 		outfitIdsLoader,
 		saveChannelTrackingSettings,
-		saveChannelLanguage,
 		statsTracker,
 		channelLoader,
-		channelSaver,
+		saveChannelLanguage,
 	)
 	m.AppendR("discord.commands", commands.Start)
 

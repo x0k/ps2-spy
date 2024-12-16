@@ -496,12 +496,36 @@ func (m *Messages) CharacterNamesLoadError(characterIds []ps2.CharacterId, platf
 	}
 }
 
-func (m *Messages) ChannelLoadError(channelId discord.ChannelId, err error) discord.ResponseEdit {
-	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
+func ChannelLoadError[R any](channelId discord.ChannelId, err error) func(*message.Printer) (*R, *discord.Error) {
+	return func(p *message.Printer) (*R, *discord.Error) {
 		return nil, &discord.Error{
 			Msg: p.Sprintf("Failed to load %s channel", channelId),
 			Err: err,
 		}
+	}
+}
+
+func (m *Messages) LanguageParseError(lang string, err error) discord.FollowUp {
+	return func(p *message.Printer) (*discordgo.WebhookParams, *discord.Error) {
+		return nil, &discord.Error{
+			Msg: p.Sprintf("Failed to parse language: %q", lang),
+			Err: err,
+		}
+	}
+}
+
+func ChannelLanguageSaveError[R any](channelId discord.ChannelId, err error) func(*message.Printer) (*R, *discord.Error) {
+	return func(p *message.Printer) (*R, *discord.Error) {
+		return nil, &discord.Error{
+			Msg: p.Sprintf("Failed to save language for %s channel", channelId),
+			Err: err,
+		}
+	}
+}
+
+func (m *Messages) EmptyFollowUp() discord.FollowUp {
+	return func(p *message.Printer) (*discordgo.WebhookParams, *discord.Error) {
+		return nil, nil
 	}
 }
 
@@ -513,99 +537,16 @@ func (m *Messages) ChannelSettingsForm(
 	channel discord.Channel,
 ) discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
-		one := 1
-		localeBase, _ := channel.Locale.Base()
+		components := channelSettingsForm(
+			p,
+			langId,
+			characterNotificationsId,
+			outfitNotificationsId,
+			titleUpdatesId,
+			channel,
+		)
 		return &discordgo.WebhookEdit{
-			Components: &[]discordgo.MessageComponent{
-				discordgo.ActionsRow{
-					Components: []discordgo.MessageComponent{
-						discordgo.SelectMenu{
-							CustomID:    langId,
-							Placeholder: p.Sprintf("Language"),
-							MinValues:   &one,
-							MaxValues:   1,
-							Options: []discordgo.SelectMenuOption{
-								{
-									Label:   p.Sprintf("Language: english"),
-									Value:   "en",
-									Default: localeBase.String() == "en",
-								},
-								{
-									Label:   p.Sprintf("Language: russian"),
-									Value:   "ru",
-									Default: localeBase.String() == "ru",
-								},
-							},
-						},
-					},
-				},
-				discordgo.ActionsRow{
-					Components: []discordgo.MessageComponent{
-						discordgo.SelectMenu{
-							CustomID:    characterNotificationsId,
-							Placeholder: "Character notifications",
-							MinValues:   &one,
-							MaxValues:   1,
-							Options: []discordgo.SelectMenuOption{
-								{
-									Label:   p.Sprintf("Character notifications: on"),
-									Value:   "on",
-									Default: channel.CharacterNotifications,
-								},
-								{
-									Label:   p.Sprintf("Character notifications: off"),
-									Value:   "off",
-									Default: !channel.CharacterNotifications,
-								},
-							},
-						},
-					},
-				},
-				discordgo.ActionsRow{
-					Components: []discordgo.MessageComponent{
-						discordgo.SelectMenu{
-							CustomID:    outfitNotificationsId,
-							Placeholder: "Outfit notifications",
-							MinValues:   &one,
-							MaxValues:   1,
-							Options: []discordgo.SelectMenuOption{
-								{
-									Label:   p.Sprintf("Outfit notifications: on"),
-									Value:   "on",
-									Default: channel.OutfitNotifications,
-								},
-								{
-									Label:   p.Sprintf("Outfit notifications: off"),
-									Value:   "off",
-									Default: !channel.OutfitNotifications,
-								},
-							},
-						},
-					},
-				},
-				discordgo.ActionsRow{
-					Components: []discordgo.MessageComponent{
-						discordgo.SelectMenu{
-							CustomID:    titleUpdatesId,
-							Placeholder: "Title updates",
-							MinValues:   &one,
-							MaxValues:   1,
-							Options: []discordgo.SelectMenuOption{
-								{
-									Label:   p.Sprintf("Title updates: on"),
-									Value:   "on",
-									Default: channel.TitleUpdates,
-								},
-								{
-									Label:   p.Sprintf("Title updates: off"),
-									Value:   "off",
-									Default: !channel.TitleUpdates,
-								},
-							},
-						},
-					},
-				},
-			},
+			Components: &components,
 		}, nil
 	}
 }
@@ -656,15 +597,6 @@ func (m *Messages) ChannelLanguageParseError(channelId discord.ChannelId, lang s
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
 		return nil, &discord.Error{
 			Msg: p.Sprintf("Failed to parse language %q", lang),
-			Err: err,
-		}
-	}
-}
-
-func (m *Messages) ChannelLanguageSaveError(channelId discord.ChannelId, lang language.Tag, err error) discord.ResponseEdit {
-	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
-		return nil, &discord.Error{
-			Msg: p.Sprintf("Failed to save language %q", lang),
 			Err: err,
 		}
 	}

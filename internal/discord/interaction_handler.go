@@ -108,18 +108,27 @@ func DeferredEphemeralResponse(handle interactionHandler[ResponseEdit]) Interact
 			}
 			return customErr.Err
 		}
+		if data == nil {
+			return nil
+		}
 		_, err = s.InteractionResponseEdit(i.Interaction, data)
 		return err
 	}
 }
 
-func DeferredEphemeralFollowUp(handle interactionHandler[FollowUp]) InteractionHandler {
+func DeferredEphemeralFollowUp(isUpdate bool, handle interactionHandler[FollowUp]) InteractionHandler {
 	return func(ctx context.Context, log *logger.Logger, s *discordgo.Session, i *discordgo.InteractionCreate) error {
+		respondType := discordgo.InteractionResponseDeferredChannelMessageWithSource
+		respondData := &discordgo.InteractionResponseData{
+			Flags: discordgo.MessageFlagsEphemeral,
+		}
+		if isUpdate {
+			respondType = discordgo.InteractionResponseUpdateMessage
+			respondData = nil
+		}
 		err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{
-				Flags: discordgo.MessageFlagsEphemeral,
-			},
+			Type: respondType,
+			Data: respondData,
 		})
 		if err != nil {
 			return err
@@ -132,6 +141,9 @@ func DeferredEphemeralFollowUp(handle interactionHandler[FollowUp]) InteractionH
 				log.Error(ctx, "error sending followup message", sl.Err(err))
 			}
 			return customErr.Err
+		}
+		if data == nil {
+			return nil
 		}
 		_, err = s.FollowupMessageCreate(i.Interaction, false, data)
 		return err
