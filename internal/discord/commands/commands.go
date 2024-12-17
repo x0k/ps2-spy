@@ -125,10 +125,6 @@ func New(
 				channelOutfitNotificationsSaver,
 				channelTitleUpdatesSaver,
 			),
-			NewLanguage(
-				messages,
-				channelLanguageSaver,
-			),
 			NewStatsTracker(
 				messages,
 				statsTracker,

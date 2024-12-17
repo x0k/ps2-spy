@@ -1057,9 +1057,9 @@
             "fuzzy": true
         },
         {
-            "id": "Failed to save language for {ChannelId} channel",
-            "message": "Failed to save language for {ChannelId} channel",
-            "translation": "Failed to save language for {ChannelId} channel",
+            "id": "Failed to save field value for {ChannelId} channel",
+            "message": "Failed to save field value for {ChannelId} channel",
+            "translation": "Failed to save field value for {ChannelId} channel",
             "translatorComment": "Copied from source.",
             "placeholders": [
                 {

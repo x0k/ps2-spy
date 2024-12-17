@@ -33,7 +33,7 @@ func makeFieldHandler[V any](
 		}
 		channelId := discord.ChannelId(i.Interaction.ChannelID)
 		if err := saver(ctx, channelId, value); err != nil {
-			return discord_messages.ChannelLanguageSaveError[discordgo.InteractionResponseData](
+			return messages.FieldValueSaveError(
 				channelId,
 				err,
 			)

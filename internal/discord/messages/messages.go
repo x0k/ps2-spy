@@ -514,10 +514,10 @@ func (m *Messages) FieldValueExtractError(err error) discord.Response {
 	}
 }
 
-func ChannelLanguageSaveError[R any](channelId discord.ChannelId, err error) func(*message.Printer) (*R, *discord.Error) {
-	return func(p *message.Printer) (*R, *discord.Error) {
+func (m *Messages) FieldValueSaveError(channelId discord.ChannelId, err error) discord.Response {
+	return func(p *message.Printer) (*discordgo.InteractionResponseData, *discord.Error) {
 		return nil, &discord.Error{
-			Msg: p.Sprintf("Failed to save language for %s channel", channelId),
+			Msg: p.Sprintf("Failed to save field value for %s channel", channelId),
 			Err: err,
 		}
 	}

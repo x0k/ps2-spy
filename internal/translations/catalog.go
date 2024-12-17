@@ -85,7 +85,7 @@ var messageKeyToIndex = map[string]int{
 	"Failed to load tracking settings for %s channel (%s)": 62,
 	"Failed to load world alerts for %s from %s":           46,
 	"Failed to parse language %q":                          75,
-	"Failed to save language for %s channel":               67,
+	"Failed to save field value for %s channel":            67,
 	"Failed to save tracking settings for %s channel (%s)": 52,
 	"Failed to start stats tracker":                        57,
 	"Failed to stop stats tracker":                         59,
@@ -171,21 +171,21 @@ var enIndex = []uint32{ // 110 elements
 	0x00000715, 0x00000738, 0x0000075b, 0x00000796,
 	// Entry 40 - 5F
 	0x000007c3, 0x000007f4, 0x00000811, 0x0000082f,
-	0x00000859, 0x00000870, 0x0000088b, 0x000008a6,
-	0x000008ca, 0x000008f3, 0x0000091a, 0x00000947,
-	0x00000966, 0x00000996, 0x000009a5, 0x000009ba,
-	0x000009cd, 0x000009d8, 0x000009f3, 0x000009f6,
-	0x000009f9, 0x000009fc, 0x00000a0a, 0x00000a18,
-	0x00000a31, 0x00000a38, 0x00000a53, 0x00000a65,
-	0x00000a77, 0x00000a84, 0x00000a8e, 0x00000ab7,
+	0x0000085c, 0x00000873, 0x0000088e, 0x000008a9,
+	0x000008cd, 0x000008f6, 0x0000091d, 0x0000094a,
+	0x00000969, 0x00000999, 0x000009a8, 0x000009bd,
+	0x000009d0, 0x000009db, 0x000009f6, 0x000009f9,
+	0x000009fc, 0x000009ff, 0x00000a0d, 0x00000a1b,
+	0x00000a34, 0x00000a3b, 0x00000a56, 0x00000a68,
+	0x00000a7a, 0x00000a87, 0x00000a91, 0x00000aba,
 	// Entry 60 - 7F
-	0x00000ac2, 0x00000ad9, 0x00000ae7, 0x00000af5,
-	0x00000b01, 0x00000b08, 0x00000b17, 0x00000b1e,
-	0x00000b27, 0x00000b33, 0x00000b37, 0x00000b3a,
-	0x00000b41, 0x00000b4d,
+	0x00000ac5, 0x00000adc, 0x00000aea, 0x00000af8,
+	0x00000b04, 0x00000b0b, 0x00000b1a, 0x00000b21,
+	0x00000b2a, 0x00000b36, 0x00000b3a, 0x00000b3d,
+	0x00000b44, 0x00000b50,
 } // Size: 464 bytes
 
-const enData string = "" + // Size: 2893 bytes
+const enData string = "" + // Size: 2896 bytes
 	"\x02Language\x02Language: english\x02Language: russian\x02Character noti" +
 	"fications: on\x02Character notifications: off\x02Outfit notifications: o" +
 	"n\x02Outfit notifications: off\x02Title updates: on\x02Title updates: of" +
@@ -219,14 +219,14 @@ const enData string = "" + // Size: 2893 bytes
 	"\x02Failed to load tracking settings for %[1]s channel (%[2]s)\x02Failed" +
 	" to load outfit tags for %[1]v (%[2]s)\x02Failed to load character names" +
 	" for %[1]v (%[2]s)\x02Failed to load %[1]s channel\x02Failed to extract " +
-	"field value\x02Failed to save language for %[1]s channel\x02Tracking Set" +
-	"tings (PC)\x02Tracking Settings (PS4 EU)\x02Tracking Settings (PS4 US)" +
-	"\x02Which outfits do you want to track?\x02Enter the outfit tags separat" +
-	"ed by comma\x02Which characters do you want to track?\x02Enter the chara" +
-	"cter names separated by comma\x02Failed to parse language %[1]q\x02Langu" +
-	"age for this channel has been set to %[1]q\x02%[1]d・online\x02No charact" +
-	"ers online\x02Characters online:\x02] outfit (\x04\x01\x0a\x00\x16\x02**" +
-	"Other characters:**\x02TR\x02NC\x02VS\x02Source: %[1]s\x02%[1]s - %[2]d" +
+	"field value\x02Failed to save field value for %[1]s channel\x02Tracking " +
+	"Settings (PC)\x02Tracking Settings (PS4 EU)\x02Tracking Settings (PS4 US" +
+	")\x02Which outfits do you want to track?\x02Enter the outfit tags separa" +
+	"ted by comma\x02Which characters do you want to track?\x02Enter the char" +
+	"acter names separated by comma\x02Failed to parse language %[1]q\x02Lang" +
+	"uage for this channel has been set to %[1]q\x02%[1]d・online\x02No charac" +
+	"ters online\x02Characters online:\x02] outfit (\x04\x01\x0a\x00\x16\x02*" +
+	"*Other characters:**\x02TR\x02NC\x02VS\x02Source: %[1]s\x02%[1]s - %[2]d" +
 	"\x02Total population - %[1]d\x02Period\x02%[1]s - %[2]s (Ends %[3]s)\x02" +
 	"Territory Control\x02%[1]s - No alerts\x02%[1]s alerts\x02No alerts\x04" +
 	"\x00\x01\x0a$\x02Settings are updated.\x0a\x0a**Outfits:**\x02No outfits" +
@@ -256,21 +256,21 @@ var ruIndex = []uint32{ // 110 elements
 	0x00000c09, 0x00000c57, 0x00000ca7, 0x00000d09,
 	// Entry 40 - 5F
 	0x00000d58, 0x00000daf, 0x00000ded, 0x00000e29,
-	0x00000e70, 0x00000ea1, 0x00000ed6, 0x00000f0b,
-	0x00000f4a, 0x00000f8d, 0x00000fcc, 0x00001017,
-	0x0000105e, 0x000010a8, 0x000010bf, 0x000010ec,
-	0x0000110f, 0x00001120, 0x0000114a, 0x0000114f,
-	0x00001154, 0x00001159, 0x00001171, 0x0000117f,
-	0x000011af, 0x000011bc, 0x000011e3, 0x00001209,
-	0x00001225, 0x0000123a, 0x0000124e, 0x00001291,
+	0x00000e7f, 0x00000eb0, 0x00000ee5, 0x00000f1a,
+	0x00000f59, 0x00000f9c, 0x00000fdb, 0x00001026,
+	0x0000106d, 0x000010b7, 0x000010ce, 0x000010fb,
+	0x0000111e, 0x0000112f, 0x00001159, 0x0000115e,
+	0x00001163, 0x00001168, 0x00001180, 0x0000118e,
+	0x000011be, 0x000011cb, 0x000011f2, 0x00001218,
+	0x00001234, 0x00001249, 0x0000125d, 0x000012a0,
 	// Entry 60 - 7F
-	0x000012a9, 0x000012c8, 0x000012e6, 0x00001306,
-	0x00001324, 0x00001339, 0x0000134e, 0x00001363,
-	0x0000137d, 0x00001391, 0x00001396, 0x0000139d,
-	0x000013a5, 0x000013b2,
+	0x000012b8, 0x000012d7, 0x000012f5, 0x00001315,
+	0x00001333, 0x00001348, 0x0000135d, 0x00001372,
+	0x0000138c, 0x000013a0, 0x000013a5, 0x000013ac,
+	0x000013b4, 0x000013c1,
 } // Size: 464 bytes
 
-const ruData string = "" + // Size: 5042 bytes
+const ruData string = "" + // Size: 5057 bytes
 	"\x02Язык\x02Язык: английский\x02Язык: русский\x02Уведомления персонажей:" +
 	" вкл.\x02Уведомления персонажей: выкл.\x02Уведомления аутфитов: вкл.\x02" +
 	"Уведомления аутфитов: выкл.\x02Обновления заголовка: вкл.\x02Обновления" +
@@ -306,21 +306,21 @@ const ruData string = "" + // Size: 5042 bytes
 	"астроек подписки для канала %[1]s (%[2]s)\x02Не удалось загрузить теги " +
 	"аутфитов %[1]v (%[2]s)\x02Не удалось загрузить имена персонажей %[1]v " +
 	"(%[2]s)\x02Ошибка загрузки данных канала %[1]s\x02Ошибка извлечения знач" +
-	"ения поля\x02Ошибка сохранения языка для канала %[1]s\x02Настройки отсл" +
-	"еживания (PC)\x02Настройки отслеживания (PS4 EU)\x02Настройки отслежива" +
-	"ния (PS4 US)\x02Какие аутфиты хотите отслеживать?\x02Введите теги аутфи" +
-	"тов через запятую\x02Каких игроков хотите отслеживать?\x02Введите имена" +
-	" персонажей через запятую\x02Невозможно распознать локализацию %[1]q" +
-	"\x02Для этого канала был установлен язык %[1]q\x02%[1]d・онлайн\x02Нет п" +
-	"ерсонажей онлайн\x02Персонажи онлайн:\x02] аутфит (\x04\x01\x0a\x00%" +
-	"\x02**Другие персонажи:**\x02ТР\x02НК\x02СВ\x02Источник: %[1]s\x02%[1]s " +
-	"- %[2]d\x02Глобальная популяция - %[1]d\x02Период\x02%[1]s - %[2]s (Конч" +
-	"ится %[3]s)\x02Контроль территорий\x02%[1]s - Нет тревог\x02%[1]s трево" +
-	"ги\x02Нет тревог\x04\x00\x01\x0a>\x02Настройки обновлены.\x0a\x0a**Аут" +
-	"фиты:**\x02Нет аутфитов\x04\x02\x0a\x0a\x01\x0a\x18\x02**Персонажи:**" +
-	"\x02Нет персонажей\x04\x00\x01 \x1b\x02Разблокирован\x04\x00\x01 \x19" +
-	"\x02Заблокирован\x02) фракцией `\x04\x01\x0a\x00\x10\x02Статус: _\x02Ста" +
-	"бильный\x02Не стабильный\x02_\x0aТревоги: _\x02Да\x02Нет\x02%[1]dм\x04" +
-	"\x00\x01 \x08\x02%[1]dч"
+	"ения поля\x02Ошибка сохранения значения поля для канала %[1]s\x02Настро" +
+	"йки отслеживания (PC)\x02Настройки отслеживания (PS4 EU)\x02Настройки о" +
+	"тслеживания (PS4 US)\x02Какие аутфиты хотите отслеживать?\x02Введите те" +
+	"ги аутфитов через запятую\x02Каких игроков хотите отслеживать?\x02Введи" +
+	"те имена персонажей через запятую\x02Невозможно распознать локализацию" +
+	" %[1]q\x02Для этого канала был установлен язык %[1]q\x02%[1]d・онлайн" +
+	"\x02Нет персонажей онлайн\x02Персонажи онлайн:\x02] аутфит (\x04\x01" +
+	"\x0a\x00%\x02**Другие персонажи:**\x02ТР\x02НК\x02СВ\x02Источник: %[1]s" +
+	"\x02%[1]s - %[2]d\x02Глобальная популяция - %[1]d\x02Период\x02%[1]s - %" +
+	"[2]s (Кончится %[3]s)\x02Контроль территорий\x02%[1]s - Нет тревог\x02%[" +
+	"1]s тревоги\x02Нет тревог\x04\x00\x01\x0a>\x02Настройки обновлены.\x0a" +
+	"\x0a**Аутфиты:**\x02Нет аутфитов\x04\x02\x0a\x0a\x01\x0a\x18\x02**Персон" +
+	"ажи:**\x02Нет персонажей\x04\x00\x01 \x1b\x02Разблокирован\x04\x00\x01" +
+	" \x19\x02Заблокирован\x02) фракцией `\x04\x01\x0a\x00\x10\x02Статус: _" +
+	"\x02Стабильный\x02Не стабильный\x02_\x0aТревоги: _\x02Да\x02Нет\x02%[1]d" +
+	"м\x04\x00\x01 \x08\x02%[1]dч"
 
-	// Total table size 8863 bytes (8KiB); checksum: EDD92568
+	// Total table size 8881 bytes (8KiB); checksum: 8E92994A

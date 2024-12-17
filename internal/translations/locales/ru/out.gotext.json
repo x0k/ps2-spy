@@ -923,9 +923,9 @@
             "translation": "Ошибка извлечения значения поля"
         },
         {
-            "id": "Failed to save language for {ChannelId} channel",
-            "message": "Failed to save language for {ChannelId} channel",
-            "translation": "Ошибка сохранения языка для канала {ChannelId}",
+            "id": "Failed to save field value for {ChannelId} channel",
+            "message": "Failed to save field value for {ChannelId} channel",
+            "translation": "Ошибка сохранения значения поля для канала {ChannelId}",
             "placeholders": [
                 {
                     "id": "ChannelId",
