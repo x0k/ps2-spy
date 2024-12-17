@@ -12,11 +12,54 @@ import (
 
 type ChannelLoader = loader.Keyed[discord.ChannelId, discord.Channel]
 type ChannelLanguageSaver = func(ctx context.Context, channelId discord.ChannelId, language language.Tag) error
+type ChannelCharacterNotificationsSaver = func(ctx context.Context, channelId discord.ChannelId, enabled bool) error
+type ChannelOutfitNotificationsSaver = func(ctx context.Context, channelId discord.ChannelId, enabled bool) error
+type ChannelTitleUpdatesSaver = func(ctx context.Context, channelId discord.ChannelId, enabled bool) error
+
+func makeFieldHandler[V any](
+	messages *discord_messages.Messages,
+	valueExtractor func(*discordgo.InteractionCreate) (V, error),
+	saver func(ctx context.Context, channelId discord.ChannelId, value V) error,
+	channelLoader ChannelLoader,
+) discord.InteractionHandler {
+	return discord.MessageUpdate(func(
+		ctx context.Context,
+		s *discordgo.Session,
+		i *discordgo.InteractionCreate,
+	) discord.Response {
+		value, err := valueExtractor(i)
+		if err != nil {
+			return messages.FieldValueExtractError(err)
+		}
+		channelId := discord.ChannelId(i.Interaction.ChannelID)
+		if err := saver(ctx, channelId, value); err != nil {
+			return discord_messages.ChannelLanguageSaveError[discordgo.InteractionResponseData](
+				channelId,
+				err,
+			)
+		}
+		channel, err := channelLoader(ctx, channelId)
+		if err != nil {
+			return discord_messages.ChannelLoadError[discordgo.InteractionResponseData](
+				channelId,
+				err,
+			)
+		}
+		return messages.ChannelSettingsFormUpdate(channel)
+	})
+}
+
+func extractBool(ic *discordgo.InteractionCreate) (bool, error) {
+	return ic.MessageComponentData().Values[0] == "on", nil
+}
 
 func NewChannelSettings(
 	messages *discord_messages.Messages,
 	channelLoader ChannelLoader,
 	channelLanguageSaver ChannelLanguageSaver,
+	channelCharacterNotificationsSaver ChannelCharacterNotificationsSaver,
+	channelOutfitNotificationsSaver ChannelOutfitNotificationsSaver,
+	channelTitleUpdatesSaver ChannelTitleUpdatesSaver,
 ) *discord.Command {
 	return &discord.Command{
 		Cmd: &discordgo.ApplicationCommand{
@@ -42,36 +85,35 @@ func NewChannelSettings(
 					err,
 				)
 			}
-			return messages.ChannelSettingsForm(
-				discord.CHANNEL_LANGUAGE_COMPONENT_CUSTOM_ID,
-				discord.CHANNEL_CHARACTER_NOTIFICATIONS_COMPONENT_CUSTOM_ID,
-				discord.CHANNEL_OUTFIT_NOTIFICATIONS_COMPONENT_CUSTOM_ID,
-				discord.CHANNEL_TITLE_UPDATES_COMPONENT_CUSTOM_ID,
-				channel,
-			)
+			return messages.ChannelSettingsForm(channel)
 		}),
 		ComponentHandlers: map[string]discord.InteractionHandler{
-			discord.CHANNEL_LANGUAGE_COMPONENT_CUSTOM_ID: discord.DeferredEphemeralFollowUp(
-				true,
-				func(
-					ctx context.Context,
-					s *discordgo.Session,
-					i *discordgo.InteractionCreate,
-				) discord.FollowUp {
-					value := i.MessageComponentData().Values[0]
-					tag, err := language.Parse(value)
-					if err != nil {
-						return messages.LanguageParseError(value, err)
-					}
-					channelId := discord.ChannelId(i.Interaction.ChannelID)
-					if err := channelLanguageSaver(ctx, channelId, tag); err != nil {
-						return discord_messages.ChannelLanguageSaveError[discordgo.WebhookParams](
-							channelId,
-							err,
-						)
-					}
-					return messages.EmptyFollowUp()
-				}),
+			discord.CHANNEL_LANGUAGE_COMPONENT_CUSTOM_ID: makeFieldHandler(
+				messages,
+				func(ic *discordgo.InteractionCreate) (language.Tag, error) {
+					return language.Parse(string(ic.MessageComponentData().Values[0]))
+				},
+				channelLanguageSaver,
+				channelLoader,
+			),
+			discord.CHANNEL_CHARACTER_NOTIFICATIONS_COMPONENT_CUSTOM_ID: makeFieldHandler(
+				messages,
+				extractBool,
+				channelCharacterNotificationsSaver,
+				channelLoader,
+			),
+			discord.CHANNEL_OUTFIT_NOTIFICATIONS_COMPONENT_CUSTOM_ID: makeFieldHandler(
+				messages,
+				extractBool,
+				channelOutfitNotificationsSaver,
+				channelLoader,
+			),
+			discord.CHANNEL_TITLE_UPDATES_COMPONENT_CUSTOM_ID: makeFieldHandler(
+				messages,
+				extractBool,
+				channelTitleUpdatesSaver,
+				channelLoader,
+			),
 		},
 	}
 }

@@ -57,6 +57,9 @@ func New(
 	statsTrackerSubs pubsub.SubscriptionsManager[stats_tracker.EventType],
 	channelLoader discord_events.ChannelLoader,
 	saveChannelLanguage discord_commands.ChannelLanguageSaver,
+	channelCharacterNotificationsSaver discord_commands.ChannelCharacterNotificationsSaver,
+	channelOutfitNotificationsSaver discord_commands.ChannelOutfitNotificationsSaver,
+	channelTitleUpdatesSaver discord_commands.ChannelTitleUpdatesSaver,
 ) (*module.Module, error) {
 	m := module.New(log.Logger, "discord")
 	session, err := discordgo.New("Bot " + token)
@@ -86,6 +89,9 @@ func New(
 		statsTracker,
 		channelLoader,
 		saveChannelLanguage,
+		channelCharacterNotificationsSaver,
+		channelOutfitNotificationsSaver,
+		channelTitleUpdatesSaver,
 	)
 	m.AppendR("discord.commands", commands.Start)
 

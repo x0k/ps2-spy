@@ -8,10 +8,6 @@ import (
 
 func channelSettingsForm(
 	p *message.Printer,
-	langId string,
-	characterNotificationsId string,
-	outfitNotificationsId string,
-	titleUpdatesId string,
 	channel discord.Channel,
 ) []discordgo.MessageComponent {
 	one := 1
@@ -20,7 +16,7 @@ func channelSettingsForm(
 		discordgo.ActionsRow{
 			Components: []discordgo.MessageComponent{
 				discordgo.SelectMenu{
-					CustomID:    langId,
+					CustomID:    discord.CHANNEL_LANGUAGE_COMPONENT_CUSTOM_ID,
 					Placeholder: p.Sprintf("Language"),
 					MinValues:   &one,
 					MaxValues:   1,
@@ -42,7 +38,7 @@ func channelSettingsForm(
 		discordgo.ActionsRow{
 			Components: []discordgo.MessageComponent{
 				discordgo.SelectMenu{
-					CustomID:    characterNotificationsId,
+					CustomID:    discord.CHANNEL_CHARACTER_NOTIFICATIONS_COMPONENT_CUSTOM_ID,
 					Placeholder: "Character notifications",
 					MinValues:   &one,
 					MaxValues:   1,
@@ -64,7 +60,7 @@ func channelSettingsForm(
 		discordgo.ActionsRow{
 			Components: []discordgo.MessageComponent{
 				discordgo.SelectMenu{
-					CustomID:    outfitNotificationsId,
+					CustomID:    discord.CHANNEL_OUTFIT_NOTIFICATIONS_COMPONENT_CUSTOM_ID,
 					Placeholder: "Outfit notifications",
 					MinValues:   &one,
 					MaxValues:   1,
@@ -86,7 +82,7 @@ func channelSettingsForm(
 		discordgo.ActionsRow{
 			Components: []discordgo.MessageComponent{
 				discordgo.SelectMenu{
-					CustomID:    titleUpdatesId,
+					CustomID:    discord.CHANNEL_TITLE_UPDATES_COMPONENT_CUSTOM_ID,
 					Placeholder: "Title updates",
 					MinValues:   &one,
 					MaxValues:   1,

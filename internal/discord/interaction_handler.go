@@ -56,6 +56,32 @@ func ShowModal(handle interactionHandler[Response]) InteractionHandler {
 	}
 }
 
+func MessageUpdate(handle interactionHandler[Response]) InteractionHandler {
+	return func(
+		ctx context.Context,
+		log *logger.Logger,
+		s *discordgo.Session,
+		i *discordgo.InteractionCreate,
+	) error {
+		data, customErr := handle(ctx, s, i)(message.NewPrinter(LangTagFromInteraction(i)))
+		if customErr != nil {
+			if err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseUpdateMessage,
+				Data: &discordgo.InteractionResponseData{
+					Content: customErr.Msg,
+				},
+			}); err != nil {
+				log.Error(ctx, "error sending error message", sl.Err(err))
+			}
+			return customErr.Err
+		}
+		return s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseUpdateMessage,
+			Data: data,
+		})
+	}
+}
+
 func DeferredMessageEdit(handle interactionHandler[MessageEdit]) InteractionHandler {
 	return func(
 		ctx context.Context,
@@ -116,19 +142,13 @@ func DeferredEphemeralResponse(handle interactionHandler[ResponseEdit]) Interact
 	}
 }
 
-func DeferredEphemeralFollowUp(isUpdate bool, handle interactionHandler[FollowUp]) InteractionHandler {
+func DeferredEphemeralFollowUp(handle interactionHandler[FollowUp]) InteractionHandler {
 	return func(ctx context.Context, log *logger.Logger, s *discordgo.Session, i *discordgo.InteractionCreate) error {
-		respondType := discordgo.InteractionResponseDeferredChannelMessageWithSource
-		respondData := &discordgo.InteractionResponseData{
-			Flags: discordgo.MessageFlagsEphemeral,
-		}
-		if isUpdate {
-			respondType = discordgo.InteractionResponseUpdateMessage
-			respondData = nil
-		}
 		err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-			Type: respondType,
-			Data: respondData,
+			Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Flags: discordgo.MessageFlagsEphemeral,
+			},
 		})
 		if err != nil {
 			return err

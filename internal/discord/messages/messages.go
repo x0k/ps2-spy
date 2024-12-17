@@ -505,10 +505,10 @@ func ChannelLoadError[R any](channelId discord.ChannelId, err error) func(*messa
 	}
 }
 
-func (m *Messages) LanguageParseError(lang string, err error) discord.FollowUp {
-	return func(p *message.Printer) (*discordgo.WebhookParams, *discord.Error) {
+func (m *Messages) FieldValueExtractError(err error) discord.Response {
+	return func(p *message.Printer) (*discordgo.InteractionResponseData, *discord.Error) {
 		return nil, &discord.Error{
-			Msg: p.Sprintf("Failed to parse language: %q", lang),
+			Msg: p.Sprintf("Failed to extract field value"),
 			Err: err,
 		}
 	}
@@ -529,24 +529,22 @@ func (m *Messages) EmptyFollowUp() discord.FollowUp {
 	}
 }
 
-func (m *Messages) ChannelSettingsForm(
-	langId string,
-	characterNotificationsId string,
-	outfitNotificationsId string,
-	titleUpdatesId string,
-	channel discord.Channel,
-) discord.ResponseEdit {
+func (m *Messages) ChannelSettingsForm(channel discord.Channel) discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
-		components := channelSettingsForm(
-			p,
-			langId,
-			characterNotificationsId,
-			outfitNotificationsId,
-			titleUpdatesId,
-			channel,
-		)
+		components := channelSettingsForm(p, channel)
 		return &discordgo.WebhookEdit{
 			Components: &components,
+		}, nil
+	}
+}
+
+func (m *Messages) ChannelSettingsFormUpdate(
+	channel discord.Channel,
+) discord.Response {
+	return func(p *message.Printer) (*discordgo.InteractionResponseData, *discord.Error) {
+		components := channelSettingsForm(p, channel)
+		return &discordgo.InteractionResponseData{
+			Components: components,
 		}, nil
 	}
 }
