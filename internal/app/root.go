@@ -26,6 +26,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
 	"github.com/x0k/ps2-spy/internal/lib/fisu"
 	"github.com/x0k/ps2-spy/internal/lib/honu"
+	"github.com/x0k/ps2-spy/internal/lib/httpx"
 	"github.com/x0k/ps2-spy/internal/lib/loader"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
@@ -90,7 +91,10 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		Transport: metrics.InstrumentTransport(
 			mt,
 			metrics.DefaultTransportName,
-			http.DefaultTransport,
+			httpx.NewRetryRoundTripper(
+				log.Logger.With(sl.Component("http_client")),
+				http.DefaultTransport,
+			),
 		),
 	}
 
