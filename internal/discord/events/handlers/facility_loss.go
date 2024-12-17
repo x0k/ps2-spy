@@ -35,7 +35,7 @@ func NewFacilityLoss(
 				if err != nil {
 					return messages.FacilityLoadError(facilityId, err)
 				}
-				outfitId := ps2.OutfitId(e.Event.OutfitID)
+				outfitId := e.Event.OldOutfitId
 				outfitTag, err := outfitLoader(ctx, outfitId)
 				if err != nil {
 					return messages.OutfitLoadError(outfitId, platform, err)
