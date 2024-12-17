@@ -27,14 +27,6 @@ const (
 	ChannelTrackerStoppedType              = EventType(stats_tracker.ChannelTrackerStoppedType)
 )
 
-type adoptedEvent[T pubsub.EventType, E pubsub.Event[T]] struct {
-	Event E
-}
-
-func (e adoptedEvent[T, Event]) Type() EventType {
-	return EventType(e.Event.Type())
-}
-
 type channelsEvent[T pubsub.EventType, E pubsub.Event[T]] struct {
 	Event    E
 	Channels []discord.Channel
