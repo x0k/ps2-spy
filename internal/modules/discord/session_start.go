@@ -27,6 +27,7 @@ func sessionStart(
 		handlers := make(map[string]discord.InteractionHandler, len(commands))
 		appCommands := make([]*discordgo.ApplicationCommand, 0, len(commands))
 		submitHandlers := make(map[string]discord.InteractionHandler, len(commands))
+		componentHandlers := make(map[string]discord.InteractionHandler, len(commands))
 		for _, command := range commands {
 			handlers[command.Cmd.Name] = command.Handler
 			if command.SubmitHandlers != nil {
@@ -35,6 +36,14 @@ func sessionStart(
 						return fmt.Errorf("%w: %s", ErrDuplicateSubmitHandler, name)
 					}
 					submitHandlers[name] = handler
+				}
+			}
+			if command.ComponentHandlers != nil {
+				for name, handler := range command.ComponentHandlers {
+					if _, ok := componentHandlers[name]; ok {
+						return fmt.Errorf("%w: %s", ErrDuplicateSubmitHandler, name)
+					}
+					componentHandlers[name] = handler
 				}
 			}
 			appCommands = append(appCommands, command.Cmd)
@@ -76,6 +85,15 @@ func sessionStart(
 					go handler.Run(ctx, mLog, commandHandlerTimeout, s, i)
 				} else {
 					mLog.Debug(ctx, "submit not found")
+				}
+			case discordgo.InteractionMessageComponent:
+				data := i.MessageComponentData()
+				mLog := hLog.With(slog.String("custom_id", data.CustomID))
+				if handler, ok := componentHandlers[data.CustomID]; ok {
+					mLog.Debug(ctx, "component received")
+					go handler.Run(ctx, mLog, commandHandlerTimeout, s, i)
+				} else {
+					mLog.Debug(ctx, "component not found")
 				}
 			}
 		})

@@ -150,7 +150,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			}
 			channelIds := make([]discord.ChannelId, 0, len(channels))
 			for _, channel := range channels {
-				channelIds = append(channelIds, channel.ChannelId)
+				channelIds = append(channelIds, channel.Id)
 			}
 			return channelIds, nil
 		},
@@ -472,7 +472,6 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			return censusDataProvider.OutfitIds(ctx, ps2_platforms.PlatformNamespace(pq.Platform), pq.Value)
 		},
 		storage.SaveTrackingSettings,
-		storage.SaveChannelLanguage,
 		characterLoaders,
 		outfitLoaders,
 		charactersLoaders,
@@ -499,7 +498,11 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		},
 		statsTracker,
 		statsTrackerPubSub,
-		storage.ChannelLanguage,
+		storage.Channel,
+		storage.SaveChannelLanguage,
+		storage.SaveChannelCharacterNotifications,
+		storage.SaveChannelOutfitNotifications,
+		storage.SaveChannelTitleUpdates,
 	)
 	if err != nil {
 		return nil, err

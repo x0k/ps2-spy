@@ -222,11 +222,7 @@ func (s *Storage) TrackingChannelsForCharacter(
 	}
 	channels := make([]discord.Channel, 0, len(rows))
 	for _, row := range rows {
-		channelId := discord.ChannelId(row.ChannelID)
-		channels = append(channels, discord.NewChannel(
-			channelId,
-			s.nLangTag(ctx, channelId, row.Locale),
-		))
+		channels = append(channels, s.dtoToChannel(ctx, row))
 	}
 	return channels, nil
 }
@@ -245,11 +241,7 @@ func (s *Storage) TrackingChannelsForOutfit(
 	}
 	channels := make([]discord.Channel, 0, len(rows))
 	for _, row := range rows {
-		channelId := discord.ChannelId(row.ChannelID)
-		channels = append(channels, discord.NewChannel(
-			channelId,
-			s.nLangTag(ctx, channelId, row.Locale),
-		))
+		channels = append(channels, s.dtoToChannel(ctx, row))
 	}
 	return channels, nil
 }
@@ -424,32 +416,77 @@ func (s *Storage) SaveFacility(ctx context.Context, facility ps2.Facility) error
 	})
 }
 
-func (s *Storage) ChannelLanguage(
+func (s *Storage) Channel(
 	ctx context.Context,
 	channelId discord.ChannelId,
-) (language.Tag, error) {
-	locale, err := s.queries.GetChannelLocale(ctx, string(channelId))
+) (discord.Channel, error) {
+	c, err := s.queries.GetChannel(ctx, string(channelId))
 	if err == nil {
-		return s.langTag(ctx, channelId, locale), nil
+		return s.dtoToChannel(ctx, c), nil
 	}
 	if errors.Is(err, sql.ErrNoRows) {
-		return discord.DEFAULT_LANG_TAG, nil
+		return discord.NewDefaultChannel(channelId), nil
 	}
-	return discord.DEFAULT_LANG_TAG, err
+	return discord.Channel{}, err
 }
 
 func (s *Storage) SaveChannelLanguage(
 	ctx context.Context,
 	channelId discord.ChannelId,
-	lang language.Tag,
+	locale language.Tag,
 ) error {
-	err := s.queries.UpsertChannelLocale(ctx, db.UpsertChannelLocaleParams{
+	err := s.queries.UpsertChannelLanguage(ctx, db.UpsertChannelLanguageParams{
 		ChannelID: string(channelId),
-		Locale:    lang.String(),
+		Locale:    locale.String(),
 	})
-	return s.publish(err, storage.ChannelLanguageUpdated{
+	return s.publish(err, storage.ChannelLanguageSaved{
 		ChannelId: channelId,
-		Language:  lang,
+		Language:  locale,
+	})
+}
+
+func (s *Storage) SaveChannelCharacterNotifications(
+	ctx context.Context,
+	channelId discord.ChannelId,
+	enabled bool,
+) error {
+	err := s.queries.UpsertChannelCharacterNotifications(ctx, db.UpsertChannelCharacterNotificationsParams{
+		ChannelID:              string(channelId),
+		CharacterNotifications: enabled,
+	})
+	return s.publish(err, storage.ChannelCharacterNotificationsSaved{
+		ChannelId: channelId,
+		Enabled:   enabled,
+	})
+}
+
+func (s *Storage) SaveChannelOutfitNotifications(
+	ctx context.Context,
+	channelId discord.ChannelId,
+	enabled bool,
+) error {
+	err := s.queries.UpsertChannelOutfitNotifications(ctx, db.UpsertChannelOutfitNotificationsParams{
+		ChannelID:           string(channelId),
+		OutfitNotifications: enabled,
+	})
+	return s.publish(err, storage.ChannelOutfitNotificationsSaved{
+		ChannelId: channelId,
+		Enabled:   enabled,
+	})
+}
+
+func (s *Storage) SaveChannelTitleUpdates(
+	ctx context.Context,
+	channelId discord.ChannelId,
+	enabled bool,
+) error {
+	err := s.queries.UpsertChannelTitleUpdates(ctx, db.UpsertChannelTitleUpdatesParams{
+		ChannelID:    string(channelId),
+		TitleUpdates: enabled,
+	})
+	return s.publish(err, storage.ChannelTitleUpdatesSaved{
+		ChannelId: channelId,
+		Enabled:   enabled,
 	})
 }
 
@@ -463,18 +500,18 @@ func (s *Storage) publish(err error, event storage.Event) error {
 	return s.publisher.Publish(event)
 }
 
-func (s *Storage) nLangTag(ctx context.Context, channelId discord.ChannelId, str sql.NullString) language.Tag {
-	if !str.Valid {
-		return discord.DEFAULT_LANG_TAG
+func (s *Storage) dtoToChannel(ctx context.Context, dto db.Channel) discord.Channel {
+	channelId := discord.ChannelId(dto.ChannelID)
+	locale, err := language.Parse(dto.Locale)
+	if err != nil {
+		s.log.Warn(ctx, "failed to parse locale", slog.String("channel_id", string(channelId)), slog.String("locale", dto.Locale), sl.Err(err))
+		locale = discord.DEFAULT_LANG_TAG
 	}
-	return s.langTag(ctx, channelId, str.String)
-}
-
-func (s *Storage) langTag(ctx context.Context, channelId discord.ChannelId, locale string) language.Tag {
-	if tag, err := language.Parse(locale); err == nil {
-		return tag
-	} else {
-		s.log.Warn(ctx, "failed to parse locale", slog.String("channel_id", string(channelId)), slog.String("locale", locale), sl.Err(err))
-		return discord.DEFAULT_LANG_TAG
-	}
+	return discord.NewChannel(
+		channelId,
+		locale,
+		dto.CharacterNotifications,
+		dto.OutfitNotifications,
+		dto.TitleUpdates,
+	)
 }

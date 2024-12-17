@@ -16,16 +16,19 @@ type EventType string
 type Event = pubsub.Event[EventType]
 
 const (
-	ChannelOutfitSavedType      EventType = "channel_outfit_saved"
-	ChannelOutfitDeletedType    EventType = "channel_outfit_deleted"
-	ChannelCharacterSavedType   EventType = "channel_character_saved"
-	ChannelCharacterDeletedType EventType = "channel_character_deleted"
-	OutfitMembersInitType       EventType = "outfit_members_init"
-	OutfitMembersUpdateType     EventType = "outfit_members_update"
-	OutfitMemberSavedType       EventType = "outfit_member_saved"
-	OutfitMemberDeletedType     EventType = "outfit_member_deleted"
-	OutfitSynchronizedType      EventType = "outfit_synchronized"
-	ChannelLanguageUpdatedType  EventType = "channel_language_updated"
+	ChannelOutfitSavedType                 EventType = "channel_outfit_saved"
+	ChannelOutfitDeletedType               EventType = "channel_outfit_deleted"
+	ChannelCharacterSavedType              EventType = "channel_character_saved"
+	ChannelCharacterDeletedType            EventType = "channel_character_deleted"
+	OutfitMembersInitType                  EventType = "outfit_members_init"
+	OutfitMembersUpdateType                EventType = "outfit_members_update"
+	OutfitMemberSavedType                  EventType = "outfit_member_saved"
+	OutfitMemberDeletedType                EventType = "outfit_member_deleted"
+	OutfitSynchronizedType                 EventType = "outfit_synchronized"
+	ChannelLanguageSavedType               EventType = "channel_language_saved"
+	ChannelCharacterNotificationsSavedType EventType = "channel_character_notifications_saved"
+	ChannelOutfitNotificationsSavedType    EventType = "channel_outfit_notifications_saved"
+	ChannelTitleUpdatesSavedType           EventType = "channel_title_updates_saved"
 )
 
 type ChannelOutfitSaved struct {
@@ -118,11 +121,38 @@ func (e OutfitSynchronized) Type() EventType {
 	return OutfitSynchronizedType
 }
 
-type ChannelLanguageUpdated struct {
+type ChannelLanguageSaved struct {
 	ChannelId discord.ChannelId
 	Language  language.Tag
 }
 
-func (e ChannelLanguageUpdated) Type() EventType {
-	return ChannelLanguageUpdatedType
+func (e ChannelLanguageSaved) Type() EventType {
+	return ChannelLanguageSavedType
+}
+
+type ChannelCharacterNotificationsSaved struct {
+	ChannelId discord.ChannelId
+	Enabled   bool
+}
+
+func (e ChannelCharacterNotificationsSaved) Type() EventType {
+	return ChannelCharacterNotificationsSavedType
+}
+
+type ChannelOutfitNotificationsSaved struct {
+	ChannelId discord.ChannelId
+	Enabled   bool
+}
+
+func (e ChannelOutfitNotificationsSaved) Type() EventType {
+	return ChannelOutfitNotificationsSavedType
+}
+
+type ChannelTitleUpdatesSaved struct {
+	ChannelId discord.ChannelId
+	Enabled   bool
+}
+
+func (e ChannelTitleUpdatesSaved) Type() EventType {
+	return ChannelTitleUpdatesSavedType
 }

@@ -56,11 +56,11 @@ func NewOnline(
 				},
 			},
 		},
-		Handler: discord.DeferredEphemeralEdit(func(
+		Handler: discord.DeferredEphemeralResponse(func(
 			ctx context.Context,
 			s *discordgo.Session,
 			i *discordgo.InteractionCreate,
-		) discord.Edit {
+		) discord.ResponseEdit {
 			platform := ps2_platforms.Platform(i.ApplicationCommandData().Options[0].Name)
 			channelId := discord.ChannelId(i.ChannelID)
 			onlineMembers, err := onlineTrackableEntitiesLoader(ctx, discord.SettingsQuery{

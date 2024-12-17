@@ -48,7 +48,7 @@ func NewAlerts(
 					Type: discordgo.ApplicationCommandOptionString,
 					Name: "provider",
 					NameLocalizations: map[discordgo.Locale]string{
-						discordgo.Russian: "проваидер",
+						discordgo.Russian: "источник",
 					},
 					Description: "Provider name",
 					DescriptionLocalizations: map[discordgo.Locale]string{
@@ -58,11 +58,11 @@ func NewAlerts(
 				},
 			},
 		},
-		Handler: discord.DeferredEphemeralEdit(func(
+		Handler: discord.DeferredEphemeralResponse(func(
 			ctx context.Context,
 			s *discordgo.Session,
 			i *discordgo.InteractionCreate,
-		) discord.Edit {
+		) discord.ResponseEdit {
 			opts := i.ApplicationCommandData().Options
 			var worldId ps2.WorldId
 			var provider string

@@ -22,11 +22,11 @@ func NewAbout(
 				discordgo.Russian: "Общие сведения о боте",
 			},
 		},
-		Handler: discord.DeferredEphemeralEdit(func(
+		Handler: discord.DeferredEphemeralResponse(func(
 			ctx context.Context,
 			s *discordgo.Session,
 			i *discordgo.InteractionCreate,
-		) discord.Edit {
+		) discord.ResponseEdit {
 			return messages.About()
 		}),
 	}

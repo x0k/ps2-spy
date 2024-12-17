@@ -50,7 +50,7 @@ func NewStatsTracker(
 				},
 			},
 		},
-		Handler: discord.DeferredEphemeralEdit(func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) discord.Edit {
+		Handler: discord.DeferredEphemeralResponse(func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) discord.ResponseEdit {
 			option := i.ApplicationCommandData().Options[0]
 			cmd := option.Name
 			channelId := discord.ChannelId(i.ChannelID)

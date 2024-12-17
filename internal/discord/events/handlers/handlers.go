@@ -12,7 +12,8 @@ func New(
 	channelTitleUpdater ChannelTitleUpdater,
 ) []Handler {
 	return []Handler{
-		NewChannelLanguageUpdate(m, messages, onlineTrackableEntitiesCountLoader, channelTitleUpdater),
+		NewChannelLanguageSaved(m, messages, onlineTrackableEntitiesCountLoader, channelTitleUpdater),
+		NewChannelTitleUpdatesSaved(m, messages, onlineTrackableEntitiesCountLoader, channelTitleUpdater),
 		NewChannelTrackerStarted(m, messages),
 		NewChannelTrackerStopped(m, messages),
 	}

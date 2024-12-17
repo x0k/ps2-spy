@@ -41,7 +41,7 @@ func sendChannelMessage(
 			msgRunes = msgRunes[len(toSend):]
 		}
 		for _, channel := range channels {
-			_, err := session.ChannelMessageSend(string(channel.ChannelId), string(toSend))
+			_, err := session.ChannelMessageSend(string(channel.Id), string(toSend))
 			if err != nil {
 				sendErrors = append(sendErrors, err)
 			}

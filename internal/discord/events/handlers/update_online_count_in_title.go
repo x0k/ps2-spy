@@ -25,22 +25,26 @@ func updateOnlineCountInTitle(
 	onlineTrackableEntitiesCountLoader OnlineTrackableEntitiesCountLoader,
 	updateChannelTitle ChannelTitleUpdater,
 ) {
-	trackableEntitiesCount, err := onlineTrackableEntitiesCountLoader(ctx, channel.ChannelId)
-	if err != nil {
-		log.Error(
-			ctx,
-			"failed to get trackable entities while updating online count in title",
-			slog.String("channel_id", string(channel.ChannelId)),
-			sl.Err(err),
-		)
-		return
+	trackableEntitiesCount := 0
+	if channel.TitleUpdates {
+		var err error
+		trackableEntitiesCount, err = onlineTrackableEntitiesCountLoader(ctx, channel.Id)
+		if err != nil {
+			log.Error(
+				ctx,
+				"failed to get trackable entities while updating online count in title",
+				slog.String("channel_id", string(channel.Id)),
+				sl.Err(err),
+			)
+			return
+		}
 	}
-	c, err := session.Channel(string(channel.ChannelId))
+	c, err := session.Channel(string(channel.Id))
 	if err != nil {
 		log.Error(
 			ctx,
 			"failed to get channel info while updating online count in title",
-			slog.String("channel_id", string(channel.ChannelId)),
+			slog.String("channel_id", string(channel.Id)),
 			sl.Err(err),
 		)
 		return
@@ -52,16 +56,16 @@ func updateOnlineCountInTitle(
 		log.Error(
 			ctx,
 			"failed to get new title while update online count in title",
-			slog.String("channel_id", string(channel.ChannelId)),
+			slog.String("channel_id", string(channel.Id)),
 			sl.Err(err2.Err),
 		)
 		return
 	}
-	if err := updateChannelTitle(ctx, channel.ChannelId, newTitle); err != nil {
+	if err := updateChannelTitle(ctx, channel.Id, newTitle); err != nil {
 		log.Error(
 			ctx,
 			"failed to update online count in title",
-			slog.String("channel_id", string(channel.ChannelId)),
+			slog.String("channel_id", string(channel.Id)),
 			sl.Err(err),
 		)
 	}

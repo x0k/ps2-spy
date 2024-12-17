@@ -8,6 +8,7 @@ import (
 	discord_events "github.com/x0k/ps2-spy/internal/discord/events"
 	discord_messages "github.com/x0k/ps2-spy/internal/discord/messages"
 	"github.com/x0k/ps2-spy/internal/lib/loader"
+	"github.com/x0k/ps2-spy/internal/lib/slicesx"
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
@@ -20,8 +21,11 @@ func NewPlayerLogin(
 	onlineTrackableEntitiesCountLoader OnlineTrackableEntitiesCountLoader,
 	channelTitleUpdater ChannelTitleUpdater,
 ) Handler {
-	return newHandler(m, func(ctx context.Context, session *discordgo.Session, event discord_events.PlayerLogin) error {
-		for _, channel := range event.Channels {
+	return newHandler(m, func(ctx context.Context, session *discordgo.Session, e discord_events.PlayerLogin) error {
+		for _, channel := range e.Channels {
+			if !channel.TitleUpdates {
+				continue
+			}
 			updateOnlineCountInTitle(
 				ctx,
 				m.log,
@@ -32,12 +36,18 @@ func NewPlayerLogin(
 				channelTitleUpdater,
 			)
 		}
-		return sendSimpleMessage(session, event.Channels, func() discord.Message {
-			char, err := characterLoader(ctx, event.Event.CharacterId)
-			if err != nil {
-				return messages.CharacterLoadError(event.Event.CharacterId, err)
-			}
-			return messages.CharacterLogin(char)
-		}())
+		return sendSimpleMessage(
+			session,
+			slicesx.Filter(e.Channels, func(i int) bool {
+				return e.Channels[i].CharacterNotifications
+			}),
+			func() discord.Message {
+				char, err := characterLoader(ctx, e.Event.CharacterId)
+				if err != nil {
+					return messages.CharacterLoadError(e.Event.CharacterId, err)
+				}
+				return messages.CharacterLogin(char)
+			}(),
+		)
 	})
 }

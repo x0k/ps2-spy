@@ -2,6 +2,51 @@
     "language": "ru",
     "messages": [
         {
+            "id": "Language",
+            "message": "Language",
+            "translation": "Язык"
+        },
+        {
+            "id": "Language: english",
+            "message": "Language: english",
+            "translation": "Язык: английский"
+        },
+        {
+            "id": "Language: russian",
+            "message": "Language: russian",
+            "translation": "Язык: русский"
+        },
+        {
+            "id": "Character notifications: on",
+            "message": "Character notifications: on",
+            "translation": "Уведомления персонажей: вкл."
+        },
+        {
+            "id": "Character notifications: off",
+            "message": "Character notifications: off",
+            "translation": "Уведомления персонажей: выкл."
+        },
+        {
+            "id": "Outfit notifications: on",
+            "message": "Outfit notifications: on",
+            "translation": "Уведомления аутфитов: вкл."
+        },
+        {
+            "id": "Outfit notifications: off",
+            "message": "Outfit notifications: off",
+            "translation": "Уведомления аутфитов: выкл."
+        },
+        {
+            "id": "Title updates: on",
+            "message": "Title updates: on",
+            "translation": "Обновления заголовка: вкл."
+        },
+        {
+            "id": "Title updates: off",
+            "message": "Title updates: off",
+            "translation": "Обновления заголовка: выкл."
+        },
+        {
             "id": "INF",
             "message": "INF",
             "translation": "ИНФ"
@@ -854,6 +899,41 @@
                     "underlyingType": "string",
                     "argNum": 2,
                     "expr": "platform"
+                }
+            ]
+        },
+        {
+            "id": "Failed to load {ChannelId} channel",
+            "message": "Failed to load {ChannelId} channel",
+            "translation": "Ошибка загрузки данных канала {ChannelId}",
+            "placeholders": [
+                {
+                    "id": "ChannelId",
+                    "string": "%[1]s",
+                    "type": "github.com/x0k/ps2-spy/internal/discord.ChannelId",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "channelId"
+                }
+            ]
+        },
+        {
+            "id": "Failed to extract field value",
+            "message": "Failed to extract field value",
+            "translation": "Ошибка извлечения значения поля"
+        },
+        {
+            "id": "Failed to save field value for {ChannelId} channel",
+            "message": "Failed to save field value for {ChannelId} channel",
+            "translation": "Ошибка сохранения значения поля для канала {ChannelId}",
+            "placeholders": [
+                {
+                    "id": "ChannelId",
+                    "string": "%[1]s",
+                    "type": "github.com/x0k/ps2-spy/internal/discord.ChannelId",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "channelId"
                 }
             ]
         },

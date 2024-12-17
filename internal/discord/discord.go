@@ -48,13 +48,29 @@ func LangTagFromInteraction(i *discordgo.InteractionCreate) language.Tag {
 }
 
 type Channel struct {
-	ChannelId ChannelId
-	Locale    language.Tag
+	Id                     ChannelId
+	Locale                 language.Tag
+	CharacterNotifications bool
+	OutfitNotifications    bool
+	TitleUpdates           bool
 }
 
-func NewChannel(channelId ChannelId, locale language.Tag) Channel {
+func NewChannel(
+	channelId ChannelId,
+	locale language.Tag,
+	characterNotifications bool,
+	outfitNotifications bool,
+	titleUpdates bool,
+) Channel {
 	return Channel{
-		ChannelId: channelId,
-		Locale:    locale,
+		Id:                     channelId,
+		Locale:                 locale,
+		CharacterNotifications: characterNotifications,
+		OutfitNotifications:    outfitNotifications,
+		TitleUpdates:           titleUpdates,
 	}
+}
+
+func NewDefaultChannel(channelId ChannelId) Channel {
+	return NewChannel(channelId, DEFAULT_LANG_TAG, true, true, true)
 }

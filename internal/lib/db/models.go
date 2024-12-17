@@ -8,9 +8,12 @@ import (
 	"time"
 )
 
-type ChannelLocale struct {
-	ChannelID string
-	Locale    string
+type Channel struct {
+	ChannelID              string
+	Locale                 string
+	CharacterNotifications bool
+	OutfitNotifications    bool
+	TitleUpdates           bool
 }
 
 type ChannelToCharacter struct {

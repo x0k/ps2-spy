@@ -48,7 +48,6 @@ func New(
 	outfitTagsLoader loader.Queried[discord.PlatformQuery[[]ps2.OutfitId], []string],
 	outfitIdsLoader loader.Queried[discord.PlatformQuery[[]string], []ps2.OutfitId],
 	saveChannelTrackingSettings discord_commands.ChannelTrackingSettingsSaver,
-	saveChannelLanguage discord_commands.ChannelLanguageSaver,
 	characterLoaders map[ps2_platforms.Platform]loader.Keyed[ps2.CharacterId, ps2.Character],
 	outfitLoaders map[ps2_platforms.Platform]loader.Keyed[ps2.OutfitId, ps2.Outfit],
 	charactersLoaders map[ps2_platforms.Platform]loader.Multi[ps2.CharacterId, ps2.Character],
@@ -56,7 +55,11 @@ func New(
 	onlineTrackableEntitiesCountLoader loader.Keyed[discord.ChannelId, int],
 	statsTracker *stats_tracker.StatsTracker,
 	statsTrackerSubs pubsub.SubscriptionsManager[stats_tracker.EventType],
-	channelLanguageLoader discord_events.ChannelLanguageLoader,
+	channelLoader discord_events.ChannelLoader,
+	saveChannelLanguage discord_commands.ChannelLanguageSaver,
+	channelCharacterNotificationsSaver discord_commands.ChannelCharacterNotificationsSaver,
+	channelOutfitNotificationsSaver discord_commands.ChannelOutfitNotificationsSaver,
+	channelTitleUpdatesSaver discord_commands.ChannelTitleUpdatesSaver,
 ) (*module.Module, error) {
 	m := module.New(log.Logger, "discord")
 	session, err := discordgo.New("Bot " + token)
@@ -83,8 +86,12 @@ func New(
 		outfitTagsLoader,
 		outfitIdsLoader,
 		saveChannelTrackingSettings,
-		saveChannelLanguage,
 		statsTracker,
+		channelLoader,
+		saveChannelLanguage,
+		channelCharacterNotificationsSaver,
+		channelOutfitNotificationsSaver,
+		channelTitleUpdatesSaver,
 	)
 	m.AppendR("discord.commands", commands.Start)
 
@@ -125,10 +132,11 @@ func New(
 	eventsPublisher := discord_events.NewEventsPublisher(
 		log.With(sl.Component("events_publisher")),
 		eventsPubSub,
-		channelLanguageLoader,
+		channelLoader,
 	)
 	m.AppendVR("discord.events_publisher", eventsPublisher.Start)
-	channelLanguageUpdate := storage.Subscribe[storage.ChannelLanguageUpdated](m, storageSubs)
+	channelLanguageUpdate := storage.Subscribe[storage.ChannelLanguageSaved](m, storageSubs)
+	channelTitleUpdates := storage.Subscribe[storage.ChannelTitleUpdatesSaved](m, storageSubs)
 	channelTrackerStarted := stats_tracker.Subscribe[stats_tracker.ChannelTrackerStarted](m, statsTrackerSubs)
 	channelTrackerStopped := stats_tracker.Subscribe[stats_tracker.ChannelTrackerStopped](m, statsTrackerSubs)
 	m.AppendVR("discord.events_subscription", func(ctx context.Context) {
@@ -138,6 +146,8 @@ func New(
 				return
 			case e := <-channelLanguageUpdate:
 				eventsPublisher.PublishChannelLanguageUpdated(ctx, e)
+			case e := <-channelTitleUpdates:
+				eventsPublisher.PublishChannelTitleUpdates(ctx, e)
 			case e := <-channelTrackerStarted:
 				eventsPublisher.PublishChannelTrackerStarted(ctx, e)
 			case e := <-channelTrackerStopped:

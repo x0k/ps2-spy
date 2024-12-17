@@ -57,10 +57,11 @@ WHERE
 
 -- name: ListPlatformTrackingChannelsForCharacter :many
 SELECT
-  channel.channel_id,
-  channel_locale.locale
+  *
 FROM
-  (
+  channel
+WHERE
+  channel.channel_id IN (
     SELECT
       channel_id
     FROM
@@ -76,19 +77,23 @@ FROM
     WHERE
       channel_to_outfit.platform = sqlc.arg (platform)
       AND outfit_id = sqlc.arg (outfit_id)
-  ) AS channel
-  LEFT JOIN channel_locale ON channel_locale.channel_id = channel.channel_id;
+  );
 
 -- name: ListPlatformTrackingChannelsForOutfit :many
 SELECT
-  channel_to_outfit.channel_id,
-  channel_locale.locale
+  *
 FROM
-  channel_to_outfit
-  LEFT JOIN channel_locale ON channel_locale.channel_id = channel_to_outfit.channel_id
+  channel
 WHERE
-  platform = ?
-  AND outfit_id = ?;
+  channel_id IN (
+    SELECT
+      channel_id
+    FROM
+      channel_to_outfit
+    WHERE
+      platform = ?
+      AND outfit_id = ?
+  );
 
 -- name: ListChannelOutfitIdsForPlatform :many
 SELECT
@@ -193,20 +198,59 @@ WHERE
   platform = ?
   AND outfit_id IN (sqlc.slice (outfit_ids));
 
--- name: UpsertChannelLocale :exec
+-- name: UpsertChannelLanguage :exec
 INSERT INTO
-  channel_locale (channel_id, locale)
+  channel (
+    channel_id,
+    locale
+  )
 VALUES
   (?, ?) ON CONFLICT (channel_id) DO
 UPDATE
 SET
   locale = EXCLUDED.locale;
 
--- name: GetChannelLocale :one
+-- name: UpsertChannelCharacterNotifications :exec
+INSERT INTO
+  channel (
+    channel_id,
+    character_notifications
+  )
+VALUES
+  (?, ?) ON CONFLICT (channel_id) DO
+UPDATE
+SET
+  character_notifications = EXCLUDED.character_notifications;
+
+-- name: UpsertChannelOutfitNotifications :exec
+INSERT INTO
+  channel (
+    channel_id,
+    outfit_notifications
+  )
+VALUES
+  (?, ?) ON CONFLICT (channel_id) DO
+UPDATE
+SET
+  outfit_notifications = EXCLUDED.outfit_notifications;
+
+-- name: UpsertChannelTitleUpdates :exec
+INSERT INTO
+  channel (
+    channel_id,
+    title_updates
+  )
+VALUES
+  (?, ?) ON CONFLICT (channel_id) DO
+UPDATE
+SET
+  title_updates = EXCLUDED.title_updates;
+
+-- name: GetChannel :one
 SELECT
-  locale
+  *
 FROM
-  channel_locale
+  channel
 WHERE
   channel_id = ?;
 

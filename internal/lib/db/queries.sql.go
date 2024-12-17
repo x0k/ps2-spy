@@ -7,7 +7,6 @@ package db
 
 import (
 	"context"
-	"database/sql"
 	"strings"
 	"time"
 )
@@ -69,20 +68,26 @@ func (q *Queries) DeleteOutfitMember(ctx context.Context, arg DeleteOutfitMember
 	return err
 }
 
-const getChannelLocale = `-- name: GetChannelLocale :one
+const getChannel = `-- name: GetChannel :one
 SELECT
-  locale
+  channel_id, locale, character_notifications, outfit_notifications, title_updates
 FROM
-  channel_locale
+  channel
 WHERE
   channel_id = ?
 `
 
-func (q *Queries) GetChannelLocale(ctx context.Context, channelID string) (string, error) {
-	row := q.queryRow(ctx, q.getChannelLocaleStmt, getChannelLocale, channelID)
-	var locale string
-	err := row.Scan(&locale)
-	return locale, err
+func (q *Queries) GetChannel(ctx context.Context, channelID string) (Channel, error) {
+	row := q.queryRow(ctx, q.getChannelStmt, getChannel, channelID)
+	var i Channel
+	err := row.Scan(
+		&i.ChannelID,
+		&i.Locale,
+		&i.CharacterNotifications,
+		&i.OutfitNotifications,
+		&i.TitleUpdates,
+	)
+	return i, err
 }
 
 const getFacility = `-- name: GetFacility :one
@@ -471,10 +476,11 @@ func (q *Queries) ListPlatformOutfits(ctx context.Context, arg ListPlatformOutfi
 
 const listPlatformTrackingChannelsForCharacter = `-- name: ListPlatformTrackingChannelsForCharacter :many
 SELECT
-  channel.channel_id,
-  channel_locale.locale
+  channel_id, locale, character_notifications, outfit_notifications, title_updates
 FROM
-  (
+  channel
+WHERE
+  channel.channel_id IN (
     SELECT
       channel_id
     FROM
@@ -490,8 +496,7 @@ FROM
     WHERE
       channel_to_outfit.platform = ?1
       AND outfit_id = ?3
-  ) AS channel
-  LEFT JOIN channel_locale ON channel_locale.channel_id = channel.channel_id
+  )
 `
 
 type ListPlatformTrackingChannelsForCharacterParams struct {
@@ -500,21 +505,22 @@ type ListPlatformTrackingChannelsForCharacterParams struct {
 	OutfitID    string
 }
 
-type ListPlatformTrackingChannelsForCharacterRow struct {
-	ChannelID string
-	Locale    sql.NullString
-}
-
-func (q *Queries) ListPlatformTrackingChannelsForCharacter(ctx context.Context, arg ListPlatformTrackingChannelsForCharacterParams) ([]ListPlatformTrackingChannelsForCharacterRow, error) {
+func (q *Queries) ListPlatformTrackingChannelsForCharacter(ctx context.Context, arg ListPlatformTrackingChannelsForCharacterParams) ([]Channel, error) {
 	rows, err := q.query(ctx, q.listPlatformTrackingChannelsForCharacterStmt, listPlatformTrackingChannelsForCharacter, arg.Platform, arg.CharacterID, arg.OutfitID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ListPlatformTrackingChannelsForCharacterRow
+	var items []Channel
 	for rows.Next() {
-		var i ListPlatformTrackingChannelsForCharacterRow
-		if err := rows.Scan(&i.ChannelID, &i.Locale); err != nil {
+		var i Channel
+		if err := rows.Scan(
+			&i.ChannelID,
+			&i.Locale,
+			&i.CharacterNotifications,
+			&i.OutfitNotifications,
+			&i.TitleUpdates,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -530,14 +536,19 @@ func (q *Queries) ListPlatformTrackingChannelsForCharacter(ctx context.Context, 
 
 const listPlatformTrackingChannelsForOutfit = `-- name: ListPlatformTrackingChannelsForOutfit :many
 SELECT
-  channel_to_outfit.channel_id,
-  channel_locale.locale
+  channel_id, locale, character_notifications, outfit_notifications, title_updates
 FROM
-  channel_to_outfit
-  LEFT JOIN channel_locale ON channel_locale.channel_id = channel_to_outfit.channel_id
+  channel
 WHERE
-  platform = ?
-  AND outfit_id = ?
+  channel_id IN (
+    SELECT
+      channel_id
+    FROM
+      channel_to_outfit
+    WHERE
+      platform = ?
+      AND outfit_id = ?
+  )
 `
 
 type ListPlatformTrackingChannelsForOutfitParams struct {
@@ -545,21 +556,22 @@ type ListPlatformTrackingChannelsForOutfitParams struct {
 	OutfitID string
 }
 
-type ListPlatformTrackingChannelsForOutfitRow struct {
-	ChannelID string
-	Locale    sql.NullString
-}
-
-func (q *Queries) ListPlatformTrackingChannelsForOutfit(ctx context.Context, arg ListPlatformTrackingChannelsForOutfitParams) ([]ListPlatformTrackingChannelsForOutfitRow, error) {
+func (q *Queries) ListPlatformTrackingChannelsForOutfit(ctx context.Context, arg ListPlatformTrackingChannelsForOutfitParams) ([]Channel, error) {
 	rows, err := q.query(ctx, q.listPlatformTrackingChannelsForOutfitStmt, listPlatformTrackingChannelsForOutfit, arg.Platform, arg.OutfitID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ListPlatformTrackingChannelsForOutfitRow
+	var items []Channel
 	for rows.Next() {
-		var i ListPlatformTrackingChannelsForOutfitRow
-		if err := rows.Scan(&i.ChannelID, &i.Locale); err != nil {
+		var i Channel
+		if err := rows.Scan(
+			&i.ChannelID,
+			&i.Locale,
+			&i.CharacterNotifications,
+			&i.OutfitNotifications,
+			&i.TitleUpdates,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -678,9 +690,35 @@ func (q *Queries) ListUniqueTrackableOutfitIdsForPlatform(ctx context.Context, p
 	return items, nil
 }
 
-const upsertChannelLocale = `-- name: UpsertChannelLocale :exec
+const upsertChannelCharacterNotifications = `-- name: UpsertChannelCharacterNotifications :exec
 INSERT INTO
-  channel_locale (channel_id, locale)
+  channel (
+    channel_id,
+    character_notifications
+  )
+VALUES
+  (?, ?) ON CONFLICT (channel_id) DO
+UPDATE
+SET
+  character_notifications = EXCLUDED.character_notifications
+`
+
+type UpsertChannelCharacterNotificationsParams struct {
+	ChannelID              string
+	CharacterNotifications bool
+}
+
+func (q *Queries) UpsertChannelCharacterNotifications(ctx context.Context, arg UpsertChannelCharacterNotificationsParams) error {
+	_, err := q.exec(ctx, q.upsertChannelCharacterNotificationsStmt, upsertChannelCharacterNotifications, arg.ChannelID, arg.CharacterNotifications)
+	return err
+}
+
+const upsertChannelLanguage = `-- name: UpsertChannelLanguage :exec
+INSERT INTO
+  channel (
+    channel_id,
+    locale
+  )
 VALUES
   (?, ?) ON CONFLICT (channel_id) DO
 UPDATE
@@ -688,13 +726,59 @@ SET
   locale = EXCLUDED.locale
 `
 
-type UpsertChannelLocaleParams struct {
+type UpsertChannelLanguageParams struct {
 	ChannelID string
 	Locale    string
 }
 
-func (q *Queries) UpsertChannelLocale(ctx context.Context, arg UpsertChannelLocaleParams) error {
-	_, err := q.exec(ctx, q.upsertChannelLocaleStmt, upsertChannelLocale, arg.ChannelID, arg.Locale)
+func (q *Queries) UpsertChannelLanguage(ctx context.Context, arg UpsertChannelLanguageParams) error {
+	_, err := q.exec(ctx, q.upsertChannelLanguageStmt, upsertChannelLanguage, arg.ChannelID, arg.Locale)
+	return err
+}
+
+const upsertChannelOutfitNotifications = `-- name: UpsertChannelOutfitNotifications :exec
+INSERT INTO
+  channel (
+    channel_id,
+    outfit_notifications
+  )
+VALUES
+  (?, ?) ON CONFLICT (channel_id) DO
+UPDATE
+SET
+  outfit_notifications = EXCLUDED.outfit_notifications
+`
+
+type UpsertChannelOutfitNotificationsParams struct {
+	ChannelID           string
+	OutfitNotifications bool
+}
+
+func (q *Queries) UpsertChannelOutfitNotifications(ctx context.Context, arg UpsertChannelOutfitNotificationsParams) error {
+	_, err := q.exec(ctx, q.upsertChannelOutfitNotificationsStmt, upsertChannelOutfitNotifications, arg.ChannelID, arg.OutfitNotifications)
+	return err
+}
+
+const upsertChannelTitleUpdates = `-- name: UpsertChannelTitleUpdates :exec
+INSERT INTO
+  channel (
+    channel_id,
+    title_updates
+  )
+VALUES
+  (?, ?) ON CONFLICT (channel_id) DO
+UPDATE
+SET
+  title_updates = EXCLUDED.title_updates
+`
+
+type UpsertChannelTitleUpdatesParams struct {
+	ChannelID    string
+	TitleUpdates bool
+}
+
+func (q *Queries) UpsertChannelTitleUpdates(ctx context.Context, arg UpsertChannelTitleUpdatesParams) error {
+	_, err := q.exec(ctx, q.upsertChannelTitleUpdatesStmt, upsertChannelTitleUpdates, arg.ChannelID, arg.TitleUpdates)
 	return err
 }
 
