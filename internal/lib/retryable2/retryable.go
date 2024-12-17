@@ -8,17 +8,25 @@ func New(
 	f func(ctx context.Context) error,
 	options ...any,
 ) func(ctx context.Context) error {
-	conditions := make([]func(error) bool, 0, len(options))
-	actions := make([]func(context.Context, error), 0, len(options))
+	conditionFactories := make([]func(ctx context.Context) func(error) bool, 0, len(options))
+	actionFactories := make([]func(ctx context.Context) func(context.Context, error), 0, len(options))
 	for _, option := range options {
 		switch v := option.(type) {
-		case func(error) bool:
-			conditions = append(conditions, v)
-		case func(context.Context, error):
-			actions = append(actions, v)
+		case func(context.Context) func(error) bool:
+			conditionFactories = append(conditionFactories, v)
+		case func(context.Context) func(context.Context, error):
+			actionFactories = append(actionFactories, v)
 		}
 	}
 	return func(ctx context.Context) error {
+		conditions := make([]func(error) bool, 0, len(conditionFactories))
+		for _, factory := range conditionFactories {
+			conditions = append(conditions, factory(ctx))
+		}
+		actions := make([]func(context.Context, error), 0, len(actionFactories))
+		for _, factory := range actionFactories {
+			actions = append(actions, factory(ctx))
+		}
 		for {
 			err := f(ctx)
 			for _, condition := range conditions {
@@ -49,25 +57,37 @@ func NewWithReturn[R any](
 	opts := make([]any, 0, len(options))
 	for _, option := range options {
 		switch v := option.(type) {
-		case func(error) bool:
-			opts = append(opts, func(err error) bool {
-				rErr := err.(rError[R])
-				return v(rErr.err)
+		case func(context.Context) func(error) bool:
+			opts = append(opts, func(ctx context.Context) func(err error) bool {
+				c := v(ctx)
+				return func(err error) bool {
+					rErr := err.(rError[R])
+					return c(rErr.err)
+				}
 			})
-		case func(R, error) bool:
-			opts = append(opts, func(err error) bool {
-				rErr := err.(rError[R])
-				return v(rErr.res, rErr.err)
+		case func(context.Context) func(R, error) bool:
+			opts = append(opts, func(ctx context.Context) func(err error) bool {
+				c := v(ctx)
+				return func(err error) bool {
+					rErr := err.(rError[R])
+					return c(rErr.res, rErr.err)
+				}
 			})
-		case func(context.Context, error):
-			opts = append(opts, func(ctx context.Context, err error) {
-				rErr := err.(rError[R])
-				v(ctx, rErr.err)
+		case func(context.Context) func(context.Context, error):
+			opts = append(opts, func(ctx context.Context) func(ctx context.Context, err error) {
+				c := v(ctx)
+				return func(ctx context.Context, err error) {
+					rErr := err.(rError[R])
+					c(ctx, rErr.err)
+				}
 			})
-		case func(context.Context, R, error):
-			opts = append(opts, func(ctx context.Context, err error) {
-				rErr := err.(rError[R])
-				v(ctx, rErr.res, rErr.err)
+		case func(context.Context) func(context.Context, R, error):
+			opts = append(opts, func(ctx context.Context) func(ctx context.Context, err error) {
+				c := v(ctx)
+				return func(ctx context.Context, err error) {
+					rErr := err.(rError[R])
+					c(ctx, rErr.res, rErr.err)
+				}
 			})
 		}
 	}

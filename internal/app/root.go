@@ -86,15 +86,18 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	m.PreStartR("storage", storage.Open)
 	m.PostStopR("storage", storage.Close)
 
+	httpRoundTripper := httpx.NewRetryRoundTripper(
+		log.Logger.With(sl.Component("http_client")),
+		cfg.HttpClient.Timeout,
+		http.DefaultTransport,
+	)
+	m.AppendVR("http_round_tripper", httpRoundTripper.Start)
 	httpClient := &http.Client{
-		Timeout: cfg.HttpClient.Timeout,
+		Timeout: 0,
 		Transport: metrics.InstrumentTransport(
 			mt,
 			metrics.DefaultTransportName,
-			httpx.NewRetryRoundTripper(
-				log.Logger.With(sl.Component("http_client")),
-				http.DefaultTransport,
-			),
+			httpRoundTripper,
 		),
 	}
 
