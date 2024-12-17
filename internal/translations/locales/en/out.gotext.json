@@ -2,6 +2,69 @@
     "language": "en",
     "messages": [
         {
+            "id": "Language",
+            "message": "Language",
+            "translation": "Language",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Language: english",
+            "message": "Language: english",
+            "translation": "Language: english",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Language: russian",
+            "message": "Language: russian",
+            "translation": "Language: russian",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Character notifications: on",
+            "message": "Character notifications: on",
+            "translation": "Character notifications: on",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Character notifications: off",
+            "message": "Character notifications: off",
+            "translation": "Character notifications: off",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Outfit notifications: on",
+            "message": "Outfit notifications: on",
+            "translation": "Outfit notifications: on",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Outfit notifications: off",
+            "message": "Outfit notifications: off",
+            "translation": "Outfit notifications: off",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Title updates: on",
+            "message": "Title updates: on",
+            "translation": "Title updates: on",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Title updates: off",
+            "message": "Title updates: off",
+            "translation": "Title updates: off",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
             "id": "INF",
             "message": "INF",
             "translation": "INF",
@@ -970,6 +1033,47 @@
             "fuzzy": true
         },
         {
+            "id": "Failed to load {ChannelId} channel",
+            "message": "Failed to load {ChannelId} channel",
+            "translation": "Failed to load {ChannelId} channel",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "ChannelId",
+                    "string": "%[1]s",
+                    "type": "github.com/x0k/ps2-spy/internal/discord.ChannelId",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "channelId"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "Failed to extract field value",
+            "message": "Failed to extract field value",
+            "translation": "Failed to extract field value",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Failed to save language for {ChannelId} channel",
+            "message": "Failed to save language for {ChannelId} channel",
+            "translation": "Failed to save language for {ChannelId} channel",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "ChannelId",
+                    "string": "%[1]s",
+                    "type": "github.com/x0k/ps2-spy/internal/discord.ChannelId",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "channelId"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
             "id": "Tracking Settings (PC)",
             "message": "Tracking Settings (PC)",
             "translation": "Tracking Settings (PC)",
@@ -1029,23 +1133,6 @@
                     "string": "%[1]q",
                     "type": "string",
                     "underlyingType": "string",
-                    "argNum": 1,
-                    "expr": "lang"
-                }
-            ],
-            "fuzzy": true
-        },
-        {
-            "id": "Failed to save language {Lang}",
-            "message": "Failed to save language {Lang}",
-            "translation": "Failed to save language {Lang}",
-            "translatorComment": "Copied from source.",
-            "placeholders": [
-                {
-                    "id": "Lang",
-                    "string": "%[1]q",
-                    "type": "golang.org/x/text/language.Tag",
-                    "underlyingType": "struct{language golang.org/x/text/internal/language/compact.ID; locale golang.org/x/text/internal/language/compact.ID; full golang.org/x/text/internal/language/compact.fullTag}",
                     "argNum": 1,
                     "expr": "lang"
                 }
