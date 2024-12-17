@@ -430,46 +430,63 @@ func (s *Storage) Channel(
 	return discord.Channel{}, err
 }
 
-func (s *Storage) SaveChannel(
+func (s *Storage) SaveChannelLanguage(
 	ctx context.Context,
-	channel discord.Channel,
+	channelId discord.ChannelId,
+	locale language.Tag,
 ) error {
-	tx, err := s.db.Begin()
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if err := tx.Rollback(); err != nil && !errors.Is(err, sql.ErrTxDone) {
-			s.log.Error(ctx, "failed to rollback transaction", sl.Err(err))
-		}
-	}()
-	q := s.queries.WithTx(tx)
-	oldChannelDTO, err := q.GetChannel(ctx, string(channel.Id))
-	isNoRows := errors.Is(err, sql.ErrNoRows)
-	if err != nil && !isNoRows {
-		return err
-	}
-	if err := q.UpsertChannel(ctx, db.UpsertChannelParams{
-		ChannelID:              string(channel.Id),
-		Locale:                 channel.Locale.String(),
-		CharacterNotifications: channel.CharacterNotifications,
-		OutfitNotifications:    channel.OutfitNotifications,
-		TitleUpdates:           channel.TitleUpdates,
-	}); err != nil {
-		return err
-	}
-	if err := tx.Commit(); err != nil {
-		return err
-	}
-	var oldChannel discord.Channel
-	if isNoRows {
-		oldChannel = discord.NewDefaultChannel(channel.Id)
-	} else {
-		oldChannel = s.dtoToChannel(ctx, oldChannelDTO)
-	}
-	return s.publish(err, storage.ChannelSaved{
-		OldChannel: oldChannel,
-		NewChannel: channel,
+	err := s.queries.UpsertChannelLanguage(ctx, db.UpsertChannelLanguageParams{
+		ChannelID: string(channelId),
+		Locale:    locale.String(),
+	})
+	return s.publish(err, storage.ChannelLanguageSaved{
+		ChannelId: channelId,
+		Language:  locale,
+	})
+}
+
+func (s *Storage) SaveChannelCharacterNotifications(
+	ctx context.Context,
+	channelId discord.ChannelId,
+	enabled bool,
+) error {
+	err := s.queries.UpsertChannelCharacterNotifications(ctx, db.UpsertChannelCharacterNotificationsParams{
+		ChannelID:              string(channelId),
+		CharacterNotifications: enabled,
+	})
+	return s.publish(err, storage.ChannelCharacterNotificationsSaved{
+		ChannelId: channelId,
+		Enabled:   enabled,
+	})
+}
+
+func (s *Storage) SaveChannelOutfitNotifications(
+	ctx context.Context,
+	channelId discord.ChannelId,
+	enabled bool,
+) error {
+	err := s.queries.UpsertChannelOutfitNotifications(ctx, db.UpsertChannelOutfitNotificationsParams{
+		ChannelID:           string(channelId),
+		OutfitNotifications: enabled,
+	})
+	return s.publish(err, storage.ChannelOutfitNotificationsSaved{
+		ChannelId: channelId,
+		Enabled:   enabled,
+	})
+}
+
+func (s *Storage) SaveChannelTitleUpdates(
+	ctx context.Context,
+	channelId discord.ChannelId,
+	enabled bool,
+) error {
+	err := s.queries.UpsertChannelTitleUpdates(ctx, db.UpsertChannelTitleUpdatesParams{
+		ChannelID:    string(channelId),
+		TitleUpdates: enabled,
+	})
+	return s.publish(err, storage.ChannelTitleUpdatesSaved{
+		ChannelId: channelId,
+		Enabled:   enabled,
 	})
 }
 

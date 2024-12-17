@@ -14,14 +14,17 @@ type EventType string
 type Event = pubsub.Event[EventType]
 
 const (
-	PlayerLoginType            = EventType(characters_tracker.PlayerLoginType)
-	PlayerLogoutType           = EventType(characters_tracker.PlayerLogoutType)
-	OutfitMembersUpdateType    = EventType(storage.OutfitMembersUpdateType)
-	FacilityControlType        = EventType(worlds_tracker.FacilityControlType)
-	FacilityLossType           = EventType(worlds_tracker.FacilityLossType)
-	ChannelLanguageUpdatedType = EventType(storage.ChannelSavedType)
-	ChannelTrackerStartedType  = EventType(stats_tracker.ChannelTrackerStartedType)
-	ChannelTrackerStoppedType  = EventType(stats_tracker.ChannelTrackerStoppedType)
+	PlayerLoginType                        = EventType(characters_tracker.PlayerLoginType)
+	PlayerLogoutType                       = EventType(characters_tracker.PlayerLogoutType)
+	OutfitMembersUpdateType                = EventType(storage.OutfitMembersUpdateType)
+	FacilityControlType                    = EventType(worlds_tracker.FacilityControlType)
+	FacilityLossType                       = EventType(worlds_tracker.FacilityLossType)
+	ChannelLanguageUpdatedType             = EventType(storage.ChannelLanguageSavedType)
+	ChannelCharacterNotificationsSavedType = EventType(storage.ChannelCharacterNotificationsSavedType)
+	ChannelOutfitNotificationsSavedType    = EventType(storage.ChannelOutfitNotificationsSavedType)
+	ChannelTitleUpdatesSavedType           = EventType(storage.ChannelTitleUpdatesSavedType)
+	ChannelTrackerStartedType              = EventType(stats_tracker.ChannelTrackerStartedType)
+	ChannelTrackerStoppedType              = EventType(stats_tracker.ChannelTrackerStoppedType)
 )
 
 type adoptedEvent[T pubsub.EventType, E pubsub.Event[T]] struct {
@@ -50,7 +53,8 @@ func (e channelEvent[T, Event]) Type() EventType {
 	return EventType(e.Event.Type())
 }
 
-type ChannelSaved = adoptedEvent[storage.EventType, storage.ChannelSaved]
+type ChannelLanguageSaved = channelEvent[storage.EventType, storage.ChannelLanguageSaved]
+type ChannelTitleUpdatesSaved = channelEvent[storage.EventType, storage.ChannelTitleUpdatesSaved]
 
 type ChannelTrackerStarted = channelEvent[stats_tracker.EventType, stats_tracker.ChannelTrackerStarted]
 type ChannelTrackerStopped = channelEvent[stats_tracker.EventType, stats_tracker.ChannelTrackerStopped]

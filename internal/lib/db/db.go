@@ -90,8 +90,17 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.listUniqueTrackableOutfitIdsForPlatformStmt, err = db.PrepareContext(ctx, listUniqueTrackableOutfitIdsForPlatform); err != nil {
 		return nil, fmt.Errorf("error preparing query ListUniqueTrackableOutfitIdsForPlatform: %w", err)
 	}
-	if q.upsertChannelStmt, err = db.PrepareContext(ctx, upsertChannel); err != nil {
-		return nil, fmt.Errorf("error preparing query UpsertChannel: %w", err)
+	if q.upsertChannelCharacterNotificationsStmt, err = db.PrepareContext(ctx, upsertChannelCharacterNotifications); err != nil {
+		return nil, fmt.Errorf("error preparing query UpsertChannelCharacterNotifications: %w", err)
+	}
+	if q.upsertChannelLanguageStmt, err = db.PrepareContext(ctx, upsertChannelLanguage); err != nil {
+		return nil, fmt.Errorf("error preparing query UpsertChannelLanguage: %w", err)
+	}
+	if q.upsertChannelOutfitNotificationsStmt, err = db.PrepareContext(ctx, upsertChannelOutfitNotifications); err != nil {
+		return nil, fmt.Errorf("error preparing query UpsertChannelOutfitNotifications: %w", err)
+	}
+	if q.upsertChannelTitleUpdatesStmt, err = db.PrepareContext(ctx, upsertChannelTitleUpdates); err != nil {
+		return nil, fmt.Errorf("error preparing query UpsertChannelTitleUpdates: %w", err)
 	}
 	if q.upsertPlatformOutfitSynchronizedAtStmt, err = db.PrepareContext(ctx, upsertPlatformOutfitSynchronizedAt); err != nil {
 		return nil, fmt.Errorf("error preparing query UpsertPlatformOutfitSynchronizedAt: %w", err)
@@ -211,9 +220,24 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing listUniqueTrackableOutfitIdsForPlatformStmt: %w", cerr)
 		}
 	}
-	if q.upsertChannelStmt != nil {
-		if cerr := q.upsertChannelStmt.Close(); cerr != nil {
-			err = fmt.Errorf("error closing upsertChannelStmt: %w", cerr)
+	if q.upsertChannelCharacterNotificationsStmt != nil {
+		if cerr := q.upsertChannelCharacterNotificationsStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing upsertChannelCharacterNotificationsStmt: %w", cerr)
+		}
+	}
+	if q.upsertChannelLanguageStmt != nil {
+		if cerr := q.upsertChannelLanguageStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing upsertChannelLanguageStmt: %w", cerr)
+		}
+	}
+	if q.upsertChannelOutfitNotificationsStmt != nil {
+		if cerr := q.upsertChannelOutfitNotificationsStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing upsertChannelOutfitNotificationsStmt: %w", cerr)
+		}
+	}
+	if q.upsertChannelTitleUpdatesStmt != nil {
+		if cerr := q.upsertChannelTitleUpdatesStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing upsertChannelTitleUpdatesStmt: %w", cerr)
 		}
 	}
 	if q.upsertPlatformOutfitSynchronizedAtStmt != nil {
@@ -282,7 +306,10 @@ type Queries struct {
 	listTrackableCharacterIdsWithDuplicationForPlatformStmt *sql.Stmt
 	listTrackableOutfitIdsWithDuplicationForPlatformStmt    *sql.Stmt
 	listUniqueTrackableOutfitIdsForPlatformStmt             *sql.Stmt
-	upsertChannelStmt                                       *sql.Stmt
+	upsertChannelCharacterNotificationsStmt                 *sql.Stmt
+	upsertChannelLanguageStmt                               *sql.Stmt
+	upsertChannelOutfitNotificationsStmt                    *sql.Stmt
+	upsertChannelTitleUpdatesStmt                           *sql.Stmt
 	upsertPlatformOutfitSynchronizedAtStmt                  *sql.Stmt
 }
 
@@ -312,7 +339,10 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		listTrackableCharacterIdsWithDuplicationForPlatformStmt: q.listTrackableCharacterIdsWithDuplicationForPlatformStmt,
 		listTrackableOutfitIdsWithDuplicationForPlatformStmt:    q.listTrackableOutfitIdsWithDuplicationForPlatformStmt,
 		listUniqueTrackableOutfitIdsForPlatformStmt:             q.listUniqueTrackableOutfitIdsForPlatformStmt,
-		upsertChannelStmt:                      q.upsertChannelStmt,
-		upsertPlatformOutfitSynchronizedAtStmt: q.upsertPlatformOutfitSynchronizedAtStmt,
+		upsertChannelCharacterNotificationsStmt:                 q.upsertChannelCharacterNotificationsStmt,
+		upsertChannelLanguageStmt:                               q.upsertChannelLanguageStmt,
+		upsertChannelOutfitNotificationsStmt:                    q.upsertChannelOutfitNotificationsStmt,
+		upsertChannelTitleUpdatesStmt:                           q.upsertChannelTitleUpdatesStmt,
+		upsertPlatformOutfitSynchronizedAtStmt:                  q.upsertPlatformOutfitSynchronizedAtStmt,
 	}
 }

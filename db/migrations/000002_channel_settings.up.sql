@@ -1,7 +1,13 @@
-ALTER TABLE channel_locale RENAME TO channel;
+CREATE TABLE
+  channel (
+    channel_id TEXT PRIMARY KEY NOT NULL,
+    locale TEXT NOT NULL DEFAULT 'en',
+    character_notifications BOOLEAN NOT NULL DEFAULT TRUE,
+    outfit_notifications BOOLEAN NOT NULL DEFAULT TRUE,
+    title_updates BOOLEAN NOT NULL DEFAULT TRUE
+  );
 
-ALTER TABLE channel ADD COLUMN character_notifications BOOLEAN NOT NULL DEFAULT TRUE;
+INSERT INTO channel (channel_id, locale)
+SELECT channel_id, locale FROM channel_locale;
 
-ALTER TABLE channel ADD COLUMN outfit_notifications BOOLEAN NOT NULL DEFAULT TRUE;
-
-ALTER TABLE channel ADD COLUMN title_updates BOOLEAN NOT NULL DEFAULT TRUE;
+DROP TABLE channel_locale;

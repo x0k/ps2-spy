@@ -42,9 +42,18 @@ func (p *EventsPublisher) Start(ctx context.Context) {
 
 func (p *EventsPublisher) PublishChannelLanguageUpdated(
 	ctx context.Context,
-	event storage.ChannelSaved,
+	event storage.ChannelLanguageSaved,
 ) {
-	p.publish(ctx, ChannelSaved{Event: event})
+	p.wg.Add(1)
+	go publishChannelEventTask(ctx, p, event.ChannelId, event)
+}
+
+func (p *EventsPublisher) PublishChannelTitleUpdates(
+	ctx context.Context,
+	event storage.ChannelTitleUpdatesSaved,
+) {
+	p.wg.Add(1)
+	go publishChannelEventTask(ctx, p, event.ChannelId, event)
 }
 
 func (p *EventsPublisher) PublishChannelTrackerStarted(

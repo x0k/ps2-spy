@@ -198,22 +198,52 @@ WHERE
   platform = ?
   AND outfit_id IN (sqlc.slice (outfit_ids));
 
--- name: UpsertChannel :exec
+-- name: UpsertChannelLanguage :exec
 INSERT INTO
   channel (
     channel_id,
-    locale,
-    character_notifications,
-    outfit_notifications,
+    locale
+  )
+VALUES
+  (?, ?) ON CONFLICT (channel_id) DO
+UPDATE
+SET
+  locale = EXCLUDED.locale;
+
+-- name: UpsertChannelCharacterNotifications :exec
+INSERT INTO
+  channel (
+    channel_id,
+    character_notifications
+  )
+VALUES
+  (?, ?) ON CONFLICT (channel_id) DO
+UPDATE
+SET
+  character_notifications = EXCLUDED.character_notifications;
+
+-- name: UpsertChannelOutfitNotifications :exec
+INSERT INTO
+  channel (
+    channel_id,
+    outfit_notifications
+  )
+VALUES
+  (?, ?) ON CONFLICT (channel_id) DO
+UPDATE
+SET
+  outfit_notifications = EXCLUDED.outfit_notifications;
+
+-- name: UpsertChannelTitleUpdates :exec
+INSERT INTO
+  channel (
+    channel_id,
     title_updates
   )
 VALUES
-  (?, ?, ?, ?, ?) ON CONFLICT (channel_id) DO
+  (?, ?) ON CONFLICT (channel_id) DO
 UPDATE
 SET
-  locale = EXCLUDED.locale,
-  character_notifications = EXCLUDED.character_notifications,
-  outfit_notifications = EXCLUDED.outfit_notifications,
   title_updates = EXCLUDED.title_updates;
 
 -- name: GetChannel :one

@@ -61,9 +61,7 @@ func (storage *Storage) SaveTrackingSettings(
 			}
 			// Probably this is first settings update
 			if len(old.Characters) == 0 && len(old.Outfits) == 0 {
-				channel := discord.NewDefaultChannel(channelId)
-				channel.Locale = lang
-				if err := tx.SaveChannel(ctx, channel); err != nil {
+				if err := tx.SaveChannelLanguage(ctx, channelId, lang); err != nil {
 					return err
 				}
 			}

@@ -135,7 +135,8 @@ func New(
 		channelLoader,
 	)
 	m.AppendVR("discord.events_publisher", eventsPublisher.Start)
-	channelLanguageUpdate := storage.Subscribe[storage.ChannelSaved](m, storageSubs)
+	channelLanguageUpdate := storage.Subscribe[storage.ChannelLanguageSaved](m, storageSubs)
+	channelTitleUpdates := storage.Subscribe[storage.ChannelTitleUpdatesSaved](m, storageSubs)
 	channelTrackerStarted := stats_tracker.Subscribe[stats_tracker.ChannelTrackerStarted](m, statsTrackerSubs)
 	channelTrackerStopped := stats_tracker.Subscribe[stats_tracker.ChannelTrackerStopped](m, statsTrackerSubs)
 	m.AppendVR("discord.events_subscription", func(ctx context.Context) {
@@ -145,6 +146,8 @@ func New(
 				return
 			case e := <-channelLanguageUpdate:
 				eventsPublisher.PublishChannelLanguageUpdated(ctx, e)
+			case e := <-channelTitleUpdates:
+				eventsPublisher.PublishChannelTitleUpdates(ctx, e)
 			case e := <-channelTrackerStarted:
 				eventsPublisher.PublishChannelTrackerStarted(ctx, e)
 			case e := <-channelTrackerStopped:

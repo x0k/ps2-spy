@@ -9,7 +9,7 @@ import (
 	discord_messages "github.com/x0k/ps2-spy/internal/discord/messages"
 )
 
-func NewChannelSaved(
+func NewChannelTitleUpdatesSaved(
 	m *HandlersManager,
 	messages *discord_messages.Messages,
 	onlineTrackableEntitiesCountLoader OnlineTrackableEntitiesCountLoader,
@@ -18,17 +18,14 @@ func NewChannelSaved(
 	return newHandler(m, func(
 		ctx context.Context,
 		session *discordgo.Session,
-		e discord_events.ChannelSaved,
+		e discord_events.ChannelTitleUpdatesSaved,
 	) error {
-		if e.Event.OldChannel.TitleUpdates == e.Event.NewChannel.TitleUpdates {
-			return nil
-		}
 		updateOnlineCountInTitle(
 			ctx,
-			m.log.With(slog.String("channel_id", string(e.Event.NewChannel.Id))),
+			m.log.With(slog.String("channel_id", string(e.Channel.Id))),
 			session,
 			messages,
-			e.Event.NewChannel,
+			e.Channel,
 			onlineTrackableEntitiesCountLoader,
 			channelTitleUpdater,
 		)

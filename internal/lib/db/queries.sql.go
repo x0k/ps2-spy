@@ -690,41 +690,95 @@ func (q *Queries) ListUniqueTrackableOutfitIdsForPlatform(ctx context.Context, p
 	return items, nil
 }
 
-const upsertChannel = `-- name: UpsertChannel :exec
+const upsertChannelCharacterNotifications = `-- name: UpsertChannelCharacterNotifications :exec
 INSERT INTO
   channel (
     channel_id,
-    locale,
-    character_notifications,
-    outfit_notifications,
+    character_notifications
+  )
+VALUES
+  (?, ?) ON CONFLICT (channel_id) DO
+UPDATE
+SET
+  character_notifications = EXCLUDED.character_notifications
+`
+
+type UpsertChannelCharacterNotificationsParams struct {
+	ChannelID              string
+	CharacterNotifications bool
+}
+
+func (q *Queries) UpsertChannelCharacterNotifications(ctx context.Context, arg UpsertChannelCharacterNotificationsParams) error {
+	_, err := q.exec(ctx, q.upsertChannelCharacterNotificationsStmt, upsertChannelCharacterNotifications, arg.ChannelID, arg.CharacterNotifications)
+	return err
+}
+
+const upsertChannelLanguage = `-- name: UpsertChannelLanguage :exec
+INSERT INTO
+  channel (
+    channel_id,
+    locale
+  )
+VALUES
+  (?, ?) ON CONFLICT (channel_id) DO
+UPDATE
+SET
+  locale = EXCLUDED.locale
+`
+
+type UpsertChannelLanguageParams struct {
+	ChannelID string
+	Locale    string
+}
+
+func (q *Queries) UpsertChannelLanguage(ctx context.Context, arg UpsertChannelLanguageParams) error {
+	_, err := q.exec(ctx, q.upsertChannelLanguageStmt, upsertChannelLanguage, arg.ChannelID, arg.Locale)
+	return err
+}
+
+const upsertChannelOutfitNotifications = `-- name: UpsertChannelOutfitNotifications :exec
+INSERT INTO
+  channel (
+    channel_id,
+    outfit_notifications
+  )
+VALUES
+  (?, ?) ON CONFLICT (channel_id) DO
+UPDATE
+SET
+  outfit_notifications = EXCLUDED.outfit_notifications
+`
+
+type UpsertChannelOutfitNotificationsParams struct {
+	ChannelID           string
+	OutfitNotifications bool
+}
+
+func (q *Queries) UpsertChannelOutfitNotifications(ctx context.Context, arg UpsertChannelOutfitNotificationsParams) error {
+	_, err := q.exec(ctx, q.upsertChannelOutfitNotificationsStmt, upsertChannelOutfitNotifications, arg.ChannelID, arg.OutfitNotifications)
+	return err
+}
+
+const upsertChannelTitleUpdates = `-- name: UpsertChannelTitleUpdates :exec
+INSERT INTO
+  channel (
+    channel_id,
     title_updates
   )
 VALUES
-  (?, ?, ?, ?, ?) ON CONFLICT (channel_id) DO
+  (?, ?) ON CONFLICT (channel_id) DO
 UPDATE
 SET
-  locale = EXCLUDED.locale,
-  character_notifications = EXCLUDED.character_notifications,
-  outfit_notifications = EXCLUDED.outfit_notifications,
   title_updates = EXCLUDED.title_updates
 `
 
-type UpsertChannelParams struct {
-	ChannelID              string
-	Locale                 string
-	CharacterNotifications bool
-	OutfitNotifications    bool
-	TitleUpdates           bool
+type UpsertChannelTitleUpdatesParams struct {
+	ChannelID    string
+	TitleUpdates bool
 }
 
-func (q *Queries) UpsertChannel(ctx context.Context, arg UpsertChannelParams) error {
-	_, err := q.exec(ctx, q.upsertChannelStmt, upsertChannel,
-		arg.ChannelID,
-		arg.Locale,
-		arg.CharacterNotifications,
-		arg.OutfitNotifications,
-		arg.TitleUpdates,
-	)
+func (q *Queries) UpsertChannelTitleUpdates(ctx context.Context, arg UpsertChannelTitleUpdatesParams) error {
+	_, err := q.exec(ctx, q.upsertChannelTitleUpdatesStmt, upsertChannelTitleUpdates, arg.ChannelID, arg.TitleUpdates)
 	return err
 }
 
