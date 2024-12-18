@@ -14,12 +14,12 @@ func GetJson[T any](ctx context.Context, client *http.Client, url string) (T, er
 	req, err := http.NewRequest("GET", url, nil)
 	var v T
 	if err != nil {
-		return v, err
+		return v, fmt.Errorf("failed to create request: %w", err)
 	}
 	req = req.WithContext(ctx)
 	resp, err := client.Do(req)
 	if err != nil {
-		return v, err
+		return v, fmt.Errorf("failed to make request: %w", err)
 	}
 	defer resp.Body.Close()
 
@@ -29,6 +29,8 @@ func GetJson[T any](ctx context.Context, client *http.Client, url string) (T, er
 	}
 
 	decoder := json.NewDecoder(resp.Body)
-	err = decoder.Decode(&v)
-	return v, err
+	if err = decoder.Decode(&v); err != nil {
+		return v, fmt.Errorf("failed to decode response: %w", err)
+	}
+	return v, nil
 }

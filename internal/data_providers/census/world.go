@@ -2,6 +2,7 @@ package census_data_provider
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/x0k/ps2-spy/internal/lib/census2"
 	ps2_collections "github.com/x0k/ps2-spy/internal/lib/census2/collections/ps2"
@@ -26,7 +27,7 @@ func (l *DataProvider) WorldMap(ctx context.Context, ns string, worldId ps2.Worl
 		url,
 	)
 	if err != nil {
-		return ps2.WorldMap{}, err
+		return ps2.WorldMap{}, fmt.Errorf("failed to get world map %q: %w", string(worldId), err)
 	}
 	zones := make(map[ps2.ZoneId]ps2.ZoneMap, len(zonesData))
 	for _, zoneData := range zonesData {

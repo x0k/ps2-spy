@@ -95,11 +95,12 @@ func (l *DataProvider) characters(ctx context.Context, ns string, charIds []ps2.
 		strCharIds[i] = census2.Str(charId)
 	}
 	url := l.charactersUrl(ns, strCharIds)
-	return l.retryableCharactersLoader.Run(
+	return l.retryableCharactersLoader(
 		ctx,
 		url,
 		while.ErrorIsHere,
-		while.RetryCountIsLessThan(3),
+		while.HasAttempts(3),
+		while.ContextIsNotCancelled,
 		perform.Log(
 			l.log.Logger,
 			slog.LevelDebug,

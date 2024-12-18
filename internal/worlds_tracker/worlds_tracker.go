@@ -79,7 +79,7 @@ func (z zoneState) update(
 
 type WorldsTracker struct {
 	log                     *logger.Logger
-	retryableWorldMapLoader *retryable.WithArg[ps2.WorldId, ps2.WorldMap]
+	retryableWorldMapLoader func(context.Context, ps2.WorldId, ...any) (ps2.WorldMap, error)
 	worldIds                []ps2.WorldId
 	mutex                   sync.RWMutex
 	worlds                  map[ps2.WorldId]map[ps2.ZoneId]zoneState
@@ -87,12 +87,14 @@ type WorldsTracker struct {
 	publisher               pubsub.Publisher[Event]
 }
 
+type WorldMapLoader = loader.Keyed[ps2.WorldId, ps2.WorldMap]
+
 func New(
 	log *logger.Logger,
 	platform ps2_platforms.Platform,
 	invalidationInterval time.Duration,
 	publisher pubsub.Publisher[Event],
-	worldMapLoader loader.Keyed[ps2.WorldId, ps2.WorldMap],
+	worldMapLoader WorldMapLoader,
 ) *WorldsTracker {
 	worldIds := ps2.PlatformWorldIds[platform]
 	worlds := make(map[ps2.WorldId]map[ps2.ZoneId]zoneState, len(worldIds))
@@ -204,11 +206,11 @@ func (w *WorldsTracker) invalidateWorldFacilities(
 	worldId ps2.WorldId,
 ) {
 	log := w.log.With(slog.String("world_id", string(worldId)))
-	worldMap, err := w.retryableWorldMapLoader.Run(
+	worldMap, err := w.retryableWorldMapLoader(
 		ctx,
 		worldId,
 		while.ErrorIsHere,
-		while.RetryCountIsLessThan(3),
+		while.HasAttempts(3),
 		while.ContextIsNotCancelled,
 		perform.Log(
 			w.log.Logger,
