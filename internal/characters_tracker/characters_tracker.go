@@ -182,7 +182,7 @@ func (p *CharactersTracker) HandleLogin(ctx context.Context, event events.Player
 			),
 		)
 		if err != nil {
-			p.log.Debug(ctx, "failed to get character", slog.String("character_id", string(charId)), sl.Err(err))
+			p.log.Debug(ctx, "[ERROR] failed to get character", slog.String("character_id", string(charId)), sl.Err(err))
 			return
 		}
 		if p.handleLogin(ctx, char) {

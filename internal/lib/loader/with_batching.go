@@ -10,14 +10,9 @@ import (
 type Batched[K comparable, T any] struct {
 	loader        Multi[K, T]
 	awaitersMu    sync.Mutex
-	awaiters      map[K][]chan result[T]
+	awaiters      map[K][]chan T
 	checkRate     time.Duration
 	notFoundError error
-}
-
-type result[T any] struct {
-	value T
-	err   error
 }
 
 func WithBatching[K comparable, T any](
@@ -27,7 +22,7 @@ func WithBatching[K comparable, T any](
 ) *Batched[K, T] {
 	return &Batched[K, T]{
 		loader:        loader,
-		awaiters:      make(map[K][]chan result[T]),
+		awaiters:      make(map[K][]chan T),
 		checkRate:     checkRate,
 		notFoundError: notFoundError,
 	}
@@ -48,14 +43,10 @@ func (b *Batched[K, T]) releaseAwaiters(_ context.Context, batch []K, results ma
 	defer b.awaitersMu.Unlock()
 	for _, key := range batch {
 		if channels, ok := b.awaiters[key]; ok {
-			var res result[T]
-			if val, ok := results[key]; ok {
-				res.value = val
-			} else {
-				res.err = fmt.Errorf("awaiter result not found: %w", b.notFoundError)
-			}
 			for _, channel := range channels {
-				channel <- res
+				if val, ok := results[key]; ok {
+					channel <- val
+				}
 				close(channel)
 			}
 			delete(b.awaiters, key)
@@ -98,8 +89,8 @@ func (b *Batched[K, T]) Start(ctx context.Context) {
 	clear(b.awaiters)
 }
 
-func (b *Batched[K, T]) load(key K) chan result[T] {
-	c := make(chan result[T])
+func (b *Batched[K, T]) load(key K) chan T {
+	c := make(chan T)
 	b.awaitersMu.Lock()
 	defer b.awaitersMu.Unlock()
 	b.awaiters[key] = append(b.awaiters[key], c)
@@ -110,8 +101,12 @@ func (b *Batched[K, T]) Load(ctx context.Context, key K) (T, error) {
 	select {
 	case <-ctx.Done():
 		var t T
-		return t, ctx.Err()
-	case r := <-b.load(key):
-		return r.value, r.err
+		return t, fmt.Errorf("failed to load %v: %w", key, ctx.Err())
+	case r, ok := <-b.load(key):
+		var err error
+		if !ok {
+			err = fmt.Errorf("failed to load %v: %w", key, b.notFoundError)
+		}
+		return r, err
 	}
 }

@@ -213,13 +213,10 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			10*time.Second,
 			shared.ErrNotFound,
 		)
-		m.Append(module.NewRun(
+		m.AppendVR(
 			fmt.Sprintf("%s.batched_characters_loader", platform),
-			func(ctx context.Context) error {
-				batchedCharactersLoader.Start(ctx)
-				return nil
-			},
-		))
+			batchedCharactersLoader.Start,
+		)
 
 		cachedBatchedCharactersLoader := loader.Keyed[ps2.CharacterId, ps2.Character](
 			loader.WithQueriedCache(
