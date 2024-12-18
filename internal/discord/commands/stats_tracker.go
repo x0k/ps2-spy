@@ -48,6 +48,17 @@ func NewStatsTracker(
 						discordgo.Russian: "Остановить трекер статистики",
 					},
 				},
+				{
+					Type: discordgo.ApplicationCommandOptionSubCommand,
+					Name: "schedule",
+					NameLocalizations: map[discordgo.Locale]string{
+						discordgo.Russian: "расписание",
+					},
+					Description: "Schedule management",
+					DescriptionLocalizations: map[discordgo.Locale]string{
+						discordgo.Russian: "Управление расписанием",
+					},
+				},
 			},
 		},
 		Handler: discord.DeferredEphemeralResponse(func(ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate) discord.ResponseEdit {
