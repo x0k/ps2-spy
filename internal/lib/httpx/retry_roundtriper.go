@@ -15,8 +15,9 @@ import (
 )
 
 type RetryRoundTripper struct {
+	log     *slog.Logger
 	timeout time.Duration
-	trip    func(context.Context, *http.Request) (*http.Response, error)
+	trip    func(context.Context, *http.Request, ...any) (*http.Response, error)
 
 	mu       sync.Mutex
 	cancelId int64
@@ -36,11 +37,9 @@ func NewRetryRoundTripper(
 		},
 		isRetryable,
 		while.ContextIsNotCancelled,
-		while.HasAttempts(2),
-		perform.Log(log, slog.LevelDebug, "[ERROR] request failed, retrying"),
-		perform.ExponentialBackoff(1*time.Second),
 	)
 	return &RetryRoundTripper{
+		log:     log,
 		timeout: timeout,
 		trip:    trip,
 		cancels: make(map[int64]func()),
@@ -70,14 +69,17 @@ func (rt *RetryRoundTripper) RoundTrip(req *http.Request) (*http.Response, error
 		rt.mu.Unlock()
 		cancel()
 	}()
-	return rt.trip(ctx, req)
+	return rt.trip(
+		ctx, req,
+		while.HasAttempts(2),
+		perform.Log(rt.log, slog.LevelDebug, "[ERROR] request failed, retrying", slog.Int64("request_id", id)),
+		perform.ExponentialBackoff(1*time.Second),
+	)
 }
 
-func isRetryable(_ context.Context) func(resp *http.Response, err error) bool {
-	return func(resp *http.Response, err error) bool {
-		var netErr net.Error
-		return errors.Is(err, context.DeadlineExceeded) ||
-			(errors.As(err, &netErr) && netErr.Timeout()) ||
-			(resp != nil && resp.StatusCode >= 500)
-	}
+func isRetryable(resp *http.Response, err error) bool {
+	var netErr net.Error
+	return errors.Is(err, context.DeadlineExceeded) ||
+		(errors.As(err, &netErr) && netErr.Timeout()) ||
+		(resp != nil && resp.StatusCode >= 500)
 }

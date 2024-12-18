@@ -13,31 +13,26 @@ func Log(
 	lvl slog.Level,
 	msg string,
 	args ...slog.Attr,
-) func(context.Context) func(context.Context, error) {
-	return func(ctx context.Context) func(context.Context, error) {
-		return func(ctx context.Context, err error) {
-			log.LogAttrs(
-				ctx,
-				lvl,
-				msg,
-				append(args, sl.Err(err))...,
-			)
-		}
+) func(context.Context, error) {
+	return func(ctx context.Context, err error) {
+		log.LogAttrs(
+			ctx,
+			lvl,
+			msg,
+			append(args, sl.Err(err))...,
+		)
 	}
 }
 
 func ExponentialBackoff(
-	duration time.Duration,
-) func(context.Context) func(context.Context, error) {
-	return func(ctx context.Context) func(context.Context, error) {
-		d := duration
-		return func(ctx context.Context, err error) {
-			select {
-			case <-ctx.Done():
-				return
-			case <-time.After(d):
-				d *= 2
-			}
+	d time.Duration,
+) func(context.Context, error) {
+	return func(ctx context.Context, err error) {
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(d):
+			d *= 2
 		}
 	}
 }
