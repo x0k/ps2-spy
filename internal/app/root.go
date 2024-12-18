@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"time"
 
@@ -86,18 +87,25 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	m.PreStartR("storage", storage.Open)
 	m.PostStopR("storage", storage.Close)
 
-	httpRoundTripper := httpx.NewRetryRoundTripper(
+	retryableHttpTransport := httpx.NewRetryRoundTripper(
 		log.Logger.With(sl.Component("http_client")),
-		cfg.HttpClient.Timeout,
-		http.DefaultTransport,
+		&http.Transport{
+			Proxy: http.ProxyFromEnvironment,
+			DialContext: (&net.Dialer{
+				Timeout:   cfg.HttpClient.Timeout,
+				KeepAlive: cfg.HttpClient.KeepAlive,
+			}).DialContext,
+			TLSHandshakeTimeout:   cfg.HttpClient.TLSHandshakeTimeout,
+			ResponseHeaderTimeout: cfg.HttpClient.ResponseHeaderTimeout,
+			ExpectContinueTimeout: cfg.HttpClient.ExpectContinueTimeout,
+		},
 	)
-	m.AppendVR("http_round_tripper", httpRoundTripper.Start)
 	httpClient := &http.Client{
 		Timeout: 0,
 		Transport: metrics.InstrumentTransport(
 			mt,
 			metrics.DefaultTransportName,
-			httpRoundTripper,
+			retryableHttpTransport,
 		),
 	}
 

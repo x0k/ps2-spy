@@ -87,12 +87,14 @@ type WorldsTracker struct {
 	publisher               pubsub.Publisher[Event]
 }
 
+type WorldMapLoader = loader.Keyed[ps2.WorldId, ps2.WorldMap]
+
 func New(
 	log *logger.Logger,
 	platform ps2_platforms.Platform,
 	invalidationInterval time.Duration,
 	publisher pubsub.Publisher[Event],
-	worldMapLoader loader.Keyed[ps2.WorldId, ps2.WorldMap],
+	worldMapLoader WorldMapLoader,
 ) *WorldsTracker {
 	worldIds := ps2.PlatformWorldIds[platform]
 	worlds := make(map[ps2.WorldId]map[ps2.ZoneId]zoneState, len(worldIds))

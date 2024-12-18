@@ -31,7 +31,11 @@ type StorageConfig struct {
 }
 
 type HttpClientConfig struct {
-	Timeout time.Duration `yaml:"timeout" env:"HTTP_CLIENT_TIMEOUT" env-default:"12s"`
+	Timeout               time.Duration `yaml:"timeout" env:"HTTP_CLIENT_TIMEOUT" env-default:"30s"`
+	KeepAlive             time.Duration `yaml:"keep_alive" env:"HTTP_CLIENT_KEEP_ALIVE" env-default:"30s"`
+	TLSHandshakeTimeout   time.Duration `yaml:"tls_handshake_timeout" env:"HTTP_CLIENT_TLS_HANDSHAKE_TIMEOUT" env-default:"10s"`
+	ResponseHeaderTimeout time.Duration `yaml:"response_header_timeout" env:"HTTP_CLIENT_RESPONSE_HEADER_TIMEOUT" env-default:"10s"`
+	ExpectContinueTimeout time.Duration `yaml:"expect_continue_timeout" env:"HTTP_CLIENT_EXPECT_CONTINUE_TIMEOUT" env-default:"1s"`
 }
 
 type Config struct {
