@@ -9,9 +9,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/x0k/ps2-spy/internal/lib/retryable2"
-	"github.com/x0k/ps2-spy/internal/lib/retryable2/perform"
-	"github.com/x0k/ps2-spy/internal/lib/retryable2/while"
+	"github.com/x0k/ps2-spy/internal/lib/retryable"
+	"github.com/x0k/ps2-spy/internal/lib/retryable/perform"
+	"github.com/x0k/ps2-spy/internal/lib/retryable/while"
 )
 
 type RetryRoundTripper struct {
@@ -29,7 +29,7 @@ func NewRetryRoundTripper(
 	timeout time.Duration,
 	roundTripper http.RoundTripper,
 ) *RetryRoundTripper {
-	trip := retryable2.NewWithArg(
+	trip := retryable.NewWithArg(
 		func(ctx context.Context, req *http.Request) (*http.Response, error) {
 			ctx, cancel := context.WithTimeout(ctx, timeout)
 			defer cancel()

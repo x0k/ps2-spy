@@ -31,6 +31,8 @@ type player struct {
 	worldId     ps2.WorldId
 }
 
+type CharacterLoader = loader.Keyed[ps2.CharacterId, ps2.Character]
+
 type CharactersTracker struct {
 	wg                       sync.WaitGroup
 	log                      *logger.Logger
@@ -41,7 +43,7 @@ type CharactersTracker struct {
 	activePlayers            *containers.ExpirationQueue[player]
 	inactivityCheckInterval  time.Duration
 	inactiveTimeout          time.Duration
-	retryableCharacterLoader *retryable.WithArg[ps2.CharacterId, ps2.Character]
+	retryableCharacterLoader func(context.Context, ps2.CharacterId, ...any) (ps2.Character, error)
 	publisher                pubsub.Publisher[Event]
 	mt                       *metrics.Metrics
 }
@@ -59,16 +61,18 @@ func New(
 		trackers[worldId] = newWorldPopulationTracker()
 	}
 	return &CharactersTracker{
-		log:                      log,
-		platform:                 platform,
-		worldPopulationTrackers:  trackers,
-		onlineCharactersTracker:  newOnlineCharactersTracker(),
-		activePlayers:            containers.NewExpirationQueue[player](),
-		inactivityCheckInterval:  time.Minute,
-		inactiveTimeout:          10 * time.Minute,
-		retryableCharacterLoader: retryable.NewWithArg(characterLoader),
-		publisher:                publisher,
-		mt:                       mt,
+		log:                     log,
+		platform:                platform,
+		worldPopulationTrackers: trackers,
+		onlineCharactersTracker: newOnlineCharactersTracker(),
+		activePlayers:           containers.NewExpirationQueue[player](),
+		inactivityCheckInterval: time.Minute,
+		inactiveTimeout:         10 * time.Minute,
+		retryableCharacterLoader: retryable.NewWithArg(
+			characterLoader,
+		),
+		publisher: publisher,
+		mt:        mt,
 	}
 }
 
@@ -164,11 +168,11 @@ func (p *CharactersTracker) HandleLogin(ctx context.Context, event events.Player
 	go func() {
 		defer p.wg.Done()
 		charId := ps2.CharacterId(event.CharacterID)
-		char, err := p.retryableCharacterLoader.Run(
+		char, err := p.retryableCharacterLoader(
 			ctx,
 			charId,
 			while.ErrorIsHere,
-			while.RetryCountIsLessThan(3),
+			while.HasAttempts(3),
 			while.ContextIsNotCancelled,
 			perform.Log(
 				p.log.Logger,

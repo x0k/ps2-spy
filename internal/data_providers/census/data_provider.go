@@ -30,7 +30,7 @@ type DataProvider struct {
 	charactersMu              sync.Mutex
 	charactersQuery           *census2.Query
 	charactersOperand         *census2.Ptr[census2.List[census2.Str]]
-	retryableCharactersLoader *retryable.WithArg[string, []ps2_collections.CharacterItem]
+	retryableCharactersLoader func(context.Context, string, ...any) ([]ps2_collections.CharacterItem, error)
 
 	facilityMu      sync.Mutex
 	facilityQuery   *census2.Query

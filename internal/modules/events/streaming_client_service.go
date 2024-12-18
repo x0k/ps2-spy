@@ -11,7 +11,6 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/commands"
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
-	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/lib/module"
 	"github.com/x0k/ps2-spy/internal/lib/retryable"
 	"github.com/x0k/ps2-spy/internal/lib/retryable/perform"
@@ -47,17 +46,15 @@ func newStreamingClientService(
 ) module.Runnable {
 	return module.NewRun(fmt.Sprintf("%s.streaming_client", platform), func(ctx context.Context) error {
 		err := retryable.New(func(ctx context.Context) error {
-			err := client.Connect(ctx)
-			if err != nil {
-				log.Error(ctx, "failed to connect to streaming service", sl.Err(err))
+			if err := client.Connect(ctx); err != nil {
 				return err
 			}
 			return client.Subscribe(ctx, subscriptionSettings)
-		}).Run(
+		})(
 			ctx,
 			while.ContextIsNotCancelled,
-			perform.RecoverSuspenseDuration(1*time.Second),
 			perform.Log(log.Logger, slog.LevelError, "subscription failed, retrying"),
+			perform.ExponentialBackoffWithRecover(1*time.Second),
 		)
 		if errors.Is(err, context.Canceled) {
 			return nil

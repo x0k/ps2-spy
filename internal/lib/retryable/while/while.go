@@ -3,22 +3,19 @@ package while
 import (
 	"context"
 	"errors"
-
-	"github.com/x0k/ps2-spy/internal/lib/retryable"
 )
 
-func ErrorIsHere(r *retryable.Retryable) bool {
-	return r.Err != nil
+func ErrorIsHere(err error) bool {
+	return err != nil
 }
 
-func RetryCountIsLessThan(maxRetries int) func(r *retryable.Retryable) bool {
-	retryCount := -1
-	return func(r *retryable.Retryable) bool {
-		retryCount++
-		return retryCount < maxRetries
+func HasAttempts(attempts int) func(error) bool {
+	return func(err error) bool {
+		attempts--
+		return attempts > 0
 	}
 }
 
-func ContextIsNotCancelled(r *retryable.Retryable) bool {
-	return !errors.Is(r.Err, context.Canceled)
+func ContextIsNotCancelled(err error) bool {
+	return !errors.Is(err, context.Canceled)
 }

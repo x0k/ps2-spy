@@ -111,10 +111,11 @@ func (s *OutfitMembersSynchronizer) syncOutfit(ctx context.Context, outfitId ps2
 			return fmt.Errorf("failed to save members: %w", err)
 		}
 		return nil
-	}).Run(
+	})(
 		ctx,
 		while.ErrorIsHere,
-		while.RetryCountIsLessThan(3),
+		while.ContextIsNotCancelled,
+		while.HasAttempts(3),
 		perform.Log(s.log.Logger, slog.LevelDebug, "members sync failed, retrying"),
 	)
 	if err != nil {

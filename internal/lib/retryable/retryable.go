@@ -2,103 +2,122 @@ package retryable
 
 import (
 	"context"
-	"time"
 )
 
-// Thread safe
-type Retryable struct {
-	try              func(ctx context.Context) error
-	SuspenseDuration time.Duration
-	Err              error
+type retryOptions struct {
+	conditions []func(error) bool
+	actions    []func(context.Context, error)
 }
 
-func New(action func(ctx context.Context) error) *Retryable {
-	return &Retryable{
-		try:              action,
-		SuspenseDuration: 1 * time.Second,
+func (o retryOptions) append(options []any) retryOptions {
+	additional := len(options)
+	if additional == 0 {
+		return o
 	}
-}
-
-func (r Retryable) Run(ctx context.Context, options ...any) error {
-	conditions := make([]func(*Retryable) bool, 0, len(options))
-	beforeSuspense := make([]func(context.Context, *Retryable), 0, len(options))
+	newConditions := make([]func(error) bool, len(o.conditions), len(o.conditions)+additional)
+	copy(newConditions, o.conditions)
+	newActions := make([]func(context.Context, error), len(o.actions), len(o.actions)+additional)
+	copy(newActions, o.actions)
 	for _, option := range options {
 		switch v := option.(type) {
-		case func(*Retryable) bool:
-			conditions = append(conditions, v)
-		case func(context.Context, *Retryable):
-			beforeSuspense = append(beforeSuspense, v)
+		case func(error) bool:
+			newConditions = append(newConditions, v)
+		case func(context.Context, error):
+			newActions = append(newActions, v)
 		}
 	}
-	t := time.NewTimer(0)
-	defer t.Stop()
-	if !t.Stop() {
-		<-t.C
-	}
-	for {
-		r.Err = r.try(ctx)
-		for _, condition := range conditions {
-			if !condition(&r) {
-				return r.Err
-			}
-		}
-		for _, beforeSuspense := range beforeSuspense {
-			beforeSuspense(ctx, &r)
-		}
-		t.Reset(r.SuspenseDuration)
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-t.C:
-		}
-		r.SuspenseDuration *= 2
+	return retryOptions{
+		conditions: newConditions,
+		actions:    newActions,
 	}
 }
 
-// Thread unsafe
-type WithReturn[R any] struct {
-	ret *Retryable
-	res R
+func New(
+	f func(ctx context.Context) error,
+	options ...any,
+) func(ctx context.Context, options ...any) error {
+	first := retryOptions{}.append(options)
+	return func(ctx context.Context, options ...any) error {
+		final := first.append(options)
+		for {
+			err := f(ctx)
+			for _, condition := range final.conditions {
+				if !condition(err) {
+					return err
+				}
+			}
+			for _, action := range final.actions {
+				action(ctx, err)
+			}
+		}
+	}
+}
+
+type rError[R any] struct {
 	err error
+	res R
+}
+
+func (e rError[R]) Error() string {
+	return e.err.Error()
+}
+
+func mapOptions[R any](options []any) []any {
+	opts := make([]any, 0, len(options))
+	for _, option := range options {
+		switch v := option.(type) {
+		case func(error) bool:
+			opts = append(opts, func(err error) bool {
+				rErr := err.(rError[R])
+				return v(rErr.err)
+			})
+		case func(R, error) bool:
+			opts = append(opts, func(err error) bool {
+				rErr := err.(rError[R])
+				return v(rErr.res, rErr.err)
+			})
+		case func(context.Context, error):
+			opts = append(opts, func(ctx context.Context, err error) {
+				rErr := err.(rError[R])
+				v(ctx, rErr.err)
+			})
+		case func(context.Context, R, error):
+			opts = append(opts, func(ctx context.Context, err error) {
+				rErr := err.(rError[R])
+				v(ctx, rErr.res, rErr.err)
+			})
+		}
+	}
+	return opts
 }
 
 func NewWithReturn[R any](
-	action func(ctx context.Context) (R, error),
-) *WithReturn[R] {
-	r2 := &WithReturn[R]{}
-	r2.ret = New(func(ctx context.Context) error {
-		r2.res, r2.err = action(ctx)
-		return r2.err
-	})
-	return r2
+	f func(ctx context.Context) (R, error),
+	options ...any,
+) func(ctx context.Context, options ...any) (R, error) {
+	rt := New(func(ctx context.Context) error {
+		result, err := f(ctx)
+		return rError[R]{err: err, res: result}
+	}, mapOptions[R](options)...)
+	return func(ctx context.Context, options ...any) (R, error) {
+		rErr := rt(ctx, mapOptions[R](options)...).(rError[R])
+		return rErr.res, rErr.err
+	}
 }
 
-func (r *WithReturn[R]) Run(ctx context.Context, options ...any) (R, error) {
-	_ = r.ret.Run(ctx, options...) // error saved in r.err
-	return r.res, r.err
-}
-
-// Thread unsafe
-type WithArg[A any, R any] struct {
-	ret *Retryable
+type aContext[A any] struct {
+	context.Context
 	arg A
-	res R
-	err error
 }
 
 func NewWithArg[A any, R any](
-	action func(context.Context, A) (R, error),
-) *WithArg[A, R] {
-	r3 := &WithArg[A, R]{}
-	r3.ret = New(func(ctx context.Context) error {
-		r3.res, r3.err = action(ctx, r3.arg)
-		return r3.err
-	})
-	return r3
-}
-
-func (r *WithArg[A, R]) Run(ctx context.Context, arg A, options ...any) (R, error) {
-	r.arg = arg
-	_ = r.ret.Run(ctx, options...) // error saved in r.err
-	return r.res, r.err
+	f func(ctx context.Context, arg A) (R, error),
+	options ...any,
+) func(ctx context.Context, arg A, options ...any) (R, error) {
+	rt := NewWithReturn(func(ctx context.Context) (R, error) {
+		return f(ctx, ctx.(aContext[A]).arg)
+	}, options...)
+	return func(ctx context.Context, arg A, options ...any) (R, error) {
+		return rt(aContext[A]{Context: ctx, arg: arg}, options...)
+	}
 }
