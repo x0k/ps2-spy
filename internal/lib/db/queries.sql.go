@@ -196,6 +196,30 @@ func (q *Queries) InsertChannelOutfit(ctx context.Context, arg InsertChannelOutf
 	return err
 }
 
+const insertChannelStatsTrackerTask = `-- name: InsertChannelStatsTrackerTask :exec
+INSERT INTO
+  stats_tracker_task (channel_id, weekday, utc_start_time, utc_end_time)
+VALUES
+  (?, ?, ?, ?)
+`
+
+type InsertChannelStatsTrackerTaskParams struct {
+	ChannelID    string
+	Weekday      int64
+	UtcStartTime int64
+	UtcEndTime   int64
+}
+
+func (q *Queries) InsertChannelStatsTrackerTask(ctx context.Context, arg InsertChannelStatsTrackerTaskParams) error {
+	_, err := q.exec(ctx, q.insertChannelStatsTrackerTaskStmt, insertChannelStatsTrackerTask,
+		arg.ChannelID,
+		arg.Weekday,
+		arg.UtcStartTime,
+		arg.UtcEndTime,
+	)
+	return err
+}
+
 const insertFacility = `-- name: InsertFacility :exec
 INSERT INTO
   facility (
@@ -333,6 +357,105 @@ func (q *Queries) ListChannelOutfitIdsForPlatform(ctx context.Context, arg ListC
 			return nil, err
 		}
 		items = append(items, outfit_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listChannelOverlappingStatsTrackerTasks = `-- name: ListChannelOverlappingStatsTrackerTasks :many
+SELECT
+  task_id, channel_id, weekday, utc_start_time, utc_end_time
+FROM
+  stats_tracker_task
+WHERE
+  channel_id = ?
+  AND weekday in (/*SLICE:weekdays*/?)
+  AND utc_start_time < ?
+  AND utc_end_time > ?
+`
+
+type ListChannelOverlappingStatsTrackerTasksParams struct {
+	ChannelID    string
+	Weekdays     []int64
+	UtcStartTime int64
+	UtcEndTime   int64
+}
+
+func (q *Queries) ListChannelOverlappingStatsTrackerTasks(ctx context.Context, arg ListChannelOverlappingStatsTrackerTasksParams) ([]StatsTrackerTask, error) {
+	query := listChannelOverlappingStatsTrackerTasks
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.ChannelID)
+	if len(arg.Weekdays) > 0 {
+		for _, v := range arg.Weekdays {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:weekdays*/?", strings.Repeat(",?", len(arg.Weekdays))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:weekdays*/?", "NULL", 1)
+	}
+	queryParams = append(queryParams, arg.UtcStartTime)
+	queryParams = append(queryParams, arg.UtcEndTime)
+	rows, err := q.query(ctx, nil, query, queryParams...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []StatsTrackerTask
+	for rows.Next() {
+		var i StatsTrackerTask
+		if err := rows.Scan(
+			&i.TaskID,
+			&i.ChannelID,
+			&i.Weekday,
+			&i.UtcStartTime,
+			&i.UtcEndTime,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listChannelStatsTrackerTasks = `-- name: ListChannelStatsTrackerTasks :many
+SELECT
+  task_id, channel_id, weekday, utc_start_time, utc_end_time
+FROM
+  stats_tracker_task
+WHERE
+  channel_id = ?
+`
+
+func (q *Queries) ListChannelStatsTrackerTasks(ctx context.Context, channelID string) ([]StatsTrackerTask, error) {
+	rows, err := q.query(ctx, q.listChannelStatsTrackerTasksStmt, listChannelStatsTrackerTasks, channelID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []StatsTrackerTask
+	for rows.Next() {
+		var i StatsTrackerTask
+		if err := rows.Scan(
+			&i.TaskID,
+			&i.ChannelID,
+			&i.Weekday,
+			&i.UtcStartTime,
+			&i.UtcEndTime,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err
@@ -692,10 +815,7 @@ func (q *Queries) ListUniqueTrackableOutfitIdsForPlatform(ctx context.Context, p
 
 const upsertChannelCharacterNotifications = `-- name: UpsertChannelCharacterNotifications :exec
 INSERT INTO
-  channel (
-    channel_id,
-    character_notifications
-  )
+  channel (channel_id, character_notifications)
 VALUES
   (?, ?) ON CONFLICT (channel_id) DO
 UPDATE
@@ -715,10 +835,7 @@ func (q *Queries) UpsertChannelCharacterNotifications(ctx context.Context, arg U
 
 const upsertChannelLanguage = `-- name: UpsertChannelLanguage :exec
 INSERT INTO
-  channel (
-    channel_id,
-    locale
-  )
+  channel (channel_id, locale)
 VALUES
   (?, ?) ON CONFLICT (channel_id) DO
 UPDATE
@@ -738,10 +855,7 @@ func (q *Queries) UpsertChannelLanguage(ctx context.Context, arg UpsertChannelLa
 
 const upsertChannelOutfitNotifications = `-- name: UpsertChannelOutfitNotifications :exec
 INSERT INTO
-  channel (
-    channel_id,
-    outfit_notifications
-  )
+  channel (channel_id, outfit_notifications)
 VALUES
   (?, ?) ON CONFLICT (channel_id) DO
 UPDATE
@@ -761,10 +875,7 @@ func (q *Queries) UpsertChannelOutfitNotifications(ctx context.Context, arg Upse
 
 const upsertChannelTitleUpdates = `-- name: UpsertChannelTitleUpdates :exec
 INSERT INTO
-  channel (
-    channel_id,
-    title_updates
-  )
+  channel (channel_id, title_updates)
 VALUES
   (?, ?) ON CONFLICT (channel_id) DO
 UPDATE

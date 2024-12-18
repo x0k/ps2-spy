@@ -53,3 +53,11 @@ type OutfitToCharacter struct {
 	OutfitID    string
 	CharacterID string
 }
+
+type StatsTrackerTask struct {
+	TaskID       int64
+	ChannelID    string
+	Weekday      int64
+	UtcStartTime int64
+	UtcEndTime   int64
+}

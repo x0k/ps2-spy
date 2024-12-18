@@ -51,6 +51,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.insertChannelOutfitStmt, err = db.PrepareContext(ctx, insertChannelOutfit); err != nil {
 		return nil, fmt.Errorf("error preparing query InsertChannelOutfit: %w", err)
 	}
+	if q.insertChannelStatsTrackerTaskStmt, err = db.PrepareContext(ctx, insertChannelStatsTrackerTask); err != nil {
+		return nil, fmt.Errorf("error preparing query InsertChannelStatsTrackerTask: %w", err)
+	}
 	if q.insertFacilityStmt, err = db.PrepareContext(ctx, insertFacility); err != nil {
 		return nil, fmt.Errorf("error preparing query InsertFacility: %w", err)
 	}
@@ -65,6 +68,12 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	}
 	if q.listChannelOutfitIdsForPlatformStmt, err = db.PrepareContext(ctx, listChannelOutfitIdsForPlatform); err != nil {
 		return nil, fmt.Errorf("error preparing query ListChannelOutfitIdsForPlatform: %w", err)
+	}
+	if q.listChannelOverlappingStatsTrackerTasksStmt, err = db.PrepareContext(ctx, listChannelOverlappingStatsTrackerTasks); err != nil {
+		return nil, fmt.Errorf("error preparing query ListChannelOverlappingStatsTrackerTasks: %w", err)
+	}
+	if q.listChannelStatsTrackerTasksStmt, err = db.PrepareContext(ctx, listChannelStatsTrackerTasks); err != nil {
+		return nil, fmt.Errorf("error preparing query ListChannelStatsTrackerTasks: %w", err)
 	}
 	if q.listChannelTrackablePlatformsStmt, err = db.PrepareContext(ctx, listChannelTrackablePlatforms); err != nil {
 		return nil, fmt.Errorf("error preparing query ListChannelTrackablePlatforms: %w", err)
@@ -155,6 +164,11 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing insertChannelOutfitStmt: %w", cerr)
 		}
 	}
+	if q.insertChannelStatsTrackerTaskStmt != nil {
+		if cerr := q.insertChannelStatsTrackerTaskStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing insertChannelStatsTrackerTaskStmt: %w", cerr)
+		}
+	}
 	if q.insertFacilityStmt != nil {
 		if cerr := q.insertFacilityStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing insertFacilityStmt: %w", cerr)
@@ -178,6 +192,16 @@ func (q *Queries) Close() error {
 	if q.listChannelOutfitIdsForPlatformStmt != nil {
 		if cerr := q.listChannelOutfitIdsForPlatformStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing listChannelOutfitIdsForPlatformStmt: %w", cerr)
+		}
+	}
+	if q.listChannelOverlappingStatsTrackerTasksStmt != nil {
+		if cerr := q.listChannelOverlappingStatsTrackerTasksStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing listChannelOverlappingStatsTrackerTasksStmt: %w", cerr)
+		}
+	}
+	if q.listChannelStatsTrackerTasksStmt != nil {
+		if cerr := q.listChannelStatsTrackerTasksStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing listChannelStatsTrackerTasksStmt: %w", cerr)
 		}
 	}
 	if q.listChannelTrackablePlatformsStmt != nil {
@@ -293,11 +317,14 @@ type Queries struct {
 	getPlatformOutfitSynchronizedAtStmt                     *sql.Stmt
 	insertChannelCharacterStmt                              *sql.Stmt
 	insertChannelOutfitStmt                                 *sql.Stmt
+	insertChannelStatsTrackerTaskStmt                       *sql.Stmt
 	insertFacilityStmt                                      *sql.Stmt
 	insertOutfitStmt                                        *sql.Stmt
 	insertOutfitMemberStmt                                  *sql.Stmt
 	listChannelCharacterIdsForPlatformStmt                  *sql.Stmt
 	listChannelOutfitIdsForPlatformStmt                     *sql.Stmt
+	listChannelOverlappingStatsTrackerTasksStmt             *sql.Stmt
+	listChannelStatsTrackerTasksStmt                        *sql.Stmt
 	listChannelTrackablePlatformsStmt                       *sql.Stmt
 	listPlatformOutfitMembersStmt                           *sql.Stmt
 	listPlatformOutfitsStmt                                 *sql.Stmt
@@ -326,11 +353,14 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		getPlatformOutfitSynchronizedAtStmt:          q.getPlatformOutfitSynchronizedAtStmt,
 		insertChannelCharacterStmt:                   q.insertChannelCharacterStmt,
 		insertChannelOutfitStmt:                      q.insertChannelOutfitStmt,
+		insertChannelStatsTrackerTaskStmt:            q.insertChannelStatsTrackerTaskStmt,
 		insertFacilityStmt:                           q.insertFacilityStmt,
 		insertOutfitStmt:                             q.insertOutfitStmt,
 		insertOutfitMemberStmt:                       q.insertOutfitMemberStmt,
 		listChannelCharacterIdsForPlatformStmt:       q.listChannelCharacterIdsForPlatformStmt,
 		listChannelOutfitIdsForPlatformStmt:          q.listChannelOutfitIdsForPlatformStmt,
+		listChannelOverlappingStatsTrackerTasksStmt:  q.listChannelOverlappingStatsTrackerTasksStmt,
+		listChannelStatsTrackerTasksStmt:             q.listChannelStatsTrackerTasksStmt,
 		listChannelTrackablePlatformsStmt:            q.listChannelTrackablePlatformsStmt,
 		listPlatformOutfitMembersStmt:                q.listPlatformOutfitMembersStmt,
 		listPlatformOutfitsStmt:                      q.listPlatformOutfitsStmt,

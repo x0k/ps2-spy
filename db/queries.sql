@@ -200,10 +200,7 @@ WHERE
 
 -- name: UpsertChannelLanguage :exec
 INSERT INTO
-  channel (
-    channel_id,
-    locale
-  )
+  channel (channel_id, locale)
 VALUES
   (?, ?) ON CONFLICT (channel_id) DO
 UPDATE
@@ -212,10 +209,7 @@ SET
 
 -- name: UpsertChannelCharacterNotifications :exec
 INSERT INTO
-  channel (
-    channel_id,
-    character_notifications
-  )
+  channel (channel_id, character_notifications)
 VALUES
   (?, ?) ON CONFLICT (channel_id) DO
 UPDATE
@@ -224,10 +218,7 @@ SET
 
 -- name: UpsertChannelOutfitNotifications :exec
 INSERT INTO
-  channel (
-    channel_id,
-    outfit_notifications
-  )
+  channel (channel_id, outfit_notifications)
 VALUES
   (?, ?) ON CONFLICT (channel_id) DO
 UPDATE
@@ -236,10 +227,7 @@ SET
 
 -- name: UpsertChannelTitleUpdates :exec
 INSERT INTO
-  channel (
-    channel_id,
-    title_updates
-  )
+  channel (channel_id, title_updates)
 VALUES
   (?, ?) ON CONFLICT (channel_id) DO
 UPDATE
@@ -268,3 +256,28 @@ FROM
   channel_to_outfit
 WHERE
   channel_to_outfit.channel_id = sqlc.arg (channel_id);
+
+-- name: ListChannelStatsTrackerTasks :many
+SELECT
+  *
+FROM
+  stats_tracker_task
+WHERE
+  channel_id = ?;
+
+-- name: ListChannelOverlappingStatsTrackerTasks :many
+SELECT
+  *
+FROM
+  stats_tracker_task
+WHERE
+  channel_id = ?
+  AND weekday in (sqlc.slice (weekdays))
+  AND utc_start_time < ?
+  AND utc_end_time > ?;
+
+-- name: InsertChannelStatsTrackerTask :exec
+INSERT INTO
+  stats_tracker_task (channel_id, weekday, utc_start_time, utc_end_time)
+VALUES
+  (?, ?, ?, ?);
