@@ -2,6 +2,7 @@ package discord_messages
 
 import (
 	"slices"
+	"strconv"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -99,13 +100,139 @@ func statsTrackerScheduleEditForm(
 	return rows
 }
 
+func hourPickerOptions(p *message.Printer, selectedHour int) []discordgo.SelectMenuOption {
+	options := make([]discordgo.SelectMenuOption, 0, 24)
+	for i := 0; i < 24; i++ {
+		options = append(options, discordgo.SelectMenuOption{
+			Label:   p.Sprintf("Starting hour: %d", i),
+			Value:   strconv.Itoa(i),
+			Default: i == selectedHour,
+		})
+	}
+	return options
+}
+
+func minutePickerOptions(p *message.Printer, selectedMinute int) []discordgo.SelectMenuOption {
+	options := make([]discordgo.SelectMenuOption, 0, 6)
+	for i := 0; i < 60; i += 10 {
+		options = append(options, discordgo.SelectMenuOption{
+			Label:   p.Sprintf("Starting minute: %d", i),
+			Value:   strconv.Itoa(i),
+			Default: i == selectedMinute,
+		})
+	}
+	return options
+}
+
+func durationPickerOptions(p *message.Printer, selectedDuration time.Duration) []discordgo.SelectMenuOption {
+	options := make([]discordgo.SelectMenuOption, 0, 6)
+	for i := 0 * time.Minute; i <= 4*time.Hour; i += 30 * time.Minute {
+		options = append(options, discordgo.SelectMenuOption{
+			Label:   p.Sprintf("Duration: %s", renderDuration(p, i)),
+			Value:   strconv.FormatInt(int64(i), 10),
+			Default: i == selectedDuration,
+		})
+	}
+	return options
+}
+
 func statsTrackerScheduleAddForm(
 	p *message.Printer,
+	weekdays []time.Weekday,
+	startTime time.Duration,
+	endTime time.Duration,
 ) []discordgo.MessageComponent {
+	one := 1
+	selectedHour := int(startTime / time.Hour)
+	selectedMinute := int((startTime % time.Hour) / time.Minute)
 	return []discordgo.MessageComponent{
 		discordgo.ActionsRow{
 			Components: []discordgo.MessageComponent{
-				discordgo.SelectMenu{},
+				discordgo.SelectMenu{
+					CustomID:    discord.STATS_TRACKER_TASK_WEEKDAYS_SELECTOR_CUSTOM_ID,
+					Placeholder: "Weekdays",
+					MinValues:   &one,
+					MaxValues:   7,
+					Options: []discordgo.SelectMenuOption{
+						{
+							Label:   p.Sprintf("Monday"),
+							Value:   "1",
+							Default: slices.Contains(weekdays, time.Monday),
+						},
+						{
+							Label:   p.Sprintf("Tuesday"),
+							Value:   "2",
+							Default: slices.Contains(weekdays, time.Tuesday),
+						},
+						{
+							Label:   p.Sprintf("Wednesday"),
+							Value:   "3",
+							Default: slices.Contains(weekdays, time.Wednesday),
+						},
+						{
+							Label:   p.Sprintf("Thursday"),
+							Value:   "4",
+							Default: slices.Contains(weekdays, time.Thursday),
+						},
+						{
+							Label:   p.Sprintf("Friday"),
+							Value:   "5",
+							Default: slices.Contains(weekdays, time.Friday),
+						},
+						{
+							Label:   p.Sprintf("Saturday"),
+							Value:   "6",
+							Default: slices.Contains(weekdays, time.Saturday),
+						},
+						{
+							Label:   p.Sprintf("Sunday"),
+							Value:   "0",
+							Default: slices.Contains(weekdays, time.Sunday),
+						},
+					},
+				},
+			},
+		},
+		discordgo.ActionsRow{
+			Components: []discordgo.MessageComponent{
+				discordgo.SelectMenu{
+					CustomID:    discord.STATS_TRACKER_TASK_START_HOUR_SELECTOR_CUSTOM_ID,
+					Placeholder: "Starting hour",
+					MinValues:   &one,
+					MaxValues:   1,
+					Options:     hourPickerOptions(p, selectedHour),
+				},
+			},
+		},
+		discordgo.ActionsRow{
+			Components: []discordgo.MessageComponent{
+				discordgo.SelectMenu{
+					CustomID:    discord.STATS_TRACKER_TASK_START_MINUTE_SELECTOR_CUSTOM_ID,
+					Placeholder: "Starting minute",
+					MinValues:   &one,
+					MaxValues:   1,
+					Options:     minutePickerOptions(p, selectedMinute),
+				},
+			},
+		},
+		discordgo.ActionsRow{
+			Components: []discordgo.MessageComponent{
+				discordgo.SelectMenu{
+					CustomID:    discord.STATS_TRACKER_TASK_DURATION_SELECTOR_CUSTOM_ID,
+					Placeholder: "Duration",
+					MinValues:   &one,
+					MaxValues:   1,
+					Options:     durationPickerOptions(p, endTime-startTime),
+				},
+			},
+		},
+		discordgo.ActionsRow{
+			Components: []discordgo.MessageComponent{
+				discordgo.Button{
+					CustomID: discord.STATS_TRACKER_TASK_SUBMIT_BUTTON_CUSTOM_ID,
+					Label:    p.Sprintf("Submit"),
+					Style:    discordgo.SuccessButton,
+				},
 			},
 		},
 	}

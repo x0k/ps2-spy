@@ -123,7 +123,7 @@ func NewStatsTracker(
 							err,
 						)
 					}
-					return messages.ChannelStatsTrackerAddTaskForm()
+					return messages.ChannelStatsTrackerAddTaskForm(channel)
 				},
 			),
 		},

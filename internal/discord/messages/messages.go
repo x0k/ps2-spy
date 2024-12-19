@@ -506,9 +506,20 @@ func (m *Messages) ChannelStatsTrackerAddTaskForm(
 	channel discord.Channel,
 ) discord.Response {
 	return func(p *message.Printer) (*discordgo.InteractionResponseData, *discord.Error) {
-		content, offset := timezoneData(p, channel.DefaultTimezone)
+		content, _ := timezoneData(p, channel.DefaultTimezone)
+		now := time.Now().In(channel.DefaultTimezone)
+		startTime := time.Duration(now.Hour())*time.Hour + time.Duration(now.Minute()/10)*10*time.Minute
+		components := statsTrackerScheduleAddForm(
+			p,
+			[]time.Weekday{
+				now.Weekday(),
+			},
+			startTime,
+			startTime+2*time.Hour,
+		)
 		return &discordgo.InteractionResponseData{
-			Content: content,
+			Content:    content,
+			Components: components,
 		}, nil
 	}
 }
