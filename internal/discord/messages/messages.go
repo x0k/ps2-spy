@@ -469,6 +469,26 @@ func (m *Messages) ChannelTrackerWillStoppedSoon() discord.ResponseEdit {
 	}
 }
 
+func (m *Messages) ChannelStatsTrackerTasksLoadError(err error) discord.ResponseEdit {
+	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
+		return nil, &discord.Error{
+			Msg: p.Sprintf("Failed to load stats tracker tasks"),
+			Err: err,
+		}
+	}
+}
+
+func (m *Messages) ChannelStatsTrackerSchedule(
+	tasks []discord.StatsTrackerTask,
+) discord.ResponseEdit {
+	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
+		content := p.Sprintf("Schedule")
+		return &discordgo.WebhookEdit{
+			Content: &content,
+		}, nil
+	}
+}
+
 func (m *Messages) TrackingSettingsLoadError(channelId discord.ChannelId, platform ps2_platforms.Platform, err error) discord.Response {
 	return func(p *message.Printer) (*discordgo.InteractionResponseData, *discord.Error) {
 		return nil, &discord.Error{

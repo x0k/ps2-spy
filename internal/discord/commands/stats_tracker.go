@@ -8,12 +8,16 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/x0k/ps2-spy/internal/discord"
 	discord_messages "github.com/x0k/ps2-spy/internal/discord/messages"
+	"github.com/x0k/ps2-spy/internal/lib/loader"
 	"github.com/x0k/ps2-spy/internal/stats_tracker"
 )
+
+type ChannelStatsTrackerTasksLoader = loader.Keyed[discord.ChannelId, []discord.StatsTrackerTask]
 
 func NewStatsTracker(
 	messages *discord_messages.Messages,
 	statsTracker *stats_tracker.StatsTracker,
+	channelStatsTrackerTasksLoader ChannelStatsTrackerTasksLoader,
 ) *discord.Command {
 	return &discord.Command{
 		Cmd: &discordgo.ApplicationCommand{
@@ -80,6 +84,12 @@ func NewStatsTracker(
 					return messages.StopChannelStatsTrackerError(err)
 				}
 				return messages.ChannelTrackerWillStoppedSoon()
+			case "schedule":
+				tasks, err := channelStatsTrackerTasksLoader(ctx, channelId)
+				if err != nil {
+					return messages.ChannelStatsTrackerTasksLoadError(err)
+				}
+				return messages.ChannelStatsTrackerSchedule(tasks)
 			}
 			return messages.InvalidStatsTrackerSubcommand(
 				cmd,
