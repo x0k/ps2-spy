@@ -291,6 +291,45 @@ func (q *Queries) InsertOutfitMember(ctx context.Context, arg InsertOutfitMember
 	return err
 }
 
+const listActiveStatsTrackerTasks = `-- name: ListActiveStatsTrackerTasks :many
+SELECT
+  channel_id
+FROM
+  stats_tracker_task
+WHERE
+  weekday = ?
+  AND utc_start_time <= ?2
+  AND utc_end_time > ?2
+`
+
+type ListActiveStatsTrackerTasksParams struct {
+	Weekday int64
+	UtcTime int64
+}
+
+func (q *Queries) ListActiveStatsTrackerTasks(ctx context.Context, arg ListActiveStatsTrackerTasksParams) ([]string, error) {
+	rows, err := q.query(ctx, q.listActiveStatsTrackerTasksStmt, listActiveStatsTrackerTasks, arg.Weekday, arg.UtcTime)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var channel_id string
+		if err := rows.Scan(&channel_id); err != nil {
+			return nil, err
+		}
+		items = append(items, channel_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listChannelCharacterIdsForPlatform = `-- name: ListChannelCharacterIdsForPlatform :many
 SELECT
   character_id

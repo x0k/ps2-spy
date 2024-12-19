@@ -1,6 +1,8 @@
 package discord
 
 import (
+	"time"
+
 	"golang.org/x/text/language"
 
 	"github.com/bwmarrin/discordgo"
@@ -73,4 +75,14 @@ func NewChannel(
 
 func NewDefaultChannel(channelId ChannelId) Channel {
 	return NewChannel(channelId, DEFAULT_LANG_TAG, true, true, true)
+}
+
+type StatsTrackerTaskId int64
+
+type StatsTrackerTask struct {
+	Id           StatsTrackerTaskId
+	ChannelId    ChannelId
+	Weekday      time.Weekday
+	UtcStartTime time.Duration
+	UtcEndTime   time.Duration
 }

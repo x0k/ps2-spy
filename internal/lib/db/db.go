@@ -63,6 +63,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.insertOutfitMemberStmt, err = db.PrepareContext(ctx, insertOutfitMember); err != nil {
 		return nil, fmt.Errorf("error preparing query InsertOutfitMember: %w", err)
 	}
+	if q.listActiveStatsTrackerTasksStmt, err = db.PrepareContext(ctx, listActiveStatsTrackerTasks); err != nil {
+		return nil, fmt.Errorf("error preparing query ListActiveStatsTrackerTasks: %w", err)
+	}
 	if q.listChannelCharacterIdsForPlatformStmt, err = db.PrepareContext(ctx, listChannelCharacterIdsForPlatform); err != nil {
 		return nil, fmt.Errorf("error preparing query ListChannelCharacterIdsForPlatform: %w", err)
 	}
@@ -182,6 +185,11 @@ func (q *Queries) Close() error {
 	if q.insertOutfitMemberStmt != nil {
 		if cerr := q.insertOutfitMemberStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing insertOutfitMemberStmt: %w", cerr)
+		}
+	}
+	if q.listActiveStatsTrackerTasksStmt != nil {
+		if cerr := q.listActiveStatsTrackerTasksStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing listActiveStatsTrackerTasksStmt: %w", cerr)
 		}
 	}
 	if q.listChannelCharacterIdsForPlatformStmt != nil {
@@ -321,6 +329,7 @@ type Queries struct {
 	insertFacilityStmt                                      *sql.Stmt
 	insertOutfitStmt                                        *sql.Stmt
 	insertOutfitMemberStmt                                  *sql.Stmt
+	listActiveStatsTrackerTasksStmt                         *sql.Stmt
 	listChannelCharacterIdsForPlatformStmt                  *sql.Stmt
 	listChannelOutfitIdsForPlatformStmt                     *sql.Stmt
 	listChannelOverlappingStatsTrackerTasksStmt             *sql.Stmt
@@ -357,6 +366,7 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		insertFacilityStmt:                           q.insertFacilityStmt,
 		insertOutfitStmt:                             q.insertOutfitStmt,
 		insertOutfitMemberStmt:                       q.insertOutfitMemberStmt,
+		listActiveStatsTrackerTasksStmt:              q.listActiveStatsTrackerTasksStmt,
 		listChannelCharacterIdsForPlatformStmt:       q.listChannelCharacterIdsForPlatformStmt,
 		listChannelOutfitIdsForPlatformStmt:          q.listChannelOutfitIdsForPlatformStmt,
 		listChannelOverlappingStatsTrackerTasksStmt:  q.listChannelOverlappingStatsTrackerTasksStmt,

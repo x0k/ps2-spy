@@ -257,6 +257,16 @@ FROM
 WHERE
   channel_to_outfit.channel_id = sqlc.arg (channel_id);
 
+-- name: ListActiveStatsTrackerTasks :many
+SELECT
+  channel_id
+FROM
+  stats_tracker_task
+WHERE
+  weekday = ?
+  AND utc_start_time <= sqlc.arg (utc_time)
+  AND utc_end_time > sqlc.arg (utc_time);
+
 -- name: ListChannelStatsTrackerTasks :many
 SELECT
   *
