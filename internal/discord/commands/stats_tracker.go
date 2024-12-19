@@ -103,10 +103,29 @@ func NewStatsTracker(
 				}
 				return messages.ChannelStatsTrackerSchedule(channel, tasks)
 			}
-			return messages.InvalidStatsTrackerSubcommand(
+			return messages.StatsTrackerInvalidSubcommand(
 				cmd,
 				fmt.Errorf("invalid subcommand: %s", cmd),
 			)
 		}),
+		ComponentHandlers: map[string]discord.InteractionHandler{
+			discord.STATS_TRACKER_TASK_ADD_BUTTON_CUSTOM_ID: discord.MessageUpdate(
+				func(
+					ctx context.Context,
+					s *discordgo.Session,
+					i *discordgo.InteractionCreate,
+				) discord.Response {
+					channelId := discord.ChannelId(i.ChannelID)
+					channel, err := channelLoader(ctx, channelId)
+					if err != nil {
+						return discord_messages.ChannelLoadError[discordgo.InteractionResponseData](
+							channelId,
+							err,
+						)
+					}
+					return messages.ChannelStatsTrackerAddTaskForm()
+				},
+			),
+		},
 	}
 }

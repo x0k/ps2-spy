@@ -421,7 +421,7 @@ func (m *Messages) NothingToTrack() discord.ResponseEdit {
 	}
 }
 
-func (m *Messages) InvalidStatsTrackerSubcommand(cmd string, err error) discord.ResponseEdit {
+func (m *Messages) StatsTrackerInvalidSubcommand(cmd string, err error) discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
 		return nil, &discord.Error{
 			Msg: p.Sprintf("Invalid stats tracker subcommand: %s", cmd),
@@ -489,20 +489,26 @@ func (m *Messages) ChannelStatsTrackerSchedule(
 	tasks []discord.StatsTrackerTask,
 ) discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
-		timezone, offsetInSeconds := time.Now().In(channel.DefaultTimezone).Zone()
-		offset := time.Duration(offsetInSeconds) * time.Second
-		components := m.statsTrackerScheduleEditForm(
+		content, offset := timezoneData(p, channel.DefaultTimezone)
+		components := statsTrackerScheduleEditForm(
 			p,
 			tasks,
 			offset,
 		)
-		content := p.Sprintf(
-			"The time is in %q time zone, you can change this in the channel settings",
-			timezone,
-		)
 		return &discordgo.WebhookEdit{
 			Content:    &content,
 			Components: &components,
+		}, nil
+	}
+}
+
+func (m *Messages) ChannelStatsTrackerAddTaskForm(
+	channel discord.Channel,
+) discord.Response {
+	return func(p *message.Printer) (*discordgo.InteractionResponseData, *discord.Error) {
+		content, offset := timezoneData(p, channel.DefaultTimezone)
+		return &discordgo.InteractionResponseData{
+			Content: content,
 		}, nil
 	}
 }

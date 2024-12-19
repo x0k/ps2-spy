@@ -9,6 +9,15 @@ import (
 	"golang.org/x/text/message"
 )
 
+func timezoneData(p *message.Printer, loc *time.Location) (string, time.Duration) {
+	timezone, offsetInSeconds := time.Now().In(loc).Zone()
+	return p.Sprintf(
+			"The time is in %q time zone, you can change this in the channel settings",
+			timezone,
+		),
+		time.Duration(offsetInSeconds) * time.Second
+}
+
 func localDate(weekday time.Weekday, utcTime time.Duration, offset time.Duration) (time.Weekday, time.Duration) {
 	localTime := utcTime + offset
 	if localTime < 0 {
@@ -37,7 +46,7 @@ type localStatsTrackerTask struct {
 	endTime      time.Duration
 }
 
-func (m *Messages) statsTrackerScheduleEditForm(
+func statsTrackerScheduleEditForm(
 	p *message.Printer,
 	tasks []discord.StatsTrackerTask,
 	offset time.Duration,
@@ -82,10 +91,22 @@ func (m *Messages) statsTrackerScheduleEditForm(
 		Components: []discordgo.MessageComponent{
 			discordgo.Button{
 				CustomID: discord.STATS_TRACKER_TASK_ADD_BUTTON_CUSTOM_ID,
-				Label:    p.Sprintf("Add"),
+				Label:    p.Sprintf("Add new task"),
 				Style:    discordgo.PrimaryButton,
 			},
 		},
 	})
 	return rows
+}
+
+func statsTrackerScheduleAddForm(
+	p *message.Printer,
+) []discordgo.MessageComponent {
+	return []discordgo.MessageComponent{
+		discordgo.ActionsRow{
+			Components: []discordgo.MessageComponent{
+				discordgo.SelectMenu{},
+			},
+		},
+	}
 }
