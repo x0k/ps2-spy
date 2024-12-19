@@ -6,7 +6,8 @@ import (
 )
 
 func statsTrackerScheduleEditForm(tasks []discord.StatsTrackerTask) []discordgo.MessageComponent {
-	rows := make([]discordgo.ActionsRow, 0, len(tasks))
+
+	// rows := make([]discordgo.ActionsRow, 0, len(tasks))
 
 	return []discordgo.MessageComponent{}
 }

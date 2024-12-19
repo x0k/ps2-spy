@@ -25,3 +25,24 @@ func (s *Storage) StatsTrackerTasks(ctx context.Context, now time.Time) ([]disco
 	}
 	return channelIds, nil
 }
+
+func (s *Storage) ChannelStatsTrackerTasksLoader(
+	ctx context.Context,
+	channelId discord.ChannelId,
+) ([]discord.StatsTrackerTask, error) {
+	data, err := s.queries.ListChannelStatsTrackerTasks(ctx, string(channelId))
+	if err != nil {
+		return nil, fmt.Errorf("failed to list channel %q stats tracker tasks: %w", string(channelId), err)
+	}
+	tasks := make([]discord.StatsTrackerTask, 0, len(data))
+	for _, t := range data {
+		tasks = append(tasks, discord.StatsTrackerTask{
+			Id:           discord.StatsTrackerTaskId(t.TaskID),
+			ChannelId:    channelId,
+			Weekday:      time.Weekday(t.Weekday),
+			UtcStartTime: time.Duration(t.UtcStartTime),
+			UtcEndTime:   time.Duration(t.UtcEndTime),
+		})
+	}
+	return tasks, nil
+}

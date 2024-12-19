@@ -105,6 +105,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.upsertChannelCharacterNotificationsStmt, err = db.PrepareContext(ctx, upsertChannelCharacterNotifications); err != nil {
 		return nil, fmt.Errorf("error preparing query UpsertChannelCharacterNotifications: %w", err)
 	}
+	if q.upsertChannelDefaultTimezoneStmt, err = db.PrepareContext(ctx, upsertChannelDefaultTimezone); err != nil {
+		return nil, fmt.Errorf("error preparing query UpsertChannelDefaultTimezone: %w", err)
+	}
 	if q.upsertChannelLanguageStmt, err = db.PrepareContext(ctx, upsertChannelLanguage); err != nil {
 		return nil, fmt.Errorf("error preparing query UpsertChannelLanguage: %w", err)
 	}
@@ -257,6 +260,11 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing upsertChannelCharacterNotificationsStmt: %w", cerr)
 		}
 	}
+	if q.upsertChannelDefaultTimezoneStmt != nil {
+		if cerr := q.upsertChannelDefaultTimezoneStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing upsertChannelDefaultTimezoneStmt: %w", cerr)
+		}
+	}
 	if q.upsertChannelLanguageStmt != nil {
 		if cerr := q.upsertChannelLanguageStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing upsertChannelLanguageStmt: %w", cerr)
@@ -343,6 +351,7 @@ type Queries struct {
 	listTrackableOutfitIdsWithDuplicationForPlatformStmt    *sql.Stmt
 	listUniqueTrackableOutfitIdsForPlatformStmt             *sql.Stmt
 	upsertChannelCharacterNotificationsStmt                 *sql.Stmt
+	upsertChannelDefaultTimezoneStmt                        *sql.Stmt
 	upsertChannelLanguageStmt                               *sql.Stmt
 	upsertChannelOutfitNotificationsStmt                    *sql.Stmt
 	upsertChannelTitleUpdatesStmt                           *sql.Stmt
@@ -380,6 +389,7 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		listTrackableOutfitIdsWithDuplicationForPlatformStmt:    q.listTrackableOutfitIdsWithDuplicationForPlatformStmt,
 		listUniqueTrackableOutfitIdsForPlatformStmt:             q.listUniqueTrackableOutfitIdsForPlatformStmt,
 		upsertChannelCharacterNotificationsStmt:                 q.upsertChannelCharacterNotificationsStmt,
+		upsertChannelDefaultTimezoneStmt:                        q.upsertChannelDefaultTimezoneStmt,
 		upsertChannelLanguageStmt:                               q.upsertChannelLanguageStmt,
 		upsertChannelOutfitNotificationsStmt:                    q.upsertChannelOutfitNotificationsStmt,
 		upsertChannelTitleUpdatesStmt:                           q.upsertChannelTitleUpdatesStmt,

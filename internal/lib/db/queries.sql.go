@@ -70,7 +70,7 @@ func (q *Queries) DeleteOutfitMember(ctx context.Context, arg DeleteOutfitMember
 
 const getChannel = `-- name: GetChannel :one
 SELECT
-  channel_id, locale, character_notifications, outfit_notifications, title_updates
+  channel_id, locale, character_notifications, outfit_notifications, title_updates, default_timezone
 FROM
   channel
 WHERE
@@ -86,6 +86,7 @@ func (q *Queries) GetChannel(ctx context.Context, channelID string) (Channel, er
 		&i.CharacterNotifications,
 		&i.OutfitNotifications,
 		&i.TitleUpdates,
+		&i.DefaultTimezone,
 	)
 	return i, err
 }
@@ -638,7 +639,7 @@ func (q *Queries) ListPlatformOutfits(ctx context.Context, arg ListPlatformOutfi
 
 const listPlatformTrackingChannelsForCharacter = `-- name: ListPlatformTrackingChannelsForCharacter :many
 SELECT
-  channel_id, locale, character_notifications, outfit_notifications, title_updates
+  channel_id, locale, character_notifications, outfit_notifications, title_updates, default_timezone
 FROM
   channel
 WHERE
@@ -682,6 +683,7 @@ func (q *Queries) ListPlatformTrackingChannelsForCharacter(ctx context.Context, 
 			&i.CharacterNotifications,
 			&i.OutfitNotifications,
 			&i.TitleUpdates,
+			&i.DefaultTimezone,
 		); err != nil {
 			return nil, err
 		}
@@ -698,7 +700,7 @@ func (q *Queries) ListPlatformTrackingChannelsForCharacter(ctx context.Context, 
 
 const listPlatformTrackingChannelsForOutfit = `-- name: ListPlatformTrackingChannelsForOutfit :many
 SELECT
-  channel_id, locale, character_notifications, outfit_notifications, title_updates
+  channel_id, locale, character_notifications, outfit_notifications, title_updates, default_timezone
 FROM
   channel
 WHERE
@@ -733,6 +735,7 @@ func (q *Queries) ListPlatformTrackingChannelsForOutfit(ctx context.Context, arg
 			&i.CharacterNotifications,
 			&i.OutfitNotifications,
 			&i.TitleUpdates,
+			&i.DefaultTimezone,
 		); err != nil {
 			return nil, err
 		}
@@ -869,6 +872,26 @@ type UpsertChannelCharacterNotificationsParams struct {
 
 func (q *Queries) UpsertChannelCharacterNotifications(ctx context.Context, arg UpsertChannelCharacterNotificationsParams) error {
 	_, err := q.exec(ctx, q.upsertChannelCharacterNotificationsStmt, upsertChannelCharacterNotifications, arg.ChannelID, arg.CharacterNotifications)
+	return err
+}
+
+const upsertChannelDefaultTimezone = `-- name: UpsertChannelDefaultTimezone :exec
+INSERT INTO
+  channel (channel_id, default_timezone)
+VALUES
+  (?, ?) ON CONFLICT (channel_id) DO
+UPDATE
+SET
+  default_timezone = EXCLUDED.default_timezone
+`
+
+type UpsertChannelDefaultTimezoneParams struct {
+	ChannelID       string
+	DefaultTimezone string
+}
+
+func (q *Queries) UpsertChannelDefaultTimezone(ctx context.Context, arg UpsertChannelDefaultTimezoneParams) error {
+	_, err := q.exec(ctx, q.upsertChannelDefaultTimezoneStmt, upsertChannelDefaultTimezone, arg.ChannelID, arg.DefaultTimezone)
 	return err
 }
 

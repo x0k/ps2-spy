@@ -234,6 +234,15 @@ UPDATE
 SET
   title_updates = EXCLUDED.title_updates;
 
+-- name: UpsertChannelDefaultTimezone :exec
+INSERT INTO
+  channel (channel_id, default_timezone)
+VALUES
+  (?, ?) ON CONFLICT (channel_id) DO
+UPDATE
+SET
+  default_timezone = EXCLUDED.default_timezone;
+
 -- name: GetChannel :one
 SELECT
   *

@@ -2,6 +2,7 @@ package discord_commands
 
 import (
 	"context"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/x0k/ps2-spy/internal/discord"
@@ -15,6 +16,7 @@ type ChannelLanguageSaver = func(ctx context.Context, channelId discord.ChannelI
 type ChannelCharacterNotificationsSaver = func(ctx context.Context, channelId discord.ChannelId, enabled bool) error
 type ChannelOutfitNotificationsSaver = func(ctx context.Context, channelId discord.ChannelId, enabled bool) error
 type ChannelTitleUpdatesSaver = func(ctx context.Context, channelId discord.ChannelId, enabled bool) error
+type ChannelDefaultTimezoneSaver = func(ctx context.Context, channelId discord.ChannelId, loc *time.Location) error
 
 func makeFieldHandler[V any](
 	messages *discord_messages.Messages,
@@ -60,6 +62,7 @@ func NewChannelSettings(
 	channelCharacterNotificationsSaver ChannelCharacterNotificationsSaver,
 	channelOutfitNotificationsSaver ChannelOutfitNotificationsSaver,
 	channelTitleUpdatesSaver ChannelTitleUpdatesSaver,
+	channelDefaultTimezoneSaver ChannelDefaultTimezoneSaver,
 ) *discord.Command {
 	return &discord.Command{
 		Cmd: &discordgo.ApplicationCommand{
@@ -112,6 +115,14 @@ func NewChannelSettings(
 				messages,
 				extractBool,
 				channelTitleUpdatesSaver,
+				channelLoader,
+			),
+			discord.CHANNEL_DEFAULT_TIMEZONE_COMPONENT_CUSTOM_ID: makeFieldHandler(
+				messages,
+				func(ic *discordgo.InteractionCreate) (*time.Location, error) {
+					return time.LoadLocation(string(ic.MessageComponentData().Values[0]))
+				},
+				channelDefaultTimezoneSaver,
 				channelLoader,
 			),
 		},

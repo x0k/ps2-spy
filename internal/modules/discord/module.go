@@ -60,6 +60,8 @@ func New(
 	channelCharacterNotificationsSaver discord_commands.ChannelCharacterNotificationsSaver,
 	channelOutfitNotificationsSaver discord_commands.ChannelOutfitNotificationsSaver,
 	channelTitleUpdatesSaver discord_commands.ChannelTitleUpdatesSaver,
+	channelDefaultTimezoneSaver discord_commands.ChannelDefaultTimezoneSaver,
+	channelStatsTrackerTasksLoader discord_commands.ChannelStatsTrackerTasksLoader,
 ) (*module.Module, error) {
 	m := module.New(log.Logger, "discord")
 	session, err := discordgo.New("Bot " + token)
@@ -92,6 +94,8 @@ func New(
 		channelCharacterNotificationsSaver,
 		channelOutfitNotificationsSaver,
 		channelTitleUpdatesSaver,
+		channelDefaultTimezoneSaver,
+		channelStatsTrackerTasksLoader,
 	)
 	m.AppendR("discord.commands", commands.Start)
 

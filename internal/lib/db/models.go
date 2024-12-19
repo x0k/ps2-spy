@@ -14,6 +14,7 @@ type Channel struct {
 	CharacterNotifications bool
 	OutfitNotifications    bool
 	TitleUpdates           bool
+	DefaultTimezone        string
 }
 
 type ChannelToCharacter struct {

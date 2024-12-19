@@ -9,3 +9,5 @@ CREATE TABLE
   );
 
 CREATE INDEX idx_stats_tracker_task ON stats_tracker_task (channel_id, weekday, utc_start_time, utc_end_time);
+
+ALTER TABLE channel ADD COLUMN default_timezone TEXT NOT NULL DEFAULT 'UTC';

@@ -49,6 +49,8 @@ func New(
 	channelCharacterNotificationsSaver ChannelCharacterNotificationsSaver,
 	channelOutfitNotificationsSaver ChannelOutfitNotificationsSaver,
 	channelTitleUpdatesSaver ChannelTitleUpdatesSaver,
+	channelDefaultTimezoneSaver ChannelDefaultTimezoneSaver,
+	channelStatsTrackerTasksLoader ChannelStatsTrackerTasksLoader,
 ) *commands {
 	populationLoader := newPopulationLoader(
 		log.With(sl.Component("population_loader")),
@@ -124,10 +126,12 @@ func New(
 				channelCharacterNotificationsSaver,
 				channelOutfitNotificationsSaver,
 				channelTitleUpdatesSaver,
+				channelDefaultTimezoneSaver,
 			),
 			NewStatsTracker(
 				messages,
 				statsTracker,
+				channelStatsTrackerTasksLoader,
 			),
 		},
 	}

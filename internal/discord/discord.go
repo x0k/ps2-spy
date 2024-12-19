@@ -55,6 +55,7 @@ type Channel struct {
 	CharacterNotifications bool
 	OutfitNotifications    bool
 	TitleUpdates           bool
+	DefaultTimezone        *time.Location
 }
 
 func NewChannel(
@@ -63,6 +64,7 @@ func NewChannel(
 	characterNotifications bool,
 	outfitNotifications bool,
 	titleUpdates bool,
+	defaultTimezone *time.Location,
 ) Channel {
 	return Channel{
 		Id:                     channelId,
@@ -70,11 +72,12 @@ func NewChannel(
 		CharacterNotifications: characterNotifications,
 		OutfitNotifications:    outfitNotifications,
 		TitleUpdates:           titleUpdates,
+		DefaultTimezone:        defaultTimezone,
 	}
 }
 
 func NewDefaultChannel(channelId ChannelId) Channel {
-	return NewChannel(channelId, DEFAULT_LANG_TAG, true, true, true)
+	return NewChannel(channelId, DEFAULT_LANG_TAG, true, true, true, time.UTC)
 }
 
 type StatsTrackerTaskId int64

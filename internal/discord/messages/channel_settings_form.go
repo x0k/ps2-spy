@@ -3,6 +3,7 @@ package discord_messages
 import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/x0k/ps2-spy/internal/discord"
+	"github.com/x0k/ps2-spy/internal/shared"
 	"golang.org/x/text/message"
 )
 
@@ -12,6 +13,15 @@ func channelSettingsForm(
 ) []discordgo.MessageComponent {
 	one := 1
 	localeBase, _ := channel.Locale.Base()
+	timezoneSelectOptions := make([]discordgo.SelectMenuOption, 0, len(shared.Timezones))
+	defaultTz := channel.DefaultTimezone.String()
+	for _, tz := range shared.Timezones {
+		timezoneSelectOptions = append(timezoneSelectOptions, discordgo.SelectMenuOption{
+			Label:   p.Sprintf("Default timezone: %s", tz),
+			Value:   tz,
+			Default: defaultTz == tz,
+		})
+	}
 	return []discordgo.MessageComponent{
 		discordgo.ActionsRow{
 			Components: []discordgo.MessageComponent{
@@ -98,6 +108,17 @@ func channelSettingsForm(
 							Default: !channel.TitleUpdates,
 						},
 					},
+				},
+			},
+		},
+		discordgo.ActionsRow{
+			Components: []discordgo.MessageComponent{
+				discordgo.SelectMenu{
+					CustomID:    discord.CHANNEL_DEFAULT_TIMEZONE_COMPONENT_CUSTOM_ID,
+					Placeholder: "Default timezone",
+					MinValues:   &one,
+					MaxValues:   1,
+					Options:     timezoneSelectOptions,
 				},
 			},
 		},

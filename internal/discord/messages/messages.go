@@ -549,7 +549,9 @@ func (m *Messages) EmptyFollowUp() discord.FollowUp {
 	}
 }
 
-func (m *Messages) ChannelSettingsForm(channel discord.Channel) discord.ResponseEdit {
+func (m *Messages) ChannelSettingsForm(
+	channel discord.Channel,
+) discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
 		components := channelSettingsForm(p, channel)
 		return &discordgo.WebhookEdit{

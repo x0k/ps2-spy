@@ -522,6 +522,8 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		storage.SaveChannelCharacterNotifications,
 		storage.SaveChannelOutfitNotifications,
 		storage.SaveChannelTitleUpdates,
+		storage.SaveChannelDefaultTimezone,
+		storage.ChannelStatsTrackerTasksLoader,
 	)
 	if err != nil {
 		return nil, err

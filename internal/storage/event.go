@@ -29,6 +29,7 @@ const (
 	ChannelCharacterNotificationsSavedType EventType = "channel_character_notifications_saved"
 	ChannelOutfitNotificationsSavedType    EventType = "channel_outfit_notifications_saved"
 	ChannelTitleUpdatesSavedType           EventType = "channel_title_updates_saved"
+	ChannelDefaultTimezoneSavedType        EventType = "channel_default_timezone_saved"
 )
 
 type ChannelOutfitSaved struct {
@@ -155,4 +156,13 @@ type ChannelTitleUpdatesSaved struct {
 
 func (e ChannelTitleUpdatesSaved) Type() EventType {
 	return ChannelTitleUpdatesSavedType
+}
+
+type ChannelDefaultTimezoneSaved struct {
+	ChannelId discord.ChannelId
+	Location  *time.Location
+}
+
+func (e ChannelDefaultTimezoneSaved) Type() EventType {
+	return ChannelDefaultTimezoneSavedType
 }
