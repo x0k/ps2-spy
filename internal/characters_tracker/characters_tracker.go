@@ -107,16 +107,6 @@ func (p *CharactersTracker) handleInactive(ctx context.Context, now time.Time) [
 	return removedPlayers
 }
 
-func (p *CharactersTracker) publishPlayerLogout(ctx context.Context, t time.Time, pl player) {
-	if err := p.publisher.Publish(PlayerLogout{
-		Time:        t,
-		CharacterId: pl.characterId,
-		WorldId:     pl.worldId,
-	}); err != nil {
-		p.log.Error(ctx, "cannot publish event", sl.Err(err))
-	}
-}
-
 func (p *CharactersTracker) Start(ctx context.Context) {
 	ticker := time.NewTicker(p.inactivityCheckInterval)
 	defer ticker.Stop()
@@ -134,73 +124,15 @@ func (p *CharactersTracker) Start(ctx context.Context) {
 	}
 }
 
-func (p *CharactersTracker) handleLogin(ctx context.Context, char ps2.Character) bool {
-	p.mutex.Lock()
-	defer p.mutex.Unlock()
-	p.activePlayers.Push(player{char.Id, char.WorldId})
-	if w, ok := p.worldPopulationTrackers[char.WorldId]; ok {
-		w.HandleLogin(char)
-	} else {
-		p.log.Warn(ctx, "world not found", slog.String("world_id", string(char.WorldId)))
-	}
-	return p.onlineCharactersTracker.HandleLogin(char)
-}
-
-func (p *CharactersTracker) publishPlayerLogin(ctx context.Context, event events.PlayerLogin) {
-	var t time.Time
-	// TODO: move this somewhere
-	if timestamp, err := strconv.ParseInt(event.Timestamp, 10, 64); err == nil {
-		t = time.Unix(timestamp, 0)
-	} else {
-		t = time.Now()
-	}
-	if err := p.publisher.Publish(PlayerLogin{
-		Time:        t,
-		CharacterId: ps2.CharacterId(event.CharacterID),
-		WorldId:     ps2.WorldId(event.WorldID),
-	}); err != nil {
-		p.log.Error(ctx, "cannot publish event", sl.Err(err))
-	}
-}
-
 func (p *CharactersTracker) HandleLogin(ctx context.Context, event events.PlayerLogin) {
 	p.wg.Add(1)
 	go func() {
 		defer p.wg.Done()
 		charId := ps2.CharacterId(event.CharacterID)
-		char, err := p.retryableCharacterLoader(
-			ctx,
-			charId,
-			while.ErrorIsHere,
-			while.HasAttempts(3),
-			while.ContextIsNotCancelled,
-			perform.Log(
-				p.log.Logger,
-				slog.LevelDebug,
-				"[ERROR] failed to get character, retrying",
-				slog.String("character_id", string(charId)),
-			),
-		)
-		if err != nil {
-			p.log.Debug(ctx, "[ERROR] failed to get character", slog.String("character_id", string(charId)), sl.Err(err))
-			return
-		}
-		if p.handleLogin(ctx, char) {
-			p.publishPlayerLogin(ctx, event)
+		if char, ok := p.handleLogin(ctx, charId); ok {
+			p.publishPlayerLogin(ctx, event, char)
 		}
 	}()
-}
-
-func (p *CharactersTracker) handleLogout(ctx context.Context, charId ps2.CharacterId, worldId ps2.WorldId) bool {
-	p.mutex.Lock()
-	defer p.mutex.Unlock()
-	p.activePlayers.Remove(player{charId, worldId})
-	if w, ok := p.worldPopulationTrackers[worldId]; ok {
-		w.HandleInactive(charId)
-	} else {
-		p.log.Warn(ctx, "world not found", slog.String("world_id", string(worldId)))
-	}
-	return p.onlineCharactersTracker.HandleInactive(charId)
 }
 
 func (p *CharactersTracker) HandleLogout(ctx context.Context, event events.PlayerLogout) {
@@ -219,11 +151,23 @@ func (p *CharactersTracker) HandleLogout(ctx context.Context, event events.Playe
 
 func (p *CharactersTracker) HandleWorldZoneAction(ctx context.Context, worldId, zoneId, charId string) {
 	cId := ps2.CharacterId(charId)
+	if cId == ps2.RestrictedAreaCharacterId {
+		return
+	}
 	wId := ps2.WorldId(worldId)
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
-	// TODO: Generate login (or something similar) event if char is not logged in yet
-	p.activePlayers.Push(player{cId, wId})
+	if p.onlineCharactersTracker.isOnline(cId) {
+		p.activePlayers.Push(player{cId, wId})
+	} else {
+		p.wg.Add(1)
+		go func() {
+			defer p.wg.Done()
+			if char, ok := p.handleLogin(ctx, cId); ok {
+				p.publishPlayerFakeLogin(ctx, char)
+			}
+		}()
+	}
 	if w, ok := p.worldPopulationTrackers[wId]; ok {
 		w.HandleZoneAction(cId, zoneId)
 	} else {
@@ -311,4 +255,90 @@ func (p *CharactersTracker) DetailedWorldPopulation(worldId ps2.WorldId) (ps2.De
 		Total: total,
 		Zones: zones,
 	}, nil
+}
+
+func (p *CharactersTracker) handleLogin(ctx context.Context, charId ps2.CharacterId) (ps2.Character, bool) {
+	char, err := p.retryableCharacterLoader(
+		ctx,
+		charId,
+		while.ErrorIsHere,
+		while.HasAttempts(3),
+		while.ContextIsNotCancelled,
+		perform.Log(
+			p.log.Logger,
+			slog.LevelDebug,
+			"[ERROR] failed to get character, retrying",
+			slog.String("character_id", string(charId)),
+		),
+	)
+	if err != nil {
+		p.log.Debug(
+			ctx,
+			"[ERROR] failed to get character",
+			slog.String("character_id", string(charId)),
+			sl.Err(err),
+		)
+		return char, false
+	}
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+	p.activePlayers.Push(player{char.Id, char.WorldId})
+	if w, ok := p.worldPopulationTrackers[char.WorldId]; ok {
+		w.HandleLogin(char)
+	} else {
+		p.log.Warn(ctx, "world not found", slog.String("world_id", string(char.WorldId)))
+	}
+	return char, p.onlineCharactersTracker.HandleLogin(char)
+}
+
+func (p *CharactersTracker) handleLogout(ctx context.Context, charId ps2.CharacterId, worldId ps2.WorldId) bool {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+	p.activePlayers.Remove(player{charId, worldId})
+	if w, ok := p.worldPopulationTrackers[worldId]; ok {
+		w.HandleInactive(charId)
+	} else {
+		p.log.Warn(ctx, "world not found", slog.String("world_id", string(worldId)))
+	}
+	return p.onlineCharactersTracker.HandleInactive(charId)
+}
+
+func (p *CharactersTracker) publishPlayerLogin(
+	ctx context.Context,
+	event events.PlayerLogin,
+	char ps2.Character,
+) {
+	var t time.Time
+	// TODO: move this somewhere
+	if timestamp, err := strconv.ParseInt(event.Timestamp, 10, 64); err == nil {
+		t = time.Unix(timestamp, 0)
+	} else {
+		t = time.Now()
+	}
+	if err := p.publisher.Publish(PlayerLogin{
+		Time:      t,
+		Character: char,
+	}); err != nil {
+		p.log.Error(ctx, "cannot publish login event", sl.Err(err))
+	}
+}
+
+func (p *CharactersTracker) publishPlayerFakeLogin(ctx context.Context, char ps2.Character) {
+	now := time.Now()
+	if err := p.publisher.Publish(PlayerFakeLogin{
+		Time:      now,
+		Character: char,
+	}); err != nil {
+		p.log.Error(ctx, "cannot publish fake login event", sl.Err(err))
+	}
+}
+
+func (p *CharactersTracker) publishPlayerLogout(ctx context.Context, t time.Time, pl player) {
+	if err := p.publisher.Publish(PlayerLogout{
+		Time:        t,
+		CharacterId: pl.characterId,
+		WorldId:     pl.worldId,
+	}); err != nil {
+		p.log.Error(ctx, "cannot publish logout event", sl.Err(err))
+	}
 }

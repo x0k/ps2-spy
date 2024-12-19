@@ -117,6 +117,8 @@ type Alerts []Alert
 
 type CharacterId string
 
+const RestrictedAreaCharacterId = CharacterId("0")
+
 type Character struct {
 	Id        CharacterId
 	FactionId ps2_factions.Id

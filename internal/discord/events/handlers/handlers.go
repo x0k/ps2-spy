@@ -34,7 +34,8 @@ func NewPlatform(
 		NewFacilityControl(m, messages, outfitLoader, facilityLoader, platform),
 		NewFacilityLoss(m, messages, outfitLoader, facilityLoader, platform),
 		NewOutfitMembersUpdate(m, messages, outfitLoader, charactersLoader, platform),
-		NewPlayerLogin(m, messages, characterLoader, onlineTrackableEntitiesCountLoader, channelTitleUpdater),
+		NewPlayerLogin(m, messages, onlineTrackableEntitiesCountLoader, channelTitleUpdater),
+		NewPlayerFakeLogin(m, messages, onlineTrackableEntitiesCountLoader, channelTitleUpdater),
 		NewPlayerLogout(m, messages, characterLoader, onlineTrackableEntitiesCountLoader, channelTitleUpdater),
 	}
 }

@@ -188,6 +188,7 @@ func New(
 			platformEventsPublisher.Start,
 		)
 		playerLogin := characters_tracker.Subscribe[characters_tracker.PlayerLogin](m, charactersTrackerSubsManagers[platform])
+		playerFakeLogin := characters_tracker.Subscribe[characters_tracker.PlayerFakeLogin](m, charactersTrackerSubsManagers[platform])
 		playerLogout := characters_tracker.Subscribe[characters_tracker.PlayerLogout](m, charactersTrackerSubsManagers[platform])
 		facilityControl := worlds_tracker.Subscribe[worlds_tracker.FacilityControl](m, worldTrackerSubsMangers[platform])
 		facilityLoss := worlds_tracker.Subscribe[worlds_tracker.FacilityLoss](m, worldTrackerSubsMangers[platform])
@@ -201,6 +202,8 @@ func New(
 						return
 					case e := <-playerLogin:
 						platformEventsPublisher.PublishPlayerLogin(ctx, e)
+					case e := <-playerFakeLogin:
+						platformEventsPublisher.PublishPlayerFakeLogin(ctx, e)
 					case e := <-playerLogout:
 						platformEventsPublisher.PublishPlayerLogout(ctx, e)
 					case e := <-facilityControl:

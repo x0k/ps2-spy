@@ -7,8 +7,12 @@ import (
 	"github.com/x0k/ps2-spy/internal/discord"
 	discord_events "github.com/x0k/ps2-spy/internal/discord/events"
 	discord_messages "github.com/x0k/ps2-spy/internal/discord/messages"
+	"github.com/x0k/ps2-spy/internal/lib/loader"
 	"github.com/x0k/ps2-spy/internal/lib/slicesx"
+	"github.com/x0k/ps2-spy/internal/ps2"
 )
+
+type CharacterLoader = loader.Keyed[ps2.CharacterId, ps2.Character]
 
 func NewPlayerLogout(
 	m *HandlersManager,

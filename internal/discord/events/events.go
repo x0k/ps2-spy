@@ -52,6 +52,7 @@ type ChannelTrackerStarted = channelEvent[stats_tracker.EventType, stats_tracker
 type ChannelTrackerStopped = channelEvent[stats_tracker.EventType, stats_tracker.ChannelTrackerStopped]
 
 type PlayerLogin = channelsEvent[characters_tracker.EventType, characters_tracker.PlayerLogin]
+type PlayerFakeLogin = channelsEvent[characters_tracker.EventType, characters_tracker.PlayerFakeLogin]
 type PlayerLogout = channelsEvent[characters_tracker.EventType, characters_tracker.PlayerLogout]
 type OutfitMembersUpdate = channelsEvent[storage.EventType, storage.OutfitMembersUpdate]
 type FacilityControl = channelsEvent[worlds_tracker.EventType, worlds_tracker.FacilityControl]

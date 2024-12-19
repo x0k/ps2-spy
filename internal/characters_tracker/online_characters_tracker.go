@@ -70,3 +70,8 @@ func (o *onlineCharactersTracker) TrackableOnlineEntities(
 		Characters: characters,
 	}
 }
+
+func (o *onlineCharactersTracker) isOnline(charId ps2.CharacterId) bool {
+	_, ok := o.characterOutfitMap[charId]
+	return ok
+}

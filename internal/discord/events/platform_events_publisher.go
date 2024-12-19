@@ -48,7 +48,12 @@ func (p *PlatformEventsPublisher) Start(ctx context.Context) {
 
 func (p *PlatformEventsPublisher) PublishPlayerLogin(ctx context.Context, e characters_tracker.PlayerLogin) {
 	p.wg.Add(1)
-	go publishCharacterEventTask(ctx, p, e.CharacterId, e)
+	go publishCharacterEventTask(ctx, p, e.Character.Id, e)
+}
+
+func (p *PlatformEventsPublisher) PublishPlayerFakeLogin(ctx context.Context, e characters_tracker.PlayerFakeLogin) {
+	p.wg.Add(1)
+	go publishCharacterEventTask(ctx, p, e.Character.Id, e)
 }
 
 func (p *PlatformEventsPublisher) PublishPlayerLogout(ctx context.Context, e characters_tracker.PlayerLogout) {
