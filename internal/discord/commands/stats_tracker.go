@@ -18,6 +18,7 @@ func NewStatsTracker(
 	messages *discord_messages.Messages,
 	statsTracker *stats_tracker.StatsTracker,
 	channelStatsTrackerTasksLoader ChannelStatsTrackerTasksLoader,
+	channelLoader ChannelLoader,
 ) *discord.Command {
 	return &discord.Command{
 		Cmd: &discordgo.ApplicationCommand{
@@ -89,11 +90,18 @@ func NewStatsTracker(
 				}
 				return messages.ChannelTrackerWillStoppedSoon()
 			case "schedule":
+				channel, err := channelLoader(ctx, channelId)
+				if err != nil {
+					return discord_messages.ChannelLoadError[discordgo.WebhookEdit](
+						channelId,
+						err,
+					)
+				}
 				tasks, err := channelStatsTrackerTasksLoader(ctx, channelId)
 				if err != nil {
 					return messages.ChannelStatsTrackerTasksLoadError(err)
 				}
-				return messages.ChannelStatsTrackerSchedule(tasks)
+				return messages.ChannelStatsTrackerSchedule(channel, tasks)
 			}
 			return messages.InvalidStatsTrackerSubcommand(
 				cmd,

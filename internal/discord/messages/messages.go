@@ -16,10 +16,16 @@ import (
 	"golang.org/x/text/message"
 )
 
-type Messages struct{}
+type Messages struct {
+	timezones []string
+}
 
-func New() *Messages {
-	return &Messages{}
+func New(
+	timezones []string,
+) *Messages {
+	return &Messages{
+		timezones: timezones,
+	}
 }
 
 func (m *Messages) CharacterLogin(char ps2.Character) discord.Message {
@@ -479,12 +485,24 @@ func (m *Messages) ChannelStatsTrackerTasksLoadError(err error) discord.Response
 }
 
 func (m *Messages) ChannelStatsTrackerSchedule(
+	channel discord.Channel,
 	tasks []discord.StatsTrackerTask,
 ) discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
-		content := p.Sprintf("Schedule")
+		timezone, offsetInSeconds := time.Now().In(channel.DefaultTimezone).Zone()
+		offset := time.Duration(offsetInSeconds) * time.Second
+		components := m.statsTrackerScheduleEditForm(
+			p,
+			tasks,
+			offset,
+		)
+		content := p.Sprintf(
+			"The time is in %q time zone, you can change this in the channel settings",
+			timezone,
+		)
 		return &discordgo.WebhookEdit{
-			Content: &content,
+			Content:    &content,
+			Components: &components,
 		}, nil
 	}
 }
@@ -553,7 +571,7 @@ func (m *Messages) ChannelSettingsForm(
 	channel discord.Channel,
 ) discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
-		components := channelSettingsForm(p, channel)
+		components := m.channelSettingsForm(p, channel)
 		return &discordgo.WebhookEdit{
 			Components: &components,
 		}, nil
@@ -564,7 +582,7 @@ func (m *Messages) ChannelSettingsFormUpdate(
 	channel discord.Channel,
 ) discord.Response {
 	return func(p *message.Printer) (*discordgo.InteractionResponseData, *discord.Error) {
-		components := channelSettingsForm(p, channel)
+		components := m.channelSettingsForm(p, channel)
 		return &discordgo.InteractionResponseData{
 			Components: components,
 		}, nil

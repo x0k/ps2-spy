@@ -1,6 +1,9 @@
 package discord
 
 import (
+	"strconv"
+	"strings"
+
 	"github.com/bwmarrin/discordgo"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
@@ -10,6 +13,16 @@ type Command struct {
 	Handler           InteractionHandler
 	SubmitHandlers    map[string]InteractionHandler
 	ComponentHandlers map[string]InteractionHandler
+}
+
+const customIdSeparator = "::"
+
+func HandlerId(customId string) string {
+	idx := strings.Index(customId, customIdSeparator)
+	if idx == -1 {
+		return customId
+	}
+	return customId[:idx]
 }
 
 var TRACKING_MODAL_CUSTOM_IDS = map[ps2_platforms.Platform]string{
@@ -23,3 +36,21 @@ var CHANNEL_CHARACTER_NOTIFICATIONS_COMPONENT_CUSTOM_ID = "channel_character_not
 var CHANNEL_OUTFIT_NOTIFICATIONS_COMPONENT_CUSTOM_ID = "channel_outfit_notifications"
 var CHANNEL_TITLE_UPDATES_COMPONENT_CUSTOM_ID = "channel_title_updates"
 var CHANNEL_DEFAULT_TIMEZONE_COMPONENT_CUSTOM_ID = "channel_default_timezone"
+
+var STATS_TRACKER_TASK_ADD_BUTTON_CUSTOM_ID = "stats_tracker_task_add"
+var statsTrackerTaskEditButtonCustomId = "stats_tracker_task_edit"
+var statsTrackerTaskRemoveButtonCustomId = "stats_tracker_task_remove"
+
+func NewStatsTrackerTaskEditButtonCustomId(
+	id StatsTrackerTaskId,
+) string {
+	return statsTrackerTaskEditButtonCustomId + customIdSeparator +
+		strconv.FormatInt(int64(id), 10)
+}
+
+func NewStatsTrackerTaskRemoveButtonCustomId(
+	id StatsTrackerTaskId,
+) string {
+	return statsTrackerTaskRemoveButtonCustomId + customIdSeparator +
+		strconv.FormatInt(int64(id), 10)
+}

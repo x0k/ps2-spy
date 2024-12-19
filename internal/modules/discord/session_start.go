@@ -80,7 +80,7 @@ func sessionStart(
 			case discordgo.InteractionModalSubmit:
 				data := i.ModalSubmitData()
 				mLog := hLog.With(slog.String("custom_id", data.CustomID))
-				if handler, ok := submitHandlers[data.CustomID]; ok {
+				if handler, ok := submitHandlers[discord.HandlerId(data.CustomID)]; ok {
 					mLog.Debug(ctx, "submit received")
 					go handler.Run(ctx, mLog, commandHandlerTimeout, s, i)
 				} else {
@@ -89,7 +89,7 @@ func sessionStart(
 			case discordgo.InteractionMessageComponent:
 				data := i.MessageComponentData()
 				mLog := hLog.With(slog.String("custom_id", data.CustomID))
-				if handler, ok := componentHandlers[data.CustomID]; ok {
+				if handler, ok := componentHandlers[discord.HandlerId(data.CustomID)]; ok {
 					mLog.Debug(ctx, "component received")
 					go handler.Run(ctx, mLog, commandHandlerTimeout, s, i)
 				} else {

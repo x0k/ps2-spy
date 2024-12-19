@@ -132,6 +132,7 @@ func New(
 				messages,
 				statsTracker,
 				channelStatsTrackerTasksLoader,
+				channelLoader,
 			),
 		},
 	}

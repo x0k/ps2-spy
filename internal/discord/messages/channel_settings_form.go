@@ -3,19 +3,18 @@ package discord_messages
 import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/x0k/ps2-spy/internal/discord"
-	"github.com/x0k/ps2-spy/internal/shared"
 	"golang.org/x/text/message"
 )
 
-func channelSettingsForm(
+func (m *Messages) channelSettingsForm(
 	p *message.Printer,
 	channel discord.Channel,
 ) []discordgo.MessageComponent {
 	one := 1
 	localeBase, _ := channel.Locale.Base()
-	timezoneSelectOptions := make([]discordgo.SelectMenuOption, 0, len(shared.Timezones))
+	timezoneSelectOptions := make([]discordgo.SelectMenuOption, 0, len(m.timezones))
 	defaultTz := channel.DefaultTimezone.String()
-	for _, tz := range shared.Timezones {
+	for _, tz := range m.timezones {
 		timezoneSelectOptions = append(timezoneSelectOptions, discordgo.SelectMenuOption{
 			Label:   p.Sprintf("Default timezone: %s", tz),
 			Value:   tz,
