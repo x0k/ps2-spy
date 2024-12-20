@@ -36,6 +36,9 @@ qlint:
 migration: env
   migrate create -ext sql -dir db/migrations -seq $1
 
+migrate-down:
+  migrate -source file://db/migrations -database sqlite3://storage/storage.db down 1
+
 text:
   go generate ./internal/translations/translations.go
 

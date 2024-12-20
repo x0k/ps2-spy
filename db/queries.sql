@@ -272,9 +272,28 @@ SELECT
 FROM
   stats_tracker_task
 WHERE
-  weekday = ?
-  AND utc_start_time <= sqlc.arg (utc_time)
-  AND utc_end_time > sqlc.arg (utc_time);
+  (
+    (
+      sqlc.arg (utc_weekday) = utc_start_weekday
+      AND sqlc.arg (utc_time) >= utc_start_time
+    )
+    OR (sqlc.arg (utc_weekday) > utc_start_weekday)
+    OR (
+      sqlc.arg (utc_weekday) = 0
+      AND utc_start_weekday = 6
+    )
+  )
+  AND (
+    (
+      sqlc.arg (utc_weekday) = utc_end_weekday
+      AND sqlc.arg (utc_time) < utc_end_time
+    )
+    OR (sqlc.arg (utc_weekday) < utc_end_weekday)
+    OR (
+      sqlc.arg (utc_weekday) = 6
+      AND utc_end_weekday = 0
+    )
+  );
 
 -- name: ListChannelStatsTrackerTasks :many
 SELECT
@@ -284,19 +303,40 @@ FROM
 WHERE
   channel_id = ?;
 
--- name: ListChannelOverlappingStatsTrackerTasks :many
+-- name: ListChannelIntersectingStatsTrackerTasks :many
 SELECT
   *
 FROM
   stats_tracker_task
 WHERE
   channel_id = ?
-  AND weekday in (sqlc.slice (weekdays))
-  AND utc_start_time < ?
-  AND utc_end_time > ?;
+  AND (
+    (
+      ?2 - utc_start_weekday IN (1, -6)
+    )
+    OR (
+      sqlc.arg (end_weekday) = utc_start_weekday
+      AND sqlc.arg (end_time) > utc_start_time
+    )
+  )
+  AND (
+    (
+      utc_end_weekday - ?4 IN (1, -6)
+    )
+    OR (
+      sqlc.arg (start_weekday) = utc_end_weekday
+      AND sqlc.arg (start_time) < utc_end_time
+    )
+  );
 
 -- name: InsertChannelStatsTrackerTask :exec
 INSERT INTO
-  stats_tracker_task (channel_id, weekday, utc_start_time, utc_end_time)
+  stats_tracker_task (
+    channel_id,
+    utc_start_weekday,
+    utc_start_time,
+    utc_end_weekday,
+    utc_end_time
+  )
 VALUES
-  (?, ?, ?, ?);
+  (?, ?, ?, ?, ?);

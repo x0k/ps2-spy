@@ -199,23 +199,31 @@ func (q *Queries) InsertChannelOutfit(ctx context.Context, arg InsertChannelOutf
 
 const insertChannelStatsTrackerTask = `-- name: InsertChannelStatsTrackerTask :exec
 INSERT INTO
-  stats_tracker_task (channel_id, weekday, utc_start_time, utc_end_time)
+  stats_tracker_task (
+    channel_id,
+    utc_start_weekday,
+    utc_start_time,
+    utc_end_weekday,
+    utc_end_time
+  )
 VALUES
-  (?, ?, ?, ?)
+  (?, ?, ?, ?, ?)
 `
 
 type InsertChannelStatsTrackerTaskParams struct {
-	ChannelID    string
-	Weekday      int64
-	UtcStartTime int64
-	UtcEndTime   int64
+	ChannelID       string
+	UtcStartWeekday int64
+	UtcStartTime    int64
+	UtcEndWeekday   int64
+	UtcEndTime      int64
 }
 
 func (q *Queries) InsertChannelStatsTrackerTask(ctx context.Context, arg InsertChannelStatsTrackerTaskParams) error {
 	_, err := q.exec(ctx, q.insertChannelStatsTrackerTaskStmt, insertChannelStatsTrackerTask,
 		arg.ChannelID,
-		arg.Weekday,
+		arg.UtcStartWeekday,
 		arg.UtcStartTime,
+		arg.UtcEndWeekday,
 		arg.UtcEndTime,
 	)
 	return err
@@ -298,18 +306,37 @@ SELECT
 FROM
   stats_tracker_task
 WHERE
-  weekday = ?
-  AND utc_start_time <= ?2
-  AND utc_end_time > ?2
+  (
+    (
+      ?1 = utc_start_weekday
+      AND ?2 >= utc_start_time
+    )
+    OR (?1 > utc_start_weekday)
+    OR (
+      ?1 = 0
+      AND utc_start_weekday = 6
+    )
+  )
+  AND (
+    (
+      ?1 = utc_end_weekday
+      AND ?2 < utc_end_time
+    )
+    OR (?1 < utc_end_weekday)
+    OR (
+      ?1 = 6
+      AND utc_end_weekday = 0
+    )
+  )
 `
 
 type ListActiveStatsTrackerTasksParams struct {
-	Weekday int64
-	UtcTime int64
+	UtcWeekday int64
+	UtcTime    int64
 }
 
 func (q *Queries) ListActiveStatsTrackerTasks(ctx context.Context, arg ListActiveStatsTrackerTasksParams) ([]string, error) {
-	rows, err := q.query(ctx, q.listActiveStatsTrackerTasksStmt, listActiveStatsTrackerTasks, arg.Weekday, arg.UtcTime)
+	rows, err := q.query(ctx, q.listActiveStatsTrackerTasksStmt, listActiveStatsTrackerTasks, arg.UtcWeekday, arg.UtcTime)
 	if err != nil {
 		return nil, err
 	}
@@ -369,6 +396,77 @@ func (q *Queries) ListChannelCharacterIdsForPlatform(ctx context.Context, arg Li
 	return items, nil
 }
 
+const listChannelIntersectingStatsTrackerTasks = `-- name: ListChannelIntersectingStatsTrackerTasks :many
+SELECT
+  task_id, channel_id, utc_start_weekday, utc_start_time, utc_end_weekday, utc_end_time
+FROM
+  stats_tracker_task
+WHERE
+  channel_id = ?
+  AND (
+    (
+      ?2 - utc_start_weekday IN (1, -6)
+    )
+    OR (
+      ?2 = utc_start_weekday
+      AND ?3 > utc_start_time
+    )
+  )
+  AND (
+    (
+      utc_end_weekday - ?4 IN (1, -6)
+    )
+    OR (
+      ?4 = utc_end_weekday
+      AND ?5 < utc_end_time
+    )
+  )
+`
+
+type ListChannelIntersectingStatsTrackerTasksParams struct {
+	ChannelID    string
+	EndWeekday   int64
+	EndTime      int64
+	StartWeekday int64
+	StartTime    int64
+}
+
+func (q *Queries) ListChannelIntersectingStatsTrackerTasks(ctx context.Context, arg ListChannelIntersectingStatsTrackerTasksParams) ([]StatsTrackerTask, error) {
+	rows, err := q.query(ctx, q.listChannelIntersectingStatsTrackerTasksStmt, listChannelIntersectingStatsTrackerTasks,
+		arg.ChannelID,
+		arg.EndWeekday,
+		arg.EndTime,
+		arg.StartWeekday,
+		arg.StartTime,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []StatsTrackerTask
+	for rows.Next() {
+		var i StatsTrackerTask
+		if err := rows.Scan(
+			&i.TaskID,
+			&i.ChannelID,
+			&i.UtcStartWeekday,
+			&i.UtcStartTime,
+			&i.UtcEndWeekday,
+			&i.UtcEndTime,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listChannelOutfitIdsForPlatform = `-- name: ListChannelOutfitIdsForPlatform :many
 SELECT
   outfit_id
@@ -407,70 +505,9 @@ func (q *Queries) ListChannelOutfitIdsForPlatform(ctx context.Context, arg ListC
 	return items, nil
 }
 
-const listChannelOverlappingStatsTrackerTasks = `-- name: ListChannelOverlappingStatsTrackerTasks :many
-SELECT
-  task_id, channel_id, weekday, utc_start_time, utc_end_time
-FROM
-  stats_tracker_task
-WHERE
-  channel_id = ?
-  AND weekday in (/*SLICE:weekdays*/?)
-  AND utc_start_time < ?
-  AND utc_end_time > ?
-`
-
-type ListChannelOverlappingStatsTrackerTasksParams struct {
-	ChannelID    string
-	Weekdays     []int64
-	UtcStartTime int64
-	UtcEndTime   int64
-}
-
-func (q *Queries) ListChannelOverlappingStatsTrackerTasks(ctx context.Context, arg ListChannelOverlappingStatsTrackerTasksParams) ([]StatsTrackerTask, error) {
-	query := listChannelOverlappingStatsTrackerTasks
-	var queryParams []interface{}
-	queryParams = append(queryParams, arg.ChannelID)
-	if len(arg.Weekdays) > 0 {
-		for _, v := range arg.Weekdays {
-			queryParams = append(queryParams, v)
-		}
-		query = strings.Replace(query, "/*SLICE:weekdays*/?", strings.Repeat(",?", len(arg.Weekdays))[1:], 1)
-	} else {
-		query = strings.Replace(query, "/*SLICE:weekdays*/?", "NULL", 1)
-	}
-	queryParams = append(queryParams, arg.UtcStartTime)
-	queryParams = append(queryParams, arg.UtcEndTime)
-	rows, err := q.query(ctx, nil, query, queryParams...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []StatsTrackerTask
-	for rows.Next() {
-		var i StatsTrackerTask
-		if err := rows.Scan(
-			&i.TaskID,
-			&i.ChannelID,
-			&i.Weekday,
-			&i.UtcStartTime,
-			&i.UtcEndTime,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const listChannelStatsTrackerTasks = `-- name: ListChannelStatsTrackerTasks :many
 SELECT
-  task_id, channel_id, weekday, utc_start_time, utc_end_time
+  task_id, channel_id, utc_start_weekday, utc_start_time, utc_end_weekday, utc_end_time
 FROM
   stats_tracker_task
 WHERE
@@ -489,8 +526,9 @@ func (q *Queries) ListChannelStatsTrackerTasks(ctx context.Context, channelID st
 		if err := rows.Scan(
 			&i.TaskID,
 			&i.ChannelID,
-			&i.Weekday,
+			&i.UtcStartWeekday,
 			&i.UtcStartTime,
+			&i.UtcEndWeekday,
 			&i.UtcEndTime,
 		); err != nil {
 			return nil, err

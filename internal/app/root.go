@@ -47,7 +47,6 @@ import (
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 	"github.com/x0k/ps2-spy/internal/shared"
 	"github.com/x0k/ps2-spy/internal/stats_tracker"
-	"github.com/x0k/ps2-spy/internal/stats_tracker_scheduler"
 	"github.com/x0k/ps2-spy/internal/storage"
 	sql_storage "github.com/x0k/ps2-spy/internal/storage/sql"
 	"github.com/x0k/ps2-spy/internal/tracking_manager"
@@ -171,15 +170,11 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			return channelIds, nil
 		},
 		storage.ChannelTrackablePlatforms,
+		storage.StatsTrackerTasks,
 		charactersLoaders,
 		cfg.MaxTrackingDuration,
 	)
-	statsTrackerScheduler := stats_tracker_scheduler.New(
-		log.With(sl.Component("stats_tracker_scheduler")),
-		statsTracker,
-		storage.StatsTrackerTasks,
-	)
-	m.AppendVR("stats_tracker_scheduler", statsTrackerScheduler.Start)
+	m.AppendVR("stats_tracker", statsTracker.Start)
 
 	for _, platform := range ps2_platforms.Platforms {
 		pl := log.With(slog.String("platform", string(platform)))
@@ -524,6 +519,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		storage.SaveChannelTitleUpdates,
 		storage.SaveChannelDefaultTimezone,
 		storage.ChannelStatsTrackerTasksLoader,
+		storage.CreateStatsTrackerTask,
 	)
 	if err != nil {
 		return nil, err

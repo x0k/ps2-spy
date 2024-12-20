@@ -69,11 +69,11 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.listChannelCharacterIdsForPlatformStmt, err = db.PrepareContext(ctx, listChannelCharacterIdsForPlatform); err != nil {
 		return nil, fmt.Errorf("error preparing query ListChannelCharacterIdsForPlatform: %w", err)
 	}
+	if q.listChannelIntersectingStatsTrackerTasksStmt, err = db.PrepareContext(ctx, listChannelIntersectingStatsTrackerTasks); err != nil {
+		return nil, fmt.Errorf("error preparing query ListChannelIntersectingStatsTrackerTasks: %w", err)
+	}
 	if q.listChannelOutfitIdsForPlatformStmt, err = db.PrepareContext(ctx, listChannelOutfitIdsForPlatform); err != nil {
 		return nil, fmt.Errorf("error preparing query ListChannelOutfitIdsForPlatform: %w", err)
-	}
-	if q.listChannelOverlappingStatsTrackerTasksStmt, err = db.PrepareContext(ctx, listChannelOverlappingStatsTrackerTasks); err != nil {
-		return nil, fmt.Errorf("error preparing query ListChannelOverlappingStatsTrackerTasks: %w", err)
 	}
 	if q.listChannelStatsTrackerTasksStmt, err = db.PrepareContext(ctx, listChannelStatsTrackerTasks); err != nil {
 		return nil, fmt.Errorf("error preparing query ListChannelStatsTrackerTasks: %w", err)
@@ -200,14 +200,14 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing listChannelCharacterIdsForPlatformStmt: %w", cerr)
 		}
 	}
+	if q.listChannelIntersectingStatsTrackerTasksStmt != nil {
+		if cerr := q.listChannelIntersectingStatsTrackerTasksStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing listChannelIntersectingStatsTrackerTasksStmt: %w", cerr)
+		}
+	}
 	if q.listChannelOutfitIdsForPlatformStmt != nil {
 		if cerr := q.listChannelOutfitIdsForPlatformStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing listChannelOutfitIdsForPlatformStmt: %w", cerr)
-		}
-	}
-	if q.listChannelOverlappingStatsTrackerTasksStmt != nil {
-		if cerr := q.listChannelOverlappingStatsTrackerTasksStmt.Close(); cerr != nil {
-			err = fmt.Errorf("error closing listChannelOverlappingStatsTrackerTasksStmt: %w", cerr)
 		}
 	}
 	if q.listChannelStatsTrackerTasksStmt != nil {
@@ -339,8 +339,8 @@ type Queries struct {
 	insertOutfitMemberStmt                                  *sql.Stmt
 	listActiveStatsTrackerTasksStmt                         *sql.Stmt
 	listChannelCharacterIdsForPlatformStmt                  *sql.Stmt
+	listChannelIntersectingStatsTrackerTasksStmt            *sql.Stmt
 	listChannelOutfitIdsForPlatformStmt                     *sql.Stmt
-	listChannelOverlappingStatsTrackerTasksStmt             *sql.Stmt
 	listChannelStatsTrackerTasksStmt                        *sql.Stmt
 	listChannelTrackablePlatformsStmt                       *sql.Stmt
 	listPlatformOutfitMembersStmt                           *sql.Stmt
@@ -360,31 +360,31 @@ type Queries struct {
 
 func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 	return &Queries{
-		db:                                           tx,
-		tx:                                           tx,
-		deleteChannelCharacterStmt:                   q.deleteChannelCharacterStmt,
-		deleteChannelOutfitStmt:                      q.deleteChannelOutfitStmt,
-		deleteOutfitMemberStmt:                       q.deleteOutfitMemberStmt,
-		getChannelStmt:                               q.getChannelStmt,
-		getFacilityStmt:                              q.getFacilityStmt,
-		getPlatformOutfitStmt:                        q.getPlatformOutfitStmt,
-		getPlatformOutfitSynchronizedAtStmt:          q.getPlatformOutfitSynchronizedAtStmt,
-		insertChannelCharacterStmt:                   q.insertChannelCharacterStmt,
-		insertChannelOutfitStmt:                      q.insertChannelOutfitStmt,
-		insertChannelStatsTrackerTaskStmt:            q.insertChannelStatsTrackerTaskStmt,
-		insertFacilityStmt:                           q.insertFacilityStmt,
-		insertOutfitStmt:                             q.insertOutfitStmt,
-		insertOutfitMemberStmt:                       q.insertOutfitMemberStmt,
-		listActiveStatsTrackerTasksStmt:              q.listActiveStatsTrackerTasksStmt,
-		listChannelCharacterIdsForPlatformStmt:       q.listChannelCharacterIdsForPlatformStmt,
-		listChannelOutfitIdsForPlatformStmt:          q.listChannelOutfitIdsForPlatformStmt,
-		listChannelOverlappingStatsTrackerTasksStmt:  q.listChannelOverlappingStatsTrackerTasksStmt,
-		listChannelStatsTrackerTasksStmt:             q.listChannelStatsTrackerTasksStmt,
-		listChannelTrackablePlatformsStmt:            q.listChannelTrackablePlatformsStmt,
-		listPlatformOutfitMembersStmt:                q.listPlatformOutfitMembersStmt,
-		listPlatformOutfitsStmt:                      q.listPlatformOutfitsStmt,
-		listPlatformTrackingChannelsForCharacterStmt: q.listPlatformTrackingChannelsForCharacterStmt,
-		listPlatformTrackingChannelsForOutfitStmt:    q.listPlatformTrackingChannelsForOutfitStmt,
+		db:                                     tx,
+		tx:                                     tx,
+		deleteChannelCharacterStmt:             q.deleteChannelCharacterStmt,
+		deleteChannelOutfitStmt:                q.deleteChannelOutfitStmt,
+		deleteOutfitMemberStmt:                 q.deleteOutfitMemberStmt,
+		getChannelStmt:                         q.getChannelStmt,
+		getFacilityStmt:                        q.getFacilityStmt,
+		getPlatformOutfitStmt:                  q.getPlatformOutfitStmt,
+		getPlatformOutfitSynchronizedAtStmt:    q.getPlatformOutfitSynchronizedAtStmt,
+		insertChannelCharacterStmt:             q.insertChannelCharacterStmt,
+		insertChannelOutfitStmt:                q.insertChannelOutfitStmt,
+		insertChannelStatsTrackerTaskStmt:      q.insertChannelStatsTrackerTaskStmt,
+		insertFacilityStmt:                     q.insertFacilityStmt,
+		insertOutfitStmt:                       q.insertOutfitStmt,
+		insertOutfitMemberStmt:                 q.insertOutfitMemberStmt,
+		listActiveStatsTrackerTasksStmt:        q.listActiveStatsTrackerTasksStmt,
+		listChannelCharacterIdsForPlatformStmt: q.listChannelCharacterIdsForPlatformStmt,
+		listChannelIntersectingStatsTrackerTasksStmt:            q.listChannelIntersectingStatsTrackerTasksStmt,
+		listChannelOutfitIdsForPlatformStmt:                     q.listChannelOutfitIdsForPlatformStmt,
+		listChannelStatsTrackerTasksStmt:                        q.listChannelStatsTrackerTasksStmt,
+		listChannelTrackablePlatformsStmt:                       q.listChannelTrackablePlatformsStmt,
+		listPlatformOutfitMembersStmt:                           q.listPlatformOutfitMembersStmt,
+		listPlatformOutfitsStmt:                                 q.listPlatformOutfitsStmt,
+		listPlatformTrackingChannelsForCharacterStmt:            q.listPlatformTrackingChannelsForCharacterStmt,
+		listPlatformTrackingChannelsForOutfitStmt:               q.listPlatformTrackingChannelsForOutfitStmt,
 		listTrackableCharacterIdsWithDuplicationForPlatformStmt: q.listTrackableCharacterIdsWithDuplicationForPlatformStmt,
 		listTrackableOutfitIdsWithDuplicationForPlatformStmt:    q.listTrackableOutfitIdsWithDuplicationForPlatformStmt,
 		listUniqueTrackableOutfitIdsForPlatformStmt:             q.listUniqueTrackableOutfitIdsForPlatformStmt,

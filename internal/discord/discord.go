@@ -13,6 +13,16 @@ import (
 
 type ChannelId string
 
+type UserId string
+
+type ChannelAndUserIds string
+
+const idsSeparator = "+"
+
+func NewChannelAndUserId(channelId ChannelId, userId UserId) ChannelAndUserIds {
+	return ChannelAndUserIds(string(channelId) + idsSeparator + string(userId))
+}
+
 type TrackableEntities[O any, C any] struct {
 	Outfits    O
 	Characters C
@@ -83,18 +93,20 @@ func NewDefaultChannel(channelId ChannelId) Channel {
 type StatsTrackerTaskId int64
 
 type StatsTrackerTask struct {
-	Id           StatsTrackerTaskId
-	ChannelId    ChannelId
-	UtcWeekday   time.Weekday
-	UtcStartTime time.Duration
-	UtcEndTime   time.Duration
+	Id              StatsTrackerTaskId
+	ChannelId       ChannelId
+	UtcStartWeekday time.Weekday
+	UtcStartTime    time.Duration
+	UtcEndWeekday   time.Weekday
+	UtcEndTime      time.Duration
 }
 
 type CreateStatsTrackerTaskState struct {
 	Timezone       *time.Location
 	LocalWeekdays  []time.Weekday
-	LocalStartTime time.Duration
-	LocalEndTime   time.Duration
+	LocalStartHour int
+	LocalStartMin  int
+	Duration       time.Duration
 }
 
 func NewCreateStatsTrackerTaskState(
@@ -102,12 +114,15 @@ func NewCreateStatsTrackerTaskState(
 ) CreateStatsTrackerTaskState {
 	localNow := time.Now().In(timezone)
 	startTime := time.Duration(localNow.Hour())*time.Hour + time.Duration(localNow.Minute()/10)*10*time.Minute
+	hour := int(startTime / time.Hour)
+	min := int((startTime % time.Hour) / time.Minute)
 	return CreateStatsTrackerTaskState{
 		Timezone: timezone,
 		LocalWeekdays: []time.Weekday{
 			localNow.Weekday(),
 		},
-		LocalStartTime: startTime,
-		LocalEndTime:   startTime + 2*time.Hour,
+		LocalStartHour: hour,
+		LocalStartMin:  min,
+		Duration:       2 * time.Hour,
 	}
 }

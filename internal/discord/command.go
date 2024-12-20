@@ -40,12 +40,25 @@ var CHANNEL_DEFAULT_TIMEZONE_COMPONENT_CUSTOM_ID = "channel_default_timezone"
 var STATS_TRACKER_TASK_ADD_BUTTON_CUSTOM_ID = "stats_tracker_task_add"
 var statsTrackerTaskEditButtonCustomId = "stats_tracker_task_edit"
 var statsTrackerTaskRemoveButtonCustomId = "stats_tracker_task_remove"
-var STATS_TRACKER_TASK_TIMEZONE_SELECTOR_CUSTOM_ID = "stats_tracker_task_timezone_selector"
 var STATS_TRACKER_TASK_WEEKDAYS_SELECTOR_CUSTOM_ID = "stats_tracker_task_weekdays_selector"
 var STATS_TRACKER_TASK_START_HOUR_SELECTOR_CUSTOM_ID = "stats_tracker_task_start_time_selector"
 var STATS_TRACKER_TASK_START_MINUTE_SELECTOR_CUSTOM_ID = "stats_tracker_task_end_time_selector"
 var STATS_TRACKER_TASK_DURATION_SELECTOR_CUSTOM_ID = "stats_tracker_task_duration_selector"
 var STATS_TRACKER_TASK_SUBMIT_BUTTON_CUSTOM_ID = "stats_tracker_task_submit"
+var STATS_TRACKER_TASK_PAGE_BUTTON_CUSTOM_ID = "stats_tracker_task_page_button"
+
+func NewStatsTrackerTaskPageButtonCustomId(
+	page int,
+) string {
+	return STATS_TRACKER_TASK_PAGE_BUTTON_CUSTOM_ID + customIdSeparator +
+		strconv.Itoa(page)
+}
+
+func CustomIdToPage(customId string) (int, error) {
+	return strconv.Atoi(
+		customId[len(STATS_TRACKER_TASK_PAGE_BUTTON_CUSTOM_ID)+len(customIdSeparator):],
+	)
+}
 
 func NewStatsTrackerTaskEditButtonCustomId(
 	id StatsTrackerTaskId,

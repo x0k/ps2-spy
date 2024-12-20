@@ -56,9 +56,10 @@ type OutfitToCharacter struct {
 }
 
 type StatsTrackerTask struct {
-	TaskID       int64
-	ChannelID    string
-	Weekday      int64
-	UtcStartTime int64
-	UtcEndTime   int64
+	TaskID          int64
+	ChannelID       string
+	UtcStartWeekday int64
+	UtcStartTime    int64
+	UtcEndWeekday   int64
+	UtcEndTime      int64
 }

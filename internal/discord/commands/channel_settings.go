@@ -18,7 +18,7 @@ type ChannelOutfitNotificationsSaver = func(ctx context.Context, channelId disco
 type ChannelTitleUpdatesSaver = func(ctx context.Context, channelId discord.ChannelId, enabled bool) error
 type ChannelDefaultTimezoneSaver = func(ctx context.Context, channelId discord.ChannelId, loc *time.Location) error
 
-func makeFieldHandler[V any](
+func settingsFormFieldHandler[V any](
 	messages *discord_messages.Messages,
 	valueExtractor func(*discordgo.InteractionCreate) (V, error),
 	saver func(ctx context.Context, channelId discord.ChannelId, value V) error,
@@ -91,7 +91,7 @@ func NewChannelSettings(
 			return messages.ChannelSettingsForm(channel)
 		}),
 		ComponentHandlers: map[string]discord.InteractionHandler{
-			discord.CHANNEL_LANGUAGE_COMPONENT_CUSTOM_ID: makeFieldHandler(
+			discord.CHANNEL_LANGUAGE_COMPONENT_CUSTOM_ID: settingsFormFieldHandler(
 				messages,
 				func(ic *discordgo.InteractionCreate) (language.Tag, error) {
 					return language.Parse(string(ic.MessageComponentData().Values[0]))
@@ -99,25 +99,25 @@ func NewChannelSettings(
 				channelLanguageSaver,
 				channelLoader,
 			),
-			discord.CHANNEL_CHARACTER_NOTIFICATIONS_COMPONENT_CUSTOM_ID: makeFieldHandler(
+			discord.CHANNEL_CHARACTER_NOTIFICATIONS_COMPONENT_CUSTOM_ID: settingsFormFieldHandler(
 				messages,
 				extractBool,
 				channelCharacterNotificationsSaver,
 				channelLoader,
 			),
-			discord.CHANNEL_OUTFIT_NOTIFICATIONS_COMPONENT_CUSTOM_ID: makeFieldHandler(
+			discord.CHANNEL_OUTFIT_NOTIFICATIONS_COMPONENT_CUSTOM_ID: settingsFormFieldHandler(
 				messages,
 				extractBool,
 				channelOutfitNotificationsSaver,
 				channelLoader,
 			),
-			discord.CHANNEL_TITLE_UPDATES_COMPONENT_CUSTOM_ID: makeFieldHandler(
+			discord.CHANNEL_TITLE_UPDATES_COMPONENT_CUSTOM_ID: settingsFormFieldHandler(
 				messages,
 				extractBool,
 				channelTitleUpdatesSaver,
 				channelLoader,
 			),
-			discord.CHANNEL_DEFAULT_TIMEZONE_COMPONENT_CUSTOM_ID: makeFieldHandler(
+			discord.CHANNEL_DEFAULT_TIMEZONE_COMPONENT_CUSTOM_ID: settingsFormFieldHandler(
 				messages,
 				func(ic *discordgo.InteractionCreate) (*time.Location, error) {
 					return time.LoadLocation(string(ic.MessageComponentData().Values[0]))

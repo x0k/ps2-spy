@@ -38,3 +38,45 @@ func (m *Messages) timezoneOptions(l string, selected *time.Location) []discordg
 	}
 	return timezoneSelectOptions
 }
+
+func renderWeekday(p *message.Printer, d time.Weekday) string {
+	switch d {
+	case time.Monday:
+		return p.Sprintf("Monday")
+	case time.Tuesday:
+		return p.Sprintf("Tuesday")
+	case time.Wednesday:
+		return p.Sprintf("Wednesday")
+	case time.Thursday:
+		return p.Sprintf("Thursday")
+	case time.Friday:
+		return p.Sprintf("Friday")
+	case time.Saturday:
+		return p.Sprintf("Saturday")
+	case time.Sunday:
+		return p.Sprintf("Sunday")
+	default:
+		return d.String()
+	}
+}
+
+func renderShortWeekday(p *message.Printer, d time.Weekday) string {
+	switch d {
+	case time.Monday:
+		return p.Sprintf("Mon")
+	case time.Tuesday:
+		return p.Sprintf("Tue")
+	case time.Wednesday:
+		return p.Sprintf("Wed")
+	case time.Thursday:
+		return p.Sprintf("Thu")
+	case time.Friday:
+		return p.Sprintf("Fri")
+	case time.Saturday:
+		return p.Sprintf("Sat")
+	case time.Sunday:
+		return p.Sprintf("Sun")
+	default:
+		return d.String()
+	}
+}

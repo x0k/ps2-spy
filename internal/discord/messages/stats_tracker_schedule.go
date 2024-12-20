@@ -1,42 +1,25 @@
 package discord_messages
 
 import (
+	"fmt"
+	"math"
 	"slices"
 	"strconv"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/x0k/ps2-spy/internal/discord"
+	"github.com/x0k/ps2-spy/internal/shared"
 	"golang.org/x/text/message"
 )
 
 func timezoneData(p *message.Printer, loc *time.Location) (string, time.Duration) {
 	timezone, offsetInSeconds := time.Now().In(loc).Zone()
 	return p.Sprintf(
-			"The time is in %q time zone, you can change this in the channel settings",
+			"The time is given in the time zone %q.",
 			timezone,
 		),
 		time.Duration(offsetInSeconds) * time.Second
-}
-
-func localDate(weekday time.Weekday, utcTime time.Duration, offset time.Duration) (time.Weekday, time.Duration) {
-	localTime := utcTime + offset
-	if localTime < 0 {
-		if weekday == time.Sunday {
-			weekday = time.Saturday
-		} else {
-			weekday--
-		}
-		localTime += 24 * time.Hour
-	} else if localTime >= 24*time.Hour {
-		if weekday == time.Saturday {
-			weekday = time.Sunday
-		} else {
-			weekday++
-		}
-		localTime -= 24 * time.Hour
-	}
-	return weekday, localTime
 }
 
 type localStatsTrackerTask struct {
@@ -47,15 +30,18 @@ type localStatsTrackerTask struct {
 	endTime      time.Duration
 }
 
+const pageSize = 4
+
 func statsTrackerScheduleEditForm(
 	p *message.Printer,
 	tasks []discord.StatsTrackerTask,
 	offset time.Duration,
+	zeroIndexedPage int,
 ) []discordgo.MessageComponent {
 	localTasks := make([]localStatsTrackerTask, 0, len(tasks))
 	for _, t := range tasks {
-		startWeekday, startTime := localDate(t.UtcWeekday, t.UtcStartTime, offset)
-		endWeekday, endTime := localDate(t.UtcWeekday, t.UtcEndTime, offset)
+		startWeekday, startTime := shared.ShiftDate(t.UtcStartWeekday, t.UtcStartTime, offset)
+		endWeekday, endTime := shared.ShiftDate(t.UtcStartWeekday, t.UtcEndTime, offset)
 		localTasks = append(localTasks, localStatsTrackerTask{
 			id:           t.Id,
 			startWeekday: startWeekday,
@@ -71,14 +57,31 @@ func statsTrackerScheduleEditForm(
 		}
 		return int(a.startTime - b.startTime)
 	})
+	if len(localTasks) > pageSize {
+		shift := zeroIndexedPage * pageSize
+		localTasks = localTasks[shift:min(shift+pageSize, len(localTasks))]
+	}
 	rows := make([]discordgo.MessageComponent, 0, len(localTasks)+1)
 	for _, t := range localTasks {
+		startHour := int(t.startTime / time.Hour)
+		startMin := int((t.startTime % time.Hour) / time.Minute)
+		duration := t.endTime - t.startTime
+		if t.endWeekday > t.startWeekday ||
+			(t.endWeekday == time.Sunday && t.startWeekday == time.Saturday) {
+			duration += 24 * time.Hour
+		}
 		rows = append(rows, discordgo.ActionsRow{
 			Components: []discordgo.MessageComponent{
 				discordgo.Button{
 					CustomID: discord.NewStatsTrackerTaskEditButtonCustomId(t.id),
-					Label:    p.Sprintf("Edit"),
-					Style:    discordgo.SecondaryButton,
+					Label: fmt.Sprintf(
+						"%s, %02d:%02d, %s",
+						renderWeekday(p, t.startWeekday),
+						startHour,
+						startMin,
+						renderDuration(p, duration),
+					),
+					Style: discordgo.SecondaryButton,
 				},
 				discordgo.Button{
 					CustomID: discord.NewStatsTrackerTaskRemoveButtonCustomId(t.id),
@@ -88,14 +91,33 @@ func statsTrackerScheduleEditForm(
 			},
 		})
 	}
+	addButton := discordgo.Button{
+		CustomID: discord.STATS_TRACKER_TASK_ADD_BUTTON_CUSTOM_ID,
+		Label:    p.Sprintf("Add new task"),
+		Style:    discordgo.PrimaryButton,
+	}
+	lastRow := []discordgo.MessageComponent{addButton}
+	if len(tasks) > 4 {
+		if zeroIndexedPage > 0 {
+			lastRow = []discordgo.MessageComponent{
+				discordgo.Button{
+					CustomID: discord.NewStatsTrackerTaskPageButtonCustomId(zeroIndexedPage - 1),
+					Label:    p.Sprintf("Previous"),
+					Style:    discordgo.SecondaryButton,
+				},
+				addButton,
+			}
+		}
+		if zeroIndexedPage < int(math.Ceil(float64(len(tasks))/float64(pageSize)))-1 {
+			lastRow = append(lastRow, discordgo.Button{
+				CustomID: discord.NewStatsTrackerTaskPageButtonCustomId(zeroIndexedPage + 1),
+				Label:    p.Sprintf("Next"),
+				Style:    discordgo.SecondaryButton,
+			})
+		}
+	}
 	rows = append(rows, discordgo.ActionsRow{
-		Components: []discordgo.MessageComponent{
-			discordgo.Button{
-				CustomID: discord.STATS_TRACKER_TASK_ADD_BUTTON_CUSTOM_ID,
-				Label:    p.Sprintf("Add new task"),
-				Style:    discordgo.PrimaryButton,
-			},
-		},
+		Components: lastRow,
 	})
 	return rows
 }
@@ -129,36 +151,27 @@ func durationPickerOptions(p *message.Printer, selectedDuration time.Duration) [
 	for i := 0 * time.Minute; i <= 4*time.Hour; i += 30 * time.Minute {
 		options = append(options, discordgo.SelectMenuOption{
 			Label:   p.Sprintf("Duration: %s", renderDuration(p, i)),
-			Value:   strconv.FormatInt(int64(i), 10),
+			Value:   i.String(),
 			Default: i == selectedDuration,
 		})
 	}
 	return options
 }
 
-func (m *Messages) statsTrackerScheduleAddForm(
+func (m *Messages) statsTrackerCreateTaskForm(
 	p *message.Printer,
 	s discord.CreateStatsTrackerTaskState,
 ) []discordgo.MessageComponent {
 	one := 1
-	selectedHour := int(s.LocalStartTime / time.Hour)
-	selectedMinute := int((s.LocalStartTime % time.Hour) / time.Minute)
-	timezoneOpts := m.timezoneOptions(
-		p.Sprintf("Timezone"),
-		s.Timezone,
-	)
+	weekdayOptions := make([]discordgo.SelectMenuOption, 0, 7)
+	for i := time.Sunday; i <= time.Saturday; i++ {
+		weekdayOptions = append(weekdayOptions, discordgo.SelectMenuOption{
+			Label:   renderWeekday(p, i),
+			Value:   strconv.Itoa(int(i)),
+			Default: slices.Contains(s.LocalWeekdays, i),
+		})
+	}
 	return []discordgo.MessageComponent{
-		discordgo.ActionsRow{
-			Components: []discordgo.MessageComponent{
-				discordgo.SelectMenu{
-					CustomID:    discord.STATS_TRACKER_TASK_TIMEZONE_SELECTOR_CUSTOM_ID,
-					Placeholder: "Timezone",
-					MinValues:   &one,
-					MaxValues:   1,
-					Options:     timezoneOpts,
-				},
-			},
-		},
 		discordgo.ActionsRow{
 			Components: []discordgo.MessageComponent{
 				discordgo.SelectMenu{
@@ -166,43 +179,7 @@ func (m *Messages) statsTrackerScheduleAddForm(
 					Placeholder: "Weekdays",
 					MinValues:   &one,
 					MaxValues:   7,
-					Options: []discordgo.SelectMenuOption{
-						{
-							Label:   p.Sprintf("Monday"),
-							Value:   "1",
-							Default: slices.Contains(s.LocalWeekdays, time.Monday),
-						},
-						{
-							Label:   p.Sprintf("Tuesday"),
-							Value:   "2",
-							Default: slices.Contains(s.LocalWeekdays, time.Tuesday),
-						},
-						{
-							Label:   p.Sprintf("Wednesday"),
-							Value:   "3",
-							Default: slices.Contains(s.LocalWeekdays, time.Wednesday),
-						},
-						{
-							Label:   p.Sprintf("Thursday"),
-							Value:   "4",
-							Default: slices.Contains(s.LocalWeekdays, time.Thursday),
-						},
-						{
-							Label:   p.Sprintf("Friday"),
-							Value:   "5",
-							Default: slices.Contains(s.LocalWeekdays, time.Friday),
-						},
-						{
-							Label:   p.Sprintf("Saturday"),
-							Value:   "6",
-							Default: slices.Contains(s.LocalWeekdays, time.Saturday),
-						},
-						{
-							Label:   p.Sprintf("Sunday"),
-							Value:   "0",
-							Default: slices.Contains(s.LocalWeekdays, time.Sunday),
-						},
-					},
+					Options:     weekdayOptions,
 				},
 			},
 		},
@@ -213,7 +190,7 @@ func (m *Messages) statsTrackerScheduleAddForm(
 					Placeholder: "Starting hour",
 					MinValues:   &one,
 					MaxValues:   1,
-					Options:     hourPickerOptions(p, selectedHour),
+					Options:     hourPickerOptions(p, s.LocalStartHour),
 				},
 			},
 		},
@@ -224,7 +201,7 @@ func (m *Messages) statsTrackerScheduleAddForm(
 					Placeholder: "Starting minute",
 					MinValues:   &one,
 					MaxValues:   1,
-					Options:     minutePickerOptions(p, selectedMinute),
+					Options:     minutePickerOptions(p, s.LocalStartMin),
 				},
 			},
 		},
@@ -235,7 +212,7 @@ func (m *Messages) statsTrackerScheduleAddForm(
 					Placeholder: "Duration",
 					MinValues:   &one,
 					MaxValues:   1,
-					Options:     durationPickerOptions(p, s.LocalEndTime-s.LocalStartTime),
+					Options:     durationPickerOptions(p, s.Duration),
 				},
 			},
 		},

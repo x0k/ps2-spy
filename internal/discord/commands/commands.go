@@ -23,7 +23,7 @@ type commands struct {
 	worldPopulationLoader    *worldPopulationLoader
 	alertsLoader             *alertsLoader
 	createTaskStateContainer *expirable_state_container.ExpirableStateContainer[
-		discord.ChannelId,
+		discord.ChannelAndUserIds,
 		discord.CreateStatsTrackerTaskState,
 	]
 }
@@ -57,6 +57,7 @@ func New(
 	channelTitleUpdatesSaver ChannelTitleUpdatesSaver,
 	channelDefaultTimezoneSaver ChannelDefaultTimezoneSaver,
 	channelStatsTrackerTasksLoader ChannelStatsTrackerTasksLoader,
+	statsTrackerTaskCreator ChannelStatsTrackerTaskCreator,
 ) *commands {
 	populationLoader := newPopulationLoader(
 		log.With(sl.Component("population_loader")),
@@ -73,7 +74,7 @@ func New(
 		alertsLoaders,
 		alertsLoadersPriority,
 	)
-	createTaskStateContainer := expirable_state_container.New[discord.ChannelId, discord.CreateStatsTrackerTaskState](
+	createTaskStateContainer := expirable_state_container.New[discord.ChannelAndUserIds, discord.CreateStatsTrackerTaskState](
 		10 * time.Minute,
 	)
 	return &commands{
@@ -139,11 +140,13 @@ func New(
 				channelDefaultTimezoneSaver,
 			),
 			NewStatsTracker(
+				log.With(sl.Component("stats_tracker_command")),
 				messages,
 				statsTracker,
 				channelStatsTrackerTasksLoader,
 				channelLoader,
 				createTaskStateContainer,
+				statsTrackerTaskCreator,
 			),
 		},
 	}

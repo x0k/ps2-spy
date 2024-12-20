@@ -475,8 +475,8 @@ func (m *Messages) ChannelTrackerWillStoppedSoon() discord.ResponseEdit {
 	}
 }
 
-func (m *Messages) ChannelStatsTrackerTasksLoadError(err error) discord.ResponseEdit {
-	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
+func ChannelStatsTrackerTasksLoadError[R any](err error) func(*message.Printer) (*R, *discord.Error) {
+	return func(p *message.Printer) (*R, *discord.Error) {
 		return nil, &discord.Error{
 			Msg: p.Sprintf("Failed to load stats tracker tasks"),
 			Err: err,
@@ -484,17 +484,13 @@ func (m *Messages) ChannelStatsTrackerTasksLoadError(err error) discord.Response
 	}
 }
 
-func (m *Messages) ChannelStatsTrackerSchedule(
+func (m *Messages) StatsTrackerSchedule(
 	channel discord.Channel,
 	tasks []discord.StatsTrackerTask,
 ) discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
 		content, offset := timezoneData(p, channel.DefaultTimezone)
-		components := statsTrackerScheduleEditForm(
-			p,
-			tasks,
-			offset,
-		)
+		components := statsTrackerScheduleEditForm(p, tasks, offset, 0)
 		return &discordgo.WebhookEdit{
 			Content:    &content,
 			Components: &components,
@@ -502,14 +498,55 @@ func (m *Messages) ChannelStatsTrackerSchedule(
 	}
 }
 
-func (m *Messages) ChannelStatsTrackerAddTaskForm(
+func (m *Messages) StatsTrackerScheduleUpdated(
+	channel discord.Channel,
+	tasks []discord.StatsTrackerTask,
+	zeroIndexedPage int,
+) discord.Response {
+	return func(p *message.Printer) (*discordgo.InteractionResponseData, *discord.Error) {
+		content, offset := timezoneData(p, channel.DefaultTimezone)
+		components := statsTrackerScheduleEditForm(p, tasks, offset, zeroIndexedPage)
+		return &discordgo.InteractionResponseData{
+			Content:    content,
+			Components: components,
+		}, nil
+	}
+}
+
+func (m *Messages) StatsTrackerCreateTaskForm(
 	state discord.CreateStatsTrackerTaskState,
 ) discord.Response {
 	return func(p *message.Printer) (*discordgo.InteractionResponseData, *discord.Error) {
-		components := m.statsTrackerScheduleAddForm(p, state)
+		content, _ := timezoneData(p, state.Timezone)
+		components := m.statsTrackerCreateTaskForm(p, state)
 		return &discordgo.InteractionResponseData{
+			Content:    content,
 			Components: components,
 		}, nil
+	}
+}
+
+func (m *Messages) StatsTrackerCreateTaskFormWithError(
+	state discord.CreateStatsTrackerTaskState,
+	_ error,
+) discord.Response {
+	return func(p *message.Printer) (*discordgo.InteractionResponseData, *discord.Error) {
+		components := m.statsTrackerCreateTaskForm(p, state)
+		// TODO: take error into account
+		content := p.Sprintf("Failed to create stats tracker task")
+		return &discordgo.InteractionResponseData{
+			Content:    content,
+			Components: components,
+		}, nil
+	}
+}
+
+func (m *Messages) ChannelStatsTrackerTaskStateNotFound(err error) discord.Response {
+	return func(p *message.Printer) (*discordgo.InteractionResponseData, *discord.Error) {
+		return nil, &discord.Error{
+			Msg: p.Sprintf("Stats tracker task state not found"),
+			Err: err,
+		}
 	}
 }
 

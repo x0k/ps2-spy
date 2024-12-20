@@ -10,6 +10,8 @@ import (
 
 	"github.com/x0k/ps2-spy/internal/discord"
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
+	"github.com/x0k/ps2-spy/internal/lib/containers"
+	"github.com/x0k/ps2-spy/internal/lib/diff"
 	"github.com/x0k/ps2-spy/internal/lib/loader"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
@@ -24,6 +26,7 @@ var ErrNoChannelTrackerToStop = errors.New("no channel tracker to stop")
 
 type TrackablePlatformsLoader = loader.Keyed[discord.ChannelId, []ps2_platforms.Platform]
 type CharacterTrackingChannelsLoader = loader.Keyed[discord.PlatformQuery[ps2.CharacterId], []discord.ChannelId]
+type StatsTasksLoader = loader.Keyed[time.Time, []discord.ChannelId]
 
 type ChannelPlatformsTracker struct {
 	trackers  map[ps2_platforms.Platform]*platformTracker
@@ -40,6 +43,11 @@ type StatsTracker struct {
 	maxTracingDuration       time.Duration
 	trackablePlatformsLoader TrackablePlatformsLoader
 	charactersLoaders        map[ps2_platforms.Platform]CharactersLoader
+
+	tasksLoader     StatsTasksLoader
+	scheduledTasks  []discord.ChannelId
+	manuallyStarted *containers.ExpirationQueue[discord.ChannelId]
+	manuallyStopped *containers.ExpirationQueue[discord.ChannelId]
 }
 
 func New(
@@ -47,6 +55,7 @@ func New(
 	publisher pubsub.Publisher[Event],
 	channelsLoader CharacterTrackingChannelsLoader,
 	trackablePlatformsLoader TrackablePlatformsLoader,
+	tasksLoader StatsTasksLoader,
 	charactersLoaders map[ps2_platforms.Platform]CharactersLoader,
 	maxTrackingDuration time.Duration,
 ) *StatsTracker {
@@ -58,6 +67,10 @@ func New(
 		charactersLoaders:        charactersLoaders,
 		maxTracingDuration:       maxTrackingDuration,
 		trackablePlatformsLoader: trackablePlatformsLoader,
+
+		tasksLoader:     tasksLoader,
+		manuallyStarted: containers.NewExpirationQueue[discord.ChannelId](),
+		manuallyStopped: containers.NewExpirationQueue[discord.ChannelId](),
 	}
 }
 
@@ -69,10 +82,11 @@ func (s *StatsTracker) Start(ctx context.Context) {
 		case <-ctx.Done():
 			s.wg.Wait()
 			return
-		case <-ticker.C:
+		case now := <-ticker.C:
 			if err := s.handleTrackersOvertime(ctx); err != nil {
 				s.log.Error(ctx, "error during handleTrackersOvertime", sl.Err(err))
 			}
+			s.invalidateStatsTrackers(ctx, now)
 		}
 	}
 }
@@ -265,4 +279,24 @@ func (s *StatsTracker) handleCharacterEvent(
 			}
 		}
 	}
+}
+
+func (s *StatsTracker) invalidateStatsTrackers(ctx context.Context, now time.Time) {
+	newTasks, err := s.tasksLoader(ctx, now)
+	if err != nil {
+		s.log.Error(ctx, "error loading tasks", sl.Err(err))
+		return
+	}
+	d := diff.SlicesDiff(s.scheduledTasks, newTasks)
+	for _, channelId := range d.ToDel {
+		if err := s.StopChannelTracker(ctx, channelId); err != nil {
+			s.log.Error(ctx, "failed to stop channel tracker", sl.Err(err))
+		}
+	}
+	for _, channelId := range d.ToAdd {
+		if err := s.StartChannelTracker(ctx, channelId); err != nil {
+			s.log.Error(ctx, "failed to start channel tracker", sl.Err(err))
+		}
+	}
+	s.scheduledTasks = newTasks
 }
