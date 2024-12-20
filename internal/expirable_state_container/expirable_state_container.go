@@ -68,3 +68,10 @@ func (c *ExpirableStateContainer[K, S]) Pop(key K) (S, bool) {
 	}
 	return value, ok
 }
+
+func (c *ExpirableStateContainer[K, S]) Remove(key K) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.keys.Remove(key)
+	delete(c.values, key)
+}

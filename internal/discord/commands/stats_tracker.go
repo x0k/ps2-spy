@@ -74,6 +74,27 @@ func NewStatsTracker(
 			return messages.StatsTrackerCreateTaskForm(state)
 		})
 	}
+	updatedSchedule := func(
+		ctx context.Context,
+		i *discordgo.InteractionCreate,
+		zeroIndexedPage int,
+	) discord.Response {
+		channelId := discord.ChannelId(i.Interaction.ChannelID)
+		channel, err := channelLoader(ctx, channelId)
+		if err != nil {
+			return discord_messages.ChannelLoadError[discordgo.InteractionResponseData](
+				channelId,
+				err,
+			)
+		}
+		tasks, err := channelStatsTrackerTasksLoader(ctx, channelId)
+		if err != nil {
+			return discord_messages.ChannelStatsTrackerTasksLoadError[discordgo.InteractionResponseData](
+				err,
+			)
+		}
+		return messages.StatsTrackerScheduleUpdated(channel, tasks, zeroIndexedPage)
+	}
 	return &discord.Command{
 		Cmd: &discordgo.ApplicationCommand{
 			Name: "stats-tracker",
@@ -165,6 +186,15 @@ func NewStatsTracker(
 			)
 		}),
 		ComponentHandlers: map[string]discord.InteractionHandler{
+			discord.STATS_TRACKER_TASKS_PAGE_BUTTON_CUSTOM_ID: discord.MessageUpdate(func(
+				ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate,
+			) discord.Response {
+				page, err := discord.CustomIdToPage(i.MessageComponentData().CustomID)
+				if err != nil {
+					return messages.FieldValueExtractError(err)
+				}
+				return updatedSchedule(ctx, i, page)
+			}),
 			discord.STATS_TRACKER_TASK_ADD_BUTTON_CUSTOM_ID: discord.MessageUpdate(
 				func(
 					ctx context.Context,
@@ -185,7 +215,7 @@ func NewStatsTracker(
 					return messages.StatsTrackerCreateTaskForm(state)
 				},
 			),
-			discord.STATS_TRACKER_TASK_WEEKDAYS_SELECTOR_CUSTOM_ID: createFormHandler(
+			discord.STATS_TRACKER_CREATE_TASK_WEEKDAYS_SELECTOR_CUSTOM_ID: createFormHandler(
 				func(i *discordgo.InteractionCreate, state discord.CreateStatsTrackerTaskState) (discord.CreateStatsTrackerTaskState, error) {
 					weekdays := make([]time.Weekday, 0, len(i.MessageComponentData().Values))
 					for _, v := range i.MessageComponentData().Values {
@@ -202,7 +232,7 @@ func NewStatsTracker(
 					return state, nil
 				},
 			),
-			discord.STATS_TRACKER_TASK_START_HOUR_SELECTOR_CUSTOM_ID: createFormHandler(
+			discord.STATS_TRACKER_CREATE_TASK_START_HOUR_SELECTOR_CUSTOM_ID: createFormHandler(
 				func(ic *discordgo.InteractionCreate, state discord.CreateStatsTrackerTaskState) (discord.CreateStatsTrackerTaskState, error) {
 					h, err := strconv.Atoi(ic.MessageComponentData().Values[0])
 					if err != nil {
@@ -215,7 +245,7 @@ func NewStatsTracker(
 					return state, nil
 				},
 			),
-			discord.STATS_TRACKER_TASK_START_MINUTE_SELECTOR_CUSTOM_ID: createFormHandler(
+			discord.STATS_TRACKER_CREATE_TASK_START_MINUTE_SELECTOR_CUSTOM_ID: createFormHandler(
 				func(ic *discordgo.InteractionCreate, state discord.CreateStatsTrackerTaskState) (discord.CreateStatsTrackerTaskState, error) {
 					m, err := strconv.Atoi(ic.MessageComponentData().Values[0])
 					if err != nil {
@@ -228,7 +258,7 @@ func NewStatsTracker(
 					return state, nil
 				},
 			),
-			discord.STATS_TRACKER_TASK_DURATION_SELECTOR_CUSTOM_ID: createFormHandler(
+			discord.STATS_TRACKER_CREATE_TASK_DURATION_SELECTOR_CUSTOM_ID: createFormHandler(
 				func(ic *discordgo.InteractionCreate, state discord.CreateStatsTrackerTaskState) (discord.CreateStatsTrackerTaskState, error) {
 					d, err := time.ParseDuration(ic.MessageComponentData().Values[0])
 					if err != nil {
@@ -238,7 +268,7 @@ func NewStatsTracker(
 					return state, nil
 				},
 			),
-			discord.STATS_TRACKER_TASK_SUBMIT_BUTTON_CUSTOM_ID: discord.MessageUpdate(func(
+			discord.STATS_TRACKER_CREATE_TASK_SUBMIT_BUTTON_CUSTOM_ID: discord.MessageUpdate(func(
 				ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate,
 			) discord.Response {
 				stateId := newStateId(i)
@@ -255,43 +285,14 @@ func NewStatsTracker(
 					log.Debug(ctx, "failed to create task", sl.Err(err))
 					return messages.StatsTrackerCreateTaskFormWithError(state, err)
 				}
-				channel, err := channelLoader(ctx, channelId)
-				if err != nil {
-					return discord_messages.ChannelLoadError[discordgo.InteractionResponseData](
-						channelId,
-						err,
-					)
-				}
-				tasks, err := channelStatsTrackerTasksLoader(ctx, channelId)
-				if err != nil {
-					return discord_messages.ChannelStatsTrackerTasksLoadError[discordgo.InteractionResponseData](
-						err,
-					)
-				}
-				return messages.StatsTrackerScheduleUpdated(channel, tasks, 0)
+				return updatedSchedule(ctx, i, 0)
 			}),
-			discord.STATS_TRACKER_TASK_PAGE_BUTTON_CUSTOM_ID: discord.MessageUpdate(func(
+			discord.STATS_TRACKER_CREATE_TASK_CANCEL_BUTTON_CUSTOM_ID: discord.MessageUpdate(func(
 				ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate,
 			) discord.Response {
-				page, err := discord.CustomIdToPage(i.MessageComponentData().CustomID)
-				if err != nil {
-					return messages.FieldValueExtractError(err)
-				}
-				channelId := discord.ChannelId(i.Interaction.ChannelID)
-				channel, err := channelLoader(ctx, channelId)
-				if err != nil {
-					return discord_messages.ChannelLoadError[discordgo.InteractionResponseData](
-						channelId,
-						err,
-					)
-				}
-				tasks, err := channelStatsTrackerTasksLoader(ctx, channelId)
-				if err != nil {
-					return discord_messages.ChannelStatsTrackerTasksLoadError[discordgo.InteractionResponseData](
-						err,
-					)
-				}
-				return messages.StatsTrackerScheduleUpdated(channel, tasks, page)
+				stateId := newStateId(i)
+				createTaskStateContainer.Remove(stateId)
+				return updatedSchedule(ctx, i, 0)
 			}),
 		},
 	}
