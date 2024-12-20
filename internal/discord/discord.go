@@ -85,7 +85,29 @@ type StatsTrackerTaskId int64
 type StatsTrackerTask struct {
 	Id           StatsTrackerTaskId
 	ChannelId    ChannelId
-	Weekday      time.Weekday
+	UtcWeekday   time.Weekday
 	UtcStartTime time.Duration
 	UtcEndTime   time.Duration
+}
+
+type CreateStatsTrackerTaskState struct {
+	Timezone       *time.Location
+	LocalWeekdays  []time.Weekday
+	LocalStartTime time.Duration
+	LocalEndTime   time.Duration
+}
+
+func NewCreateStatsTrackerTaskState(
+	timezone *time.Location,
+) CreateStatsTrackerTaskState {
+	localNow := time.Now().In(timezone)
+	startTime := time.Duration(localNow.Hour())*time.Hour + time.Duration(localNow.Minute()/10)*10*time.Minute
+	return CreateStatsTrackerTaskState{
+		Timezone: timezone,
+		LocalWeekdays: []time.Weekday{
+			localNow.Weekday(),
+		},
+		LocalStartTime: startTime,
+		LocalEndTime:   startTime + 2*time.Hour,
+	}
 }

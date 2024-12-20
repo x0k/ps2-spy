@@ -4,9 +4,11 @@ import (
 	"context"
 	"slices"
 	"sync"
+	"time"
 
 	"github.com/x0k/ps2-spy/internal/discord"
 	discord_messages "github.com/x0k/ps2-spy/internal/discord/messages"
+	"github.com/x0k/ps2-spy/internal/expirable_state_container"
 	"github.com/x0k/ps2-spy/internal/lib/loader"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
@@ -16,10 +18,14 @@ import (
 )
 
 type commands struct {
-	commands              []*discord.Command
-	populationLoader      *populationLoader
-	worldPopulationLoader *worldPopulationLoader
-	alertsLoader          *alertsLoader
+	commands                 []*discord.Command
+	populationLoader         *populationLoader
+	worldPopulationLoader    *worldPopulationLoader
+	alertsLoader             *alertsLoader
+	createTaskStateContainer *expirable_state_container.ExpirableStateContainer[
+		discord.ChannelId,
+		discord.CreateStatsTrackerTaskState,
+	]
 }
 
 func New(
@@ -67,10 +73,14 @@ func New(
 		alertsLoaders,
 		alertsLoadersPriority,
 	)
+	createTaskStateContainer := expirable_state_container.New[discord.ChannelId, discord.CreateStatsTrackerTaskState](
+		10 * time.Minute,
+	)
 	return &commands{
-		populationLoader:      populationLoader,
-		worldPopulationLoader: worldPopulationLoader,
-		alertsLoader:          alertsLoader,
+		populationLoader:         populationLoader,
+		worldPopulationLoader:    worldPopulationLoader,
+		alertsLoader:             alertsLoader,
+		createTaskStateContainer: createTaskStateContainer,
 		commands: []*discord.Command{
 			NewAbout(messages),
 			NewPopulation(
@@ -133,6 +143,7 @@ func New(
 				statsTracker,
 				channelStatsTrackerTasksLoader,
 				channelLoader,
+				createTaskStateContainer,
 			),
 		},
 	}
@@ -144,7 +155,11 @@ func (c *commands) Commands() []*discord.Command {
 
 func (c *commands) Start(ctx context.Context) error {
 	wg := sync.WaitGroup{}
-	wg.Add(3)
+	wg.Add(4)
+	go func() {
+		defer wg.Done()
+		c.createTaskStateContainer.Start(ctx)
+	}()
 	go func() {
 		defer wg.Done()
 		c.worldPopulationLoader.Start(ctx)

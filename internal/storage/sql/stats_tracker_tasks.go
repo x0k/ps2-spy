@@ -39,7 +39,7 @@ func (s *Storage) ChannelStatsTrackerTasksLoader(
 		tasks = append(tasks, discord.StatsTrackerTask{
 			Id:           discord.StatsTrackerTaskId(t.TaskID),
 			ChannelId:    channelId,
-			Weekday:      time.Weekday(t.Weekday),
+			UtcWeekday:   time.Weekday(t.Weekday),
 			UtcStartTime: time.Duration(t.UtcStartTime),
 			UtcEndTime:   time.Duration(t.UtcEndTime),
 		})

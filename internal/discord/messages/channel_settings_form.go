@@ -12,15 +12,10 @@ func (m *Messages) channelSettingsForm(
 ) []discordgo.MessageComponent {
 	one := 1
 	localeBase, _ := channel.Locale.Base()
-	timezoneSelectOptions := make([]discordgo.SelectMenuOption, 0, len(m.timezones))
-	defaultTz := channel.DefaultTimezone.String()
-	for _, tz := range m.timezones {
-		timezoneSelectOptions = append(timezoneSelectOptions, discordgo.SelectMenuOption{
-			Label:   p.Sprintf("Default timezone: %s", tz),
-			Value:   tz,
-			Default: defaultTz == tz,
-		})
-	}
+	timezoneSelectOptions := m.timezoneOptions(
+		p.Sprintf("Default timezone"),
+		channel.DefaultTimezone,
+	)
 	return []discordgo.MessageComponent{
 		discordgo.ActionsRow{
 			Components: []discordgo.MessageComponent{

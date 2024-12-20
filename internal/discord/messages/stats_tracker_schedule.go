@@ -54,8 +54,8 @@ func statsTrackerScheduleEditForm(
 ) []discordgo.MessageComponent {
 	localTasks := make([]localStatsTrackerTask, 0, len(tasks))
 	for _, t := range tasks {
-		startWeekday, startTime := localDate(t.Weekday, t.UtcStartTime, offset)
-		endWeekday, endTime := localDate(t.Weekday, t.UtcEndTime, offset)
+		startWeekday, startTime := localDate(t.UtcWeekday, t.UtcStartTime, offset)
+		endWeekday, endTime := localDate(t.UtcWeekday, t.UtcEndTime, offset)
 		localTasks = append(localTasks, localStatsTrackerTask{
 			id:           t.Id,
 			startWeekday: startWeekday,
@@ -136,16 +136,29 @@ func durationPickerOptions(p *message.Printer, selectedDuration time.Duration) [
 	return options
 }
 
-func statsTrackerScheduleAddForm(
+func (m *Messages) statsTrackerScheduleAddForm(
 	p *message.Printer,
-	weekdays []time.Weekday,
-	startTime time.Duration,
-	endTime time.Duration,
+	s discord.CreateStatsTrackerTaskState,
 ) []discordgo.MessageComponent {
 	one := 1
-	selectedHour := int(startTime / time.Hour)
-	selectedMinute := int((startTime % time.Hour) / time.Minute)
+	selectedHour := int(s.LocalStartTime / time.Hour)
+	selectedMinute := int((s.LocalStartTime % time.Hour) / time.Minute)
+	timezoneOpts := m.timezoneOptions(
+		p.Sprintf("Timezone"),
+		s.Timezone,
+	)
 	return []discordgo.MessageComponent{
+		discordgo.ActionsRow{
+			Components: []discordgo.MessageComponent{
+				discordgo.SelectMenu{
+					CustomID:    discord.STATS_TRACKER_TASK_TIMEZONE_SELECTOR_CUSTOM_ID,
+					Placeholder: "Timezone",
+					MinValues:   &one,
+					MaxValues:   1,
+					Options:     timezoneOpts,
+				},
+			},
+		},
 		discordgo.ActionsRow{
 			Components: []discordgo.MessageComponent{
 				discordgo.SelectMenu{
@@ -157,37 +170,37 @@ func statsTrackerScheduleAddForm(
 						{
 							Label:   p.Sprintf("Monday"),
 							Value:   "1",
-							Default: slices.Contains(weekdays, time.Monday),
+							Default: slices.Contains(s.LocalWeekdays, time.Monday),
 						},
 						{
 							Label:   p.Sprintf("Tuesday"),
 							Value:   "2",
-							Default: slices.Contains(weekdays, time.Tuesday),
+							Default: slices.Contains(s.LocalWeekdays, time.Tuesday),
 						},
 						{
 							Label:   p.Sprintf("Wednesday"),
 							Value:   "3",
-							Default: slices.Contains(weekdays, time.Wednesday),
+							Default: slices.Contains(s.LocalWeekdays, time.Wednesday),
 						},
 						{
 							Label:   p.Sprintf("Thursday"),
 							Value:   "4",
-							Default: slices.Contains(weekdays, time.Thursday),
+							Default: slices.Contains(s.LocalWeekdays, time.Thursday),
 						},
 						{
 							Label:   p.Sprintf("Friday"),
 							Value:   "5",
-							Default: slices.Contains(weekdays, time.Friday),
+							Default: slices.Contains(s.LocalWeekdays, time.Friday),
 						},
 						{
 							Label:   p.Sprintf("Saturday"),
 							Value:   "6",
-							Default: slices.Contains(weekdays, time.Saturday),
+							Default: slices.Contains(s.LocalWeekdays, time.Saturday),
 						},
 						{
 							Label:   p.Sprintf("Sunday"),
 							Value:   "0",
-							Default: slices.Contains(weekdays, time.Sunday),
+							Default: slices.Contains(s.LocalWeekdays, time.Sunday),
 						},
 					},
 				},
@@ -222,7 +235,7 @@ func statsTrackerScheduleAddForm(
 					Placeholder: "Duration",
 					MinValues:   &one,
 					MaxValues:   1,
-					Options:     durationPickerOptions(p, endTime-startTime),
+					Options:     durationPickerOptions(p, s.LocalEndTime-s.LocalStartTime),
 				},
 			},
 		},

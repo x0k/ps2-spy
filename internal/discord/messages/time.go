@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/bwmarrin/discordgo"
 	"golang.org/x/text/message"
 )
 
@@ -23,4 +24,17 @@ func renderDuration(p *message.Printer, d time.Duration) string {
 		return minutes
 	}
 	return p.Sprintf("%dh ", h) + " " + minutes
+}
+
+func (m *Messages) timezoneOptions(l string, selected *time.Location) []discordgo.SelectMenuOption {
+	timezoneSelectOptions := make([]discordgo.SelectMenuOption, 0, len(m.timezones))
+	defaultTz := selected.String()
+	for _, tz := range m.timezones {
+		timezoneSelectOptions = append(timezoneSelectOptions, discordgo.SelectMenuOption{
+			Label:   fmt.Sprintf("%s: %s", l, tz),
+			Value:   tz,
+			Default: defaultTz == tz,
+		})
+	}
+	return timezoneSelectOptions
 }
