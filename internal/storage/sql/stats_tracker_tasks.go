@@ -64,9 +64,6 @@ func (s *Storage) CreateStatsTrackerTask(
 			localStart := time.Duration(task.LocalStartHour)*time.Hour + time.Duration(task.LocalStartMin)*time.Minute
 			utcStartWeekday, utcStartTime := shared.ShiftDate(localWeekday, localStart, offset)
 			utcEndWeekday, utcEndTime := shared.ShiftDate(localWeekday, localStart, offset+task.Duration)
-			println("------------------------")
-			println(utcStartWeekday, utcStartTime, utcEndWeekday, utcEndTime)
-			println("------------------------")
 			if tasks, err := s.queries.ListChannelIntersectingStatsTrackerTasks(ctx, db.ListChannelIntersectingStatsTrackerTasksParams{
 				ChannelID:    string(channelId),
 				StartWeekday: int64(utcStartWeekday),

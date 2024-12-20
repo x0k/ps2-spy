@@ -41,7 +41,7 @@ func statsTrackerScheduleEditForm(
 	localTasks := make([]localStatsTrackerTask, 0, len(tasks))
 	for _, t := range tasks {
 		startWeekday, startTime := shared.ShiftDate(t.UtcStartWeekday, t.UtcStartTime, offset)
-		endWeekday, endTime := shared.ShiftDate(t.UtcStartWeekday, t.UtcEndTime, offset)
+		endWeekday, endTime := shared.ShiftDate(t.UtcEndWeekday, t.UtcEndTime, offset)
 		localTasks = append(localTasks, localStatsTrackerTask{
 			id:           t.Id,
 			startWeekday: startWeekday,
@@ -66,8 +66,7 @@ func statsTrackerScheduleEditForm(
 		startHour := int(t.startTime / time.Hour)
 		startMin := int((t.startTime % time.Hour) / time.Minute)
 		duration := t.endTime - t.startTime
-		if t.endWeekday > t.startWeekday ||
-			(t.endWeekday == time.Sunday && t.startWeekday == time.Saturday) {
+		if t.startWeekday != t.endWeekday {
 			duration += 24 * time.Hour
 		}
 		rows = append(rows, discordgo.ActionsRow{
