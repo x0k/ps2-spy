@@ -16,10 +16,16 @@ import (
 	"golang.org/x/text/message"
 )
 
-type Messages struct{}
+type Messages struct {
+	timezones []string
+}
 
-func New() *Messages {
-	return &Messages{}
+func New(
+	timezones []string,
+) *Messages {
+	return &Messages{
+		timezones: timezones,
+	}
 }
 
 func (m *Messages) CharacterLogin(char ps2.Character) discord.Message {
@@ -415,7 +421,7 @@ func (m *Messages) NothingToTrack() discord.ResponseEdit {
 	}
 }
 
-func (m *Messages) InvalidStatsTrackerSubcommand(cmd string, err error) discord.ResponseEdit {
+func (m *Messages) StatsTrackerInvalidSubcommand(cmd string, err error) discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
 		return nil, &discord.Error{
 			Msg: p.Sprintf("Invalid stats tracker subcommand: %s", cmd),
@@ -466,6 +472,88 @@ func (m *Messages) ChannelTrackerWillStoppedSoon() discord.ResponseEdit {
 		return &discordgo.WebhookEdit{
 			Content: &content,
 		}, nil
+	}
+}
+
+func ChannelStatsTrackerTasksLoadError[R any](err error) func(*message.Printer) (*R, *discord.Error) {
+	return func(p *message.Printer) (*R, *discord.Error) {
+		return nil, &discord.Error{
+			Msg: p.Sprintf("Failed to load stats tracker tasks"),
+			Err: err,
+		}
+	}
+}
+
+func (m *Messages) StatsTrackerSchedule(
+	channel discord.Channel,
+	tasks []discord.StatsTrackerTask,
+) discord.ResponseEdit {
+	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
+		content, offset := timezoneData(p, channel.DefaultTimezone)
+		components := statsTrackerScheduleEditForm(p, tasks, offset, 0)
+		return &discordgo.WebhookEdit{
+			Content:    &content,
+			Components: &components,
+		}, nil
+	}
+}
+
+func (m *Messages) StatsTrackerScheduleUpdated(
+	channel discord.Channel,
+	tasks []discord.StatsTrackerTask,
+	zeroIndexedPage int,
+) discord.Response {
+	return func(p *message.Printer) (*discordgo.InteractionResponseData, *discord.Error) {
+		content, offset := timezoneData(p, channel.DefaultTimezone)
+		components := statsTrackerScheduleEditForm(p, tasks, offset, zeroIndexedPage)
+		return &discordgo.InteractionResponseData{
+			Content:    content,
+			Components: components,
+		}, nil
+	}
+}
+
+func (m *Messages) StatsTrackerTaskLoadError(err error) discord.Response {
+	return func(p *message.Printer) (*discordgo.InteractionResponseData, *discord.Error) {
+		return nil, &discord.Error{
+			Msg: p.Sprintf("Failed to load stats tracker task"),
+			Err: err,
+		}
+	}
+}
+
+func (m *Messages) StatsTrackerTaskForm(
+	state discord.StatsTrackerTaskState,
+	err error,
+) discord.Response {
+	return func(p *message.Printer) (*discordgo.InteractionResponseData, *discord.Error) {
+		components := m.statsTrackerCreateTaskForm(p, state)
+		content, _ := timezoneData(p, state.Timezone)
+		if err != nil {
+			content = p.Sprintf("failed to create stats tracker task", err)
+		}
+		return &discordgo.InteractionResponseData{
+			Content:    content,
+			Components: components,
+		}, nil
+	}
+}
+
+func (m *Messages) ChannelStatsTrackerTaskRemoveError(err error) discord.Response {
+	return func(p *message.Printer) (*discordgo.InteractionResponseData, *discord.Error) {
+		return nil, &discord.Error{
+			Msg: p.Sprintf("Failed to remove stats tracker task"),
+			Err: err,
+		}
+	}
+}
+
+func (m *Messages) ChannelStatsTrackerTaskStateNotFound(err error) discord.Response {
+	return func(p *message.Printer) (*discordgo.InteractionResponseData, *discord.Error) {
+		return nil, &discord.Error{
+			Msg: p.Sprintf("Stats tracker task state not found"),
+			Err: err,
+		}
 	}
 }
 
@@ -529,9 +617,11 @@ func (m *Messages) EmptyFollowUp() discord.FollowUp {
 	}
 }
 
-func (m *Messages) ChannelSettingsForm(channel discord.Channel) discord.ResponseEdit {
+func (m *Messages) ChannelSettingsForm(
+	channel discord.Channel,
+) discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
-		components := channelSettingsForm(p, channel)
+		components := m.channelSettingsForm(p, channel)
 		return &discordgo.WebhookEdit{
 			Components: &components,
 		}, nil
@@ -542,7 +632,7 @@ func (m *Messages) ChannelSettingsFormUpdate(
 	channel discord.Channel,
 ) discord.Response {
 	return func(p *message.Printer) (*discordgo.InteractionResponseData, *discord.Error) {
-		components := channelSettingsForm(p, channel)
+		components := m.channelSettingsForm(p, channel)
 		return &discordgo.InteractionResponseData{
 			Components: components,
 		}, nil

@@ -33,11 +33,11 @@ qlint:
   sqlc vet
 
 # Migration create
-mc: env
+migration: env
   migrate create -ext sql -dir db/migrations -seq $1
 
-migrate: env
-  go run -tags migrate cmd/migrate/main.go
+migrate-down:
+  migrate -source file://db/migrations -database sqlite3://storage/storage.db down 1
 
 text:
   go generate ./internal/translations/translations.go

@@ -20,6 +20,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/meta"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
+	"github.com/x0k/ps2-spy/internal/shared"
 	"github.com/x0k/ps2-spy/internal/stats_tracker"
 	"github.com/x0k/ps2-spy/internal/storage"
 	"github.com/x0k/ps2-spy/internal/tracking_manager"
@@ -60,6 +61,12 @@ func New(
 	channelCharacterNotificationsSaver discord_commands.ChannelCharacterNotificationsSaver,
 	channelOutfitNotificationsSaver discord_commands.ChannelOutfitNotificationsSaver,
 	channelTitleUpdatesSaver discord_commands.ChannelTitleUpdatesSaver,
+	channelDefaultTimezoneSaver discord_commands.ChannelDefaultTimezoneSaver,
+	channelStatsTrackerTasksLoader discord_commands.ChannelStatsTrackerTasksLoader,
+	statsTrackerTaskCreator discord_commands.ChannelStatsTrackerTaskCreator,
+	channelStatsTrackerTaskRemover discord_commands.ChannelStatsTrackerTaskRemover,
+	statsTrackerTaskLoader discord_commands.StatsTrackerTaskLoader,
+	channelStatsTrackerTaskUpdater discord_commands.ChannelStatsTrackerTaskUpdater,
 ) (*module.Module, error) {
 	m := module.New(log.Logger, "discord")
 	session, err := discordgo.New("Bot " + token)
@@ -67,7 +74,7 @@ func New(
 		return nil, err
 	}
 
-	messages := discord_messages.New()
+	messages := discord_messages.New(shared.Timezones)
 	commands := discord_commands.New(
 		log.With(sl.Component("commands")),
 		messages,
@@ -92,6 +99,12 @@ func New(
 		channelCharacterNotificationsSaver,
 		channelOutfitNotificationsSaver,
 		channelTitleUpdatesSaver,
+		channelDefaultTimezoneSaver,
+		channelStatsTrackerTasksLoader,
+		statsTrackerTaskCreator,
+		channelStatsTrackerTaskRemover,
+		statsTrackerTaskLoader,
+		channelStatsTrackerTaskUpdater,
 	)
 	m.AppendR("discord.commands", commands.Start)
 

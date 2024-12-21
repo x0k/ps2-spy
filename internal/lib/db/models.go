@@ -14,6 +14,7 @@ type Channel struct {
 	CharacterNotifications bool
 	OutfitNotifications    bool
 	TitleUpdates           bool
+	DefaultTimezone        string
 }
 
 type ChannelToCharacter struct {
@@ -52,4 +53,13 @@ type OutfitToCharacter struct {
 	Platform    string
 	OutfitID    string
 	CharacterID string
+}
+
+type StatsTrackerTask struct {
+	TaskID          int64
+	ChannelID       string
+	UtcStartWeekday int64
+	UtcStartTime    int64
+	UtcEndWeekday   int64
+	UtcEndTime      int64
 }

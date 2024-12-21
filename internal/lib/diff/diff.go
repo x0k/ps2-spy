@@ -1,8 +1,46 @@
 package diff
 
+import (
+	"iter"
+	"maps"
+	"slices"
+)
+
 type Diff[T any] struct {
 	ToAdd []T
 	ToDel []T
+}
+
+func mapKeys[K comparable, V any](m map[K]V) []K {
+	keys := make([]K, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
+func diff[T comparable, V any](
+	m map[T]V,
+	new iter.Seq[T],
+	newCount int,
+) Diff[T] {
+	toAdd := make([]T, 0, newCount)
+	for k := range new {
+		if _, ok := m[k]; ok {
+			delete(m, k)
+		} else {
+			toAdd = append(toAdd, k)
+		}
+	}
+	if len(m) == 0 {
+		return Diff[T]{
+			ToAdd: toAdd,
+		}
+	}
+	return Diff[T]{
+		ToAdd: toAdd,
+		ToDel: mapKeys(m),
+	}
 }
 
 func SlicesDiff[T comparable](old []T, new []T) Diff[T] {
@@ -20,22 +58,19 @@ func SlicesDiff[T comparable](old []T, new []T) Diff[T] {
 	for _, v := range old {
 		m[v] = struct{}{}
 	}
-	toAdd := make([]T, 0, len(new))
-	for _, v := range new {
-		if _, ok := m[v]; ok {
-			delete(m, v)
-		} else {
-			toAdd = append(toAdd, v)
+	return diff(m, slices.Values(new), len(new))
+}
+
+func MapKeysDiff[K comparable, V any](old map[K]V, new map[K]V) Diff[K] {
+	if len(old) == 0 {
+		return Diff[K]{
+			ToAdd: mapKeys(new),
 		}
 	}
-	if len(m) == 0 {
-		return Diff[T]{
-			ToAdd: toAdd,
+	if len(new) == 0 {
+		return Diff[K]{
+			ToDel: mapKeys(old),
 		}
 	}
-	toDel := make([]T, 0, len(old))
-	for k := range m {
-		toDel = append(toDel, k)
-	}
-	return Diff[T]{toAdd, toDel}
+	return diff(maps.Clone(old), maps.Keys(new), len(new))
 }

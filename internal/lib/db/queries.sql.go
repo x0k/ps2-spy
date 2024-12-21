@@ -70,7 +70,7 @@ func (q *Queries) DeleteOutfitMember(ctx context.Context, arg DeleteOutfitMember
 
 const getChannel = `-- name: GetChannel :one
 SELECT
-  channel_id, locale, character_notifications, outfit_notifications, title_updates
+  channel_id, locale, character_notifications, outfit_notifications, title_updates, default_timezone
 FROM
   channel
 WHERE
@@ -86,6 +86,7 @@ func (q *Queries) GetChannel(ctx context.Context, channelID string) (Channel, er
 		&i.CharacterNotifications,
 		&i.OutfitNotifications,
 		&i.TitleUpdates,
+		&i.DefaultTimezone,
 	)
 	return i, err
 }
@@ -160,6 +161,29 @@ func (q *Queries) GetPlatformOutfitSynchronizedAt(ctx context.Context, arg GetPl
 	return synchronized_at, err
 }
 
+const getStatsTrackerTask = `-- name: GetStatsTrackerTask :one
+SELECT
+  task_id, channel_id, utc_start_weekday, utc_start_time, utc_end_weekday, utc_end_time
+FROM
+  stats_tracker_task
+WHERE
+  task_id = ?
+`
+
+func (q *Queries) GetStatsTrackerTask(ctx context.Context, taskID int64) (StatsTrackerTask, error) {
+	row := q.queryRow(ctx, q.getStatsTrackerTaskStmt, getStatsTrackerTask, taskID)
+	var i StatsTrackerTask
+	err := row.Scan(
+		&i.TaskID,
+		&i.ChannelID,
+		&i.UtcStartWeekday,
+		&i.UtcStartTime,
+		&i.UtcEndWeekday,
+		&i.UtcEndTime,
+	)
+	return i, err
+}
+
 const insertChannelCharacter = `-- name: InsertChannelCharacter :exec
 INSERT INTO
   channel_to_character (channel_id, platform, character_id)
@@ -193,6 +217,38 @@ type InsertChannelOutfitParams struct {
 
 func (q *Queries) InsertChannelOutfit(ctx context.Context, arg InsertChannelOutfitParams) error {
 	_, err := q.exec(ctx, q.insertChannelOutfitStmt, insertChannelOutfit, arg.ChannelID, arg.Platform, arg.OutfitID)
+	return err
+}
+
+const insertChannelStatsTrackerTask = `-- name: InsertChannelStatsTrackerTask :exec
+INSERT INTO
+  stats_tracker_task (
+    channel_id,
+    utc_start_weekday,
+    utc_start_time,
+    utc_end_weekday,
+    utc_end_time
+  )
+VALUES
+  (?, ?, ?, ?, ?)
+`
+
+type InsertChannelStatsTrackerTaskParams struct {
+	ChannelID       string
+	UtcStartWeekday int64
+	UtcStartTime    int64
+	UtcEndWeekday   int64
+	UtcEndTime      int64
+}
+
+func (q *Queries) InsertChannelStatsTrackerTask(ctx context.Context, arg InsertChannelStatsTrackerTaskParams) error {
+	_, err := q.exec(ctx, q.insertChannelStatsTrackerTaskStmt, insertChannelStatsTrackerTask,
+		arg.ChannelID,
+		arg.UtcStartWeekday,
+		arg.UtcStartTime,
+		arg.UtcEndWeekday,
+		arg.UtcEndTime,
+	)
 	return err
 }
 
@@ -267,6 +323,64 @@ func (q *Queries) InsertOutfitMember(ctx context.Context, arg InsertOutfitMember
 	return err
 }
 
+const listActiveStatsTrackerTasks = `-- name: ListActiveStatsTrackerTasks :many
+SELECT
+  channel_id
+FROM
+  stats_tracker_task
+WHERE
+  (
+    (
+      ?1 = utc_start_weekday
+      AND ?2 >= utc_start_time
+    )
+    OR (?1 > utc_start_weekday)
+    OR (
+      ?1 = 0
+      AND utc_start_weekday = 6
+    )
+  )
+  AND (
+    (
+      ?1 = utc_end_weekday
+      AND ?2 < utc_end_time
+    )
+    OR (?1 < utc_end_weekday)
+    OR (
+      ?1 = 6
+      AND utc_end_weekday = 0
+    )
+  )
+`
+
+type ListActiveStatsTrackerTasksParams struct {
+	UtcWeekday int64
+	UtcTime    int64
+}
+
+func (q *Queries) ListActiveStatsTrackerTasks(ctx context.Context, arg ListActiveStatsTrackerTasksParams) ([]string, error) {
+	rows, err := q.query(ctx, q.listActiveStatsTrackerTasksStmt, listActiveStatsTrackerTasks, arg.UtcWeekday, arg.UtcTime)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var channel_id string
+		if err := rows.Scan(&channel_id); err != nil {
+			return nil, err
+		}
+		items = append(items, channel_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listChannelCharacterIdsForPlatform = `-- name: ListChannelCharacterIdsForPlatform :many
 SELECT
   character_id
@@ -305,6 +419,73 @@ func (q *Queries) ListChannelCharacterIdsForPlatform(ctx context.Context, arg Li
 	return items, nil
 }
 
+const listChannelIntersectingStatsTrackerTasks = `-- name: ListChannelIntersectingStatsTrackerTasks :many
+SELECT
+  task_id, channel_id, utc_start_weekday, utc_start_time, utc_end_weekday, utc_end_time
+FROM
+  stats_tracker_task
+WHERE
+  channel_id = ?
+  AND (
+    (?2 - utc_start_weekday IN (1, -6))
+    OR (
+      ?2 = utc_start_weekday
+      AND ?3 > utc_start_time
+    )
+  )
+  AND (
+    (utc_end_weekday - ?4 IN (1, -6))
+    OR (
+      ?4 = utc_end_weekday
+      AND ?5 < utc_end_time
+    )
+  )
+`
+
+type ListChannelIntersectingStatsTrackerTasksParams struct {
+	ChannelID    string
+	EndWeekday   int64
+	EndTime      int64
+	StartWeekday int64
+	StartTime    int64
+}
+
+func (q *Queries) ListChannelIntersectingStatsTrackerTasks(ctx context.Context, arg ListChannelIntersectingStatsTrackerTasksParams) ([]StatsTrackerTask, error) {
+	rows, err := q.query(ctx, q.listChannelIntersectingStatsTrackerTasksStmt, listChannelIntersectingStatsTrackerTasks,
+		arg.ChannelID,
+		arg.EndWeekday,
+		arg.EndTime,
+		arg.StartWeekday,
+		arg.StartTime,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []StatsTrackerTask
+	for rows.Next() {
+		var i StatsTrackerTask
+		if err := rows.Scan(
+			&i.TaskID,
+			&i.ChannelID,
+			&i.UtcStartWeekday,
+			&i.UtcStartTime,
+			&i.UtcEndWeekday,
+			&i.UtcEndTime,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listChannelOutfitIdsForPlatform = `-- name: ListChannelOutfitIdsForPlatform :many
 SELECT
   outfit_id
@@ -333,6 +514,45 @@ func (q *Queries) ListChannelOutfitIdsForPlatform(ctx context.Context, arg ListC
 			return nil, err
 		}
 		items = append(items, outfit_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listChannelStatsTrackerTasks = `-- name: ListChannelStatsTrackerTasks :many
+SELECT
+  task_id, channel_id, utc_start_weekday, utc_start_time, utc_end_weekday, utc_end_time
+FROM
+  stats_tracker_task
+WHERE
+  channel_id = ?
+`
+
+func (q *Queries) ListChannelStatsTrackerTasks(ctx context.Context, channelID string) ([]StatsTrackerTask, error) {
+	rows, err := q.query(ctx, q.listChannelStatsTrackerTasksStmt, listChannelStatsTrackerTasks, channelID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []StatsTrackerTask
+	for rows.Next() {
+		var i StatsTrackerTask
+		if err := rows.Scan(
+			&i.TaskID,
+			&i.ChannelID,
+			&i.UtcStartWeekday,
+			&i.UtcStartTime,
+			&i.UtcEndWeekday,
+			&i.UtcEndTime,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err
@@ -476,7 +696,7 @@ func (q *Queries) ListPlatformOutfits(ctx context.Context, arg ListPlatformOutfi
 
 const listPlatformTrackingChannelsForCharacter = `-- name: ListPlatformTrackingChannelsForCharacter :many
 SELECT
-  channel_id, locale, character_notifications, outfit_notifications, title_updates
+  channel_id, locale, character_notifications, outfit_notifications, title_updates, default_timezone
 FROM
   channel
 WHERE
@@ -520,6 +740,7 @@ func (q *Queries) ListPlatformTrackingChannelsForCharacter(ctx context.Context, 
 			&i.CharacterNotifications,
 			&i.OutfitNotifications,
 			&i.TitleUpdates,
+			&i.DefaultTimezone,
 		); err != nil {
 			return nil, err
 		}
@@ -536,7 +757,7 @@ func (q *Queries) ListPlatformTrackingChannelsForCharacter(ctx context.Context, 
 
 const listPlatformTrackingChannelsForOutfit = `-- name: ListPlatformTrackingChannelsForOutfit :many
 SELECT
-  channel_id, locale, character_notifications, outfit_notifications, title_updates
+  channel_id, locale, character_notifications, outfit_notifications, title_updates, default_timezone
 FROM
   channel
 WHERE
@@ -571,6 +792,7 @@ func (q *Queries) ListPlatformTrackingChannelsForOutfit(ctx context.Context, arg
 			&i.CharacterNotifications,
 			&i.OutfitNotifications,
 			&i.TitleUpdates,
+			&i.DefaultTimezone,
 		); err != nil {
 			return nil, err
 		}
@@ -690,12 +912,26 @@ func (q *Queries) ListUniqueTrackableOutfitIdsForPlatform(ctx context.Context, p
 	return items, nil
 }
 
+const removeChannelStatsTrackerTask = `-- name: RemoveChannelStatsTrackerTask :exec
+DELETE FROM stats_tracker_task
+WHERE
+  task_id = ?
+  AND channel_id = ?
+`
+
+type RemoveChannelStatsTrackerTaskParams struct {
+	TaskID    int64
+	ChannelID string
+}
+
+func (q *Queries) RemoveChannelStatsTrackerTask(ctx context.Context, arg RemoveChannelStatsTrackerTaskParams) error {
+	_, err := q.exec(ctx, q.removeChannelStatsTrackerTaskStmt, removeChannelStatsTrackerTask, arg.TaskID, arg.ChannelID)
+	return err
+}
+
 const upsertChannelCharacterNotifications = `-- name: UpsertChannelCharacterNotifications :exec
 INSERT INTO
-  channel (
-    channel_id,
-    character_notifications
-  )
+  channel (channel_id, character_notifications)
 VALUES
   (?, ?) ON CONFLICT (channel_id) DO
 UPDATE
@@ -713,12 +949,29 @@ func (q *Queries) UpsertChannelCharacterNotifications(ctx context.Context, arg U
 	return err
 }
 
+const upsertChannelDefaultTimezone = `-- name: UpsertChannelDefaultTimezone :exec
+INSERT INTO
+  channel (channel_id, default_timezone)
+VALUES
+  (?, ?) ON CONFLICT (channel_id) DO
+UPDATE
+SET
+  default_timezone = EXCLUDED.default_timezone
+`
+
+type UpsertChannelDefaultTimezoneParams struct {
+	ChannelID       string
+	DefaultTimezone string
+}
+
+func (q *Queries) UpsertChannelDefaultTimezone(ctx context.Context, arg UpsertChannelDefaultTimezoneParams) error {
+	_, err := q.exec(ctx, q.upsertChannelDefaultTimezoneStmt, upsertChannelDefaultTimezone, arg.ChannelID, arg.DefaultTimezone)
+	return err
+}
+
 const upsertChannelLanguage = `-- name: UpsertChannelLanguage :exec
 INSERT INTO
-  channel (
-    channel_id,
-    locale
-  )
+  channel (channel_id, locale)
 VALUES
   (?, ?) ON CONFLICT (channel_id) DO
 UPDATE
@@ -738,10 +991,7 @@ func (q *Queries) UpsertChannelLanguage(ctx context.Context, arg UpsertChannelLa
 
 const upsertChannelOutfitNotifications = `-- name: UpsertChannelOutfitNotifications :exec
 INSERT INTO
-  channel (
-    channel_id,
-    outfit_notifications
-  )
+  channel (channel_id, outfit_notifications)
 VALUES
   (?, ?) ON CONFLICT (channel_id) DO
 UPDATE
@@ -761,10 +1011,7 @@ func (q *Queries) UpsertChannelOutfitNotifications(ctx context.Context, arg Upse
 
 const upsertChannelTitleUpdates = `-- name: UpsertChannelTitleUpdates :exec
 INSERT INTO
-  channel (
-    channel_id,
-    title_updates
-  )
+  channel (channel_id, title_updates)
 VALUES
   (?, ?) ON CONFLICT (channel_id) DO
 UPDATE

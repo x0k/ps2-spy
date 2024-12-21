@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/bwmarrin/discordgo"
 	discord_messages "github.com/x0k/ps2-spy/internal/discord/messages"
+	"github.com/x0k/ps2-spy/internal/shared"
 	_ "github.com/x0k/ps2-spy/internal/translations"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
@@ -11,7 +12,7 @@ import (
 func main() {
 	tag := language.MustParse(string(discordgo.EnglishGB))
 	p := message.NewPrinter(tag)
-	m := discord_messages.New()
+	m := discord_messages.New(shared.Timezones)
 	_, err := m.InvalidPopulationType("foo", nil)(p)
 	println(err.Msg)
 }

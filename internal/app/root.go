@@ -170,9 +170,11 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			return channelIds, nil
 		},
 		storage.ChannelTrackablePlatforms,
+		storage.ActiveStatsTrackerTasks,
 		charactersLoaders,
 		cfg.MaxTrackingDuration,
 	)
+	m.AppendVR("stats_tracker", statsTracker.Start)
 
 	for _, platform := range ps2_platforms.Platforms {
 		pl := log.With(slog.String("platform", string(platform)))
@@ -515,6 +517,12 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		storage.SaveChannelCharacterNotifications,
 		storage.SaveChannelOutfitNotifications,
 		storage.SaveChannelTitleUpdates,
+		storage.SaveChannelDefaultTimezone,
+		storage.ChannelStatsTrackerTasks,
+		storage.CreateStatsTrackerTask,
+		storage.RemoveStatsTrackerTask,
+		storage.StatsTrackerTask,
+		storage.UpdateStatsTrackerTask,
 	)
 	if err != nil {
 		return nil, err

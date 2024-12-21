@@ -10,6 +10,8 @@ import (
 
 	"github.com/x0k/ps2-spy/internal/discord"
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
+	"github.com/x0k/ps2-spy/internal/lib/containers"
+	"github.com/x0k/ps2-spy/internal/lib/diff"
 	"github.com/x0k/ps2-spy/internal/lib/loader"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
@@ -21,25 +23,28 @@ import (
 
 var ErrNothingToTrack = errors.New("nothing to track")
 var ErrNoChannelTrackerToStop = errors.New("no channel tracker to stop")
+var ErrChannelStatsTrackerIsAlreadyStarted = errors.New("channel stats tracker is already started")
 
 type TrackablePlatformsLoader = loader.Keyed[discord.ChannelId, []ps2_platforms.Platform]
 type CharacterTrackingChannelsLoader = loader.Keyed[discord.PlatformQuery[ps2.CharacterId], []discord.ChannelId]
-
-type ChannelPlatformsTracker struct {
-	trackers  map[ps2_platforms.Platform]*platformTracker
-	startedAt time.Time
-}
+type StatsTasksLoader = loader.Keyed[time.Time, []discord.ChannelId]
 
 type StatsTracker struct {
-	mu                       sync.RWMutex
+	trackersMu               sync.RWMutex
 	wg                       sync.WaitGroup
 	log                      *logger.Logger
-	trackers                 map[discord.ChannelId]ChannelPlatformsTracker
+	trackers                 map[discord.ChannelId]channelTracker
 	publisher                pubsub.Publisher[Event]
 	channelsLoader           CharacterTrackingChannelsLoader
-	maxTracingDuration       time.Duration
+	maxTrackingDuration      time.Duration
 	trackablePlatformsLoader TrackablePlatformsLoader
 	charactersLoaders        map[ps2_platforms.Platform]CharactersLoader
+
+	tasksLoader       StatsTasksLoader
+	scheduledTrackers []discord.ChannelId
+	forceMu           sync.RWMutex
+	forceStarted      *containers.ExpirationQueue[discord.ChannelId]
+	forceStopped      *containers.ExpirationQueue[discord.ChannelId]
 }
 
 func New(
@@ -47,17 +52,22 @@ func New(
 	publisher pubsub.Publisher[Event],
 	channelsLoader CharacterTrackingChannelsLoader,
 	trackablePlatformsLoader TrackablePlatformsLoader,
+	tasksLoader StatsTasksLoader,
 	charactersLoaders map[ps2_platforms.Platform]CharactersLoader,
 	maxTrackingDuration time.Duration,
 ) *StatsTracker {
 	return &StatsTracker{
 		log:                      log,
-		trackers:                 make(map[discord.ChannelId]ChannelPlatformsTracker),
+		trackers:                 make(map[discord.ChannelId]channelTracker),
 		publisher:                publisher,
 		channelsLoader:           channelsLoader,
 		charactersLoaders:        charactersLoaders,
-		maxTracingDuration:       maxTrackingDuration,
+		maxTrackingDuration:      maxTrackingDuration,
 		trackablePlatformsLoader: trackablePlatformsLoader,
+
+		tasksLoader:  tasksLoader,
+		forceStarted: containers.NewExpirationQueue[discord.ChannelId](),
+		forceStopped: containers.NewExpirationQueue[discord.ChannelId](),
 	}
 }
 
@@ -69,36 +79,22 @@ func (s *StatsTracker) Start(ctx context.Context) {
 		case <-ctx.Done():
 			s.wg.Wait()
 			return
-		case <-ticker.C:
+		case now := <-ticker.C:
 			if err := s.handleTrackersOvertime(ctx); err != nil {
 				s.log.Error(ctx, "error during handleTrackersOvertime", sl.Err(err))
 			}
+			s.invalidateForceTrackers(now)
+			s.invalidateStatsTrackers(ctx, now)
 		}
 	}
 }
 
 func (s *StatsTracker) StartChannelTracker(ctx context.Context, channelId discord.ChannelId) error {
-	trackablePlatforms, err := s.trackablePlatformsLoader(ctx, channelId)
-	if err != nil {
-		return err
-	}
-	if len(trackablePlatforms) == 0 {
-		return ErrNothingToTrack
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	stopErr := s.stopChannelTracker(ctx, channelId)
-	if errors.Is(stopErr, ErrNoChannelTrackerToStop) {
-		stopErr = nil
-	}
-	startErr := s.startChannelTracker(channelId, trackablePlatforms)
-	return errors.Join(stopErr, startErr)
+	return s.startChannelTracker(ctx, channelId, true)
 }
 
 func (s *StatsTracker) StopChannelTracker(ctx context.Context, channelId discord.ChannelId) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	return s.stopChannelTracker(ctx, channelId)
+	return s.stopChannelTracker(ctx, channelId, true)
 }
 
 func (s *StatsTracker) HandleDeathEvent(ctx context.Context, platform ps2_platforms.Platform, event events.Death) {
@@ -121,29 +117,49 @@ func (s *StatsTracker) HandleGainExperienceEvent(ctx context.Context, platform p
 	}()
 }
 
-func (s *StatsTracker) startChannelTracker(channelId discord.ChannelId, trackablePlatforms []ps2_platforms.Platform) error {
-	now := time.Now()
-	trackers := make(map[ps2_platforms.Platform]*platformTracker, len(trackablePlatforms))
-	s.trackers[channelId] = ChannelPlatformsTracker{
-		startedAt: now,
-		trackers:  trackers,
+func (s *StatsTracker) startChannelTracker(ctx context.Context, channelId discord.ChannelId, force bool) error {
+	// Started manually before scheduled task
+	if !force && s.isForceStopped(channelId) {
+		return nil
 	}
+	if s.isRunning(channelId) {
+		return ErrChannelStatsTrackerIsAlreadyStarted
+	}
+	trackablePlatforms, err := s.trackablePlatformsLoader(ctx, channelId)
+	if err != nil {
+		return err
+	}
+	if len(trackablePlatforms) == 0 {
+		return ErrNothingToTrack
+	}
+	trackers := make(map[ps2_platforms.Platform]*platformTracker, len(trackablePlatforms))
 	for _, platform := range trackablePlatforms {
 		trackers[platform] = newPlatformTracker(platform, s.charactersLoaders[platform])
 	}
+	now := time.Now()
+	s.trackersMu.Lock()
+	s.trackers[channelId] = channelTracker{
+		startedAt: now,
+		trackers:  trackers,
+	}
+	s.trackersMu.Unlock()
+	s.addStarted(channelId, force)
 	return s.publisher.Publish(ChannelTrackerStarted{
 		ChannelId: channelId,
 		StartedAt: now,
 	})
 }
 
-func (s *StatsTracker) stopChannelTracker(ctx context.Context, channelId discord.ChannelId) error {
-	pt, ok := s.trackers[channelId]
+func (s *StatsTracker) stopChannelTracker(ctx context.Context, channelId discord.ChannelId, force bool) error {
+	if !force && s.isForceStarted(channelId) {
+		return nil
+	}
+	s.addStopped(channelId, force)
+	pt, ok := s.popTracker(channelId)
 	if !ok {
 		return ErrNoChannelTrackerToStop
 	}
 	stoppedAt := time.Now()
-	delete(s.trackers, channelId)
 	stats := make(map[ps2_platforms.Platform]PlatformStats, len(pt.trackers))
 	for platform, tracker := range pt.trackers {
 		var err error
@@ -160,16 +176,30 @@ func (s *StatsTracker) stopChannelTracker(ctx context.Context, channelId discord
 	})
 }
 
+func (s *StatsTracker) popTracker(channelId discord.ChannelId) (channelTracker, bool) {
+	s.trackersMu.Lock()
+	defer s.trackersMu.Unlock()
+	t, ok := s.trackers[channelId]
+	if ok {
+		delete(s.trackers, channelId)
+		return t, true
+	}
+	return channelTracker{}, false
+}
+
 func (s *StatsTracker) handleTrackersOvertime(ctx context.Context) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	var errs []error
+	s.trackersMu.RLock()
+	toStop := make([]discord.ChannelId, 0, len(s.trackers))
 	for channelId, tracker := range s.trackers {
-		if time.Since(tracker.startedAt) > s.maxTracingDuration {
-			// NOTE: We are modifying the map while iterating over it
-			if err := s.stopChannelTracker(ctx, channelId); err != nil {
-				errs = append(errs, err)
-			}
+		if time.Since(tracker.startedAt) > s.maxTrackingDuration {
+			toStop = append(toStop, channelId)
+		}
+	}
+	s.trackersMu.RUnlock()
+	var errs []error
+	for _, channelId := range toStop {
+		if err := s.stopChannelTracker(ctx, channelId, true); err != nil {
+			errs = append(errs, err)
 		}
 	}
 	return errors.Join(errs...)
@@ -256,8 +286,8 @@ func (s *StatsTracker) handleCharacterEvent(
 		s.log.Warn(ctx, "cannot get loadout type, falling back to heavy assault", sl.Err(err))
 		loadoutType = ps2_loadout.HeavyAssault
 	}
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+	s.trackersMu.RLock()
+	defer s.trackersMu.RUnlock()
 	for _, channelId := range channels {
 		if platformsTracker, ok := s.trackers[channelId]; ok {
 			if tracker, ok := platformsTracker.trackers[platform]; ok {
@@ -265,4 +295,72 @@ func (s *StatsTracker) handleCharacterEvent(
 			}
 		}
 	}
+}
+
+func (s *StatsTracker) invalidateStatsTrackers(ctx context.Context, now time.Time) {
+	newTasks, err := s.tasksLoader(ctx, now)
+	if err != nil {
+		s.log.Error(ctx, "error loading tasks", sl.Err(err))
+		return
+	}
+	d := diff.SlicesDiff(s.scheduledTrackers, newTasks)
+	for _, channelId := range d.ToDel {
+		if err := s.stopChannelTracker(ctx, channelId, false); err != nil {
+			s.log.Error(ctx, "failed to stop channel tracker", sl.Err(err))
+		}
+	}
+	for _, channelId := range d.ToAdd {
+		if err := s.startChannelTracker(ctx, channelId, false); err != nil {
+			s.log.Error(ctx, "failed to start channel tracker", sl.Err(err))
+		}
+	}
+	s.scheduledTrackers = newTasks
+}
+
+func (s *StatsTracker) isRunning(channelId discord.ChannelId) bool {
+	s.trackersMu.RLock()
+	defer s.trackersMu.RUnlock()
+	_, ok := s.trackers[channelId]
+	return ok
+}
+
+func (s *StatsTracker) isForceStarted(channelId discord.ChannelId) bool {
+	s.forceMu.RLock()
+	defer s.forceMu.RUnlock()
+	return s.forceStarted.Has(channelId)
+}
+
+func (s *StatsTracker) addStarted(channelId discord.ChannelId, force bool) {
+	s.forceMu.Lock()
+	defer s.forceMu.Unlock()
+	if force {
+		s.forceStarted.Push(channelId)
+	} else {
+		s.forceStarted.Remove(channelId)
+	}
+	s.forceStopped.Remove(channelId)
+}
+
+func (s *StatsTracker) isForceStopped(channelId discord.ChannelId) bool {
+	s.forceMu.RLock()
+	defer s.forceMu.RUnlock()
+	return s.forceStopped.Has(channelId)
+}
+
+func (s *StatsTracker) addStopped(channelId discord.ChannelId, force bool) {
+	s.forceMu.Lock()
+	defer s.forceMu.Unlock()
+	if force {
+		s.forceStopped.Push(channelId)
+	} else {
+		s.forceStopped.Remove(channelId)
+	}
+	s.forceStarted.Remove(channelId)
+}
+
+func (s *StatsTracker) invalidateForceTrackers(now time.Time) {
+	s.forceMu.Lock()
+	defer s.forceMu.Unlock()
+	s.forceStarted.RemoveExpired(now.Add(-s.maxTrackingDuration), func(channelId discord.ChannelId) {})
+	s.forceStopped.RemoveExpired(now.Add(-s.maxTrackingDuration), func(channelId discord.ChannelId) {})
 }

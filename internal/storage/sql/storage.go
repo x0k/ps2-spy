@@ -490,6 +490,21 @@ func (s *Storage) SaveChannelTitleUpdates(
 	})
 }
 
+func (s *Storage) SaveChannelDefaultTimezone(
+	ctx context.Context,
+	channelId discord.ChannelId,
+	loc *time.Location,
+) error {
+	err := s.queries.UpsertChannelDefaultTimezone(ctx, db.UpsertChannelDefaultTimezoneParams{
+		ChannelID:       string(channelId),
+		DefaultTimezone: loc.String(),
+	})
+	return s.publish(err, storage.ChannelDefaultTimezoneSaved{
+		ChannelId: channelId,
+		Location:  loc,
+	})
+}
+
 func (s *Storage) publish(err error, event storage.Event) error {
 	if errors.Is(err, sql.ErrNoRows) {
 		return shared.ErrNotFound
@@ -507,11 +522,17 @@ func (s *Storage) dtoToChannel(ctx context.Context, dto db.Channel) discord.Chan
 		s.log.Warn(ctx, "failed to parse locale", slog.String("channel_id", string(channelId)), slog.String("locale", dto.Locale), sl.Err(err))
 		locale = discord.DEFAULT_LANG_TAG
 	}
+	loc, err := time.LoadLocation(dto.DefaultTimezone)
+	if err != nil {
+		s.log.Warn(ctx, "failed to load timezone", slog.String("channel_id", string(channelId)), slog.String("timezone", dto.DefaultTimezone), sl.Err(err))
+		loc = time.UTC
+	}
 	return discord.NewChannel(
 		channelId,
 		locale,
 		dto.CharacterNotifications,
 		dto.OutfitNotifications,
 		dto.TitleUpdates,
+		loc,
 	)
 }

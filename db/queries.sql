@@ -200,10 +200,7 @@ WHERE
 
 -- name: UpsertChannelLanguage :exec
 INSERT INTO
-  channel (
-    channel_id,
-    locale
-  )
+  channel (channel_id, locale)
 VALUES
   (?, ?) ON CONFLICT (channel_id) DO
 UPDATE
@@ -212,10 +209,7 @@ SET
 
 -- name: UpsertChannelCharacterNotifications :exec
 INSERT INTO
-  channel (
-    channel_id,
-    character_notifications
-  )
+  channel (channel_id, character_notifications)
 VALUES
   (?, ?) ON CONFLICT (channel_id) DO
 UPDATE
@@ -224,10 +218,7 @@ SET
 
 -- name: UpsertChannelOutfitNotifications :exec
 INSERT INTO
-  channel (
-    channel_id,
-    outfit_notifications
-  )
+  channel (channel_id, outfit_notifications)
 VALUES
   (?, ?) ON CONFLICT (channel_id) DO
 UPDATE
@@ -236,15 +227,21 @@ SET
 
 -- name: UpsertChannelTitleUpdates :exec
 INSERT INTO
-  channel (
-    channel_id,
-    title_updates
-  )
+  channel (channel_id, title_updates)
 VALUES
   (?, ?) ON CONFLICT (channel_id) DO
 UPDATE
 SET
   title_updates = EXCLUDED.title_updates;
+
+-- name: UpsertChannelDefaultTimezone :exec
+INSERT INTO
+  channel (channel_id, default_timezone)
+VALUES
+  (?, ?) ON CONFLICT (channel_id) DO
+UPDATE
+SET
+  default_timezone = EXCLUDED.default_timezone;
 
 -- name: GetChannel :one
 SELECT
@@ -268,3 +265,88 @@ FROM
   channel_to_outfit
 WHERE
   channel_to_outfit.channel_id = sqlc.arg (channel_id);
+
+-- name: ListActiveStatsTrackerTasks :many
+SELECT
+  channel_id
+FROM
+  stats_tracker_task
+WHERE
+  (
+    (
+      sqlc.arg (utc_weekday) = utc_start_weekday
+      AND sqlc.arg (utc_time) >= utc_start_time
+    )
+    OR (sqlc.arg (utc_weekday) > utc_start_weekday)
+    OR (
+      sqlc.arg (utc_weekday) = 0
+      AND utc_start_weekday = 6
+    )
+  )
+  AND (
+    (
+      sqlc.arg (utc_weekday) = utc_end_weekday
+      AND sqlc.arg (utc_time) < utc_end_time
+    )
+    OR (sqlc.arg (utc_weekday) < utc_end_weekday)
+    OR (
+      sqlc.arg (utc_weekday) = 6
+      AND utc_end_weekday = 0
+    )
+  );
+
+-- name: ListChannelStatsTrackerTasks :many
+SELECT
+  *
+FROM
+  stats_tracker_task
+WHERE
+  channel_id = ?;
+
+-- name: GetStatsTrackerTask :one
+SELECT
+  *
+FROM
+  stats_tracker_task
+WHERE
+  task_id = ?;
+
+-- name: ListChannelIntersectingStatsTrackerTasks :many
+SELECT
+  *
+FROM
+  stats_tracker_task
+WHERE
+  channel_id = ?
+  AND (
+    (?2 - utc_start_weekday IN (1, -6))
+    OR (
+      sqlc.arg (end_weekday) = utc_start_weekday
+      AND sqlc.arg (end_time) > utc_start_time
+    )
+  )
+  AND (
+    (utc_end_weekday - ?4 IN (1, -6))
+    OR (
+      sqlc.arg (start_weekday) = utc_end_weekday
+      AND sqlc.arg (start_time) < utc_end_time
+    )
+  );
+
+-- name: InsertChannelStatsTrackerTask :exec
+INSERT INTO
+  stats_tracker_task (
+    channel_id,
+    utc_start_weekday,
+    utc_start_time,
+    utc_end_weekday,
+    utc_end_time
+  )
+VALUES
+  (?, ?, ?, ?, ?);
+
+-- name: RemoveChannelStatsTrackerTask :exec
+DELETE FROM stats_tracker_task
+WHERE
+  task_id = ?
+  AND channel_id = ?;

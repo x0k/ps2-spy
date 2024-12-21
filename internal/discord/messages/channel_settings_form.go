@@ -6,12 +6,16 @@ import (
 	"golang.org/x/text/message"
 )
 
-func channelSettingsForm(
+func (m *Messages) channelSettingsForm(
 	p *message.Printer,
 	channel discord.Channel,
 ) []discordgo.MessageComponent {
 	one := 1
 	localeBase, _ := channel.Locale.Base()
+	timezoneSelectOptions := m.timezoneOptions(
+		p.Sprintf("Default timezone"),
+		channel.DefaultTimezone,
+	)
 	return []discordgo.MessageComponent{
 		discordgo.ActionsRow{
 			Components: []discordgo.MessageComponent{
@@ -98,6 +102,17 @@ func channelSettingsForm(
 							Default: !channel.TitleUpdates,
 						},
 					},
+				},
+			},
+		},
+		discordgo.ActionsRow{
+			Components: []discordgo.MessageComponent{
+				discordgo.SelectMenu{
+					CustomID:    discord.CHANNEL_DEFAULT_TIMEZONE_COMPONENT_CUSTOM_ID,
+					Placeholder: "Default timezone",
+					MinValues:   &one,
+					MaxValues:   1,
+					Options:     timezoneSelectOptions,
 				},
 			},
 		},

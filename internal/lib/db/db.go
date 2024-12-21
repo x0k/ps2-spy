@@ -45,11 +45,17 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.getPlatformOutfitSynchronizedAtStmt, err = db.PrepareContext(ctx, getPlatformOutfitSynchronizedAt); err != nil {
 		return nil, fmt.Errorf("error preparing query GetPlatformOutfitSynchronizedAt: %w", err)
 	}
+	if q.getStatsTrackerTaskStmt, err = db.PrepareContext(ctx, getStatsTrackerTask); err != nil {
+		return nil, fmt.Errorf("error preparing query GetStatsTrackerTask: %w", err)
+	}
 	if q.insertChannelCharacterStmt, err = db.PrepareContext(ctx, insertChannelCharacter); err != nil {
 		return nil, fmt.Errorf("error preparing query InsertChannelCharacter: %w", err)
 	}
 	if q.insertChannelOutfitStmt, err = db.PrepareContext(ctx, insertChannelOutfit); err != nil {
 		return nil, fmt.Errorf("error preparing query InsertChannelOutfit: %w", err)
+	}
+	if q.insertChannelStatsTrackerTaskStmt, err = db.PrepareContext(ctx, insertChannelStatsTrackerTask); err != nil {
+		return nil, fmt.Errorf("error preparing query InsertChannelStatsTrackerTask: %w", err)
 	}
 	if q.insertFacilityStmt, err = db.PrepareContext(ctx, insertFacility); err != nil {
 		return nil, fmt.Errorf("error preparing query InsertFacility: %w", err)
@@ -60,11 +66,20 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.insertOutfitMemberStmt, err = db.PrepareContext(ctx, insertOutfitMember); err != nil {
 		return nil, fmt.Errorf("error preparing query InsertOutfitMember: %w", err)
 	}
+	if q.listActiveStatsTrackerTasksStmt, err = db.PrepareContext(ctx, listActiveStatsTrackerTasks); err != nil {
+		return nil, fmt.Errorf("error preparing query ListActiveStatsTrackerTasks: %w", err)
+	}
 	if q.listChannelCharacterIdsForPlatformStmt, err = db.PrepareContext(ctx, listChannelCharacterIdsForPlatform); err != nil {
 		return nil, fmt.Errorf("error preparing query ListChannelCharacterIdsForPlatform: %w", err)
 	}
+	if q.listChannelIntersectingStatsTrackerTasksStmt, err = db.PrepareContext(ctx, listChannelIntersectingStatsTrackerTasks); err != nil {
+		return nil, fmt.Errorf("error preparing query ListChannelIntersectingStatsTrackerTasks: %w", err)
+	}
 	if q.listChannelOutfitIdsForPlatformStmt, err = db.PrepareContext(ctx, listChannelOutfitIdsForPlatform); err != nil {
 		return nil, fmt.Errorf("error preparing query ListChannelOutfitIdsForPlatform: %w", err)
+	}
+	if q.listChannelStatsTrackerTasksStmt, err = db.PrepareContext(ctx, listChannelStatsTrackerTasks); err != nil {
+		return nil, fmt.Errorf("error preparing query ListChannelStatsTrackerTasks: %w", err)
 	}
 	if q.listChannelTrackablePlatformsStmt, err = db.PrepareContext(ctx, listChannelTrackablePlatforms); err != nil {
 		return nil, fmt.Errorf("error preparing query ListChannelTrackablePlatforms: %w", err)
@@ -90,8 +105,14 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.listUniqueTrackableOutfitIdsForPlatformStmt, err = db.PrepareContext(ctx, listUniqueTrackableOutfitIdsForPlatform); err != nil {
 		return nil, fmt.Errorf("error preparing query ListUniqueTrackableOutfitIdsForPlatform: %w", err)
 	}
+	if q.removeChannelStatsTrackerTaskStmt, err = db.PrepareContext(ctx, removeChannelStatsTrackerTask); err != nil {
+		return nil, fmt.Errorf("error preparing query RemoveChannelStatsTrackerTask: %w", err)
+	}
 	if q.upsertChannelCharacterNotificationsStmt, err = db.PrepareContext(ctx, upsertChannelCharacterNotifications); err != nil {
 		return nil, fmt.Errorf("error preparing query UpsertChannelCharacterNotifications: %w", err)
+	}
+	if q.upsertChannelDefaultTimezoneStmt, err = db.PrepareContext(ctx, upsertChannelDefaultTimezone); err != nil {
+		return nil, fmt.Errorf("error preparing query UpsertChannelDefaultTimezone: %w", err)
 	}
 	if q.upsertChannelLanguageStmt, err = db.PrepareContext(ctx, upsertChannelLanguage); err != nil {
 		return nil, fmt.Errorf("error preparing query UpsertChannelLanguage: %w", err)
@@ -145,6 +166,11 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing getPlatformOutfitSynchronizedAtStmt: %w", cerr)
 		}
 	}
+	if q.getStatsTrackerTaskStmt != nil {
+		if cerr := q.getStatsTrackerTaskStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getStatsTrackerTaskStmt: %w", cerr)
+		}
+	}
 	if q.insertChannelCharacterStmt != nil {
 		if cerr := q.insertChannelCharacterStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing insertChannelCharacterStmt: %w", cerr)
@@ -153,6 +179,11 @@ func (q *Queries) Close() error {
 	if q.insertChannelOutfitStmt != nil {
 		if cerr := q.insertChannelOutfitStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing insertChannelOutfitStmt: %w", cerr)
+		}
+	}
+	if q.insertChannelStatsTrackerTaskStmt != nil {
+		if cerr := q.insertChannelStatsTrackerTaskStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing insertChannelStatsTrackerTaskStmt: %w", cerr)
 		}
 	}
 	if q.insertFacilityStmt != nil {
@@ -170,14 +201,29 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing insertOutfitMemberStmt: %w", cerr)
 		}
 	}
+	if q.listActiveStatsTrackerTasksStmt != nil {
+		if cerr := q.listActiveStatsTrackerTasksStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing listActiveStatsTrackerTasksStmt: %w", cerr)
+		}
+	}
 	if q.listChannelCharacterIdsForPlatformStmt != nil {
 		if cerr := q.listChannelCharacterIdsForPlatformStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing listChannelCharacterIdsForPlatformStmt: %w", cerr)
 		}
 	}
+	if q.listChannelIntersectingStatsTrackerTasksStmt != nil {
+		if cerr := q.listChannelIntersectingStatsTrackerTasksStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing listChannelIntersectingStatsTrackerTasksStmt: %w", cerr)
+		}
+	}
 	if q.listChannelOutfitIdsForPlatformStmt != nil {
 		if cerr := q.listChannelOutfitIdsForPlatformStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing listChannelOutfitIdsForPlatformStmt: %w", cerr)
+		}
+	}
+	if q.listChannelStatsTrackerTasksStmt != nil {
+		if cerr := q.listChannelStatsTrackerTasksStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing listChannelStatsTrackerTasksStmt: %w", cerr)
 		}
 	}
 	if q.listChannelTrackablePlatformsStmt != nil {
@@ -220,9 +266,19 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing listUniqueTrackableOutfitIdsForPlatformStmt: %w", cerr)
 		}
 	}
+	if q.removeChannelStatsTrackerTaskStmt != nil {
+		if cerr := q.removeChannelStatsTrackerTaskStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing removeChannelStatsTrackerTaskStmt: %w", cerr)
+		}
+	}
 	if q.upsertChannelCharacterNotificationsStmt != nil {
 		if cerr := q.upsertChannelCharacterNotificationsStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing upsertChannelCharacterNotificationsStmt: %w", cerr)
+		}
+	}
+	if q.upsertChannelDefaultTimezoneStmt != nil {
+		if cerr := q.upsertChannelDefaultTimezoneStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing upsertChannelDefaultTimezoneStmt: %w", cerr)
 		}
 	}
 	if q.upsertChannelLanguageStmt != nil {
@@ -291,13 +347,18 @@ type Queries struct {
 	getFacilityStmt                                         *sql.Stmt
 	getPlatformOutfitStmt                                   *sql.Stmt
 	getPlatformOutfitSynchronizedAtStmt                     *sql.Stmt
+	getStatsTrackerTaskStmt                                 *sql.Stmt
 	insertChannelCharacterStmt                              *sql.Stmt
 	insertChannelOutfitStmt                                 *sql.Stmt
+	insertChannelStatsTrackerTaskStmt                       *sql.Stmt
 	insertFacilityStmt                                      *sql.Stmt
 	insertOutfitStmt                                        *sql.Stmt
 	insertOutfitMemberStmt                                  *sql.Stmt
+	listActiveStatsTrackerTasksStmt                         *sql.Stmt
 	listChannelCharacterIdsForPlatformStmt                  *sql.Stmt
+	listChannelIntersectingStatsTrackerTasksStmt            *sql.Stmt
 	listChannelOutfitIdsForPlatformStmt                     *sql.Stmt
+	listChannelStatsTrackerTasksStmt                        *sql.Stmt
 	listChannelTrackablePlatformsStmt                       *sql.Stmt
 	listPlatformOutfitMembersStmt                           *sql.Stmt
 	listPlatformOutfitsStmt                                 *sql.Stmt
@@ -306,7 +367,9 @@ type Queries struct {
 	listTrackableCharacterIdsWithDuplicationForPlatformStmt *sql.Stmt
 	listTrackableOutfitIdsWithDuplicationForPlatformStmt    *sql.Stmt
 	listUniqueTrackableOutfitIdsForPlatformStmt             *sql.Stmt
+	removeChannelStatsTrackerTaskStmt                       *sql.Stmt
 	upsertChannelCharacterNotificationsStmt                 *sql.Stmt
+	upsertChannelDefaultTimezoneStmt                        *sql.Stmt
 	upsertChannelLanguageStmt                               *sql.Stmt
 	upsertChannelOutfitNotificationsStmt                    *sql.Stmt
 	upsertChannelTitleUpdatesStmt                           *sql.Stmt
@@ -324,13 +387,18 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		getFacilityStmt:                              q.getFacilityStmt,
 		getPlatformOutfitStmt:                        q.getPlatformOutfitStmt,
 		getPlatformOutfitSynchronizedAtStmt:          q.getPlatformOutfitSynchronizedAtStmt,
+		getStatsTrackerTaskStmt:                      q.getStatsTrackerTaskStmt,
 		insertChannelCharacterStmt:                   q.insertChannelCharacterStmt,
 		insertChannelOutfitStmt:                      q.insertChannelOutfitStmt,
+		insertChannelStatsTrackerTaskStmt:            q.insertChannelStatsTrackerTaskStmt,
 		insertFacilityStmt:                           q.insertFacilityStmt,
 		insertOutfitStmt:                             q.insertOutfitStmt,
 		insertOutfitMemberStmt:                       q.insertOutfitMemberStmt,
+		listActiveStatsTrackerTasksStmt:              q.listActiveStatsTrackerTasksStmt,
 		listChannelCharacterIdsForPlatformStmt:       q.listChannelCharacterIdsForPlatformStmt,
+		listChannelIntersectingStatsTrackerTasksStmt: q.listChannelIntersectingStatsTrackerTasksStmt,
 		listChannelOutfitIdsForPlatformStmt:          q.listChannelOutfitIdsForPlatformStmt,
+		listChannelStatsTrackerTasksStmt:             q.listChannelStatsTrackerTasksStmt,
 		listChannelTrackablePlatformsStmt:            q.listChannelTrackablePlatformsStmt,
 		listPlatformOutfitMembersStmt:                q.listPlatformOutfitMembersStmt,
 		listPlatformOutfitsStmt:                      q.listPlatformOutfitsStmt,
@@ -339,7 +407,9 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		listTrackableCharacterIdsWithDuplicationForPlatformStmt: q.listTrackableCharacterIdsWithDuplicationForPlatformStmt,
 		listTrackableOutfitIdsWithDuplicationForPlatformStmt:    q.listTrackableOutfitIdsWithDuplicationForPlatformStmt,
 		listUniqueTrackableOutfitIdsForPlatformStmt:             q.listUniqueTrackableOutfitIdsForPlatformStmt,
+		removeChannelStatsTrackerTaskStmt:                       q.removeChannelStatsTrackerTaskStmt,
 		upsertChannelCharacterNotificationsStmt:                 q.upsertChannelCharacterNotificationsStmt,
+		upsertChannelDefaultTimezoneStmt:                        q.upsertChannelDefaultTimezoneStmt,
 		upsertChannelLanguageStmt:                               q.upsertChannelLanguageStmt,
 		upsertChannelOutfitNotificationsStmt:                    q.upsertChannelOutfitNotificationsStmt,
 		upsertChannelTitleUpdatesStmt:                           q.upsertChannelTitleUpdatesStmt,
