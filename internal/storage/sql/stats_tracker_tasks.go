@@ -91,3 +91,10 @@ func (s *Storage) CreateStatsTrackerTask(
 		return nil
 	})
 }
+
+func (s *Storage) RemoveStatsTrackerTask(ctx context.Context, channelId discord.ChannelId, taskId discord.StatsTrackerTaskId) error {
+	return s.queries.RemoveChannelStatsTrackerTask(ctx, db.RemoveChannelStatsTrackerTaskParams{
+		ChannelID: string(channelId),
+		TaskID:    int64(taskId),
+	})
+}

@@ -64,6 +64,7 @@ func New(
 	channelDefaultTimezoneSaver discord_commands.ChannelDefaultTimezoneSaver,
 	channelStatsTrackerTasksLoader discord_commands.ChannelStatsTrackerTasksLoader,
 	statsTrackerTaskCreator discord_commands.ChannelStatsTrackerTaskCreator,
+	channelStatsTrackerTaskRemover discord_commands.ChannelStatsTrackerTaskRemover,
 ) (*module.Module, error) {
 	m := module.New(log.Logger, "discord")
 	session, err := discordgo.New("Bot " + token)
@@ -99,6 +100,7 @@ func New(
 		channelDefaultTimezoneSaver,
 		channelStatsTrackerTasksLoader,
 		statsTrackerTaskCreator,
+		channelStatsTrackerTaskRemover,
 	)
 	m.AppendR("discord.commands", commands.Start)
 

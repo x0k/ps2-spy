@@ -520,6 +520,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		storage.SaveChannelDefaultTimezone,
 		storage.ChannelStatsTrackerTasksLoader,
 		storage.CreateStatsTrackerTask,
+		storage.RemoveStatsTrackerTask,
 	)
 	if err != nil {
 		return nil, err

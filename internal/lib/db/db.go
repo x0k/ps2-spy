@@ -102,6 +102,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.listUniqueTrackableOutfitIdsForPlatformStmt, err = db.PrepareContext(ctx, listUniqueTrackableOutfitIdsForPlatform); err != nil {
 		return nil, fmt.Errorf("error preparing query ListUniqueTrackableOutfitIdsForPlatform: %w", err)
 	}
+	if q.removeChannelStatsTrackerTaskStmt, err = db.PrepareContext(ctx, removeChannelStatsTrackerTask); err != nil {
+		return nil, fmt.Errorf("error preparing query RemoveChannelStatsTrackerTask: %w", err)
+	}
 	if q.upsertChannelCharacterNotificationsStmt, err = db.PrepareContext(ctx, upsertChannelCharacterNotifications); err != nil {
 		return nil, fmt.Errorf("error preparing query UpsertChannelCharacterNotifications: %w", err)
 	}
@@ -255,6 +258,11 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing listUniqueTrackableOutfitIdsForPlatformStmt: %w", cerr)
 		}
 	}
+	if q.removeChannelStatsTrackerTaskStmt != nil {
+		if cerr := q.removeChannelStatsTrackerTaskStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing removeChannelStatsTrackerTaskStmt: %w", cerr)
+		}
+	}
 	if q.upsertChannelCharacterNotificationsStmt != nil {
 		if cerr := q.upsertChannelCharacterNotificationsStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing upsertChannelCharacterNotificationsStmt: %w", cerr)
@@ -350,6 +358,7 @@ type Queries struct {
 	listTrackableCharacterIdsWithDuplicationForPlatformStmt *sql.Stmt
 	listTrackableOutfitIdsWithDuplicationForPlatformStmt    *sql.Stmt
 	listUniqueTrackableOutfitIdsForPlatformStmt             *sql.Stmt
+	removeChannelStatsTrackerTaskStmt                       *sql.Stmt
 	upsertChannelCharacterNotificationsStmt                 *sql.Stmt
 	upsertChannelDefaultTimezoneStmt                        *sql.Stmt
 	upsertChannelLanguageStmt                               *sql.Stmt
@@ -388,6 +397,7 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		listTrackableCharacterIdsWithDuplicationForPlatformStmt: q.listTrackableCharacterIdsWithDuplicationForPlatformStmt,
 		listTrackableOutfitIdsWithDuplicationForPlatformStmt:    q.listTrackableOutfitIdsWithDuplicationForPlatformStmt,
 		listUniqueTrackableOutfitIdsForPlatformStmt:             q.listUniqueTrackableOutfitIdsForPlatformStmt,
+		removeChannelStatsTrackerTaskStmt:                       q.removeChannelStatsTrackerTaskStmt,
 		upsertChannelCharacterNotificationsStmt:                 q.upsertChannelCharacterNotificationsStmt,
 		upsertChannelDefaultTimezoneStmt:                        q.upsertChannelDefaultTimezoneStmt,
 		upsertChannelLanguageStmt:                               q.upsertChannelLanguageStmt,

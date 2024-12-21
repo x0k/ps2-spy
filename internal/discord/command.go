@@ -68,9 +68,27 @@ func NewStatsTrackerTaskEditButtonCustomId(
 		strconv.FormatInt(int64(id), 10)
 }
 
+func CustomIdToTaskIdToEdit(customId string) (StatsTrackerTaskId, error) {
+	v, err := strconv.ParseInt(
+		customId[len(STATS_TRACKER_TASKS_EDIT_BUTTON_CUSTOM_ID)+len(customIdSeparator):],
+		10,
+		64,
+	)
+	return StatsTrackerTaskId(v), err
+}
+
 func NewStatsTrackerTaskRemoveButtonCustomId(
 	id StatsTrackerTaskId,
 ) string {
 	return STATS_TRACKER_TASKS_REMOVE_BUTTON_CUSTOM_ID + customIdSeparator +
 		strconv.FormatInt(int64(id), 10)
+}
+
+func CustomIdToTaskIdToRemove(customId string) (StatsTrackerTaskId, error) {
+	v, err := strconv.ParseInt(
+		customId[len(STATS_TRACKER_TASKS_REMOVE_BUTTON_CUSTOM_ID)+len(customIdSeparator):],
+		10,
+		64,
+	)
+	return StatsTrackerTaskId(v), err
 }

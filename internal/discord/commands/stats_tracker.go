@@ -23,6 +23,9 @@ type ChannelTimezoneLoader = loader.Keyed[discord.ChannelId, *time.Location]
 type ChannelStatsTrackerTaskCreator = func(
 	context.Context, discord.ChannelId, discord.CreateStatsTrackerTaskState,
 ) error
+type ChannelStatsTrackerTaskRemover = func(
+	context.Context, discord.ChannelId, discord.StatsTrackerTaskId,
+) error
 
 func newStateId(i *discordgo.InteractionCreate) discord.ChannelAndUserIds {
 	var userId string
@@ -50,6 +53,7 @@ func NewStatsTracker(
 		discord.CreateStatsTrackerTaskState,
 	],
 	statsTrackerTaskCreator ChannelStatsTrackerTaskCreator,
+	channelStatsTrackerTaskRemover ChannelStatsTrackerTaskRemover,
 ) *discord.Command {
 	createFormHandler := func(
 		stateUpdater func(*discordgo.InteractionCreate, discord.CreateStatsTrackerTaskState) (discord.CreateStatsTrackerTaskState, error),
@@ -186,6 +190,19 @@ func NewStatsTracker(
 			)
 		}),
 		ComponentHandlers: map[string]discord.InteractionHandler{
+			discord.STATS_TRACKER_TASKS_REMOVE_BUTTON_CUSTOM_ID: discord.MessageUpdate(func(
+				ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate,
+			) discord.Response {
+				channelId := discord.ChannelId(i.ChannelID)
+				taskId, err := discord.CustomIdToTaskIdToRemove(i.MessageComponentData().CustomID)
+				if err != nil {
+					return messages.FieldValueExtractError(err)
+				}
+				if err := channelStatsTrackerTaskRemover(ctx, channelId, taskId); err != nil {
+					return messages.ChannelStatsTrackerTaskRemoveError(err)
+				}
+				return updatedSchedule(ctx, i, 0)
+			}),
 			discord.STATS_TRACKER_TASKS_PAGE_BUTTON_CUSTOM_ID: discord.MessageUpdate(func(
 				ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate,
 			) discord.Response {

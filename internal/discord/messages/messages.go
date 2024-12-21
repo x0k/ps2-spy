@@ -526,6 +526,15 @@ func (m *Messages) StatsTrackerCreateTaskForm(
 	}
 }
 
+func (m *Messages) ChannelStatsTrackerTaskRemoveError(err error) discord.Response {
+	return func(p *message.Printer) (*discordgo.InteractionResponseData, *discord.Error) {
+		return nil, &discord.Error{
+			Msg: p.Sprintf("Failed to remove stats tracker task"),
+			Err: err,
+		}
+	}
+}
+
 func (m *Messages) StatsTrackerCreateTaskFormWithError(
 	state discord.CreateStatsTrackerTaskState,
 	_ error,

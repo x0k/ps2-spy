@@ -311,18 +311,14 @@ FROM
 WHERE
   channel_id = ?
   AND (
-    (
-      ?2 - utc_start_weekday IN (1, -6)
-    )
+    (?2 - utc_start_weekday IN (1, -6))
     OR (
       sqlc.arg (end_weekday) = utc_start_weekday
       AND sqlc.arg (end_time) > utc_start_time
     )
   )
   AND (
-    (
-      utc_end_weekday - ?4 IN (1, -6)
-    )
+    (utc_end_weekday - ?4 IN (1, -6))
     OR (
       sqlc.arg (start_weekday) = utc_end_weekday
       AND sqlc.arg (start_time) < utc_end_time
@@ -340,3 +336,9 @@ INSERT INTO
   )
 VALUES
   (?, ?, ?, ?, ?);
+
+-- name: RemoveChannelStatsTrackerTask :exec
+DELETE FROM stats_tracker_task
+WHERE
+  task_id = ?
+  AND channel_id = ?;

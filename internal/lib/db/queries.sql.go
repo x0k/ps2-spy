@@ -404,18 +404,14 @@ FROM
 WHERE
   channel_id = ?
   AND (
-    (
-      ?2 - utc_start_weekday IN (1, -6)
-    )
+    (?2 - utc_start_weekday IN (1, -6))
     OR (
       ?2 = utc_start_weekday
       AND ?3 > utc_start_time
     )
   )
   AND (
-    (
-      utc_end_weekday - ?4 IN (1, -6)
-    )
+    (utc_end_weekday - ?4 IN (1, -6))
     OR (
       ?4 = utc_end_weekday
       AND ?5 < utc_end_time
@@ -891,6 +887,23 @@ func (q *Queries) ListUniqueTrackableOutfitIdsForPlatform(ctx context.Context, p
 		return nil, err
 	}
 	return items, nil
+}
+
+const removeChannelStatsTrackerTask = `-- name: RemoveChannelStatsTrackerTask :exec
+DELETE FROM stats_tracker_task
+WHERE
+  task_id = ?
+  AND channel_id = ?
+`
+
+type RemoveChannelStatsTrackerTaskParams struct {
+	TaskID    int64
+	ChannelID string
+}
+
+func (q *Queries) RemoveChannelStatsTrackerTask(ctx context.Context, arg RemoveChannelStatsTrackerTaskParams) error {
+	_, err := q.exec(ctx, q.removeChannelStatsTrackerTaskStmt, removeChannelStatsTrackerTask, arg.TaskID, arg.ChannelID)
+	return err
 }
 
 const upsertChannelCharacterNotifications = `-- name: UpsertChannelCharacterNotifications :exec

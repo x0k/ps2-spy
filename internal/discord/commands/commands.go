@@ -58,6 +58,7 @@ func New(
 	channelDefaultTimezoneSaver ChannelDefaultTimezoneSaver,
 	channelStatsTrackerTasksLoader ChannelStatsTrackerTasksLoader,
 	statsTrackerTaskCreator ChannelStatsTrackerTaskCreator,
+	channelStatsTrackerTaskRemover ChannelStatsTrackerTaskRemover,
 ) *commands {
 	populationLoader := newPopulationLoader(
 		log.With(sl.Component("population_loader")),
@@ -147,6 +148,7 @@ func New(
 				channelLoader,
 				createTaskStateContainer,
 				statsTrackerTaskCreator,
+				channelStatsTrackerTaskRemover,
 			),
 		},
 	}
