@@ -16,8 +16,14 @@ import (
 func timezoneData(p *message.Printer, loc *time.Location) (string, time.Duration) {
 	timezone, offsetInSeconds := time.Now().In(loc).Zone()
 	return p.Sprintf(
-			"The time is given in the time zone %q.",
+			`Schedule details:
+- The time is specified in the time zone %q. This can be changed in the channel settings;
+- The maximum amount of tasks per channel is %d;
+- You can edit a task by clicking on it;
+- The “Remove” button deletes immediately without confirmation.
+`,
 			timezone,
+			discord.MAX_AMOUNT_OF_TASKS_PER_CHANNEL,
 		),
 		time.Duration(offsetInSeconds) * time.Second
 }

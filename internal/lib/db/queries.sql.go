@@ -91,6 +91,22 @@ func (q *Queries) GetChannel(ctx context.Context, channelID string) (Channel, er
 	return i, err
 }
 
+const getCountChannelStatsTrackerTasks = `-- name: GetCountChannelStatsTrackerTasks :one
+SELECT
+  COUNT(*)
+FROM
+  stats_tracker_task
+WHERE
+  channel_id = ?
+`
+
+func (q *Queries) GetCountChannelStatsTrackerTasks(ctx context.Context, channelID string) (int64, error) {
+	row := q.queryRow(ctx, q.getCountChannelStatsTrackerTasksStmt, getCountChannelStatsTrackerTasks, channelID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const getFacility = `-- name: GetFacility :one
 SELECT
   facility_id, facility_name, facility_type, zone_id

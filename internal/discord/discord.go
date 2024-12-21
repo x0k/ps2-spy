@@ -102,6 +102,8 @@ type StatsTrackerTask struct {
 	UtcEndTime      time.Duration
 }
 
+const MAX_AMOUNT_OF_TASKS_PER_CHANNEL = 7
+
 type StatsTrackerTaskState struct {
 	SubmitButtonId string
 	TaskId         StatsTrackerTaskId

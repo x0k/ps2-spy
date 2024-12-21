@@ -303,6 +303,14 @@ FROM
 WHERE
   channel_id = ?;
 
+-- name: GetCountChannelStatsTrackerTasks :one
+SELECT
+  COUNT(*)
+FROM
+  stats_tracker_task
+WHERE
+  channel_id = ?;
+
 -- name: GetStatsTrackerTask :one
 SELECT
   *

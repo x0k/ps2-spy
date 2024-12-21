@@ -97,6 +97,13 @@ func createStatsTrackerTask(
 	if task.Duration > 4*time.Hour {
 		return fmt.Errorf("duration must be less than 4 hours")
 	}
+	count, err := s.queries.GetCountChannelStatsTrackerTasks(ctx, string(channelId))
+	if err != nil {
+		return fmt.Errorf("failed to get count of channel %q stats tracker tasks: %w", string(channelId), err)
+	}
+	if int(count)+len(task.LocalWeekdays) > discord.MAX_AMOUNT_OF_TASKS_PER_CHANNEL {
+		return fmt.Errorf("channel %q has too many stats tracker tasks", string(channelId))
+	}
 	for _, localWeekday := range task.LocalWeekdays {
 		localStart := time.Duration(task.LocalStartHour)*time.Hour + time.Duration(task.LocalStartMin)*time.Minute
 		utcStartWeekday, utcStartTime := shared.ShiftDate(localWeekday, localStart, offset)
