@@ -346,20 +346,14 @@ func (w *WorldsTracker) HandleFacilityControl(ctx context.Context, event events.
 	if oldOutfitId == ps2.OutfitId(event.OutfitID) && oldOutfitId != "" {
 		return nil
 	}
-	err = w.publisher.Publish(FacilityControl{
+	w.publisher.Publish(FacilityControl{
 		FacilityControl: event,
 		OldOutfitId:     oldOutfitId,
 	})
-	if err != nil {
-		return fmt.Errorf("%s failed publishing facility control event: %w", op, err)
-	}
-	err = w.publisher.Publish(FacilityLoss{
+	w.publisher.Publish(FacilityLoss{
 		FacilityControl: event,
 		OldOutfitId:     oldOutfitId,
 	})
-	if err != nil {
-		return fmt.Errorf("%s failed publishing facility loss event: %w", op, err)
-	}
 	return nil
 }
 

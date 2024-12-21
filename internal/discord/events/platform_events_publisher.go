@@ -91,13 +91,10 @@ func publishCharacterEventTask[T pubsub.EventType, E pubsub.Event[T]](
 	if len(channels) == 0 {
 		return
 	}
-	if err := p.publisher.Publish(channelsEvent[T, E]{
+	p.publisher.Publish(channelsEvent[T, E]{
 		Event:    event,
 		Channels: channels,
-	}); err != nil {
-		p.log.Error(ctx, "cannot publish platform event", slog.Any("event", event), sl.Err(err))
-		return
-	}
+	})
 }
 
 func publishOutfitEventTask[T pubsub.EventType, E pubsub.Event[T]](
@@ -115,11 +112,8 @@ func publishOutfitEventTask[T pubsub.EventType, E pubsub.Event[T]](
 	if len(channels) == 0 {
 		return
 	}
-	if err := p.publisher.Publish(channelsEvent[T, E]{
+	p.publisher.Publish(channelsEvent[T, E]{
 		Event:    event,
 		Channels: channels,
-	}); err != nil {
-		p.log.Error(ctx, "cannot publish platform event", slog.Any("event", event), sl.Err(err))
-		return
-	}
+	})
 }

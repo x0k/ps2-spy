@@ -18,9 +18,13 @@ type Publisher struct {
 	msgBaseBuff              core.MessageBase
 	subscriptionSettingsBuff *SubscriptionSettings
 	buffers                  map[MessageType]Message
+	onError                  func(err error)
 }
 
-func NewPublisher(publisher pubsub.Publisher[Message]) *Publisher {
+func NewPublisher(
+	publisher pubsub.Publisher[Message],
+	onError func(err error),
+) *Publisher {
 	return &Publisher{
 		Publisher:                publisher,
 		subscriptionSettingsBuff: &SubscriptionSettings{},
@@ -32,32 +36,38 @@ func NewPublisher(publisher pubsub.Publisher[Message]) *Publisher {
 	}
 }
 
-func (p *Publisher) Publish(msg map[string]any) error {
+func (p *Publisher) Publish(msg map[string]any) {
+	// Ignore help message
+	if _, ok := msg[HelpSignatureField]; ok {
+		return
+	}
 	// Subscription
 	if s, ok := msg[SubscriptionSignatureField]; ok {
 		err := mapstructure.Decode(s, p.subscriptionSettingsBuff)
 		if err != nil {
-			return fmt.Errorf("%q decoding: %w", SubscriptionSignatureField, err)
+			p.onError(fmt.Errorf("%q decoding: %w", SubscriptionSignatureField, err))
+			return
 		}
-		return p.Publisher.Publish(*p.subscriptionSettingsBuff)
-	}
-	// Ignore help message
-	if _, ok := msg[HelpSignatureField]; ok {
-		return nil
+		p.Publisher.Publish(*p.subscriptionSettingsBuff)
+		return
 	}
 	err := core.AsMessageBase(msg, &p.msgBaseBuff)
 	if err != nil {
-		return err
+		p.onError(err)
+		return
 	}
 	if p.msgBaseBuff.Service != core.EventService {
-		return fmt.Errorf("%s: %w", p.msgBaseBuff.Service, ErrUnsupportedMessageService)
+		p.onError(fmt.Errorf("%s: %w", p.msgBaseBuff.Service, ErrUnsupportedMessageService))
+		return
 	}
-	if buff, ok := p.buffers[MessageType(p.msgBaseBuff.Type)]; ok {
-		err = mapstructure.Decode(msg, &buff)
-		if err != nil {
-			return fmt.Errorf("%q decoding: %w", p.msgBaseBuff.Type, err)
-		}
-		return p.Publisher.Publish(buff)
+	buff, ok := p.buffers[MessageType(p.msgBaseBuff.Type)]
+	if !ok {
+		p.onError(fmt.Errorf("%s: %w", p.msgBaseBuff.Type, ErrUnknownMessageType))
+		return
 	}
-	return fmt.Errorf("%s: %w", p.msgBaseBuff.Type, ErrUnknownMessageType)
+	if err = mapstructure.Decode(msg, &buff); err != nil {
+		p.onError(fmt.Errorf("%q decoding: %w", p.msgBaseBuff.Type, err))
+		return
+	}
+	p.Publisher.Publish(buff)
 }

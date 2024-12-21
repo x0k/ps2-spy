@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/x0k/ps2-spy/internal/lib/diff"
-	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 	"github.com/x0k/ps2-spy/internal/storage"
@@ -38,22 +37,18 @@ func (s *Storage) SaveOutfitMembers(
 	if err != nil {
 		return err
 	}
-	var pErr error
 	if len(old) == 0 {
-		pErr = s.publisher.Publish(storage.OutfitMembersInit{
+		s.publisher.Publish(storage.OutfitMembersInit{
 			Platform: platform,
 			OutfitId: outfitId,
 			Members:  members,
 		})
 	} else {
-		pErr = s.publisher.Publish(storage.OutfitMembersUpdate{
+		s.publisher.Publish(storage.OutfitMembersUpdate{
 			Platform: platform,
 			OutfitId: outfitId,
 			Members:  membersDiff,
 		})
-	}
-	if pErr != nil {
-		s.log.Error(ctx, "failed to publish event", sl.Err(pErr))
 	}
 	return s.SaveOutfitSynchronizedAt(ctx, platform, outfitId, time.Now())
 }

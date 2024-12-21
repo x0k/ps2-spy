@@ -36,10 +36,18 @@ func New(
 		instrumentedEventsPublisher,
 		mt,
 		platform,
+		func(err error) {
+			log.Logger.Error("failed to publish relogin event", sl.Err(err))
+		},
 	)
 	m.AppendR(fmt.Sprintf("%s.relogin_omitter", platform), reLoginOmitter.Start)
 
-	rawEventsPublisher := events.NewPublisher(reLoginOmitter)
+	rawEventsPublisher := events.NewPublisher(
+		reLoginOmitter,
+		func(err error) {
+			log.Logger.Error("failed to publish raw event", sl.Err(err))
+		},
+	)
 
 	serviceMessagePayloadPublisher := metrics.InstrumentPlatformPublisher(
 		mt,
@@ -48,7 +56,12 @@ func New(
 		newServiceMessagePayloadPublisher(rawEventsPublisher),
 	)
 
-	streamingPublisher := streaming.NewPublisher(serviceMessagePayloadPublisher)
+	streamingPublisher := streaming.NewPublisher(
+		serviceMessagePayloadPublisher,
+		func(err error) {
+			log.Logger.Error("failed to publish streaming event", sl.Err(err))
+		},
+	)
 
 	streamingClient := streaming.NewClient(
 		streamingEndpoint,

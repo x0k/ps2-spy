@@ -15,9 +15,8 @@ func newServiceMessagePayloadPublisher(publisher pubsub.Publisher[map[string]any
 	}
 }
 
-func (m *ServiceMessagePayloadPublisher) Publish(msg streaming.Message) error {
+func (m *ServiceMessagePayloadPublisher) Publish(msg streaming.Message) {
 	if serviceMsg, ok := msg.(streaming.ServiceMessage[map[string]any]); ok {
-		return m.Publisher.Publish(serviceMsg.Payload)
+		m.Publisher.Publish(serviceMsg.Payload)
 	}
-	return nil
 }

@@ -10,7 +10,6 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
 	"github.com/x0k/ps2-spy/internal/lib/containers"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
-	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
 	"github.com/x0k/ps2-spy/internal/metrics"
 	"github.com/x0k/ps2-spy/internal/ps2"
@@ -29,6 +28,7 @@ type ReLoginOmitter struct {
 	delayDuration     time.Duration
 	mt                *metrics.Metrics
 	platform          ps2_platforms.Platform
+	onError           func(err error)
 }
 
 func NewReLoginOmitter(
@@ -36,6 +36,7 @@ func NewReLoginOmitter(
 	pub pubsub.Publisher[events.Event],
 	mt *metrics.Metrics,
 	platform ps2_platforms.Platform,
+	onError func(err error),
 ) *ReLoginOmitter {
 	return &ReLoginOmitter{
 		Publisher:         pub,
@@ -74,10 +75,8 @@ func (r *ReLoginOmitter) flushLogOutEvents(ctx context.Context, now time.Time) {
 	defer r.batchMu.Unlock()
 	count := r.logoutEventsQueue.RemoveExpired(now.Add(-r.delayDuration), func(charId ps2.CharacterId) {
 		if e, ok := r.logoutEvents[charId]; ok {
-			if err := r.Publisher.Publish(e); err != nil {
-				r.log.Error(ctx, "failed to publish logout event", sl.Err(err))
-			}
 			delete(r.logoutEvents, charId)
+			r.Publisher.Publish(e)
 		}
 	})
 	metrics.SetPlatformQueueSize(
@@ -109,22 +108,24 @@ func (r *ReLoginOmitter) Start(ctx context.Context) error {
 	}
 }
 
-func (r *ReLoginOmitter) Publish(event pubsub.Event[events.EventType]) error {
+func (r *ReLoginOmitter) Publish(event pubsub.Event[events.EventType]) {
 	if event.Type() == events.PlayerLogoutEventName {
 		if e, ok := event.(events.PlayerLogout); ok {
 			r.addLogoutEvent(e)
-			return nil
+			return
 		}
-		return ErrConvertEvent
+		r.onError(ErrConvertEvent)
+		return
 	}
 	if event.Type() == events.PlayerLoginEventName {
 		if e, ok := event.(events.PlayerLogin); ok {
 			if !r.shouldPublishLoginEvent(e) {
-				return nil
+				return
 			}
 		} else {
-			return ErrConvertEvent
+			r.onError(ErrConvertEvent)
+			return
 		}
 	}
-	return r.Publisher.Publish(event)
+	r.Publisher.Publish(event)
 }

@@ -144,10 +144,11 @@ func (s *StatsTracker) startChannelTracker(ctx context.Context, channelId discor
 	}
 	s.trackersMu.Unlock()
 	s.addStarted(channelId, force)
-	return s.publisher.Publish(ChannelTrackerStarted{
+	s.publisher.Publish(ChannelTrackerStarted{
 		ChannelId: channelId,
 		StartedAt: now,
 	})
+	return nil
 }
 
 func (s *StatsTracker) stopChannelTracker(ctx context.Context, channelId discord.ChannelId, force bool) error {
@@ -168,12 +169,13 @@ func (s *StatsTracker) stopChannelTracker(ctx context.Context, channelId discord
 			s.log.Warn(ctx, "failed to get stats for platform", slog.String("channel_id", string(channelId)), slog.String("platform", string(platform)), sl.Err(err))
 		}
 	}
-	return s.publisher.Publish(ChannelTrackerStopped{
+	s.publisher.Publish(ChannelTrackerStopped{
 		ChannelId: channelId,
 		StartedAt: pt.startedAt,
 		StoppedAt: stoppedAt,
 		Platforms: stats,
 	})
+	return nil
 }
 
 func (s *StatsTracker) popTracker(channelId discord.ChannelId) (channelTracker, bool) {

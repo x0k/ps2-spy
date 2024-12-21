@@ -115,9 +115,7 @@ func (c *Client) Subscribe(ctx context.Context, settings commands.SubscriptionSe
 		if err := c.checkConnectionStateChanged(msg); err == ErrDisconnectedByServer {
 			return fmt.Errorf("%s: %w", op, err)
 		}
-		if err = c.publisher.Publish(msg); err != nil {
-			return fmt.Errorf("%s: %w", op, err)
-		}
+		c.publisher.Publish(msg)
 	}
 }
 

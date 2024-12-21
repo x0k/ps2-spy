@@ -315,30 +315,24 @@ func (p *CharactersTracker) publishPlayerLogin(
 	} else {
 		t = time.Now()
 	}
-	if err := p.publisher.Publish(PlayerLogin{
+	p.publisher.Publish(PlayerLogin{
 		Time:      t,
 		Character: char,
-	}); err != nil {
-		p.log.Error(ctx, "cannot publish login event", sl.Err(err))
-	}
+	})
 }
 
 func (p *CharactersTracker) publishPlayerFakeLogin(ctx context.Context, char ps2.Character) {
 	now := time.Now()
-	if err := p.publisher.Publish(PlayerFakeLogin{
+	p.publisher.Publish(PlayerFakeLogin{
 		Time:      now,
 		Character: char,
-	}); err != nil {
-		p.log.Error(ctx, "cannot publish fake login event", sl.Err(err))
-	}
+	})
 }
 
 func (p *CharactersTracker) publishPlayerLogout(ctx context.Context, t time.Time, pl player) {
-	if err := p.publisher.Publish(PlayerLogout{
+	p.publisher.Publish(PlayerLogout{
 		Time:        t,
 		CharacterId: pl.characterId,
 		WorldId:     pl.worldId,
-	}); err != nil {
-		p.log.Error(ctx, "cannot publish logout event", sl.Err(err))
-	}
+	})
 }

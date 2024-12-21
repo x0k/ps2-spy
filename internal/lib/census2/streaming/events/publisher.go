@@ -15,9 +15,13 @@ var ErrUnknownEventName = fmt.Errorf("unknown event name")
 type eventsPublisher struct {
 	pubsub.Publisher[Event]
 	buffers map[EventType]Event
+	onError func(err error)
 }
 
-func NewPublisher(publisher pubsub.Publisher[Event]) *eventsPublisher {
+func NewPublisher(
+	publisher pubsub.Publisher[Event],
+	onError func(err error),
+) *eventsPublisher {
 	return &eventsPublisher{
 		Publisher: publisher,
 		buffers: map[EventType]Event{
@@ -36,20 +40,24 @@ func NewPublisher(publisher pubsub.Publisher[Event]) *eventsPublisher {
 			FacilityControlEventName:       FacilityControl{},
 			MetagameEventEventName:         MetagameEvent{},
 		},
+		onError: onError,
 	}
 }
 
-func (p *eventsPublisher) Publish(event map[string]any) error {
+func (p *eventsPublisher) Publish(event map[string]any) {
 	name, ok := event[core.EventNameField].(string)
 	if !ok {
-		return ErrEventNameNotFound
+		p.onError(ErrEventNameNotFound)
+		return
 	}
-	if buff, ok := p.buffers[EventType(name)]; ok {
-		err := mapstructure.Decode(event, &buff)
-		if err != nil {
-			return fmt.Errorf("%q decoding: %w", name, err)
-		}
-		return p.Publisher.Publish(buff)
+	buff, ok := p.buffers[EventType(name)]
+	if !ok {
+		p.onError(fmt.Errorf("%s: %w", name, ErrUnknownEventName))
+		return
 	}
-	return fmt.Errorf("%s: %w", name, ErrUnknownEventName)
+	if err := mapstructure.Decode(event, &buff); err != nil {
+		p.onError(fmt.Errorf("%q decoding: %w", name, err))
+		return
+	}
+	p.Publisher.Publish(buff)
 }

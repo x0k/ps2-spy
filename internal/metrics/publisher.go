@@ -14,17 +14,13 @@ type instrumentedPublisher[T pubsub.EventType] struct {
 	counter *prometheus.CounterVec
 }
 
-func (p *instrumentedPublisher[T]) Publish(event pubsub.Event[T]) error {
-	err := p.Publisher.Publish(event)
+func (p *instrumentedPublisher[T]) Publish(event pubsub.Event[T]) {
+	p.Publisher.Publish(event)
 	labels := prometheus.Labels{
 		"event_type": string(event.Type()),
 		"status":     string(SuccessStatus),
 	}
-	if err != nil {
-		labels["status"] = string(ErrorStatus)
-	}
 	p.counter.With(labels).Inc()
-	return err
 }
 
 func newInstrumentPublisher[T pubsub.EventType](

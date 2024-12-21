@@ -72,13 +72,6 @@ func (p *EventsPublisher) PublishChannelTrackerStopped(
 	go publishChannelEventTask(ctx, p, event.ChannelId, event)
 }
 
-func (p *EventsPublisher) publish(ctx context.Context, event Event) {
-	if err := p.publisher.Publish(event); err != nil {
-		p.log.Error(ctx, "cannot publish event", slog.Any("event", event), sl.Err(err))
-		return
-	}
-}
-
 func publishChannelEventTask[T pubsub.EventType, E pubsub.Event[T]](
 	ctx context.Context,
 	p *EventsPublisher,
@@ -91,7 +84,7 @@ func publishChannelEventTask[T pubsub.EventType, E pubsub.Event[T]](
 		p.log.Error(ctx, "cannot get channel language", slog.String("channel_id", string(channelId)), sl.Err(err))
 		return
 	}
-	p.publish(ctx, channelEvent[T, E]{
+	p.publisher.Publish(channelEvent[T, E]{
 		Event:   event,
 		Channel: channel,
 	})

@@ -101,7 +101,8 @@ func (s *Storage) Begin(
 	if err != nil {
 		return err
 	}
-	return bufferedPublisher.Flush()
+	bufferedPublisher.Flush()
+	return nil
 }
 
 func (s *Storage) SaveChannelOutfit(ctx context.Context, channelId discord.ChannelId, platform ps2_platforms.Platform, outfitId ps2.OutfitId) error {
@@ -512,7 +513,8 @@ func (s *Storage) publish(err error, event storage.Event) error {
 	if err != nil {
 		return err
 	}
-	return s.publisher.Publish(event)
+	s.publisher.Publish(event)
+	return nil
 }
 
 func (s *Storage) dtoToChannel(ctx context.Context, dto db.Channel) discord.Channel {
