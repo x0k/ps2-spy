@@ -170,7 +170,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			return channelIds, nil
 		},
 		storage.ChannelTrackablePlatforms,
-		storage.StatsTrackerTasks,
+		storage.ActiveStatsTrackerTasks,
 		charactersLoaders,
 		cfg.MaxTrackingDuration,
 	)
@@ -518,9 +518,11 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		storage.SaveChannelOutfitNotifications,
 		storage.SaveChannelTitleUpdates,
 		storage.SaveChannelDefaultTimezone,
-		storage.ChannelStatsTrackerTasksLoader,
+		storage.ChannelStatsTrackerTasks,
 		storage.CreateStatsTrackerTask,
 		storage.RemoveStatsTrackerTask,
+		storage.StatsTrackerTask,
+		storage.UpdateStatsTrackerTask,
 	)
 	if err != nil {
 		return nil, err

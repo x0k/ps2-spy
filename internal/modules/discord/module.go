@@ -65,6 +65,8 @@ func New(
 	channelStatsTrackerTasksLoader discord_commands.ChannelStatsTrackerTasksLoader,
 	statsTrackerTaskCreator discord_commands.ChannelStatsTrackerTaskCreator,
 	channelStatsTrackerTaskRemover discord_commands.ChannelStatsTrackerTaskRemover,
+	statsTrackerTaskLoader discord_commands.StatsTrackerTaskLoader,
+	channelStatsTrackerTaskUpdater discord_commands.ChannelStatsTrackerTaskUpdater,
 ) (*module.Module, error) {
 	m := module.New(log.Logger, "discord")
 	session, err := discordgo.New("Bot " + token)
@@ -101,6 +103,8 @@ func New(
 		channelStatsTrackerTasksLoader,
 		statsTrackerTaskCreator,
 		channelStatsTrackerTaskRemover,
+		statsTrackerTaskLoader,
+		channelStatsTrackerTaskUpdater,
 	)
 	m.AppendR("discord.commands", commands.Start)
 

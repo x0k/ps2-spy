@@ -9,6 +9,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/diff"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
+	"github.com/x0k/ps2-spy/internal/shared"
 )
 
 type ChannelId string
@@ -101,7 +102,9 @@ type StatsTrackerTask struct {
 	UtcEndTime      time.Duration
 }
 
-type CreateStatsTrackerTaskState struct {
+type StatsTrackerTaskState struct {
+	SubmitButtonId string
+	TaskId         StatsTrackerTaskId
 	Timezone       *time.Location
 	LocalWeekdays  []time.Weekday
 	LocalStartHour int
@@ -111,18 +114,44 @@ type CreateStatsTrackerTaskState struct {
 
 func NewCreateStatsTrackerTaskState(
 	timezone *time.Location,
-) CreateStatsTrackerTaskState {
+) StatsTrackerTaskState {
 	localNow := time.Now().In(timezone)
 	startTime := time.Duration(localNow.Hour())*time.Hour + time.Duration(localNow.Minute()/10)*10*time.Minute
 	hour := int(startTime / time.Hour)
 	min := int((startTime % time.Hour) / time.Minute)
-	return CreateStatsTrackerTaskState{
-		Timezone: timezone,
+	return StatsTrackerTaskState{
+		SubmitButtonId: STATS_TRACKER_TASK_CREATE_SUBMIT_BUTTON_CUSTOM_ID,
+		Timezone:       timezone,
 		LocalWeekdays: []time.Weekday{
 			localNow.Weekday(),
 		},
 		LocalStartHour: hour,
 		LocalStartMin:  min,
 		Duration:       2 * time.Hour,
+	}
+}
+
+func NewUpdateStatsTrackerTaskState(
+	task StatsTrackerTask,
+	timezone *time.Location,
+) StatsTrackerTaskState {
+	_, offsetInSeconds := time.Now().In(timezone).Zone()
+	offset := (time.Duration(offsetInSeconds) * time.Second)
+	startWeekday, startTime := shared.ShiftDate(task.UtcStartWeekday, task.UtcStartTime, offset)
+	endWeekday, endTime := shared.ShiftDate(task.UtcEndWeekday, task.UtcEndTime, offset)
+	duration := endTime - startTime
+	if startWeekday != endWeekday {
+		duration += 24 * time.Hour
+	}
+	return StatsTrackerTaskState{
+		SubmitButtonId: STATS_TRACKER_TASK_UPDATE_SUBMIT_BUTTON_CUSTOM_ID,
+		TaskId:         task.Id,
+		Timezone:       timezone,
+		LocalWeekdays: []time.Weekday{
+			startWeekday,
+		},
+		LocalStartHour: int(startTime / time.Hour),
+		LocalStartMin:  int((startTime % time.Hour) / time.Minute),
+		Duration:       duration,
 	}
 }

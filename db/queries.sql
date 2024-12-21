@@ -303,6 +303,14 @@ FROM
 WHERE
   channel_id = ?;
 
+-- name: GetStatsTrackerTask :one
+SELECT
+  *
+FROM
+  stats_tracker_task
+WHERE
+  task_id = ?;
+
 -- name: ListChannelIntersectingStatsTrackerTasks :many
 SELECT
   *

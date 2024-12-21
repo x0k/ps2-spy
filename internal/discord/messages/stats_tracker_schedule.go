@@ -91,7 +91,7 @@ func statsTrackerScheduleEditForm(
 		})
 	}
 	addButton := discordgo.Button{
-		CustomID: discord.STATS_TRACKER_TASK_ADD_BUTTON_CUSTOM_ID,
+		CustomID: discord.STATS_TRACKER_TASKS_ADD_BUTTON_CUSTOM_ID,
 		Label:    p.Sprintf("Add new task"),
 		Style:    discordgo.PrimaryButton,
 	}
@@ -159,7 +159,7 @@ func durationPickerOptions(p *message.Printer, selectedDuration time.Duration) [
 
 func (m *Messages) statsTrackerCreateTaskForm(
 	p *message.Printer,
-	s discord.CreateStatsTrackerTaskState,
+	s discord.StatsTrackerTaskState,
 ) []discordgo.MessageComponent {
 	one := 1
 	weekdayOptions := make([]discordgo.SelectMenuOption, 0, 7)
@@ -174,7 +174,7 @@ func (m *Messages) statsTrackerCreateTaskForm(
 		discordgo.ActionsRow{
 			Components: []discordgo.MessageComponent{
 				discordgo.SelectMenu{
-					CustomID:    discord.STATS_TRACKER_CREATE_TASK_WEEKDAYS_SELECTOR_CUSTOM_ID,
+					CustomID:    discord.STATS_TRACKER_TASK_WEEKDAYS_SELECTOR_CUSTOM_ID,
 					Placeholder: "Weekdays",
 					MinValues:   &one,
 					MaxValues:   7,
@@ -185,7 +185,7 @@ func (m *Messages) statsTrackerCreateTaskForm(
 		discordgo.ActionsRow{
 			Components: []discordgo.MessageComponent{
 				discordgo.SelectMenu{
-					CustomID:    discord.STATS_TRACKER_CREATE_TASK_START_HOUR_SELECTOR_CUSTOM_ID,
+					CustomID:    discord.STATS_TRACKER_TASK_START_HOUR_SELECTOR_CUSTOM_ID,
 					Placeholder: "Starting hour",
 					MinValues:   &one,
 					MaxValues:   1,
@@ -196,7 +196,7 @@ func (m *Messages) statsTrackerCreateTaskForm(
 		discordgo.ActionsRow{
 			Components: []discordgo.MessageComponent{
 				discordgo.SelectMenu{
-					CustomID:    discord.STATS_TRACKER_CREATE_TASK_START_MINUTE_SELECTOR_CUSTOM_ID,
+					CustomID:    discord.STATS_TRACKER_TASK_START_MINUTE_SELECTOR_CUSTOM_ID,
 					Placeholder: "Starting minute",
 					MinValues:   &one,
 					MaxValues:   1,
@@ -207,7 +207,7 @@ func (m *Messages) statsTrackerCreateTaskForm(
 		discordgo.ActionsRow{
 			Components: []discordgo.MessageComponent{
 				discordgo.SelectMenu{
-					CustomID:    discord.STATS_TRACKER_CREATE_TASK_DURATION_SELECTOR_CUSTOM_ID,
+					CustomID:    discord.STATS_TRACKER_TASK_DURATION_SELECTOR_CUSTOM_ID,
 					Placeholder: "Duration",
 					MinValues:   &one,
 					MaxValues:   1,
@@ -218,12 +218,12 @@ func (m *Messages) statsTrackerCreateTaskForm(
 		discordgo.ActionsRow{
 			Components: []discordgo.MessageComponent{
 				discordgo.Button{
-					CustomID: discord.STATS_TRACKER_CREATE_TASK_SUBMIT_BUTTON_CUSTOM_ID,
+					CustomID: s.SubmitButtonId,
 					Label:    p.Sprintf("Submit"),
 					Style:    discordgo.SuccessButton,
 				},
 				discordgo.Button{
-					CustomID: discord.STATS_TRACKER_CREATE_TASK_CANCEL_BUTTON_CUSTOM_ID,
+					CustomID: discord.STATS_TRACKER_TASK_CANCEL_BUTTON_CUSTOM_ID,
 					Label:    p.Sprintf("Cancel"),
 					Style:    discordgo.DangerButton,
 				},

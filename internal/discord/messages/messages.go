@@ -513,12 +513,25 @@ func (m *Messages) StatsTrackerScheduleUpdated(
 	}
 }
 
-func (m *Messages) StatsTrackerCreateTaskForm(
-	state discord.CreateStatsTrackerTaskState,
+func (m *Messages) StatsTrackerTaskLoadError(err error) discord.Response {
+	return func(p *message.Printer) (*discordgo.InteractionResponseData, *discord.Error) {
+		return nil, &discord.Error{
+			Msg: p.Sprintf("Failed to load stats tracker task"),
+			Err: err,
+		}
+	}
+}
+
+func (m *Messages) StatsTrackerTaskForm(
+	state discord.StatsTrackerTaskState,
+	err error,
 ) discord.Response {
 	return func(p *message.Printer) (*discordgo.InteractionResponseData, *discord.Error) {
-		content, _ := timezoneData(p, state.Timezone)
 		components := m.statsTrackerCreateTaskForm(p, state)
+		content, _ := timezoneData(p, state.Timezone)
+		if err != nil {
+			content = p.Sprintf("failed to create stats tracker task", err)
+		}
 		return &discordgo.InteractionResponseData{
 			Content:    content,
 			Components: components,
@@ -532,21 +545,6 @@ func (m *Messages) ChannelStatsTrackerTaskRemoveError(err error) discord.Respons
 			Msg: p.Sprintf("Failed to remove stats tracker task"),
 			Err: err,
 		}
-	}
-}
-
-func (m *Messages) StatsTrackerCreateTaskFormWithError(
-	state discord.CreateStatsTrackerTaskState,
-	_ error,
-) discord.Response {
-	return func(p *message.Printer) (*discordgo.InteractionResponseData, *discord.Error) {
-		components := m.statsTrackerCreateTaskForm(p, state)
-		// TODO: take error into account
-		content := p.Sprintf("Failed to create stats tracker task")
-		return &discordgo.InteractionResponseData{
-			Content:    content,
-			Components: components,
-		}, nil
 	}
 }
 

@@ -161,6 +161,29 @@ func (q *Queries) GetPlatformOutfitSynchronizedAt(ctx context.Context, arg GetPl
 	return synchronized_at, err
 }
 
+const getStatsTrackerTask = `-- name: GetStatsTrackerTask :one
+SELECT
+  task_id, channel_id, utc_start_weekday, utc_start_time, utc_end_weekday, utc_end_time
+FROM
+  stats_tracker_task
+WHERE
+  task_id = ?
+`
+
+func (q *Queries) GetStatsTrackerTask(ctx context.Context, taskID int64) (StatsTrackerTask, error) {
+	row := q.queryRow(ctx, q.getStatsTrackerTaskStmt, getStatsTrackerTask, taskID)
+	var i StatsTrackerTask
+	err := row.Scan(
+		&i.TaskID,
+		&i.ChannelID,
+		&i.UtcStartWeekday,
+		&i.UtcStartTime,
+		&i.UtcEndWeekday,
+		&i.UtcEndTime,
+	)
+	return i, err
+}
+
 const insertChannelCharacter = `-- name: InsertChannelCharacter :exec
 INSERT INTO
   channel_to_character (channel_id, platform, character_id)

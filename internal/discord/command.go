@@ -37,16 +37,19 @@ var CHANNEL_OUTFIT_NOTIFICATIONS_COMPONENT_CUSTOM_ID = "channel_outfit_notificat
 var CHANNEL_TITLE_UPDATES_COMPONENT_CUSTOM_ID = "channel_title_updates"
 var CHANNEL_DEFAULT_TIMEZONE_COMPONENT_CUSTOM_ID = "channel_default_timezone"
 
-var STATS_TRACKER_TASK_ADD_BUTTON_CUSTOM_ID = "stats_tracker_task_add"
-var STATS_TRACKER_TASKS_EDIT_BUTTON_CUSTOM_ID = "stats_tracker_task_edit"
-var STATS_TRACKER_TASKS_REMOVE_BUTTON_CUSTOM_ID = "stats_tracker_task_remove"
-var STATS_TRACKER_CREATE_TASK_WEEKDAYS_SELECTOR_CUSTOM_ID = "stats_tracker_task_weekdays_selector"
-var STATS_TRACKER_CREATE_TASK_START_HOUR_SELECTOR_CUSTOM_ID = "stats_tracker_task_start_time_selector"
-var STATS_TRACKER_CREATE_TASK_START_MINUTE_SELECTOR_CUSTOM_ID = "stats_tracker_task_end_time_selector"
-var STATS_TRACKER_CREATE_TASK_DURATION_SELECTOR_CUSTOM_ID = "stats_tracker_task_duration_selector"
-var STATS_TRACKER_CREATE_TASK_SUBMIT_BUTTON_CUSTOM_ID = "stats_tracker_task_submit"
-var STATS_TRACKER_TASKS_PAGE_BUTTON_CUSTOM_ID = "stats_tracker_task_page_button"
-var STATS_TRACKER_CREATE_TASK_CANCEL_BUTTON_CUSTOM_ID = "stats_tracker_create_task_cancel"
+var STATS_TRACKER_TASKS_ADD_BUTTON_CUSTOM_ID = "stats_tracker_tasks_add"
+var STATS_TRACKER_TASKS_EDIT_BUTTON_CUSTOM_ID = "stats_tracker_tasks_edit"
+var STATS_TRACKER_TASKS_REMOVE_BUTTON_CUSTOM_ID = "stats_tracker_tasks_remove"
+var STATS_TRACKER_TASKS_PAGE_BUTTON_CUSTOM_ID = "stats_tracker_tasks_page"
+
+var STATS_TRACKER_TASK_WEEKDAYS_SELECTOR_CUSTOM_ID = "stats_tracker_task_weekdays_selector"
+var STATS_TRACKER_TASK_START_HOUR_SELECTOR_CUSTOM_ID = "stats_tracker_task_start_time_selector"
+var STATS_TRACKER_TASK_START_MINUTE_SELECTOR_CUSTOM_ID = "stats_tracker_task_end_time_selector"
+var STATS_TRACKER_TASK_DURATION_SELECTOR_CUSTOM_ID = "stats_tracker_task_duration_selector"
+var STATS_TRACKER_TASK_CANCEL_BUTTON_CUSTOM_ID = "stats_tracker_task_cancel"
+
+var STATS_TRACKER_TASK_CREATE_SUBMIT_BUTTON_CUSTOM_ID = "stats_tracker_task_create_submit"
+var STATS_TRACKER_TASK_UPDATE_SUBMIT_BUTTON_CUSTOM_ID = "stats_tracker_task_update_submit"
 
 func NewStatsTrackerTaskPageButtonCustomId(
 	page int,
