@@ -17,7 +17,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/stats_tracker"
 )
 
-type commands struct {
+type Commands struct {
 	commands                 []*discord.Command
 	populationLoader         *populationLoader
 	worldPopulationLoader    *worldPopulationLoader
@@ -61,7 +61,7 @@ func New(
 	channelStatsTrackerTaskRemover ChannelStatsTrackerTaskRemover,
 	statsTrackerTaskLoader StatsTrackerTaskLoader,
 	channelStatsTrackerTaskUpdater ChannelStatsTrackerTaskUpdater,
-) *commands {
+) *Commands {
 	populationLoader := newPopulationLoader(
 		log.With(sl.Component("population_loader")),
 		populationLoaders,
@@ -80,7 +80,7 @@ func New(
 	createTaskStateContainer := expirable_state_container.New[discord.ChannelAndUserIds, discord.StatsTrackerTaskState](
 		10 * time.Minute,
 	)
-	return &commands{
+	return &Commands{
 		populationLoader:         populationLoader,
 		worldPopulationLoader:    worldPopulationLoader,
 		alertsLoader:             alertsLoader,
@@ -158,11 +158,11 @@ func New(
 	}
 }
 
-func (c *commands) Commands() []*discord.Command {
+func (c *Commands) Commands() []*discord.Command {
 	return c.commands
 }
 
-func (c *commands) Start(ctx context.Context) error {
+func (c *Commands) Start(ctx context.Context) error {
 	wg := sync.WaitGroup{}
 	wg.Add(4)
 	go func() {

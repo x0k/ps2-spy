@@ -22,6 +22,8 @@ import (
 	sanctuary_data_provider "github.com/x0k/ps2-spy/internal/data_providers/sanctuary"
 	voidwell_data_provider "github.com/x0k/ps2-spy/internal/data_providers/voidwell"
 	"github.com/x0k/ps2-spy/internal/discord"
+	discord_commands "github.com/x0k/ps2-spy/internal/discord/commands"
+	discord_messages "github.com/x0k/ps2-spy/internal/discord/messages"
 	"github.com/x0k/ps2-spy/internal/lib/cache/memory"
 	"github.com/x0k/ps2-spy/internal/lib/census2"
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
@@ -438,18 +440,14 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		"voidwell":  voidwellDataProvider.Alerts,
 	}
 
-	discordModule, err := discord_module.New(
-		log.With(sl.Module("discord")),
-		cfg.Discord.Token,
-		cfg.Discord.CommandHandlerTimeout,
-		cfg.Discord.EventHandlerTimeout,
-		cfg.Discord.RemoveCommands,
-		characterTrackerSubsMangers,
-		trackingManagers,
-		storagePubSub,
-		worldTrackerSubsMangers,
+	discordMessages := discord_messages.New(shared.Timezones)
+	discordCommands := discord_commands.New(
+		log.With(sl.Component("commands")),
+		discordMessages,
 		populationLoaders,
+		[]string{"spy", "honu", "ps2live", "saerro", "fisu", "sanctuary", "voidwell"},
 		worldPopulationLoaders,
+		[]string{"spy", "honu", "saerro", "voidwell"},
 		func(ctx context.Context, worldId ps2.WorldId) (meta.Loaded[ps2.WorldTerritoryControl], error) {
 			platform, ok := ps2.WorldPlatforms[worldId]
 			if !ok {
@@ -462,14 +460,19 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			return meta.LoadedNow(cfg.AppName, control), nil
 		},
 		alertsLoaders,
-		func(ctx context.Context, sq discord.SettingsQuery) (discord.TrackableEntities[map[ps2.OutfitId][]ps2.Character, []ps2.Character], error) {
+		[]string{"spy", "ps2alerts", "honu", "census", "voidwell"},
+		func(
+			ctx context.Context, sq discord.SettingsQuery,
+		) (discord.TrackableEntities[map[ps2.OutfitId][]ps2.Character, []ps2.Character], error) {
 			settings, err := storage.TrackingSettings(ctx, sq)
 			if err != nil {
 				return discord.TrackableEntities[map[ps2.OutfitId][]ps2.Character, []ps2.Character]{}, err
 			}
 			return charactersTrackers[sq.Platform].TrackableOnlineEntities(settings), nil
 		},
-		func(ctx context.Context, pq discord.PlatformQuery[[]ps2.OutfitId]) (map[ps2.OutfitId]ps2.Outfit, error) {
+		func(
+			ctx context.Context, pq discord.PlatformQuery[[]ps2.OutfitId],
+		) (map[ps2.OutfitId]ps2.Outfit, error) {
 			return outfitsLoaders[pq.Platform](ctx, pq.Value)
 		},
 		storage.TrackingSettings,
@@ -486,6 +489,33 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			return censusDataProvider.OutfitIds(ctx, ps2_platforms.PlatformNamespace(pq.Platform), pq.Value)
 		},
 		storage.SaveTrackingSettings,
+		statsTracker,
+		storage.Channel,
+		storage.SaveChannelLanguage,
+		storage.SaveChannelCharacterNotifications,
+		storage.SaveChannelOutfitNotifications,
+		storage.SaveChannelTitleUpdates,
+		storage.SaveChannelDefaultTimezone,
+		storage.ChannelStatsTrackerTasks,
+		storage.CreateStatsTrackerTask,
+		storage.RemoveStatsTrackerTask,
+		storage.StatsTrackerTask,
+		storage.UpdateStatsTrackerTask,
+	)
+	m.AppendR("discord.commands", discordCommands.Start)
+
+	discordModule, err := discord_module.New(
+		log.With(sl.Module("discord")),
+		cfg.Discord.Token,
+		cfg.Discord.CommandHandlerTimeout,
+		cfg.Discord.EventHandlerTimeout,
+		cfg.Discord.RemoveCommands,
+		discordMessages,
+		discordCommands,
+		characterTrackerSubsMangers,
+		trackingManagers,
+		storagePubSub,
+		worldTrackerSubsMangers,
 		characterLoaders,
 		outfitLoaders,
 		charactersLoaders,
@@ -510,19 +540,8 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			}
 			return count, errors.Join(errs...)
 		},
-		statsTracker,
 		statsTrackerPubSub,
 		storage.Channel,
-		storage.SaveChannelLanguage,
-		storage.SaveChannelCharacterNotifications,
-		storage.SaveChannelOutfitNotifications,
-		storage.SaveChannelTitleUpdates,
-		storage.SaveChannelDefaultTimezone,
-		storage.ChannelStatsTrackerTasks,
-		storage.CreateStatsTrackerTask,
-		storage.RemoveStatsTrackerTask,
-		storage.StatsTrackerTask,
-		storage.UpdateStatsTrackerTask,
 	)
 	if err != nil {
 		return nil, err

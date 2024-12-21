@@ -17,10 +17,8 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/lib/module"
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
-	"github.com/x0k/ps2-spy/internal/meta"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
-	"github.com/x0k/ps2-spy/internal/shared"
 	"github.com/x0k/ps2-spy/internal/stats_tracker"
 	"github.com/x0k/ps2-spy/internal/storage"
 	"github.com/x0k/ps2-spy/internal/tracking_manager"
@@ -33,80 +31,25 @@ func New(
 	commandHandlerTimeout time.Duration,
 	eventHandlerTimeout time.Duration,
 	removeCommands bool,
+	messages *discord_messages.Messages,
+	commands *discord_commands.Commands,
 	charactersTrackerSubsManagers map[ps2_platforms.Platform]pubsub.SubscriptionsManager[characters_tracker.EventType],
 	trackingManagers map[ps2_platforms.Platform]*tracking_manager.TrackingManager,
 	storageSubs pubsub.SubscriptionsManager[storage.EventType],
 	worldTrackerSubsMangers map[ps2_platforms.Platform]pubsub.SubscriptionsManager[worlds_tracker.EventType],
-	populationLoaders map[string]loader.Simple[meta.Loaded[ps2.WorldsPopulation]],
-	worldPopulationLoaders map[string]loader.Keyed[ps2.WorldId, meta.Loaded[ps2.DetailedWorldPopulation]],
-	worldTerritoryControlLoader loader.Keyed[ps2.WorldId, meta.Loaded[ps2.WorldTerritoryControl]],
-	alertsLoaders map[string]loader.Simple[meta.Loaded[ps2.Alerts]],
-	onlineTrackableEntitiesLoader loader.Keyed[discord.SettingsQuery, discord.TrackableEntities[map[ps2.OutfitId][]ps2.Character, []ps2.Character]],
-	outfitsLoader loader.Queried[discord.PlatformQuery[[]ps2.OutfitId], map[ps2.OutfitId]ps2.Outfit],
-	trackingSettingsLoader loader.Keyed[discord.SettingsQuery, discord.TrackingSettings],
-	characterNamesLoader loader.Queried[discord.PlatformQuery[[]ps2.CharacterId], []string],
-	characterIdsLoader loader.Queried[discord.PlatformQuery[[]string], []ps2.CharacterId],
-	outfitTagsLoader loader.Queried[discord.PlatformQuery[[]ps2.OutfitId], []string],
-	outfitIdsLoader loader.Queried[discord.PlatformQuery[[]string], []ps2.OutfitId],
-	saveChannelTrackingSettings discord_commands.ChannelTrackingSettingsSaver,
 	characterLoaders map[ps2_platforms.Platform]loader.Keyed[ps2.CharacterId, ps2.Character],
 	outfitLoaders map[ps2_platforms.Platform]loader.Keyed[ps2.OutfitId, ps2.Outfit],
 	charactersLoaders map[ps2_platforms.Platform]loader.Multi[ps2.CharacterId, ps2.Character],
 	facilityLoaders map[ps2_platforms.Platform]loader.Keyed[ps2.FacilityId, ps2.Facility],
 	onlineTrackableEntitiesCountLoader loader.Keyed[discord.ChannelId, int],
-	statsTracker *stats_tracker.StatsTracker,
 	statsTrackerSubs pubsub.SubscriptionsManager[stats_tracker.EventType],
 	channelLoader discord_events.ChannelLoader,
-	saveChannelLanguage discord_commands.ChannelLanguageSaver,
-	channelCharacterNotificationsSaver discord_commands.ChannelCharacterNotificationsSaver,
-	channelOutfitNotificationsSaver discord_commands.ChannelOutfitNotificationsSaver,
-	channelTitleUpdatesSaver discord_commands.ChannelTitleUpdatesSaver,
-	channelDefaultTimezoneSaver discord_commands.ChannelDefaultTimezoneSaver,
-	channelStatsTrackerTasksLoader discord_commands.ChannelStatsTrackerTasksLoader,
-	statsTrackerTaskCreator discord_commands.ChannelStatsTrackerTaskCreator,
-	channelStatsTrackerTaskRemover discord_commands.ChannelStatsTrackerTaskRemover,
-	statsTrackerTaskLoader discord_commands.StatsTrackerTaskLoader,
-	channelStatsTrackerTaskUpdater discord_commands.ChannelStatsTrackerTaskUpdater,
 ) (*module.Module, error) {
 	m := module.New(log.Logger, "discord")
 	session, err := discordgo.New("Bot " + token)
 	if err != nil {
 		return nil, err
 	}
-
-	messages := discord_messages.New(shared.Timezones)
-	commands := discord_commands.New(
-		log.With(sl.Component("commands")),
-		messages,
-		populationLoaders,
-		[]string{"spy", "honu", "ps2live", "saerro", "fisu", "sanctuary", "voidwell"},
-		worldPopulationLoaders,
-		[]string{"spy", "honu", "saerro", "voidwell"},
-		worldTerritoryControlLoader,
-		alertsLoaders,
-		[]string{"spy", "ps2alerts", "honu", "census", "voidwell"},
-		onlineTrackableEntitiesLoader,
-		outfitsLoader,
-		trackingSettingsLoader,
-		characterNamesLoader,
-		characterIdsLoader,
-		outfitTagsLoader,
-		outfitIdsLoader,
-		saveChannelTrackingSettings,
-		statsTracker,
-		channelLoader,
-		saveChannelLanguage,
-		channelCharacterNotificationsSaver,
-		channelOutfitNotificationsSaver,
-		channelTitleUpdatesSaver,
-		channelDefaultTimezoneSaver,
-		channelStatsTrackerTasksLoader,
-		statsTrackerTaskCreator,
-		channelStatsTrackerTaskRemover,
-		statsTrackerTaskLoader,
-		channelStatsTrackerTaskUpdater,
-	)
-	m.AppendR("discord.commands", commands.Start)
 
 	channelTitleUpdater := discord.NewChannelTitleUpdater(
 		log.With(sl.Component("channel_title_updater")),
