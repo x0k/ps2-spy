@@ -9,59 +9,46 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/x0k/ps2-spy/internal/discord"
-	"github.com/x0k/ps2-spy/internal/shared"
 	"golang.org/x/text/message"
 )
 
-func timezoneData(p *message.Printer, loc *time.Location) (string, time.Duration) {
-	timezone, offsetInSeconds := time.Now().In(loc).Zone()
+func scheduleNotes(p *message.Printer, loc *time.Location) string {
 	return p.Sprintf(
-			`Schedule details:
+		`Notes:
 - The time is specified in the time zone %q. This can be changed in the channel settings;
 - The maximum amount of tasks per channel is %d;
 - You can edit a task by clicking on it;
 - The “Remove” button deletes immediately without confirmation.
 `,
-			timezone,
-			discord.MAX_AMOUNT_OF_TASKS_PER_CHANNEL,
-		),
-		time.Duration(offsetInSeconds) * time.Second
-}
-
-type localStatsTrackerTask struct {
-	id           discord.StatsTrackerTaskId
-	startWeekday time.Weekday
-	startTime    time.Duration
-	endWeekday   time.Weekday
-	endTime      time.Duration
+		loc.String(),
+		discord.MAX_AMOUNT_OF_TASKS_PER_CHANNEL,
+	)
 }
 
 const pageSize = 4
 
 func statsTrackerScheduleEditForm(
 	p *message.Printer,
+	timezone *time.Location,
 	tasks []discord.StatsTrackerTask,
-	offset time.Duration,
 	zeroIndexedPage int,
 ) []discordgo.MessageComponent {
-	localTasks := make([]localStatsTrackerTask, 0, len(tasks))
+	localTasks := make([]discord.StatsTrackerTaskState, 0, len(tasks))
 	for _, t := range tasks {
-		startWeekday, startTime := shared.ShiftDate(t.UtcStartWeekday, t.UtcStartTime, offset)
-		endWeekday, endTime := shared.ShiftDate(t.UtcEndWeekday, t.UtcEndTime, offset)
-		localTasks = append(localTasks, localStatsTrackerTask{
-			id:           t.Id,
-			startWeekday: startWeekday,
-			startTime:    startTime,
-			endWeekday:   endWeekday,
-			endTime:      endTime,
-		})
+		localTasks = append(localTasks, discord.NewUpdateStatsTrackerTaskState(
+			t, timezone,
+		))
 	}
-	slices.SortFunc(localTasks, func(a, b localStatsTrackerTask) int {
-		w := a.startWeekday - b.startWeekday
+	slices.SortFunc(localTasks, func(a, b discord.StatsTrackerTaskState) int {
+		w := a.LocalWeekdays[0] - b.LocalWeekdays[0]
 		if w != 0 {
 			return int(w)
 		}
-		return int(a.startTime - b.startTime)
+		h := (a.LocalStartHour - b.LocalStartHour)
+		if h != 0 {
+			return h
+		}
+		return a.LocalStartMin - b.LocalStartMin
 	})
 	if len(localTasks) > pageSize {
 		shift := zeroIndexedPage * pageSize
@@ -69,27 +56,21 @@ func statsTrackerScheduleEditForm(
 	}
 	rows := make([]discordgo.MessageComponent, 0, len(localTasks)+1)
 	for _, t := range localTasks {
-		startHour := int(t.startTime / time.Hour)
-		startMin := int((t.startTime % time.Hour) / time.Minute)
-		duration := t.endTime - t.startTime
-		if t.startWeekday != t.endWeekday {
-			duration += 24 * time.Hour
-		}
 		rows = append(rows, discordgo.ActionsRow{
 			Components: []discordgo.MessageComponent{
 				discordgo.Button{
-					CustomID: discord.NewStatsTrackerTaskEditButtonCustomId(t.id),
+					CustomID: discord.NewStatsTrackerTaskEditButtonCustomId(t.TaskId),
 					Label: fmt.Sprintf(
 						"%s, %02d:%02d, %s",
-						renderWeekday(p, t.startWeekday),
-						startHour,
-						startMin,
-						renderDuration(p, duration),
+						renderWeekday(p, t.LocalWeekdays[0]),
+						t.LocalStartHour,
+						t.LocalStartMin,
+						renderDuration(p, t.Duration),
 					),
 					Style: discordgo.SecondaryButton,
 				},
 				discordgo.Button{
-					CustomID: discord.NewStatsTrackerTaskRemoveButtonCustomId(t.id),
+					CustomID: discord.NewStatsTrackerTaskRemoveButtonCustomId(t.TaskId),
 					Label:    p.Sprintf("Remove"),
 					Style:    discordgo.DangerButton,
 				},

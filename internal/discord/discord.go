@@ -139,8 +139,8 @@ func NewUpdateStatsTrackerTaskState(
 ) StatsTrackerTaskState {
 	_, offsetInSeconds := time.Now().In(timezone).Zone()
 	offset := (time.Duration(offsetInSeconds) * time.Second)
-	startWeekday, startTime := shared.ShiftDate(task.UtcStartWeekday, task.UtcStartTime, offset)
-	endWeekday, endTime := shared.ShiftDate(task.UtcEndWeekday, task.UtcEndTime, offset)
+	startWeekday, startTime := shared.NormalizeDate(task.UtcStartWeekday, task.UtcStartTime+offset)
+	endWeekday, endTime := shared.NormalizeDate(task.UtcEndWeekday, task.UtcEndTime+offset)
 	duration := endTime - startTime
 	if startWeekday != endWeekday {
 		duration += 24 * time.Hour

@@ -10,22 +10,23 @@ var Timezones = []string{
 	"Africa/Johannesburg", "Asia/Singapore",
 }
 
-func ShiftDate(weekday time.Weekday, t1 time.Duration, offset time.Duration) (time.Weekday, time.Duration) {
-	t2 := t1 + offset
-	if t2 < 0 {
+func NormalizeDate(weekday time.Weekday, d time.Duration) (time.Weekday, time.Duration) {
+	// TODO: Use modulo arithmetic
+	for d < 0 {
 		if weekday == time.Sunday {
 			weekday = time.Saturday
 		} else {
 			weekday--
 		}
-		t2 += 24 * time.Hour
-	} else if t2 >= 24*time.Hour {
+		d += 24 * time.Hour
+	}
+	for d >= 24*time.Hour {
 		if weekday == time.Saturday {
 			weekday = time.Sunday
 		} else {
 			weekday++
 		}
-		t2 -= 24 * time.Hour
+		d -= 24 * time.Hour
 	}
-	return weekday, t2
+	return weekday, d
 }

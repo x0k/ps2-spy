@@ -489,8 +489,8 @@ func (m *Messages) StatsTrackerSchedule(
 	tasks []discord.StatsTrackerTask,
 ) discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
-		content, offset := timezoneData(p, channel.DefaultTimezone)
-		components := statsTrackerScheduleEditForm(p, tasks, offset, 0)
+		content := scheduleNotes(p, channel.DefaultTimezone)
+		components := statsTrackerScheduleEditForm(p, channel.DefaultTimezone, tasks, 0)
 		return &discordgo.WebhookEdit{
 			Content:    &content,
 			Components: &components,
@@ -504,8 +504,8 @@ func (m *Messages) StatsTrackerScheduleUpdated(
 	zeroIndexedPage int,
 ) discord.Response {
 	return func(p *message.Printer) (*discordgo.InteractionResponseData, *discord.Error) {
-		content, offset := timezoneData(p, channel.DefaultTimezone)
-		components := statsTrackerScheduleEditForm(p, tasks, offset, zeroIndexedPage)
+		content := scheduleNotes(p, channel.DefaultTimezone)
+		components := statsTrackerScheduleEditForm(p, channel.DefaultTimezone, tasks, zeroIndexedPage)
 		return &discordgo.InteractionResponseData{
 			Content:    content,
 			Components: components,
@@ -528,7 +528,7 @@ func (m *Messages) StatsTrackerTaskForm(
 ) discord.Response {
 	return func(p *message.Printer) (*discordgo.InteractionResponseData, *discord.Error) {
 		components := m.statsTrackerCreateTaskForm(p, state)
-		content, _ := timezoneData(p, state.Timezone)
+		content := scheduleNotes(p, state.Timezone)
 		if err != nil {
 			content = p.Sprintf("failed to create stats tracker task", err)
 		}

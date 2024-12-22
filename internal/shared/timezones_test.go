@@ -41,7 +41,7 @@ func TestShiftDate(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, got1 := ShiftDate(tt.args.weekday, tt.args.t1, tt.args.offset)
+			got, got1 := NormalizeDate(tt.args.weekday, tt.args.t1+tt.args.offset)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("ShiftDate() got = %v, want %v", got, tt.want)
 			}
