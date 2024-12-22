@@ -14,17 +14,14 @@
       pkgs = import nixpkgs { inherit system; };
       gotext = pkgs.buildGoModule rec {
         pname = "gotext";
-        version = "0.20.0";
-
+        version = "0.21.0";
         src = pkgs.fetchFromGitHub {
           owner = "golang";
           repo = "text";
           rev = "v${version}";
-          sha256 = "sha256-8p8zRMnvBRkyPFjl7q3LvUuJE7wEQHDJI057++rE8R0=";
+          sha256 = "sha256-m8LVnzj+VeclJflfgO7UcOSYSS052RvRgyjTXCgK8As=";
         };
-
-        vendorHash = "sha256-LfWCI0wO5vKib9UPXmQafaMUJjcslDfS+lk1knVgyuw=";
-
+        vendorHash = "sha256-e5DoFMRu3uWQeeWAVd18/nLXOEAfXBRmrH/laWf7C/Y=";
         subPackages = [ "cmd/gotext" ];
       };
     in
