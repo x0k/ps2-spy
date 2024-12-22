@@ -1,6 +1,6 @@
 storage:
-  path: "sqlite://storage/storage.db"
-  migrations_path: "file://db/migrations"
+  path: "sqlite://storage/storage.db" # required
+  migrations_path: "file://db/migrations" # required
 logger:
   level: debug
   handler_type: pretty
@@ -10,4 +10,8 @@ profiler:
 metrics:
   enabled: true
   address: 0.0.0.0:9099
-census_streaming_endpoint: wss://push.nanite-systems.net/streaming
+census:
+  # service_id: required
+  streaming_endpoint: wss://push.nanite-systems.net/streaming
+discord:
+  # token: required

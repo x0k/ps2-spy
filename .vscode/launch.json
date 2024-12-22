@@ -14,7 +14,7 @@
             "env": {
                 "CGO_ENABLED": "0"
             },
-            "envFile": "${workspaceFolder}/.env.local.debug",
+            "envFile": "${workspaceFolder}/.env.local",
             "args": [
                 "--config",
                 "${workspaceFolder}/config/dev.yml"

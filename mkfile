@@ -5,37 +5,30 @@ env:
   then
     export $(cat .env.local | xargs)
   fi
-  if [ -d ~/Sync/ps2-spy ]
+  if [ -f ~/Sync/ps2-spy/.env ]
   then
-    export DISCORD_TOKEN=$(cat ~/Sync/ps2-spy/test-token)
-    export CENSUS_SERVICE_ID=$(cat ~/Sync/ps2-spy/test-service)
+    export $(cat ~/Sync/ps2-spy/.env | xargs)
   fi
-  export STREAMING_ENDPOINT=wss://push.nanite-systems.net/streaming
 
 # Dev
 d: env
-  go run cmd/ps2-spy/*.go --config config/dev.yml
+  go run cmd/ps2-spy/main.go --config config/dev.yml
 
 # Build bin
 b:
-  go build -tags "migrate" -o bin/app cmd/ps2-spy/main.go
+  go build -o bin/app cmd/ps2-spy/main.go
 
 t:
   go test ./...
-
-debug-env: env
-    env > .env.debug.local
 
 ## DATABASE
 
 db:
   sqlc generate
 
-# Database queries lint
 qlint:
   sqlc vet
 
-# Migration create
 migration: env
   migrate create -ext sql -dir db/migrations -seq $1
 
@@ -45,15 +38,12 @@ migrate-down:
 text:
   go generate ./internal/translations/translations.go
 
-# Preview
-# Run compiled binary
-p:
-  DISCORD_TOKEN=$(cat ~/Sync/ps2-spy/test-token) \
-    CENSUS_SERVICE_ID=$(cat ~/Sync/ps2-spy/test-service) \
-    .bin/app --config config/dev.yml
+p: env
+  .bin/app --config config/dev.yml
 
-prof:
-  go tool pprof -http :8081 "$(cat ~/Sync/ps2-spy/prof-address)/debug/pprof/$1"
+prof: env
+  # heap, goroutine, block, threadcreate, mutex
+  go tool pprof -http :8081 "${PPROF_ADDRESS}/debug/pprof/$1"
 
 test:
   go test ./...

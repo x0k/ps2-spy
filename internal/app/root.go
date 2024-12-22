@@ -84,7 +84,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	storage := sql_storage.New(
 		log.With(sl.Component("storage")),
 		cfg.Storage.Path,
-		cfg.MaxTrackingDuration,
+		cfg.StatsTracker.MaxTrackingDuration,
 		storagePubSub,
 	)
 	m.PreStartR("storage", storage.Open)
@@ -114,7 +114,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 
 	censusDataProvider := census_data_provider.New(
 		log.With(sl.Component("census_data_provider")),
-		census2.NewClient("https://census.daybreakgames.com", cfg.CensusServiceId, httpClient),
+		census2.NewClient("https://census.daybreakgames.com", cfg.Census.ServiceId, httpClient),
 	)
 	honuDataProvider := honu_data_provider.New(
 		honu.NewClient("https://wt.honu.pw", httpClient),
@@ -132,7 +132,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		population.NewClient("https://agg.ps2.live", httpClient),
 	)
 	sanctuaryDataProvider := sanctuary_data_provider.New(
-		census2.NewClient("https://census.lithafalcon.cc", cfg.CensusServiceId, httpClient),
+		census2.NewClient("https://census.lithafalcon.cc", cfg.Census.ServiceId, httpClient),
 	)
 	saerroDataProvider := saerro_data_provider.New(
 		saerro.NewClient("https://saerro.ps2.live", httpClient),
@@ -175,7 +175,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		storage.ChannelTrackablePlatforms,
 		storage.ActiveStatsTrackerTasks,
 		charactersLoaders,
-		cfg.MaxTrackingDuration,
+		cfg.StatsTracker.MaxTrackingDuration,
 	)
 	m.AppendVR("stats_tracker", statsTracker.Start)
 
@@ -188,8 +188,8 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		eventsModule, err := events_module.New(
 			pl.With(sl.Module("events")),
 			platform,
-			cfg.StreamingEndpoint,
-			cfg.CensusServiceId,
+			cfg.Census.StreamingEndpoint,
+			cfg.Census.ServiceId,
 			eventsPubSub,
 			mt,
 		)
@@ -441,7 +441,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		"voidwell":  voidwellDataProvider.Alerts,
 	}
 
-	discordMessages := discord_messages.New(shared.Timezones, cfg.MaxTrackingDuration)
+	discordMessages := discord_messages.New(shared.Timezones, cfg.StatsTracker.MaxTrackingDuration)
 	discordCommands := discord_commands.New(
 		log.With(sl.Component("commands")),
 		discordMessages,

@@ -4,4 +4,4 @@
 
 .direnv/
 
-*.local.*
+*.local

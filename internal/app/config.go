@@ -38,18 +38,26 @@ type HttpClientConfig struct {
 	ExpectContinueTimeout time.Duration `yaml:"expect_continue_timeout" env:"HTTP_CLIENT_EXPECT_CONTINUE_TIMEOUT" env-default:"1s"`
 }
 
-type Config struct {
-	AppName             string        `yaml:"app_name" env:"APP_NAME" env-default:"PS 2 Spy"`
-	StreamingEndpoint   string        `yaml:"streaming_endpoint" env:"STREAMING_ENDPOINT" env-default:"wss://push.planetside2.com/streaming"`
-	CensusServiceId     string        `yaml:"census_service_id" env:"CENSUS_SERVICE_ID" env-required:"true"`
-	MaxTrackingDuration time.Duration `yaml:"max_tracking_duration" env:"MAX_TRACKING_DURATION" env-default:"4h"`
+type CensusConfig struct {
+	ServiceId         string `yaml:"service_id" env:"CENSUS_SERVICE_ID" env-required:"true"`
+	StreamingEndpoint string `yaml:"streaming_endpoint" env:"CENSUS_STREAMING_ENDPOINT" env-default:"wss://push.planetside2.com/streaming"`
+}
 
-	Logger     LoggerConfig     `yaml:"logger"`
-	Profiler   ProfilerConfig   `yaml:"profiler"`
-	Discord    DiscordConfig    `yaml:"discord"`
-	Metrics    MetricsConfig    `yaml:"metrics"`
-	Storage    StorageConfig    `yaml:"storage"`
-	HttpClient HttpClientConfig `yaml:"http_client"`
+type StatsTrackerConfig struct {
+	MaxTrackingDuration time.Duration `yaml:"max_tracking_duration" env:"STATS_TRACKER_MAX_TRACKING_DURATION" env-default:"4h"`
+}
+
+type Config struct {
+	AppName string `yaml:"app_name" env:"APP_NAME" env-default:"PS 2 Spy"`
+
+	Logger       LoggerConfig       `yaml:"logger"`
+	Profiler     ProfilerConfig     `yaml:"profiler"`
+	Discord      DiscordConfig      `yaml:"discord"`
+	Metrics      MetricsConfig      `yaml:"metrics"`
+	Storage      StorageConfig      `yaml:"storage"`
+	HttpClient   HttpClientConfig   `yaml:"http_client"`
+	Census       CensusConfig       `yaml:"census"`
+	StatsTracker StatsTrackerConfig `yaml:"stats_tracker"`
 }
 
 func MustLoadConfig(configPath string) *Config {
