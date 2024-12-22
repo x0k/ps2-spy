@@ -98,9 +98,6 @@ func createStatsTrackerTask(
 	task discord.StatsTrackerTaskState,
 ) error {
 	if task.Duration > s.maxTrackingDuration {
-		println("----------------------")
-		println(s.maxTrackingDuration)
-		println("----------------------")
 		return discord.ErrStatsTrackerTaskDurationTooLong{
 			MaxDuration: s.maxTrackingDuration,
 			GotDuration: task.Duration,

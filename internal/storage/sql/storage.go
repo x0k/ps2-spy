@@ -37,10 +37,6 @@ func New(
 	maxTrackingDuration time.Duration,
 	publisher pubsub.Publisher[storage.Event],
 ) *Storage {
-	println("-----------------")
-	println("received maxTrackingDuration")
-	println(maxTrackingDuration)
-	println("-----------------")
 	return &Storage{
 		log:                 log,
 		storagePath:         storagePath,
