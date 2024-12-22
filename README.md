@@ -7,7 +7,7 @@ Simple discord bot for PlanetSide 2 outfits.
 - Add the bot to your server with [this invite link](https://discord.com/oauth2/authorize?client_id=1190282321492987924&permissions=281616&integration_type=0&scope=bot+applications.commands).
 - Use commands in any text channel or DMs.
 
-### Permissions
+### Required permissions
 
 - View Channels
 - Send Messages
