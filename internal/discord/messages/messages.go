@@ -17,14 +17,17 @@ import (
 )
 
 type Messages struct {
-	timezones []string
+	timezones           []string
+	maxTrackingDuration time.Duration
 }
 
 func New(
 	timezones []string,
+	maxTrackingDuration time.Duration,
 ) *Messages {
 	return &Messages{
-		timezones: timezones,
+		timezones:           timezones,
+		maxTrackingDuration: maxTrackingDuration,
 	}
 }
 
@@ -530,7 +533,7 @@ func (m *Messages) StatsTrackerTaskForm(
 		components := m.statsTrackerCreateTaskForm(p, state)
 		content := scheduleNotes(p, state.Timezone)
 		if err != nil {
-			content = p.Sprintf("failed to create stats tracker task", err)
+			content = renderTaskFormError(p, err)
 		}
 		return &discordgo.InteractionResponseData{
 			Content:    content,

@@ -84,6 +84,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	storage := sql_storage.New(
 		log.With(sl.Component("storage")),
 		cfg.Storage.Path,
+		cfg.MaxTrackingDuration,
 		storagePubSub,
 	)
 	m.PreStartR("storage", storage.Open)
@@ -440,7 +441,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		"voidwell":  voidwellDataProvider.Alerts,
 	}
 
-	discordMessages := discord_messages.New(shared.Timezones)
+	discordMessages := discord_messages.New(shared.Timezones, cfg.MaxTrackingDuration)
 	discordCommands := discord_commands.New(
 		log.With(sl.Component("commands")),
 		discordMessages,

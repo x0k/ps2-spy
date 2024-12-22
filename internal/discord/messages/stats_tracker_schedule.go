@@ -1,6 +1,7 @@
 package discord_messages
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"slices"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/x0k/ps2-spy/internal/discord"
+	"github.com/x0k/ps2-spy/internal/shared"
 	"golang.org/x/text/message"
 )
 
@@ -132,9 +134,9 @@ func minutePickerOptions(p *message.Printer, selectedMinute int) []discordgo.Sel
 	return options
 }
 
-func durationPickerOptions(p *message.Printer, selectedDuration time.Duration) []discordgo.SelectMenuOption {
+func (m *Messages) durationPickerOptions(p *message.Printer, selectedDuration time.Duration) []discordgo.SelectMenuOption {
 	options := make([]discordgo.SelectMenuOption, 0, 6)
-	for i := 0 * time.Minute; i <= 4*time.Hour; i += 30 * time.Minute {
+	for i := 0 * time.Minute; i <= m.maxTrackingDuration; i += 30 * time.Minute {
 		options = append(options, discordgo.SelectMenuOption{
 			Label:   p.Sprintf("Duration: %s", renderDuration(p, i)),
 			Value:   i.String(),
@@ -198,7 +200,7 @@ func (m *Messages) statsTrackerCreateTaskForm(
 					Placeholder: "Duration",
 					MinValues:   &one,
 					MaxValues:   1,
-					Options:     durationPickerOptions(p, s.Duration),
+					Options:     m.durationPickerOptions(p, s.Duration),
 				},
 			},
 		},
@@ -217,4 +219,41 @@ func (m *Messages) statsTrackerCreateTaskForm(
 			},
 		},
 	}
+}
+
+func renderTaskFormError(p *message.Printer, err error) string {
+	if errors.Is(err, discord.ErrMaxAmountOfTasksExceeded) {
+		return p.Sprintf(
+			"Max amount of tasks per channel is %d",
+			discord.MAX_AMOUNT_OF_TASKS_PER_CHANNEL,
+		)
+	}
+	var d discord.ErrStatsTrackerTaskDurationTooLong
+	if errors.As(err, &d) {
+		return p.Sprintf(
+			"Duration too long: expected max %s got %s",
+			renderDuration(p, d.MaxDuration),
+			renderDuration(p, d.GotDuration),
+		)
+	}
+	var o discord.ErrOverlappingTasks
+	if errors.As(err, &o) {
+		t := o.Tasks[0]
+		tStartWeekday, tStartTime := shared.NormalizeDate(t.UtcStartWeekday, t.UtcStartTime-o.Offset)
+		tEndWeekday, tEndTime := shared.NormalizeDate(t.UtcStartWeekday, t.UtcStartTime+o.Duration-o.Offset)
+		tDuration := tEndTime - tStartTime
+		if tStartWeekday != tEndWeekday {
+			tDuration += 24 * time.Hour
+		}
+		return p.Sprintf(
+			"Your task (%s, %s, %s) overlaps with existing task (%s, %s, %s)",
+			renderWeekday(p, o.LocalWeekday),
+			renderDurationAsTime(o.LocalStartTime),
+			renderDuration(p, o.Duration),
+			renderWeekday(p, tStartWeekday),
+			renderDurationAsTime(tStartTime),
+			renderDuration(p, tDuration),
+		)
+	}
+	return p.Sprintf("something went wrong")
 }

@@ -23,24 +23,31 @@ import (
 )
 
 type Storage struct {
-	log         *logger.Logger
-	storagePath string
-	db          *sql.DB
-	queries     *db.Queries
-	publisher   pubsub.Publisher[storage.Event]
+	log                 *logger.Logger
+	storagePath         string
+	db                  *sql.DB
+	queries             *db.Queries
+	publisher           pubsub.Publisher[storage.Event]
+	maxTrackingDuration time.Duration
 }
 
 func New(
 	log *logger.Logger,
 	storagePath string,
+	maxTrackingDuration time.Duration,
 	publisher pubsub.Publisher[storage.Event],
 ) *Storage {
+	println("-----------------")
+	println("received maxTrackingDuration")
+	println(maxTrackingDuration)
+	println("-----------------")
 	return &Storage{
-		log:         log,
-		storagePath: storagePath,
-		publisher:   publisher,
-		db:          nil,
-		queries:     nil,
+		log:                 log,
+		storagePath:         storagePath,
+		maxTrackingDuration: maxTrackingDuration,
+		publisher:           publisher,
+		db:                  nil,
+		queries:             nil,
 	}
 }
 
@@ -88,10 +95,12 @@ func (s *Storage) Begin(
 	}()
 	bufferedPublisher := pubsub.NewBufferedPublisher(s.publisher, expectedEventsCount)
 	tmp := &Storage{
-		log:       s.log,
-		db:        s.db,
-		queries:   s.queries.WithTx(tx),
-		publisher: bufferedPublisher,
+		log:                 s.log,
+		db:                  s.db,
+		queries:             s.queries.WithTx(tx),
+		publisher:           bufferedPublisher,
+		storagePath:         s.storagePath,
+		maxTrackingDuration: s.maxTrackingDuration,
 	}
 	err = run(tmp)
 	if err != nil {

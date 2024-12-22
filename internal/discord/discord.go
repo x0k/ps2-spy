@@ -1,6 +1,8 @@
 package discord
 
 import (
+	"errors"
+	"fmt"
 	"time"
 
 	"golang.org/x/text/language"
@@ -156,4 +158,36 @@ func NewUpdateStatsTrackerTaskState(
 		LocalStartMin:  int((startTime % time.Hour) / time.Minute),
 		Duration:       duration,
 	}
+}
+
+type ErrStatsTrackerTaskDurationTooLong struct {
+	MaxDuration time.Duration
+	GotDuration time.Duration
+}
+
+func (e ErrStatsTrackerTaskDurationTooLong) Error() string {
+	return fmt.Sprintf(
+		"stats tracker task duration too long: expected max %s, got %s",
+		e.MaxDuration,
+		e.GotDuration,
+	)
+}
+
+var ErrMaxAmountOfTasksExceeded = errors.New("max amount of tasks exceeded")
+
+type ErrOverlappingTasks struct {
+	Offset         time.Duration
+	LocalWeekday   time.Weekday
+	LocalStartTime time.Duration
+	Duration       time.Duration
+	Tasks          []StatsTrackerTask
+}
+
+func (e ErrOverlappingTasks) Error() string {
+	return fmt.Sprintf(
+		"stats tracker task with weekday %d and start time %s intersects with %d existing tasks",
+		e.LocalWeekday,
+		e.LocalStartTime,
+		len(e.Tasks),
+	)
 }

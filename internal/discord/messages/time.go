@@ -23,7 +23,7 @@ func renderDuration(p *message.Printer, d time.Duration) string {
 	if h == 0 {
 		return minutes
 	}
-	return p.Sprintf("%dh ", h) + " " + minutes
+	return p.Sprintf("%dh ", h) + minutes
 }
 
 func (m *Messages) timezoneOptions(l string, selected *time.Location) []discordgo.SelectMenuOption {
@@ -58,4 +58,10 @@ func renderWeekday(p *message.Printer, d time.Weekday) string {
 	default:
 		return d.String()
 	}
+}
+
+func renderDurationAsTime(d time.Duration) string {
+	hour := d / time.Hour
+	minute := (d % time.Hour) / time.Minute
+	return fmt.Sprintf("%02d:%02d", int(hour), int(minute))
 }

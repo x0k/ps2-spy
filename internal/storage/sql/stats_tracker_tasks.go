@@ -55,8 +55,7 @@ func (s *Storage) CreateStatsTrackerTask(
 	channelId discord.ChannelId,
 	task discord.StatsTrackerTaskState,
 ) error {
-	_, offsetInSeconds := time.Now().In(task.Timezone).Zone()
-	offset := -(time.Duration(offsetInSeconds) * time.Second)
+	offset := newUtcOffset(task.Timezone)
 	return s.Begin(ctx, 0, func(s *Storage) error {
 		return createStatsTrackerTask(ctx, s, channelId, offset, task)
 	})
@@ -74,8 +73,7 @@ func (s *Storage) UpdateStatsTrackerTask(
 	channelId discord.ChannelId,
 	task discord.StatsTrackerTaskState,
 ) error {
-	_, offsetInSeconds := time.Now().In(task.Timezone).Zone()
-	offset := -(time.Duration(offsetInSeconds) * time.Second)
+	offset := newUtcOffset(task.Timezone)
 	return s.Begin(ctx, 0, func(s *Storage) error {
 		if err := s.queries.RemoveChannelStatsTrackerTask(ctx, db.RemoveChannelStatsTrackerTaskParams{
 			ChannelID: string(channelId),
@@ -87,6 +85,11 @@ func (s *Storage) UpdateStatsTrackerTask(
 	})
 }
 
+func newUtcOffset(timezone *time.Location) time.Duration {
+	_, offsetInSeconds := time.Now().In(timezone).Zone()
+	return -(time.Duration(offsetInSeconds) * time.Second)
+}
+
 func createStatsTrackerTask(
 	ctx context.Context,
 	s *Storage,
@@ -94,21 +97,33 @@ func createStatsTrackerTask(
 	offset time.Duration,
 	task discord.StatsTrackerTaskState,
 ) error {
-	if task.Duration > 4*time.Hour {
-		return fmt.Errorf("duration must be less than 4 hours")
+	if task.Duration > s.maxTrackingDuration {
+		println("----------------------")
+		println(s.maxTrackingDuration)
+		println("----------------------")
+		return discord.ErrStatsTrackerTaskDurationTooLong{
+			MaxDuration: s.maxTrackingDuration,
+			GotDuration: task.Duration,
+		}
 	}
 	count, err := s.queries.GetCountChannelStatsTrackerTasks(ctx, string(channelId))
 	if err != nil {
 		return fmt.Errorf("failed to get count of channel %q stats tracker tasks: %w", string(channelId), err)
 	}
-	if int(count)+len(task.LocalWeekdays) > discord.MAX_AMOUNT_OF_TASKS_PER_CHANNEL {
-		return fmt.Errorf("channel %q has too many stats tracker tasks", string(channelId))
+	finalCount := int(count) + len(task.LocalWeekdays)
+	if finalCount > discord.MAX_AMOUNT_OF_TASKS_PER_CHANNEL {
+		return fmt.Errorf(
+			"%w: expected %d, got %d",
+			discord.ErrMaxAmountOfTasksExceeded,
+			discord.MAX_AMOUNT_OF_TASKS_PER_CHANNEL,
+			finalCount,
+		)
 	}
 	for _, localWeekday := range task.LocalWeekdays {
 		localStart := time.Duration(task.LocalStartHour)*time.Hour + time.Duration(task.LocalStartMin)*time.Minute
 		utcStartWeekday, utcStartTime := shared.NormalizeDate(localWeekday, localStart+offset)
 		utcEndWeekday, utcEndTime := shared.NormalizeDate(localWeekday, localStart+offset+task.Duration)
-		if tasks, err := s.queries.ListChannelIntersectingStatsTrackerTasks(ctx, db.ListChannelIntersectingStatsTrackerTasksParams{
+		if rawTasks, err := s.queries.ListChannelIntersectingStatsTrackerTasks(ctx, db.ListChannelIntersectingStatsTrackerTasksParams{
 			ChannelID:    string(channelId),
 			StartWeekday: int64(utcStartWeekday),
 			StartTime:    int64(utcStartTime),
@@ -116,11 +131,18 @@ func createStatsTrackerTask(
 			EndTime:      int64(utcEndTime),
 		}); err != nil {
 			return fmt.Errorf("failed to list intersecting stats tracker tasks: %w", err)
-		} else if len(tasks) > 0 {
-			return fmt.Errorf(
-				"stats tracker task %v with weekday %d intersects with %d existing tasks",
-				task, localWeekday, len(tasks),
-			)
+		} else if len(rawTasks) > 0 {
+			tasks := make([]discord.StatsTrackerTask, len(rawTasks))
+			for i, rawTask := range rawTasks {
+				tasks[i] = statsTrackerTaskFromDTO(rawTask)
+			}
+			return discord.ErrOverlappingTasks{
+				LocalWeekday:   localWeekday,
+				LocalStartTime: localStart,
+				Duration:       task.Duration,
+				Offset:         offset,
+				Tasks:          tasks,
+			}
 		}
 		if err := s.queries.InsertChannelStatsTrackerTask(ctx, db.InsertChannelStatsTrackerTaskParams{
 			ChannelID:       string(channelId),
