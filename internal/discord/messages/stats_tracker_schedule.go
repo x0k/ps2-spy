@@ -6,6 +6,7 @@ import (
 	"math"
 	"slices"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -29,12 +30,7 @@ func scheduleNotes(p *message.Printer, loc *time.Location) string {
 
 const pageSize = 4
 
-func statsTrackerScheduleEditForm(
-	p *message.Printer,
-	timezone *time.Location,
-	tasks []discord.StatsTrackerTask,
-	zeroIndexedPage int,
-) []discordgo.MessageComponent {
+func newLocalTasks(tasks []discord.StatsTrackerTask, timezone *time.Location) []discord.StatsTrackerTaskState {
 	localTasks := make([]discord.StatsTrackerTaskState, 0, len(tasks))
 	for _, t := range tasks {
 		localTasks = append(localTasks, discord.NewUpdateStatsTrackerTaskState(
@@ -52,6 +48,14 @@ func statsTrackerScheduleEditForm(
 		}
 		return a.LocalStartMin - b.LocalStartMin
 	})
+	return localTasks
+}
+
+func statsTrackerScheduleEditForm(
+	p *message.Printer,
+	localTasks []discord.StatsTrackerTaskState,
+	zeroIndexedPage int,
+) []discordgo.MessageComponent {
 	if len(localTasks) > pageSize {
 		shift := zeroIndexedPage * pageSize
 		localTasks = localTasks[shift:min(shift+pageSize, len(localTasks))]
@@ -85,7 +89,7 @@ func statsTrackerScheduleEditForm(
 		Style:    discordgo.PrimaryButton,
 	}
 	lastRow := []discordgo.MessageComponent{addButton}
-	if len(tasks) > 4 {
+	if len(localTasks) > 4 {
 		if zeroIndexedPage > 0 {
 			lastRow = []discordgo.MessageComponent{
 				discordgo.Button{
@@ -96,7 +100,7 @@ func statsTrackerScheduleEditForm(
 				addButton,
 			}
 		}
-		if zeroIndexedPage < int(math.Ceil(float64(len(tasks))/float64(pageSize)))-1 {
+		if zeroIndexedPage < int(math.Ceil(float64(len(localTasks))/float64(pageSize)))-1 {
 			lastRow = append(lastRow, discordgo.Button{
 				CustomID: discord.NewStatsTrackerTaskPageButtonCustomId(zeroIndexedPage + 1),
 				Label:    p.Sprintf("Next"),
@@ -108,6 +112,28 @@ func statsTrackerScheduleEditForm(
 		Components: lastRow,
 	})
 	return rows
+}
+
+func renderStatsTrackerSchedule(
+	p *message.Printer,
+	localTasks []discord.StatsTrackerTaskState,
+) string {
+	sb := strings.Builder{}
+	sb.WriteString(p.Sprintf("Schedule:"))
+	if len(localTasks) == 0 {
+		sb.WriteString(p.Sprintf("\n- No tasks were found"))
+		return sb.String()
+	}
+	for _, t := range localTasks {
+		sb.WriteString(p.Sprintf(
+			"\n- %s, %02d:%02d, %s",
+			renderWeekday(p, t.LocalWeekdays[0]),
+			t.LocalStartHour,
+			t.LocalStartMin,
+			renderDuration(p, t.Duration),
+		))
+	}
+	return sb.String()
 }
 
 func hourPickerOptions(p *message.Printer, selectedHour int) []discordgo.SelectMenuOption {

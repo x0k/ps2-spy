@@ -80,6 +80,9 @@ func NewChannelSettings(
 			s *discordgo.Session,
 			i *discordgo.InteractionCreate,
 		) discord.ResponseEdit {
+			if !discord.IsChannelsManagerOrDM(i) {
+				return discord_messages.MissingPermissionError[discordgo.WebhookEdit]()
+			}
 			channelId := discord.ChannelId(i.Interaction.ChannelID)
 			channel, err := channelLoader(ctx, channelId)
 			if err != nil {

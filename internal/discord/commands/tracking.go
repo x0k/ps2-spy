@@ -147,6 +147,10 @@ func NewTracking(
 			s *discordgo.Session,
 			i *discordgo.InteractionCreate,
 		) discord.Response {
+			// TODO: Show current tracking settings for unprivileged users
+			if !discord.IsChannelsManagerOrDM(i) {
+				return discord_messages.MissingPermissionError[discordgo.InteractionResponseData]()
+			}
 			platform := ps2_platforms.Platform(i.ApplicationCommandData().Options[0].Name)
 			channelId := discord.ChannelId(i.ChannelID)
 			settings, err := settingsLoader(ctx, discord.SettingsQuery{

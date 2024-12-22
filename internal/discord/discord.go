@@ -191,3 +191,7 @@ func (e ErrOverlappingTasks) Error() string {
 		len(e.Tasks),
 	)
 }
+
+func IsChannelsManagerOrDM(i *discordgo.InteractionCreate) bool {
+	return i.Member == nil || i.Member.Permissions&discordgo.PermissionManageChannels != 0
+}

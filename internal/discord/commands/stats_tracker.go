@@ -155,6 +155,9 @@ func NewStatsTracker(
 			channelId := discord.ChannelId(i.ChannelID)
 			switch cmd {
 			case "start":
+				if !discord.IsChannelsManagerOrDM(i) {
+					return discord_messages.MissingPermissionError[discordgo.WebhookEdit]()
+				}
 				if err := statsTracker.StartChannelTracker(ctx, channelId); errors.Is(err, stats_tracker.ErrNothingToTrack) {
 					return messages.NothingToTrack()
 				} else if err != nil {
@@ -162,6 +165,9 @@ func NewStatsTracker(
 				}
 				return messages.ChannelTrackerWillStartedSoon()
 			case "stop":
+				if !discord.IsChannelsManagerOrDM(i) {
+					return discord_messages.MissingPermissionError[discordgo.WebhookEdit]()
+				}
 				if err := statsTracker.StopChannelTracker(ctx, channelId); errors.Is(err, stats_tracker.ErrNoChannelTrackerToStop) {
 					return messages.NoChannelTrackerToStop()
 				} else if err != nil {
@@ -181,6 +187,9 @@ func NewStatsTracker(
 					return discord_messages.ChannelStatsTrackerTasksLoadError[discordgo.WebhookEdit](
 						err,
 					)
+				}
+				if discord.IsChannelsManagerOrDM(i) {
+					return messages.StatsTrackerScheduleEditForm(channel, tasks)
 				}
 				return messages.StatsTrackerSchedule(channel, tasks)
 			}

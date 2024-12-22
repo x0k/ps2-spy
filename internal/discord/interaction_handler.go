@@ -42,8 +42,11 @@ func ShowModal(handle interactionHandler[Response]) InteractionHandler {
 	return func(ctx context.Context, log *logger.Logger, s *discordgo.Session, i *discordgo.InteractionCreate) error {
 		data, customErr := handle(ctx, s, i)(message.NewPrinter(LangTagFromInteraction(i)))
 		if customErr != nil {
-			if _, err := s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
-				Content: customErr.Msg,
+			if err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: customErr.Msg,
+				},
 			}); err != nil {
 				log.Error(ctx, "error sending followup message", sl.Err(err))
 			}

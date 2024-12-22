@@ -487,16 +487,30 @@ func ChannelStatsTrackerTasksLoadError[R any](err error) func(*message.Printer) 
 	}
 }
 
-func (m *Messages) StatsTrackerSchedule(
+func (m *Messages) StatsTrackerScheduleEditForm(
 	channel discord.Channel,
 	tasks []discord.StatsTrackerTask,
 ) discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
 		content := scheduleNotes(p, channel.DefaultTimezone)
-		components := statsTrackerScheduleEditForm(p, channel.DefaultTimezone, tasks, 0)
+		localTasks := newLocalTasks(tasks, channel.DefaultTimezone)
+		components := statsTrackerScheduleEditForm(p, localTasks, 0)
 		return &discordgo.WebhookEdit{
 			Content:    &content,
 			Components: &components,
+		}, nil
+	}
+}
+
+func (m *Messages) StatsTrackerSchedule(
+	channel discord.Channel,
+	tasks []discord.StatsTrackerTask,
+) discord.ResponseEdit {
+	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
+		localTasks := newLocalTasks(tasks, channel.DefaultTimezone)
+		content := renderStatsTrackerSchedule(p, localTasks)
+		return &discordgo.WebhookEdit{
+			Content: &content,
 		}, nil
 	}
 }
@@ -508,7 +522,8 @@ func (m *Messages) StatsTrackerScheduleUpdated(
 ) discord.Response {
 	return func(p *message.Printer) (*discordgo.InteractionResponseData, *discord.Error) {
 		content := scheduleNotes(p, channel.DefaultTimezone)
-		components := statsTrackerScheduleEditForm(p, channel.DefaultTimezone, tasks, zeroIndexedPage)
+		localTasks := newLocalTasks(tasks, channel.DefaultTimezone)
+		components := statsTrackerScheduleEditForm(p, localTasks, zeroIndexedPage)
 		return &discordgo.InteractionResponseData{
 			Content:    content,
 			Components: components,
@@ -718,6 +733,15 @@ func (m *Messages) OnlineCountTitleUpdate(title string, count int) discord.Messa
 				return originalTitle, nil
 			}
 			return originalTitle + separator + onlineCount, nil
+		}
+	}
+}
+
+func MissingPermissionError[R any]() func(*message.Printer) (*R, *discord.Error) {
+	return func(p *message.Printer) (*R, *discord.Error) {
+		return nil, &discord.Error{
+			Msg: p.Sprintf("You must have `Manage Channels` permission to use this command"),
+			Err: nil,
 		}
 	}
 }
