@@ -39,288 +39,354 @@ func init() {
 }
 
 var messageKeyToIndex = map[string]int{
-	"\n\n**Characters:**\n":        96,
-	"\n**Left the outfit:**":       33,
-	"\n**Other characters:**":      81,
-	"\n**Welcome to the outfit:**": 32,
-	"\nStatus: _":                  101,
-	"# PlanetSide 2 Spy\n\nSimple discord bot for PlanetSide 2 outfits\n\n## Links\n\n- [GitHub](https://github.com/x0k/ps2-spy)\n\t\t\n": 41,
-	"%dh ":                                108,
-	"%dm":                                 107,
-	"%d・online":                           77,
-	"%s (%s) is now offline (%s)":         27,
-	"%s (%s) is now online (%s)":          25,
-	"%s - %d":                             86,
-	"%s - %s (Ends %s)":                   89,
-	"%s - No alerts":                      91,
-	"%s [%s] captured %s (%s) on %s (%s)": 39,
-	"%s [%s] lost %s (%s) on %s (%s)":     40,
-	"%s alerts":                           92,
-	") by `":                              100,
-	"Character":                           18,
-	"Character notifications: off":        4,
-	"Character notifications: on":         3,
-	"Characters online:":                  79,
-	"Duration":                            23,
-	"ENG":                                 12,
-	"Enter the character names separated by comma": 74,
-	"Enter the outfit tags separated by comma":     72,
-	"Faction":                                              16,
-	"Failed to extract field value":                        66,
-	"Failed to load %s channel":                            65,
-	"Failed to load %s population with %s":                 44,
-	"Failed to load %s territory control":                  45,
-	"Failed to load character names for %v (%s)":           64,
-	"Failed to load character: %s":                         34,
-	"Failed to load characters %v (%s)":                    51,
-	"Failed to load characters: %v (%s)":                   29,
-	"Failed to load facility: %s":                          35,
-	"Failed to load global alerts from %s":                 47,
-	"Failed to load global population with %s":             43,
-	"Failed to load online members for %s channel (%s)":    48,
-	"Failed to load outfit tags for %v (%s)":               63,
-	"Failed to load outfit: %s (%s)":                       28,
-	"Failed to load outfits %v (%s)":                       49,
-	"Failed to load outfits by tags %v (%s)":               50,
-	"Failed to load tracking settings for %s channel (%s)": 62,
-	"Failed to load world alerts for %s from %s":           46,
-	"Failed to parse language %q":                          75,
-	"Failed to save field value for %s channel":            67,
-	"Failed to save tracking settings for %s channel (%s)": 52,
-	"Failed to start stats tracker":                        57,
-	"Failed to stop stats tracker":                         59,
-	"HA":                                                   13,
-	"HS":                                                   20,
-	"INF":                                                  9,
-	"Invalid population type: %s":                          42,
-	"Invalid stats tracker subcommand: %s":                 56,
-	"KD":                                                   21,
-	"Kills":                                                19,
-	"LA":                                                   10,
-	"Language":                                             0,
-	"Language for this channel has been set to %q":         76,
-	"Language: english":                                    1,
-	"Language: russian":                                    2,
-	"Loadout":                                              22,
-	"Locked ":                                              99,
-	"MAX":                                                  14,
-	"MED":                                                  11,
-	"NC":                                                   83,
-	"No":                                                   106,
-	"No alerts":                                            93,
-	"No characters":                                        97,
-	"No characters online":                                 78,
-	"No data collected":                                    38,
-	"No outfits":                                           95,
-	"Nothing to track, please set tracking settings first": 55,
-	"Outfit":                    17,
-	"Outfit notifications: off": 6,
-	"Outfit notifications: on":  5,
-	"Period":                    88,
-	"Platform: %s, started at: %s, stopped: %s, duration: %s\n```":   37,
-	"Settings are saved, but failed to load character names %v (%s)": 54,
-	"Settings are saved, but failed to load outfit tags %v (%s)":     53,
-	"Settings are updated.\n\n**Outfits:**\n":                        94,
-	"Source: %s":                             85,
-	"Stable":                                 102,
-	"Stats tracker started":                  36,
-	"Stats tracker will be started soon":     60,
-	"Stats tracker will be stopped soon":     61,
-	"TR":                                     82,
-	"Territory Control":                      90,
-	"There is no stats tracker to stop":      58,
-	"Title updates: off":                     8,
-	"Title updates: on":                      7,
-	"Total population - %d":                  87,
-	"Tracking Settings (PC)":                 68,
-	"Tracking Settings (PS4 EU)":             69,
-	"Tracking Settings (PS4 US)":             70,
-	"Unknown":                                15,
-	"Unlocked ":                              98,
-	"Unstable":                               103,
-	"Update of ":                             30,
-	"VS":                                     84,
-	"Which characters do you want to track?": 73,
-	"Which outfits do you want to track?":    71,
-	"Yes":                                    105,
-	"[%s] %s (%s) is now offline (%s)":       26,
-	"[%s] %s (%s) is now online (%s)":        24,
-	"] outfit (":                             80,
-	"] outfit members:":                      31,
-	"_\nAlerts: _":                           104,
+	"\n\n**Characters:**\n":        115,
+	"\n**Left the outfit:**":       34,
+	"\n**Other characters:**":      86,
+	"\n**Welcome to the outfit:**": 33,
+	"\nStatus: _":                  120,
+	"# PlanetSide 2 Spy\n\nSimple discord bot for PlanetSide 2 outfits\n\n## Links\n\n- [GitHub](https://github.com/x0k/ps2-spy)\n\t\t\n": 42,
+	"%dh ":                                127,
+	"%dm":                                 126,
+	"%d・online":                           82,
+	"%s (%s) is now offline (%s)":         28,
+	"%s (%s) is now online (%s)":          26,
+	"%s - %d":                             91,
+	"%s - %s (Ends %s)":                   94,
+	"%s - No alerts":                      96,
+	"%s [%s] captured %s (%s) on %s (%s)": 40,
+	"%s [%s] lost %s (%s) on %s (%s)":     41,
+	"%s alerts":                           97,
+	") by `":                              119,
+	"Add new task":                        101,
+	"Cancel":                              108,
+	"Character":                           19,
+	"Character notifications: off":        5,
+	"Character notifications: on":         4,
+	"Characters online:":                  84,
+	"Default timezone":                    0,
+	"Duration":                            24,
+	"Duration too long: expected max %s got %s": 110,
+	"Duration: %s": 106,
+	"ENG":          13,
+	"Enter the character names separated by comma": 79,
+	"Enter the outfit tags separated by comma":     77,
+	"Faction":                                              17,
+	"Failed to extract field value":                        71,
+	"Failed to load %s channel":                            70,
+	"Failed to load %s population with %s":                 45,
+	"Failed to load %s territory control":                  46,
+	"Failed to load character names for %v (%s)":           69,
+	"Failed to load character: %s":                         35,
+	"Failed to load characters %v (%s)":                    52,
+	"Failed to load characters: %v (%s)":                   30,
+	"Failed to load facility: %s":                          36,
+	"Failed to load global alerts from %s":                 48,
+	"Failed to load global population with %s":             44,
+	"Failed to load online members for %s channel (%s)":    49,
+	"Failed to load outfit tags for %v (%s)":               68,
+	"Failed to load outfit: %s (%s)":                       29,
+	"Failed to load outfits %v (%s)":                       50,
+	"Failed to load outfits by tags %v (%s)":               51,
+	"Failed to load stats tracker task":                    64,
+	"Failed to load stats tracker tasks":                   63,
+	"Failed to load tracking settings for %s channel (%s)": 67,
+	"Failed to load world alerts for %s from %s":           47,
+	"Failed to parse language %q":                          80,
+	"Failed to remove stats tracker task":                  65,
+	"Failed to save field value for %s channel":            72,
+	"Failed to save tracking settings for %s channel (%s)": 53,
+	"Failed to start stats tracker":                        58,
+	"Failed to stop stats tracker":                         60,
+	"Friday":                                               132,
+	"HA":                                                   14,
+	"HS":                                                   21,
+	"INF":                                                  10,
+	"Invalid population type: %s":                          43,
+	"Invalid stats tracker subcommand: %s":                 57,
+	"KD":                                                   22,
+	"Kills":                                                20,
+	"LA":                                                   11,
+	"Language":                                             1,
+	"Language for this channel has been set to %q":         81,
+	"Language: english":                                    2,
+	"Language: russian":                                    3,
+	"Loadout":                                              23,
+	"Locked ":                                              118,
+	"MAX":                                                  15,
+	"MED":                                                  12,
+	"Max amount of tasks per channel is %d":                109,
+	"Monday":                                               128,
+	"NC":                                                   88,
+	"Next":                                                 103,
+	"No":                                                   125,
+	"No alerts":                                            98,
+	"No characters":                                        116,
+	"No characters online":                                 83,
+	"No data collected":                                    39,
+	"No outfits":                                           114,
+	"Notes:\n- The time is specified in the time zone %q. This can be changed in the channel settings;\n- The maximum amount of tasks per channel is %d;\n- You can edit a task by clicking on it;\n- The “Remove” button deletes immediately without confirmation.\n": 99,
+	"Nothing to track, please set tracking settings first": 56,
+	"Outfit":                    18,
+	"Outfit notifications: off": 7,
+	"Outfit notifications: on":  6,
+	"Period":                    93,
+	"Platform: %s, started at: %s, stopped: %s, duration: %s\n```": 38,
+	"Previous": 102,
+	"Remove":   100,
+	"Saturday": 133,
+	"Settings are saved, but failed to load character names %v (%s)": 55,
+	"Settings are saved, but failed to load outfit tags %v (%s)":     54,
+	"Settings are updated.\n\n**Outfits:**\n":                        113,
+	"Source: %s":                             90,
+	"Stable":                                 121,
+	"Starting hour: %d":                      104,
+	"Starting minute: %d":                    105,
+	"Stats tracker started":                  37,
+	"Stats tracker task state not found":     66,
+	"Stats tracker will be started soon":     61,
+	"Stats tracker will be stopped soon":     62,
+	"Submit":                                 107,
+	"Sunday":                                 134,
+	"TR":                                     87,
+	"Territory Control":                      95,
+	"There is no stats tracker to stop":      59,
+	"Thursday":                               131,
+	"Title updates: off":                     9,
+	"Title updates: on":                      8,
+	"Total population - %d":                  92,
+	"Tracking Settings (PC)":                 73,
+	"Tracking Settings (PS4 EU)":             74,
+	"Tracking Settings (PS4 US)":             75,
+	"Tuesday":                                129,
+	"Unknown":                                16,
+	"Unlocked ":                              117,
+	"Unstable":                               122,
+	"Update of ":                             31,
+	"VS":                                     89,
+	"Wednesday":                              130,
+	"Which characters do you want to track?": 78,
+	"Which outfits do you want to track?":    76,
+	"Yes":                                    124,
+	"Your task (%s, %s, %s) overlaps with existing task (%s, %s, %s)": 111,
+	"[%s] %s (%s) is now offline (%s)":                                27,
+	"[%s] %s (%s) is now online (%s)":                                 25,
+	"] outfit (":                                                      85,
+	"] outfit members:":                                               32,
+	"_\nAlerts: _":                                                    123,
+	"something went wrong":                                            112,
 }
 
-var enIndex = []uint32{ // 110 elements
+var enIndex = []uint32{ // 136 elements
 	// Entry 0 - 1F
-	0x00000000, 0x00000009, 0x0000001b, 0x0000002d,
-	0x00000049, 0x00000066, 0x0000007f, 0x00000099,
-	0x000000ab, 0x000000be, 0x000000c2, 0x000000c5,
-	0x000000c9, 0x000000cd, 0x000000d0, 0x000000d4,
-	0x000000dc, 0x000000e4, 0x000000eb, 0x000000f5,
-	0x000000fb, 0x000000fe, 0x00000101, 0x00000109,
-	0x00000112, 0x0000013e, 0x00000162, 0x0000018f,
-	0x000001b4, 0x000001d9, 0x00000202, 0x00000211,
+	0x00000000, 0x00000011, 0x0000001a, 0x0000002c,
+	0x0000003e, 0x0000005a, 0x00000077, 0x00000090,
+	0x000000aa, 0x000000bc, 0x000000cf, 0x000000d3,
+	0x000000d6, 0x000000da, 0x000000de, 0x000000e1,
+	0x000000e5, 0x000000ed, 0x000000f5, 0x000000fc,
+	0x00000106, 0x0000010c, 0x0000010f, 0x00000112,
+	0x0000011a, 0x00000123, 0x0000014f, 0x00000173,
+	0x000001a0, 0x000001c5, 0x000001ea, 0x00000213,
 	// Entry 20 - 3F
-	0x00000223, 0x00000243, 0x0000025d, 0x0000027d,
-	0x0000029c, 0x000002b2, 0x000002fa, 0x0000030c,
-	0x00000342, 0x00000374, 0x000003f2, 0x00000411,
-	0x0000043d, 0x00000468, 0x0000048f, 0x000004c0,
-	0x000004e8, 0x00000520, 0x00000545, 0x00000572,
-	0x0000059a, 0x000005d5, 0x00000616, 0x0000065b,
-	0x00000690, 0x000006b8, 0x000006d6, 0x000006f8,
-	0x00000715, 0x00000738, 0x0000075b, 0x00000796,
+	0x00000222, 0x00000234, 0x00000254, 0x0000026e,
+	0x0000028e, 0x000002ad, 0x000002c3, 0x0000030b,
+	0x0000031d, 0x00000353, 0x00000385, 0x00000403,
+	0x00000422, 0x0000044e, 0x00000479, 0x000004a0,
+	0x000004d1, 0x000004f9, 0x00000531, 0x00000556,
+	0x00000583, 0x000005ab, 0x000005e6, 0x00000627,
+	0x0000066c, 0x000006a1, 0x000006c9, 0x000006e7,
+	0x00000709, 0x00000726, 0x00000749, 0x0000076c,
 	// Entry 40 - 5F
-	0x000007c3, 0x000007f4, 0x00000811, 0x0000082f,
-	0x0000085c, 0x00000873, 0x0000088e, 0x000008a9,
-	0x000008cd, 0x000008f6, 0x0000091d, 0x0000094a,
-	0x00000969, 0x00000999, 0x000009a8, 0x000009bd,
-	0x000009d0, 0x000009db, 0x000009f6, 0x000009f9,
-	0x000009fc, 0x000009ff, 0x00000a0d, 0x00000a1b,
-	0x00000a34, 0x00000a3b, 0x00000a56, 0x00000a68,
-	0x00000a7a, 0x00000a87, 0x00000a91, 0x00000aba,
+	0x0000078f, 0x000007b1, 0x000007d5, 0x000007f8,
+	0x00000833, 0x00000860, 0x00000891, 0x000008ae,
+	0x000008cc, 0x000008f9, 0x00000910, 0x0000092b,
+	0x00000946, 0x0000096a, 0x00000993, 0x000009ba,
+	0x000009e7, 0x00000a06, 0x00000a36, 0x00000a45,
+	0x00000a5a, 0x00000a6d, 0x00000a78, 0x00000a93,
+	0x00000a96, 0x00000a99, 0x00000a9c, 0x00000aaa,
+	0x00000ab8, 0x00000ad1, 0x00000ad8, 0x00000af3,
 	// Entry 60 - 7F
-	0x00000ac5, 0x00000adc, 0x00000aea, 0x00000af8,
-	0x00000b04, 0x00000b0b, 0x00000b1a, 0x00000b21,
-	0x00000b2a, 0x00000b36, 0x00000b3a, 0x00000b3d,
-	0x00000b44, 0x00000b50,
-} // Size: 464 bytes
+	0x00000b05, 0x00000b17, 0x00000b24, 0x00000b2e,
+	0x00000c39, 0x00000c40, 0x00000c4d, 0x00000c56,
+	0x00000c5b, 0x00000c70, 0x00000c87, 0x00000c97,
+	0x00000c9e, 0x00000ca5, 0x00000cce, 0x00000cfe,
+	0x00000d50, 0x00000d65, 0x00000d8e, 0x00000d99,
+	0x00000db0, 0x00000dbe, 0x00000dcc, 0x00000dd8,
+	0x00000ddf, 0x00000dee, 0x00000df5, 0x00000dfe,
+	0x00000e0a, 0x00000e0e, 0x00000e11, 0x00000e18,
+	// Entry 80 - 9F
+	0x00000e24, 0x00000e2b, 0x00000e33, 0x00000e3d,
+	0x00000e46, 0x00000e4d, 0x00000e56, 0x00000e5d,
+} // Size: 568 bytes
 
-const enData string = "" + // Size: 2896 bytes
-	"\x02Language\x02Language: english\x02Language: russian\x02Character noti" +
-	"fications: on\x02Character notifications: off\x02Outfit notifications: o" +
-	"n\x02Outfit notifications: off\x02Title updates: on\x02Title updates: of" +
-	"f\x02INF\x02LA\x02MED\x02ENG\x02HA\x02MAX\x02Unknown\x02Faction\x02Outfi" +
-	"t\x02Character\x02Kills\x02HS\x02KD\x02Loadout\x02Duration\x02[%[1]s] %[" +
-	"2]s (%[3]s) is now online (%[4]s)\x02%[1]s (%[2]s) is now online (%[3]s)" +
-	"\x02[%[1]s] %[2]s (%[3]s) is now offline (%[4]s)\x02%[1]s (%[2]s) is now" +
-	" offline (%[3]s)\x02Failed to load outfit: %[1]s (%[2]s)\x02Failed to lo" +
-	"ad characters: %[1]v (%[2]s)\x04\x00\x01 \x0a\x02Update of\x02] outfit m" +
-	"embers:\x04\x01\x0a\x00\x1b\x02**Welcome to the outfit:**\x04\x01\x0a" +
-	"\x00\x15\x02**Left the outfit:**\x02Failed to load character: %[1]s\x02F" +
-	"ailed to load facility: %[1]s\x02Stats tracker started\x02Platform: %[1]" +
-	"s, started at: %[2]s, stopped: %[3]s, duration: %[4]s\x0a```\x02No data " +
-	"collected\x02%[1]s [%[2]s] captured %[3]s (%[4]s) on %[5]s (%[6]s)\x02%[" +
-	"1]s [%[2]s] lost %[3]s (%[4]s) on %[5]s (%[6]s)\x04\x00\x04\x0a\x09\x09" +
-	"\x0av\x02# PlanetSide 2 Spy\x0a\x0aSimple discord bot for PlanetSide 2 o" +
-	"utfits\x0a\x0a## Links\x0a\x0a- [GitHub](https://github.com/x0k/ps2-spy)" +
-	"\x02Invalid population type: %[1]s\x02Failed to load global population w" +
-	"ith %[1]s\x02Failed to load %[1]s population with %[2]s\x02Failed to loa" +
-	"d %[1]s territory control\x02Failed to load world alerts for %[1]s from " +
-	"%[2]s\x02Failed to load global alerts from %[1]s\x02Failed to load onlin" +
-	"e members for %[1]s channel (%[2]s)\x02Failed to load outfits %[1]v (%[2" +
-	"]s)\x02Failed to load outfits by tags %[1]v (%[2]s)\x02Failed to load ch" +
-	"aracters %[1]v (%[2]s)\x02Failed to save tracking settings for %[1]s cha" +
-	"nnel (%[2]s)\x02Settings are saved, but failed to load outfit tags %[1]v" +
-	" (%[2]s)\x02Settings are saved, but failed to load character names %[1]v" +
-	" (%[2]s)\x02Nothing to track, please set tracking settings first\x02Inva" +
-	"lid stats tracker subcommand: %[1]s\x02Failed to start stats tracker\x02" +
-	"There is no stats tracker to stop\x02Failed to stop stats tracker\x02Sta" +
-	"ts tracker will be started soon\x02Stats tracker will be stopped soon" +
-	"\x02Failed to load tracking settings for %[1]s channel (%[2]s)\x02Failed" +
-	" to load outfit tags for %[1]v (%[2]s)\x02Failed to load character names" +
-	" for %[1]v (%[2]s)\x02Failed to load %[1]s channel\x02Failed to extract " +
-	"field value\x02Failed to save field value for %[1]s channel\x02Tracking " +
-	"Settings (PC)\x02Tracking Settings (PS4 EU)\x02Tracking Settings (PS4 US" +
-	")\x02Which outfits do you want to track?\x02Enter the outfit tags separa" +
-	"ted by comma\x02Which characters do you want to track?\x02Enter the char" +
-	"acter names separated by comma\x02Failed to parse language %[1]q\x02Lang" +
-	"uage for this channel has been set to %[1]q\x02%[1]d・online\x02No charac" +
-	"ters online\x02Characters online:\x02] outfit (\x04\x01\x0a\x00\x16\x02*" +
-	"*Other characters:**\x02TR\x02NC\x02VS\x02Source: %[1]s\x02%[1]s - %[2]d" +
-	"\x02Total population - %[1]d\x02Period\x02%[1]s - %[2]s (Ends %[3]s)\x02" +
-	"Territory Control\x02%[1]s - No alerts\x02%[1]s alerts\x02No alerts\x04" +
-	"\x00\x01\x0a$\x02Settings are updated.\x0a\x0a**Outfits:**\x02No outfits" +
-	"\x04\x02\x0a\x0a\x01\x0a\x10\x02**Characters:**\x02No characters\x04\x00" +
-	"\x01 \x09\x02Unlocked\x04\x00\x01 \x07\x02Locked\x02) by `\x04\x01\x0a" +
-	"\x00\x0a\x02Status: _\x02Stable\x02Unstable\x02_\x0aAlerts: _\x02Yes\x02" +
-	"No\x02%[1]dm\x04\x00\x01 \x07\x02%[1]dh"
+const enData string = "" + // Size: 3677 bytes
+	"\x02Default timezone\x02Language\x02Language: english\x02Language: russi" +
+	"an\x02Character notifications: on\x02Character notifications: off\x02Out" +
+	"fit notifications: on\x02Outfit notifications: off\x02Title updates: on" +
+	"\x02Title updates: off\x02INF\x02LA\x02MED\x02ENG\x02HA\x02MAX\x02Unknow" +
+	"n\x02Faction\x02Outfit\x02Character\x02Kills\x02HS\x02KD\x02Loadout\x02D" +
+	"uration\x02[%[1]s] %[2]s (%[3]s) is now online (%[4]s)\x02%[1]s (%[2]s) " +
+	"is now online (%[3]s)\x02[%[1]s] %[2]s (%[3]s) is now offline (%[4]s)" +
+	"\x02%[1]s (%[2]s) is now offline (%[3]s)\x02Failed to load outfit: %[1]s" +
+	" (%[2]s)\x02Failed to load characters: %[1]v (%[2]s)\x04\x00\x01 \x0a" +
+	"\x02Update of\x02] outfit members:\x04\x01\x0a\x00\x1b\x02**Welcome to t" +
+	"he outfit:**\x04\x01\x0a\x00\x15\x02**Left the outfit:**\x02Failed to lo" +
+	"ad character: %[1]s\x02Failed to load facility: %[1]s\x02Stats tracker s" +
+	"tarted\x02Platform: %[1]s, started at: %[2]s, stopped: %[3]s, duration: " +
+	"%[4]s\x0a```\x02No data collected\x02%[1]s [%[2]s] captured %[3]s (%[4]s" +
+	") on %[5]s (%[6]s)\x02%[1]s [%[2]s] lost %[3]s (%[4]s) on %[5]s (%[6]s)" +
+	"\x04\x00\x04\x0a\x09\x09\x0av\x02# PlanetSide 2 Spy\x0a\x0aSimple discor" +
+	"d bot for PlanetSide 2 outfits\x0a\x0a## Links\x0a\x0a- [GitHub](https:/" +
+	"/github.com/x0k/ps2-spy)\x02Invalid population type: %[1]s\x02Failed to " +
+	"load global population with %[1]s\x02Failed to load %[1]s population wit" +
+	"h %[2]s\x02Failed to load %[1]s territory control\x02Failed to load worl" +
+	"d alerts for %[1]s from %[2]s\x02Failed to load global alerts from %[1]s" +
+	"\x02Failed to load online members for %[1]s channel (%[2]s)\x02Failed to" +
+	" load outfits %[1]v (%[2]s)\x02Failed to load outfits by tags %[1]v (%[2" +
+	"]s)\x02Failed to load characters %[1]v (%[2]s)\x02Failed to save trackin" +
+	"g settings for %[1]s channel (%[2]s)\x02Settings are saved, but failed t" +
+	"o load outfit tags %[1]v (%[2]s)\x02Settings are saved, but failed to lo" +
+	"ad character names %[1]v (%[2]s)\x02Nothing to track, please set trackin" +
+	"g settings first\x02Invalid stats tracker subcommand: %[1]s\x02Failed to" +
+	" start stats tracker\x02There is no stats tracker to stop\x02Failed to s" +
+	"top stats tracker\x02Stats tracker will be started soon\x02Stats tracker" +
+	" will be stopped soon\x02Failed to load stats tracker tasks\x02Failed to" +
+	" load stats tracker task\x02Failed to remove stats tracker task\x02Stats" +
+	" tracker task state not found\x02Failed to load tracking settings for %[" +
+	"1]s channel (%[2]s)\x02Failed to load outfit tags for %[1]v (%[2]s)\x02F" +
+	"ailed to load character names for %[1]v (%[2]s)\x02Failed to load %[1]s " +
+	"channel\x02Failed to extract field value\x02Failed to save field value f" +
+	"or %[1]s channel\x02Tracking Settings (PC)\x02Tracking Settings (PS4 EU)" +
+	"\x02Tracking Settings (PS4 US)\x02Which outfits do you want to track?" +
+	"\x02Enter the outfit tags separated by comma\x02Which characters do you " +
+	"want to track?\x02Enter the character names separated by comma\x02Failed" +
+	" to parse language %[1]q\x02Language for this channel has been set to %[" +
+	"1]q\x02%[1]d・online\x02No characters online\x02Characters online:\x02] o" +
+	"utfit (\x04\x01\x0a\x00\x16\x02**Other characters:**\x02TR\x02NC\x02VS" +
+	"\x02Source: %[1]s\x02%[1]s - %[2]d\x02Total population - %[1]d\x02Period" +
+	"\x02%[1]s - %[2]s (Ends %[3]s)\x02Territory Control\x02%[1]s - No alerts" +
+	"\x02%[1]s alerts\x02No alerts\x04\x00\x01\x0a\x85\x02\x02Notes:\x0a- The" +
+	" time is specified in the time zone %[1]q. This can be changed in the ch" +
+	"annel settings;\x0a- The maximum amount of tasks per channel is %[2]d;" +
+	"\x0a- You can edit a task by clicking on it;\x0a- The “Remove” button de" +
+	"letes immediately without confirmation.\x02Remove\x02Add new task\x02Pre" +
+	"vious\x02Next\x02Starting hour: %[1]d\x02Starting minute: %[1]d\x02Durat" +
+	"ion: %[1]s\x02Submit\x02Cancel\x02Max amount of tasks per channel is %[1" +
+	"]d\x02Duration too long: expected max %[1]s got %[2]s\x02Your task (%[1]" +
+	"s, %[2]s, %[3]s) overlaps with existing task (%[4]s, %[5]s, %[6]s)\x02so" +
+	"mething went wrong\x04\x00\x01\x0a$\x02Settings are updated.\x0a\x0a**Ou" +
+	"tfits:**\x02No outfits\x04\x02\x0a\x0a\x01\x0a\x10\x02**Characters:**" +
+	"\x02No characters\x04\x00\x01 \x09\x02Unlocked\x04\x00\x01 \x07\x02Locke" +
+	"d\x02) by `\x04\x01\x0a\x00\x0a\x02Status: _\x02Stable\x02Unstable\x02_" +
+	"\x0aAlerts: _\x02Yes\x02No\x02%[1]dm\x04\x00\x01 \x07\x02%[1]dh\x02Monda" +
+	"y\x02Tuesday\x02Wednesday\x02Thursday\x02Friday\x02Saturday\x02Sunday"
 
-var ruIndex = []uint32{ // 110 elements
+var ruIndex = []uint32{ // 136 elements
 	// Entry 0 - 1F
-	0x00000000, 0x00000009, 0x00000028, 0x00000041,
-	0x00000076, 0x000000ad, 0x000000de, 0x00000111,
-	0x00000142, 0x00000175, 0x0000017c, 0x00000185,
-	0x0000018c, 0x00000193, 0x0000019e, 0x000001a7,
-	0x000001bc, 0x000001cb, 0x000001d8, 0x000001e9,
-	0x000001fa, 0x000001fd, 0x00000202, 0x0000020d,
-	0x00000218, 0x00000245, 0x0000026a, 0x00000299,
-	0x000002c0, 0x000002fc, 0x00000340, 0x0000035a,
+	0x00000000, 0x00000034, 0x0000003d, 0x0000005c,
+	0x00000075, 0x000000aa, 0x000000e1, 0x00000112,
+	0x00000145, 0x00000176, 0x000001a9, 0x000001b0,
+	0x000001b9, 0x000001c0, 0x000001c7, 0x000001d2,
+	0x000001db, 0x000001f0, 0x000001ff, 0x0000020c,
+	0x0000021d, 0x0000022e, 0x00000231, 0x00000236,
+	0x00000241, 0x0000024c, 0x00000279, 0x0000029e,
+	0x000002cd, 0x000002f4, 0x00000330, 0x00000374,
 	// Entry 20 - 3F
-	0x00000377, 0x000003b1, 0x000003d9, 0x00000411,
-	0x00000445, 0x00000476, 0x000004f3, 0x00000507,
-	0x00000545, 0x00000581, 0x00000616, 0x0000064a,
-	0x0000069a, 0x000006d9, 0x0000072a, 0x0000076a,
-	0x000007b2, 0x0000080f, 0x0000084c, 0x00000899,
-	0x000008dc, 0x00000942, 0x000009bf, 0x00000a44,
-	0x00000ac4, 0x00000b19, 0x00000b6e, 0x00000bb2,
-	0x00000c09, 0x00000c57, 0x00000ca7, 0x00000d09,
+	0x0000038e, 0x000003ab, 0x000003e5, 0x0000040d,
+	0x00000445, 0x00000479, 0x000004aa, 0x00000527,
+	0x0000053b, 0x00000579, 0x000005b5, 0x0000064a,
+	0x0000067e, 0x000006ce, 0x0000070d, 0x0000075e,
+	0x0000079e, 0x000007e6, 0x00000843, 0x00000880,
+	0x000008cd, 0x00000910, 0x00000976, 0x000009f3,
+	0x00000a78, 0x00000af8, 0x00000b4d, 0x00000ba2,
+	0x00000be6, 0x00000c3d, 0x00000c8b, 0x00000cdb,
 	// Entry 40 - 5F
-	0x00000d58, 0x00000daf, 0x00000ded, 0x00000e29,
-	0x00000e7f, 0x00000eb0, 0x00000ee5, 0x00000f1a,
-	0x00000f59, 0x00000f9c, 0x00000fdb, 0x00001026,
-	0x0000106d, 0x000010b7, 0x000010ce, 0x000010fb,
-	0x0000111e, 0x0000112f, 0x00001159, 0x0000115e,
-	0x00001163, 0x00001168, 0x00001180, 0x0000118e,
-	0x000011be, 0x000011cb, 0x000011f2, 0x00001218,
-	0x00001234, 0x00001249, 0x0000125d, 0x000012a0,
+	0x00000d32, 0x00000d8b, 0x00000de4, 0x00000e48,
+	0x00000eaa, 0x00000ef9, 0x00000f50, 0x00000f8e,
+	0x00000fca, 0x00001020, 0x00001051, 0x00001086,
+	0x000010bb, 0x000010fa, 0x0000113d, 0x0000117c,
+	0x000011c7, 0x0000120e, 0x00001258, 0x0000126f,
+	0x0000129c, 0x000012bf, 0x000012d0, 0x000012fa,
+	0x000012ff, 0x00001304, 0x00001309, 0x00001321,
+	0x0000132f, 0x0000135f, 0x0000136c, 0x00001393,
 	// Entry 60 - 7F
-	0x000012b8, 0x000012d7, 0x000012f5, 0x00001315,
-	0x00001333, 0x00001348, 0x0000135d, 0x00001372,
-	0x0000138c, 0x000013a0, 0x000013a5, 0x000013ac,
-	0x000013b4, 0x000013c1,
-} // Size: 464 bytes
+	0x000013b9, 0x000013d5, 0x000013ea, 0x000013fe,
+	0x000015c6, 0x000015d5, 0x000015f3, 0x00001608,
+	0x0000161b, 0x00001636, 0x00001657, 0x00001677,
+	0x0000168e, 0x0000169b, 0x000016f0, 0x00001751,
+	0x000017db, 0x000017fe, 0x00001841, 0x00001859,
+	0x00001878, 0x00001896, 0x000018b6, 0x000018d4,
+	0x000018e9, 0x000018fe, 0x00001913, 0x0000192d,
+	0x00001941, 0x00001946, 0x0000194d, 0x00001955,
+	// Entry 80 - 9F
+	0x00001962, 0x00001979, 0x00001988, 0x00001993,
+	0x000019a2, 0x000019b1, 0x000019c0, 0x000019d7,
+} // Size: 568 bytes
 
-const ruData string = "" + // Size: 5057 bytes
-	"\x02Язык\x02Язык: английский\x02Язык: русский\x02Уведомления персонажей:" +
-	" вкл.\x02Уведомления персонажей: выкл.\x02Уведомления аутфитов: вкл.\x02" +
-	"Уведомления аутфитов: выкл.\x02Обновления заголовка: вкл.\x02Обновления" +
-	" заголовка: выкл.\x02ИНФ\x02ЛАЙТ\x02МЕД\x02ИНЖ\x02ШТУРМ\x02МАКС\x02Неизв" +
-	"естно\x02Фракция\x02Аутфит\x02Персонаж\x02Убийства\x02HS\x02У/C\x02Клас" +
-	"с\x02Время\x02[%[1]s] %[2]s (%[3]s) онлайн (%[4]s)\x02%[1]s (%[2]s) он" +
-	"лайн (%[3]s)\x02[%[1]s] %[2]s (%[3]s) оффлайн (%[4]s)\x02%[1]s (%[2]s" +
-	") оффлайн (%[3]s)\x02Ошибка загрузки аутфита: %[1]s (%[2]s)\x02Ошибка з" +
-	"агрузки персонажей: %[1]v (%[2]s)\x04\x00\x01 \x15\x02Обновление\x02] " +
-	"члены аутфита:\x04\x01\x0a\x005\x02**Добро пожаловать в аутфит:**\x04" +
-	"\x01\x0a\x00#\x02**Покинули аутфит:**\x02Ошибка загрузки персонажа: %[1]" +
-	"s\x02Ошибка загрузки объекта: %[1]s\x02Трекер статистики запущен\x02Плат" +
-	"форма: %[1]s, запущен: %[2]s, остановлен: %[3]s, продолжительность: %[4" +
-	"]s\x0a```\x02Нет данных\x02%[1]s [%[2]s] захватил %[3]s (%[4]s) в %[5]s " +
-	"(%[6]s)\x02%[1]s [%[2]s] потерял %[3]s (%[4]s) в %[5]s (%[6]s)\x04\x00" +
-	"\x04\x0a\x09\x09\x0a\x8c\x01\x02PlanetSide 2 Spy\x0a\x0aПростой бот для" +
-	" PlanetSide 2 аутфитов\x0a\x0a## Ссылки\x0a\x0a- [GitHub](https://github" +
-	".com/x0k/ps2-spy)\x02Неверный тип популяции: %[1]s\x02Ошибка загрузки г" +
-	"лобальной популяции (%[1]s)\x02Ошибка загрузки %[1]s популяции (%[2]s)" +
-	"\x02Ошибка загрузки контроля территорий для %[1]s\x02Ошибка загрузки тре" +
-	"вог для %[1]s (%[2]s)\x02Ошибка загрузки глобальных тревог (%[1]s)\x02О" +
-	"шибка загрузки онлайн участников канала %[1]s (%[2]s)\x02Ошибка загруз" +
-	"ки аутфитов %[1]v (%[2]s)\x02Ошибка загрузки аутфитов по тегам %[1]v (%" +
-	"[2]s)\x02Ошибка загрузки персонажей %[1]v (%[2]s)\x02Ошибка сохранения " +
-	"настроек подписки для канала %[1]s (%[2]s)\x02Настройки сохранены, но " +
-	"не удалось загрузить теги аутфитов %[1]v (%[2]s)\x02Настройки сохранен" +
-	"ы, но не удалось загрузить имена персонажей %[1]v (%[2]s)\x02Нечего от" +
-	"слеживать, пожалуйста, установите настройки отслеживания\x02Неверная " +
-	"команда отслеживания статистики: %[1]s\x02Не удалось запустить отслежив" +
-	"ание статистики\x02Отслеживание статистики не запущено\x02Не удалось ос" +
-	"тановить отслеживание статистики\x02Отслеживание статистики скоро запус" +
-	"тится\x02Отслеживание статистики скоро остановится\x02Ошибка загрузки н" +
-	"астроек подписки для канала %[1]s (%[2]s)\x02Не удалось загрузить теги " +
-	"аутфитов %[1]v (%[2]s)\x02Не удалось загрузить имена персонажей %[1]v " +
-	"(%[2]s)\x02Ошибка загрузки данных канала %[1]s\x02Ошибка извлечения знач" +
-	"ения поля\x02Ошибка сохранения значения поля для канала %[1]s\x02Настро" +
-	"йки отслеживания (PC)\x02Настройки отслеживания (PS4 EU)\x02Настройки о" +
-	"тслеживания (PS4 US)\x02Какие аутфиты хотите отслеживать?\x02Введите те" +
-	"ги аутфитов через запятую\x02Каких игроков хотите отслеживать?\x02Введи" +
-	"те имена персонажей через запятую\x02Невозможно распознать локализацию" +
-	" %[1]q\x02Для этого канала был установлен язык %[1]q\x02%[1]d・онлайн" +
-	"\x02Нет персонажей онлайн\x02Персонажи онлайн:\x02] аутфит (\x04\x01" +
-	"\x0a\x00%\x02**Другие персонажи:**\x02ТР\x02НК\x02СВ\x02Источник: %[1]s" +
-	"\x02%[1]s - %[2]d\x02Глобальная популяция - %[1]d\x02Период\x02%[1]s - %" +
-	"[2]s (Кончится %[3]s)\x02Контроль территорий\x02%[1]s - Нет тревог\x02%[" +
-	"1]s тревоги\x02Нет тревог\x04\x00\x01\x0a>\x02Настройки обновлены.\x0a" +
-	"\x0a**Аутфиты:**\x02Нет аутфитов\x04\x02\x0a\x0a\x01\x0a\x18\x02**Персон" +
-	"ажи:**\x02Нет персонажей\x04\x00\x01 \x1b\x02Разблокирован\x04\x00\x01" +
-	" \x19\x02Заблокирован\x02) фракцией `\x04\x01\x0a\x00\x10\x02Статус: _" +
-	"\x02Стабильный\x02Не стабильный\x02_\x0aТревоги: _\x02Да\x02Нет\x02%[1]d" +
-	"м\x04\x00\x01 \x08\x02%[1]dч"
+const ruData string = "" + // Size: 6615 bytes
+	"\x02Временная зона по умолчанию\x02Язык\x02Язык: английский\x02Язык: рус" +
+	"ский\x02Уведомления персонажей: вкл.\x02Уведомления персонажей: выкл." +
+	"\x02Уведомления аутфитов: вкл.\x02Уведомления аутфитов: выкл.\x02Обновле" +
+	"ния заголовка: вкл.\x02Обновления заголовка: выкл.\x02ИНФ\x02ЛАЙТ\x02МЕ" +
+	"Д\x02ИНЖ\x02ШТУРМ\x02МАКС\x02Неизвестно\x02Фракция\x02Аутфит\x02Персона" +
+	"ж\x02Убийства\x02HS\x02У/C\x02Класс\x02Время\x02[%[1]s] %[2]s (%[3]s) о" +
+	"нлайн (%[4]s)\x02%[1]s (%[2]s) онлайн (%[3]s)\x02[%[1]s] %[2]s (%[3]s" +
+	") оффлайн (%[4]s)\x02%[1]s (%[2]s) оффлайн (%[3]s)\x02Ошибка загрузки " +
+	"аутфита: %[1]s (%[2]s)\x02Ошибка загрузки персонажей: %[1]v (%[2]s)" +
+	"\x04\x00\x01 \x15\x02Обновление\x02] члены аутфита:\x04\x01\x0a\x005\x02" +
+	"**Добро пожаловать в аутфит:**\x04\x01\x0a\x00#\x02**Покинули аутфит:**" +
+	"\x02Ошибка загрузки персонажа: %[1]s\x02Ошибка загрузки объекта: %[1]s" +
+	"\x02Трекер статистики запущен\x02Платформа: %[1]s, запущен: %[2]s, остан" +
+	"овлен: %[3]s, продолжительность: %[4]s\x0a```\x02Нет данных\x02%[1]s [%" +
+	"[2]s] захватил %[3]s (%[4]s) в %[5]s (%[6]s)\x02%[1]s [%[2]s] потерял %[" +
+	"3]s (%[4]s) в %[5]s (%[6]s)\x04\x00\x04\x0a\x09\x09\x0a\x8c\x01\x02Plane" +
+	"tSide 2 Spy\x0a\x0aПростой бот для PlanetSide 2 аутфитов\x0a\x0a## Ссыл" +
+	"ки\x0a\x0a- [GitHub](https://github.com/x0k/ps2-spy)\x02Неверный тип п" +
+	"опуляции: %[1]s\x02Ошибка загрузки глобальной популяции (%[1]s)\x02Оши" +
+	"бка загрузки %[1]s популяции (%[2]s)\x02Ошибка загрузки контроля террит" +
+	"орий для %[1]s\x02Ошибка загрузки тревог для %[1]s (%[2]s)\x02Ошибка за" +
+	"грузки глобальных тревог (%[1]s)\x02Ошибка загрузки онлайн участников " +
+	"канала %[1]s (%[2]s)\x02Ошибка загрузки аутфитов %[1]v (%[2]s)\x02Ошибк" +
+	"а загрузки аутфитов по тегам %[1]v (%[2]s)\x02Ошибка загрузки персонаже" +
+	"й %[1]v (%[2]s)\x02Ошибка сохранения настроек подписки для канала %[1]" +
+	"s (%[2]s)\x02Настройки сохранены, но не удалось загрузить теги аутфитов" +
+	" %[1]v (%[2]s)\x02Настройки сохранены, но не удалось загрузить имена пе" +
+	"рсонажей %[1]v (%[2]s)\x02Нечего отслеживать, пожалуйста, установите " +
+	"настройки отслеживания\x02Неверная команда отслеживания статистики: %[" +
+	"1]s\x02Не удалось запустить отслеживание статистики\x02Отслеживание стат" +
+	"истики не запущено\x02Не удалось остановить отслеживание статистики\x02" +
+	"Отслеживание статистики скоро запустится\x02Отслеживание статистики ско" +
+	"ро остановится\x02Ошибка загрузки задач отслеживания статистики\x02Ошиб" +
+	"ка загрузки задачи отслеживания статистики\x02Ошибка удаления задачи от" +
+	"слеживания статистики\x02Состояние задачи отслеживания статистики не на" +
+	"йдено\x02Ошибка загрузки настроек подписки для канала %[1]s (%[2]s)" +
+	"\x02Не удалось загрузить теги аутфитов %[1]v (%[2]s)\x02Не удалось загру" +
+	"зить имена персонажей %[1]v (%[2]s)\x02Ошибка загрузки данных канала %" +
+	"[1]s\x02Ошибка извлечения значения поля\x02Ошибка сохранения значения по" +
+	"ля для канала %[1]s\x02Настройки отслеживания (PC)\x02Настройки отслежи" +
+	"вания (PS4 EU)\x02Настройки отслеживания (PS4 US)\x02Какие аутфиты хоти" +
+	"те отслеживать?\x02Введите теги аутфитов через запятую\x02Каких игроков" +
+	" хотите отслеживать?\x02Введите имена персонажей через запятую\x02Невоз" +
+	"можно распознать локализацию %[1]q\x02Для этого канала был установлен я" +
+	"зык %[1]q\x02%[1]d・онлайн\x02Нет персонажей онлайн\x02Персонажи онла" +
+	"йн:\x02] аутфит (\x04\x01\x0a\x00%\x02**Другие персонажи:**\x02ТР\x02Н" +
+	"К\x02СВ\x02Источник: %[1]s\x02%[1]s - %[2]d\x02Глобальная популяция - %" +
+	"[1]d\x02Период\x02%[1]s - %[2]s (Кончится %[3]s)\x02Контроль территорий" +
+	"\x02%[1]s - Нет тревог\x02%[1]s тревоги\x02Нет тревог\x04\x00\x01\x0a" +
+	"\xc2\x03\x02Примечание:\x0a- Время указано в %[1]q временной зоне. Это м" +
+	"ожет быть изменено в настройках канала;\x0a- Максимальное количество за" +
+	"дач для канала - %[2]d;\x0a- Вы можете редактировать задачу, нажав на н" +
+	"ее;\x0a- Кнопка “Удалить” удаляет немедленно без подтверждения.\x02Удал" +
+	"ить\x02Добавить задачу\x02Предыдущая\x02Следующая\x02Час начала: %[1]d" +
+	"\x02Минута начала: %[1]d\x02Длительность: %[1]s\x02Подтвердить\x02Отмена" +
+	"\x02Максимальное количество задач для канала - %[1]d\x02Превышена максим" +
+	"альная длительность задачи (%[1]s): %[2]s\x02Ваша задача (%[1]s, %[2]s," +
+	" %[3]s) пересекается с существующей задачей (%[4]s, %[5]s, %[6]s)\x02ч" +
+	"то-то пошло не так\x04\x00\x01\x0a>\x02Настройки обновлены.\x0a\x0a**А" +
+	"утфиты:**\x02Нет аутфитов\x04\x02\x0a\x0a\x01\x0a\x18\x02**Персонажи:**" +
+	"\x02Нет персонажей\x04\x00\x01 \x1b\x02Разблокирован\x04\x00\x01 \x19" +
+	"\x02Заблокирован\x02) фракцией `\x04\x01\x0a\x00\x10\x02Статус: _\x02Ста" +
+	"бильный\x02Не стабильный\x02_\x0aТревоги: _\x02Да\x02Нет\x02%[1]dм\x04" +
+	"\x00\x01 \x08\x02%[1]dч\x02Понедельник\x02Вторник\x02Среда\x02Четверг" +
+	"\x02Пятница\x02Суббота\x02Воскресенье"
 
-	// Total table size 8881 bytes (8KiB); checksum: 8E92994A
+	// Total table size 11428 bytes (11KiB); checksum: 4BB52C65

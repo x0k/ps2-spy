@@ -2,6 +2,11 @@
     "language": "ru",
     "messages": [
         {
+            "id": "Default timezone",
+            "message": "Default timezone",
+            "translation": "Временная зона по умолчанию"
+        },
+        {
             "id": "Language",
             "message": "Language",
             "translation": "Язык"
@@ -834,6 +839,26 @@
             "translation": "Отслеживание статистики скоро остановится"
         },
         {
+            "id": "Failed to load stats tracker tasks",
+            "message": "Failed to load stats tracker tasks",
+            "translation": "Ошибка загрузки задач отслеживания статистики"
+        },
+        {
+            "id": "Failed to load stats tracker task",
+            "message": "Failed to load stats tracker task",
+            "translation": "Ошибка загрузки задачи отслеживания статистики"
+        },
+        {
+            "id": "Failed to remove stats tracker task",
+            "message": "Failed to remove stats tracker task",
+            "translation": "Ошибка удаления задачи отслеживания статистики"
+        },
+        {
+            "id": "Stats tracker task state not found",
+            "message": "Stats tracker task state not found",
+            "translation": "Состояние задачи отслеживания статистики не найдено"
+        },
+        {
             "id": "Failed to load tracking settings for {ChannelId} channel ({Platform})",
             "message": "Failed to load tracking settings for {ChannelId} channel ({Platform})",
             "translation": "Ошибка загрузки настроек подписки для канала {ChannelId} ({Platform})",
@@ -988,21 +1013,6 @@
             ]
         },
         {
-            "id": "Failed to save language {Lang}",
-            "message": "Failed to save language {Lang}",
-            "translation": "Ошибка при сохранении локализации {Lang}",
-            "placeholders": [
-                {
-                    "id": "Lang",
-                    "string": "%[1]q",
-                    "type": "golang.org/x/text/language.Tag",
-                    "underlyingType": "struct{language golang.org/x/text/internal/language/compact.ID; locale golang.org/x/text/internal/language/compact.ID; full golang.org/x/text/internal/language/compact.fullTag}",
-                    "argNum": 1,
-                    "expr": "lang"
-                }
-            ]
-        },
-        {
             "id": "Language for this channel has been set to {String}",
             "message": "Language for this channel has been set to {String}",
             "translation": "Для этого канала был установлен язык {String}",
@@ -1051,11 +1061,6 @@
             "id": "**Other characters:**",
             "message": "**Other characters:**",
             "translation": "**Другие персонажи:**"
-        },
-        {
-            "id": "TR:   0 | 0.0%\nNC:   0 | 0.0%\nVS:   0 | 0.0%",
-            "message": "TR:   0 | 0.0%\nNC:   0 | 0.0%\nVS:   0 | 0.0%",
-            "translation": "ТР:   0 | 0.0%\nНК:   0 | 0.0%\nСВ:   0 | 0.0%"
         },
         {
             "id": "TR",
@@ -1202,6 +1207,202 @@
             "translation": "Нет тревог"
         },
         {
+            "id": "Notes:\n- The time is specified in the time zone {String}. This can be changed in the channel settings;\n- The maximum amount of tasks per channel is {MAXAMOUNTOFTASKSPERCHANNEL};\n- You can edit a task by clicking on it;\n- The “Remove” button deletes immediately without confirmation.",
+            "message": "Notes:\n- The time is specified in the time zone {String}. This can be changed in the channel settings;\n- The maximum amount of tasks per channel is {MAXAMOUNTOFTASKSPERCHANNEL};\n- You can edit a task by clicking on it;\n- The “Remove” button deletes immediately without confirmation.",
+            "translation": "Примечание:\n- Время указано в {String} временной зоне. Это может быть изменено в настройках канала;\n- Максимальное количество задач для канала - {MAXAMOUNTOFTASKSPERCHANNEL};\n- Вы можете редактировать задачу, нажав на нее;\n- Кнопка “Удалить” удаляет немедленно без подтверждения.",
+            "placeholders": [
+                {
+                    "id": "String",
+                    "string": "%[1]q",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "loc.String()"
+                },
+                {
+                    "id": "MAXAMOUNTOFTASKSPERCHANNEL",
+                    "string": "%[2]d",
+                    "type": "int",
+                    "underlyingType": "int",
+                    "argNum": 2,
+                    "expr": "discord.MAX_AMOUNT_OF_TASKS_PER_CHANNEL"
+                }
+            ]
+        },
+        {
+            "id": "Remove",
+            "message": "Remove",
+            "translation": "Удалить"
+        },
+        {
+            "id": "Add new task",
+            "message": "Add new task",
+            "translation": "Добавить задачу"
+        },
+        {
+            "id": "Previous",
+            "message": "Previous",
+            "translation": "Предыдущая"
+        },
+        {
+            "id": "Next",
+            "message": "Next",
+            "translation": "Следующая"
+        },
+        {
+            "id": "Starting hour: {I}",
+            "message": "Starting hour: {I}",
+            "translation": "Час начала: {I}",
+            "placeholders": [
+                {
+                    "id": "I",
+                    "string": "%[1]d",
+                    "type": "int",
+                    "underlyingType": "int",
+                    "argNum": 1,
+                    "expr": "i"
+                }
+            ]
+        },
+        {
+            "id": "Starting minute: {I}",
+            "message": "Starting minute: {I}",
+            "translation": "Минута начала: {I}",
+            "placeholders": [
+                {
+                    "id": "I",
+                    "string": "%[1]d",
+                    "type": "int",
+                    "underlyingType": "int",
+                    "argNum": 1,
+                    "expr": "i"
+                }
+            ]
+        },
+        {
+            "id": "Duration: {RenderDurationp_i}",
+            "message": "Duration: {RenderDurationp_i}",
+            "translation": "Длительность: {RenderDurationp_i}",
+            "placeholders": [
+                {
+                    "id": "RenderDurationp_i",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "renderDuration(p, i)"
+                }
+            ]
+        },
+        {
+            "id": "Submit",
+            "message": "Submit",
+            "translation": "Подтвердить"
+        },
+        {
+            "id": "Cancel",
+            "message": "Cancel",
+            "translation": "Отмена"
+        },
+        {
+            "id": "Max amount of tasks per channel is {MAXAMOUNTOFTASKSPERCHANNEL}",
+            "message": "Max amount of tasks per channel is {MAXAMOUNTOFTASKSPERCHANNEL}",
+            "translation": "Максимальное количество задач для канала - {MAXAMOUNTOFTASKSPERCHANNEL}",
+            "placeholders": [
+                {
+                    "id": "MAXAMOUNTOFTASKSPERCHANNEL",
+                    "string": "%[1]d",
+                    "type": "int",
+                    "underlyingType": "int",
+                    "argNum": 1,
+                    "expr": "discord.MAX_AMOUNT_OF_TASKS_PER_CHANNEL"
+                }
+            ]
+        },
+        {
+            "id": "Duration too long: expected max {MaxDuration} got {GotDuration}",
+            "message": "Duration too long: expected max {MaxDuration} got {GotDuration}",
+            "translation": "Превышена максимальная длительность задачи ({MaxDuration}): {GotDuration}",
+            "placeholders": [
+                {
+                    "id": "MaxDuration",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "renderDuration(p, d.MaxDuration)"
+                },
+                {
+                    "id": "GotDuration",
+                    "string": "%[2]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "renderDuration(p, d.GotDuration)"
+                }
+            ]
+        },
+        {
+            "id": "Your task ({LocalWeekday}, {LocalStartTime}, {Duration}) overlaps with existing task ({RenderWeekdayp_tStartWeekday}, {RenderDurationAsTimetStartTime}, {RenderDurationp_tDuration})",
+            "message": "Your task ({LocalWeekday}, {LocalStartTime}, {Duration}) overlaps with existing task ({RenderWeekdayp_tStartWeekday}, {RenderDurationAsTimetStartTime}, {RenderDurationp_tDuration})",
+            "translation": "Ваша задача ({LocalWeekday}, {LocalStartTime}, {Duration}) пересекается с существующей задачей ({RenderWeekdayp_tStartWeekday}, {RenderDurationAsTimetStartTime}, {RenderDurationp_tDuration})",
+            "placeholders": [
+                {
+                    "id": "LocalWeekday",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "renderWeekday(p, o.LocalWeekday)"
+                },
+                {
+                    "id": "LocalStartTime",
+                    "string": "%[2]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "renderDurationAsTime(o.LocalStartTime)"
+                },
+                {
+                    "id": "Duration",
+                    "string": "%[3]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 3,
+                    "expr": "renderDuration(p, o.Duration)"
+                },
+                {
+                    "id": "RenderWeekdayp_tStartWeekday",
+                    "string": "%[4]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 4,
+                    "expr": "renderWeekday(p, tStartWeekday)"
+                },
+                {
+                    "id": "RenderDurationAsTimetStartTime",
+                    "string": "%[5]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 5,
+                    "expr": "renderDurationAsTime(tStartTime)"
+                },
+                {
+                    "id": "RenderDurationp_tDuration",
+                    "string": "%[6]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 6,
+                    "expr": "renderDuration(p, tDuration)"
+                }
+            ]
+        },
+        {
+            "id": "something went wrong",
+            "message": "something went wrong",
+            "translation": "что-то пошло не так"
+        },
+        {
             "id": "Settings are updated.\n\n**Outfits:**",
             "message": "Settings are updated.\n\n**Outfits:**",
             "translation": "Настройки обновлены.\n\n**Аутфиты:**"
@@ -1295,6 +1496,41 @@
                     "expr": "h"
                 }
             ]
+        },
+        {
+            "id": "Monday",
+            "message": "Monday",
+            "translation": "Понедельник"
+        },
+        {
+            "id": "Tuesday",
+            "message": "Tuesday",
+            "translation": "Вторник"
+        },
+        {
+            "id": "Wednesday",
+            "message": "Wednesday",
+            "translation": "Среда"
+        },
+        {
+            "id": "Thursday",
+            "message": "Thursday",
+            "translation": "Четверг"
+        },
+        {
+            "id": "Friday",
+            "message": "Friday",
+            "translation": "Пятница"
+        },
+        {
+            "id": "Saturday",
+            "message": "Saturday",
+            "translation": "Суббота"
+        },
+        {
+            "id": "Sunday",
+            "message": "Sunday",
+            "translation": "Воскресенье"
         }
     ]
 }

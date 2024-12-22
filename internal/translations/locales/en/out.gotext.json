@@ -2,6 +2,13 @@
     "language": "en",
     "messages": [
         {
+            "id": "Default timezone",
+            "message": "Default timezone",
+            "translation": "Default timezone",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
             "id": "Language",
             "message": "Language",
             "translation": "Language",
@@ -958,6 +965,34 @@
             "fuzzy": true
         },
         {
+            "id": "Failed to load stats tracker tasks",
+            "message": "Failed to load stats tracker tasks",
+            "translation": "Failed to load stats tracker tasks",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Failed to load stats tracker task",
+            "message": "Failed to load stats tracker task",
+            "translation": "Failed to load stats tracker task",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Failed to remove stats tracker task",
+            "message": "Failed to remove stats tracker task",
+            "translation": "Failed to remove stats tracker task",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Stats tracker task state not found",
+            "message": "Stats tracker task state not found",
+            "translation": "Stats tracker task state not found",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
             "id": "Failed to load tracking settings for {ChannelId} channel ({Platform})",
             "message": "Failed to load tracking settings for {ChannelId} channel ({Platform})",
             "translation": "Failed to load tracking settings for {ChannelId} channel ({Platform})",
@@ -1370,6 +1405,230 @@
             "fuzzy": true
         },
         {
+            "id": "Notes:\n- The time is specified in the time zone {String}. This can be changed in the channel settings;\n- The maximum amount of tasks per channel is {MAXAMOUNTOFTASKSPERCHANNEL};\n- You can edit a task by clicking on it;\n- The “Remove” button deletes immediately without confirmation.",
+            "message": "Notes:\n- The time is specified in the time zone {String}. This can be changed in the channel settings;\n- The maximum amount of tasks per channel is {MAXAMOUNTOFTASKSPERCHANNEL};\n- You can edit a task by clicking on it;\n- The “Remove” button deletes immediately without confirmation.",
+            "translation": "Notes:\n- The time is specified in the time zone {String}. This can be changed in the channel settings;\n- The maximum amount of tasks per channel is {MAXAMOUNTOFTASKSPERCHANNEL};\n- You can edit a task by clicking on it;\n- The “Remove” button deletes immediately without confirmation.",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "String",
+                    "string": "%[1]q",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "loc.String()"
+                },
+                {
+                    "id": "MAXAMOUNTOFTASKSPERCHANNEL",
+                    "string": "%[2]d",
+                    "type": "int",
+                    "underlyingType": "int",
+                    "argNum": 2,
+                    "expr": "discord.MAX_AMOUNT_OF_TASKS_PER_CHANNEL"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "Remove",
+            "message": "Remove",
+            "translation": "Remove",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Add new task",
+            "message": "Add new task",
+            "translation": "Add new task",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Previous",
+            "message": "Previous",
+            "translation": "Previous",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Next",
+            "message": "Next",
+            "translation": "Next",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Starting hour: {I}",
+            "message": "Starting hour: {I}",
+            "translation": "Starting hour: {I}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "I",
+                    "string": "%[1]d",
+                    "type": "int",
+                    "underlyingType": "int",
+                    "argNum": 1,
+                    "expr": "i"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "Starting minute: {I}",
+            "message": "Starting minute: {I}",
+            "translation": "Starting minute: {I}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "I",
+                    "string": "%[1]d",
+                    "type": "int",
+                    "underlyingType": "int",
+                    "argNum": 1,
+                    "expr": "i"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "Duration: {RenderDurationp_i}",
+            "message": "Duration: {RenderDurationp_i}",
+            "translation": "Duration: {RenderDurationp_i}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "RenderDurationp_i",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "renderDuration(p, i)"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "Submit",
+            "message": "Submit",
+            "translation": "Submit",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Cancel",
+            "message": "Cancel",
+            "translation": "Cancel",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Max amount of tasks per channel is {MAXAMOUNTOFTASKSPERCHANNEL}",
+            "message": "Max amount of tasks per channel is {MAXAMOUNTOFTASKSPERCHANNEL}",
+            "translation": "Max amount of tasks per channel is {MAXAMOUNTOFTASKSPERCHANNEL}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "MAXAMOUNTOFTASKSPERCHANNEL",
+                    "string": "%[1]d",
+                    "type": "int",
+                    "underlyingType": "int",
+                    "argNum": 1,
+                    "expr": "discord.MAX_AMOUNT_OF_TASKS_PER_CHANNEL"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "Duration too long: expected max {MaxDuration} got {GotDuration}",
+            "message": "Duration too long: expected max {MaxDuration} got {GotDuration}",
+            "translation": "Duration too long: expected max {MaxDuration} got {GotDuration}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "MaxDuration",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "renderDuration(p, d.MaxDuration)"
+                },
+                {
+                    "id": "GotDuration",
+                    "string": "%[2]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "renderDuration(p, d.GotDuration)"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "Your task ({LocalWeekday}, {LocalStartTime}, {Duration}) overlaps with existing task ({RenderWeekdayp_tStartWeekday}, {RenderDurationAsTimetStartTime}, {RenderDurationp_tDuration})",
+            "message": "Your task ({LocalWeekday}, {LocalStartTime}, {Duration}) overlaps with existing task ({RenderWeekdayp_tStartWeekday}, {RenderDurationAsTimetStartTime}, {RenderDurationp_tDuration})",
+            "translation": "Your task ({LocalWeekday}, {LocalStartTime}, {Duration}) overlaps with existing task ({RenderWeekdayp_tStartWeekday}, {RenderDurationAsTimetStartTime}, {RenderDurationp_tDuration})",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "LocalWeekday",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "renderWeekday(p, o.LocalWeekday)"
+                },
+                {
+                    "id": "LocalStartTime",
+                    "string": "%[2]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "renderDurationAsTime(o.LocalStartTime)"
+                },
+                {
+                    "id": "Duration",
+                    "string": "%[3]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 3,
+                    "expr": "renderDuration(p, o.Duration)"
+                },
+                {
+                    "id": "RenderWeekdayp_tStartWeekday",
+                    "string": "%[4]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 4,
+                    "expr": "renderWeekday(p, tStartWeekday)"
+                },
+                {
+                    "id": "RenderDurationAsTimetStartTime",
+                    "string": "%[5]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 5,
+                    "expr": "renderDurationAsTime(tStartTime)"
+                },
+                {
+                    "id": "RenderDurationp_tDuration",
+                    "string": "%[6]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 6,
+                    "expr": "renderDuration(p, tDuration)"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "something went wrong",
+            "message": "something went wrong",
+            "translation": "something went wrong",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
             "id": "Settings are updated.\n\n**Outfits:**",
             "message": "Settings are updated.\n\n**Outfits:**",
             "translation": "Settings are updated.\n\n**Outfits:**",
@@ -1492,6 +1751,55 @@
                     "expr": "h"
                 }
             ],
+            "fuzzy": true
+        },
+        {
+            "id": "Monday",
+            "message": "Monday",
+            "translation": "Monday",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Tuesday",
+            "message": "Tuesday",
+            "translation": "Tuesday",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Wednesday",
+            "message": "Wednesday",
+            "translation": "Wednesday",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Thursday",
+            "message": "Thursday",
+            "translation": "Thursday",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Friday",
+            "message": "Friday",
+            "translation": "Friday",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Saturday",
+            "message": "Saturday",
+            "translation": "Saturday",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Sunday",
+            "message": "Sunday",
+            "translation": "Sunday",
+            "translatorComment": "Copied from source.",
             "fuzzy": true
         }
     ]
