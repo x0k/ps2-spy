@@ -1043,6 +1043,11 @@
             ]
         },
         {
+            "id": "You must have `Manage Channels` permission to use this command",
+            "message": "You must have `Manage Channels` permission to use this command",
+            "translation": "Вы должны иметь разрешение `Manage Channels` чтобы использовать эту команду"
+        },
+        {
             "id": "No characters online",
             "message": "No characters online",
             "translation": "Нет персонажей онлайн"
@@ -1248,6 +1253,55 @@
             "id": "Next",
             "message": "Next",
             "translation": "Следующая"
+        },
+        {
+            "id": "Schedule:",
+            "message": "Schedule:",
+            "translation": "Расписание:"
+        },
+        {
+            "id": "- No tasks were found",
+            "message": "- No tasks were found",
+            "translation": "- Задачи не найдены"
+        },
+        {
+            "id": "- {LocalWeekdays0}, {LocalStartHour}:{LocalStartMin}, {Duration}",
+            "message": "- {LocalWeekdays0}, {LocalStartHour}:{LocalStartMin}, {Duration}",
+            "translation": "- {LocalWeekdays0}, {LocalStartHour}:{LocalStartMin}, {Duration}",
+            "placeholders": [
+                {
+                    "id": "LocalWeekdays0",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "renderWeekday(p, t.LocalWeekdays[0])"
+                },
+                {
+                    "id": "LocalStartHour",
+                    "string": "%02[2]d",
+                    "type": "int",
+                    "underlyingType": "int",
+                    "argNum": 2,
+                    "expr": "t.LocalStartHour"
+                },
+                {
+                    "id": "LocalStartMin",
+                    "string": "%02[3]d",
+                    "type": "int",
+                    "underlyingType": "int",
+                    "argNum": 3,
+                    "expr": "t.LocalStartMin"
+                },
+                {
+                    "id": "Duration",
+                    "string": "%[4]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 4,
+                    "expr": "renderDuration(p, t.Duration)"
+                }
+            ]
         },
         {
             "id": "Starting hour: {I}",
