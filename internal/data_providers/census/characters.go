@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"strings"
+	"time"
 
 	"github.com/x0k/ps2-spy/internal/lib/census2"
 	ps2_collections "github.com/x0k/ps2-spy/internal/lib/census2/collections/ps2"
@@ -99,7 +100,7 @@ func (l *DataProvider) characters(ctx context.Context, ns string, charIds []ps2.
 		ctx,
 		url,
 		while.ErrorIsHere,
-		while.HasAttempts(3),
+		while.HasAttempts(2),
 		while.ContextIsNotCancelled,
 		perform.Log(
 			l.log.Logger,
@@ -107,6 +108,7 @@ func (l *DataProvider) characters(ctx context.Context, ns string, charIds []ps2.
 			"[ERROR] failed to load characters, retrying",
 			slog.String("url", url),
 		),
+		perform.ExponentialBackoff(1*time.Second),
 	)
 }
 

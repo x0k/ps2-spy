@@ -262,7 +262,7 @@ func (p *CharactersTracker) handleLogin(ctx context.Context, charId ps2.Characte
 		ctx,
 		charId,
 		while.ErrorIsHere,
-		while.HasAttempts(3),
+		while.HasAttempts(2),
 		while.ContextIsNotCancelled,
 		perform.Log(
 			p.log.Logger,
@@ -270,6 +270,7 @@ func (p *CharactersTracker) handleLogin(ctx context.Context, charId ps2.Characte
 			"[ERROR] failed to get character, retrying",
 			slog.String("character_id", string(charId)),
 		),
+		perform.ExponentialBackoff(1*time.Second),
 	)
 	if err != nil {
 		p.log.Debug(

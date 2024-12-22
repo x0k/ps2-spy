@@ -218,6 +218,7 @@ func (w *WorldsTracker) invalidateWorldFacilities(
 			"[ERROR] failed to get world map, retrying",
 			slog.String("world_id", string(worldId)),
 		),
+		perform.ExponentialBackoff(1*time.Second),
 	)
 	if err != nil {
 		log.Error(ctx, "failed to invalidate world facilities", sl.Err(err))

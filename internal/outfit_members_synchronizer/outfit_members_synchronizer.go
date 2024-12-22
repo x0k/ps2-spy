@@ -117,6 +117,7 @@ func (s *OutfitMembersSynchronizer) syncOutfit(ctx context.Context, outfitId ps2
 		while.ContextIsNotCancelled,
 		while.HasAttempts(3),
 		perform.Log(s.log.Logger, slog.LevelDebug, "members sync failed, retrying"),
+		perform.ExponentialBackoff(1*time.Second),
 	)
 	if err != nil {
 		log.Error(ctx, "failed to sync", sl.Err(err))
