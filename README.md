@@ -5,7 +5,10 @@ Simple discord bot for PlanetSide 2 outfits.
 ## Usage
 
 - Add the bot to your server with [this invite link](https://discord.com/oauth2/authorize?client_id=1190282321492987924&permissions=281616&integration_type=0&scope=bot+applications.commands).
-- Use commands in any text channel or DMs.
+- In any text channel (Manage Channels permission required) or DMs:
+  - Specify tracked outfits and/or specific players using the `/tracking <platform>` command
+  - Check the channel settings with the `/channel-settings` command
+  - Explore other [application commands](https://discord.com/developers/docs/interactions/application-commands) in the chat input.
 
 ### Required permissions
 
