@@ -19,7 +19,12 @@ func newMetricsService(
 	mux := http.NewServeMux()
 	reg := prometheus.NewRegistry()
 	m.Register(reg)
-	reg.MustRegister(collectors.NewGoCollector())
+	reg.MustRegister(
+		collectors.NewGoCollector(),
+		collectors.NewProcessCollector(
+			collectors.ProcessCollectorOpts{},
+		),
+	)
 	mux.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
 	srv := &http.Server{
 		Addr:    address,

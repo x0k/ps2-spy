@@ -62,10 +62,10 @@ type Metrics struct {
 	eventsCounter       *prometheus.CounterVec
 	httpRequestsCounter *prometheus.CounterVec
 
-	platformEventsCounter   *prometheus.CounterVec
-	platformLoadsCounter    *prometheus.CounterVec
-	platformLoadersInFlight *prometheus.GaugeVec
-	platformLoadersSubjects *prometheus.CounterVec
+	platformEventsCounter         *prometheus.CounterVec
+	platformLoadsCounter          *prometheus.CounterVec
+	platformLoadersInFlight       *prometheus.GaugeVec
+	platformLoaderSubjectsCounter *prometheus.CounterVec
 
 	platformQueueSize *prometheus.GaugeVec
 	platformCacheSize *prometheus.GaugeVec
@@ -113,11 +113,11 @@ func New(ns string) *Metrics {
 			},
 			[]string{"loader_name", "platform"},
 		),
-		platformLoadersSubjects: prometheus.NewCounterVec(
+		platformLoaderSubjectsCounter: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
 				Namespace: ns,
-				Name:      "platform_loaders_subjects",
-				Help:      "Platform loaders subjects",
+				Name:      "platform_loader_subjects_count",
+				Help:      "Platform loader subjects count",
 			},
 			[]string{"loader_name", "platform", "subject"},
 		),
@@ -148,7 +148,7 @@ func (m *Metrics) Register(reg prometheus.Registerer) {
 		m.platformEventsCounter,
 		m.platformLoadsCounter,
 		m.platformLoadersInFlight,
-		m.platformLoadersSubjects,
+		m.platformLoaderSubjectsCounter,
 
 		m.platformQueueSize,
 		m.platformCacheSize,
@@ -238,7 +238,7 @@ func PlatformLoaderSubjectsCounterMetric(
 	if m == nil {
 		return nil
 	}
-	return m.platformLoadersSubjects.MustCurryWith(prometheus.Labels{
+	return m.platformLoaderSubjectsCounter.MustCurryWith(prometheus.Labels{
 		"loader_name": string(name),
 		"platform":    string(platform),
 	})
