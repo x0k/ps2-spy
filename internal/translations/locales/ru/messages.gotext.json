@@ -34,12 +34,12 @@
         {
             "id": "Outfit notifications: on",
             "message": "Outfit notifications: on",
-            "translation": "Уведомления аутфитов: вкл."
+            "translation": "Уведомления подразделений: вкл."
         },
         {
             "id": "Outfit notifications: off",
             "message": "Outfit notifications: off",
-            "translation": "Уведомления аутфитов: выкл."
+            "translation": "Уведомления подразделений: выкл."
         },
         {
             "id": "Title updates: on",
@@ -94,7 +94,7 @@
         {
             "id": "Outfit",
             "message": "Outfit",
-            "translation": "Аутфит"
+            "translation": "Подразд."
         },
         {
             "id": "Character",
@@ -199,7 +199,7 @@
         {
             "id": "[{OutfitTag}] {Name} ({FactionId}) is now offline ({WorldId})",
             "message": "[{OutfitTag}] {Name} ({FactionId}) is now offline ({WorldId})",
-            "translation": "[{OutfitTag}] {Name} ({FactionId}) оффлайн ({WorldId})",
+            "translation": "[{OutfitTag}] {Name} ({FactionId}) офлайн ({WorldId})",
             "placeholders": [
                 {
                     "id": "OutfitTag",
@@ -238,7 +238,7 @@
         {
             "id": "{Name} ({FactionId}) is now offline ({WorldId})",
             "message": "{Name} ({FactionId}) is now offline ({WorldId})",
-            "translation": "{Name} ({FactionId}) оффлайн ({WorldId})",
+            "translation": "{Name} ({FactionId}) офлайн ({WorldId})",
             "placeholders": [
                 {
                     "id": "Name",
@@ -269,7 +269,7 @@
         {
             "id": "Failed to load outfit: {OutfitId} ({Platform})",
             "message": "Failed to load outfit: {OutfitId} ({Platform})",
-            "translation": "Ошибка загрузки аутфита: {OutfitId} ({Platform})",
+            "translation": "Ошибка загрузки подразделения: {OutfitId} ({Platform})",
             "placeholders": [
                 {
                     "id": "OutfitId",
@@ -320,17 +320,17 @@
         {
             "id": "] outfit members:",
             "message": "] outfit members:",
-            "translation": "] члены аутфита:"
+            "translation": "] члены подразделения:"
         },
         {
             "id": "**Welcome to the outfit:**",
             "message": "**Welcome to the outfit:**",
-            "translation": "**Добро пожаловать в аутфит:**"
+            "translation": "**Добро пожаловать в подразделение:**"
         },
         {
             "id": "**Left the outfit:**",
             "message": "**Left the outfit:**",
-            "translation": "**Покинули аутфит:**"
+            "translation": "**Покинули подразделение:**"
         },
         {
             "id": "Failed to load character: {CharacterId}",
@@ -414,7 +414,7 @@
         {
             "id": "{Name} [{Tag}] captured {Name_1} ({Type}) on {ZoneId} ({WorldNameByIdworldId})",
             "message": "{Name} [{Tag}] captured {Name_1} ({Type}) on {ZoneId} ({WorldNameByIdworldId})",
-            "translation": "{Name} [{Tag}] захватил {Name_1} ({Type}) в {ZoneId} ({WorldNameByIdworldId})",
+            "translation": "Подразделение {Name} [{Tag}] захватило {Name_1} ({Type}) в {ZoneId} ({WorldNameByIdworldId})",
             "placeholders": [
                 {
                     "id": "Name",
@@ -469,7 +469,7 @@
         {
             "id": "{Name} [{Tag}] lost {Name_1} ({Type}) on {ZoneId} ({WorldNameByIdworldId})",
             "message": "{Name} [{Tag}] lost {Name_1} ({Type}) on {ZoneId} ({WorldNameByIdworldId})",
-            "translation": "{Name} [{Tag}] потерял {Name_1} ({Type}) в {ZoneId} ({WorldNameByIdworldId})",
+            "translation": "Подразделение {Name} [{Tag}] потеряло {Name_1} ({Type}) в {ZoneId} ({WorldNameByIdworldId})",
             "placeholders": [
                 {
                     "id": "Name",
@@ -524,7 +524,7 @@
         {
             "id": "# PlanetSide 2 Spy\n\nSimple discord bot for PlanetSide 2 outfits\n\n## Links\n\n- [GitHub](https://github.com/x0k/ps2-spy)",
             "message": "# PlanetSide 2 Spy\n\nSimple discord bot for PlanetSide 2 outfits\n\n## Links\n\n- [GitHub](https://github.com/x0k/ps2-spy)",
-            "translation": "PlanetSide 2 Spy\n\nПростой бот для PlanetSide 2 аутфитов\n\n## Ссылки\n\n- [GitHub](https://github.com/x0k/ps2-spy)"
+            "translation": "PlanetSide 2 Spy\n\nЧат-бот для PlanetSide 2 подразделений\n\n## Ссылки\n\n- [GitHub](https://github.com/x0k/ps2-spy)"
         },
         {
             "id": "Invalid population type: {PopType}",
@@ -582,7 +582,7 @@
         {
             "id": "Failed to load {WorldNameByIdworldId} territory control",
             "message": "Failed to load {WorldNameByIdworldId} territory control",
-            "translation": "Ошибка загрузки контроля территорий для {WorldNameByIdworldId}",
+            "translation": "Ошибка загрузки состояния контроля территорий для {WorldNameByIdworldId}",
             "placeholders": [
                 {
                     "id": "WorldNameByIdworldId",
@@ -597,7 +597,7 @@
         {
             "id": "Failed to load world alerts for {WorldNameByIdworldId} from {Provider}",
             "message": "Failed to load world alerts for {WorldNameByIdworldId} from {Provider}",
-            "translation": "Ошибка загрузки тревог для {WorldNameByIdworldId} ({Provider})",
+            "translation": "Ошибка загрузки актуальных тревог для {WorldNameByIdworldId} ({Provider})",
             "placeholders": [
                 {
                     "id": "WorldNameByIdworldId",
@@ -658,7 +658,7 @@
         {
             "id": "Failed to load outfits {OutfitIds} ({Platform})",
             "message": "Failed to load outfits {OutfitIds} ({Platform})",
-            "translation": "Ошибка загрузки аутфитов {OutfitIds} ({Platform})",
+            "translation": "Ошибка загрузки подразделений {OutfitIds} ({Platform})",
             "placeholders": [
                 {
                     "id": "OutfitIds",
@@ -681,7 +681,7 @@
         {
             "id": "Failed to load outfits by tags {OutfitTags} ({Platform})",
             "message": "Failed to load outfits by tags {OutfitTags} ({Platform})",
-            "translation": "Ошибка загрузки аутфитов по тегам {OutfitTags} ({Platform})",
+            "translation": "Ошибка загрузки подразделений по тегам {OutfitTags} ({Platform})",
             "placeholders": [
                 {
                     "id": "OutfitTags",
@@ -727,7 +727,7 @@
         {
             "id": "Failed to save tracking settings for {ChannelId} channel ({Platform})",
             "message": "Failed to save tracking settings for {ChannelId} channel ({Platform})",
-            "translation": "Ошибка сохранения настроек подписки для канала {ChannelId} ({Platform})",
+            "translation": "Ошибка сохранения настроек отслеживания для канала {ChannelId} ({Platform})",
             "placeholders": [
                 {
                     "id": "ChannelId",
@@ -750,7 +750,7 @@
         {
             "id": "Settings are saved, but failed to load outfit tags {OutfitIds} ({Platform})",
             "message": "Settings are saved, but failed to load outfit tags {OutfitIds} ({Platform})",
-            "translation": "Настройки сохранены, но не удалось загрузить теги аутфитов {OutfitIds} ({Platform})",
+            "translation": "Настройки сохранены, но не удалось загрузить теги подразделений {OutfitIds} ({Platform})",
             "placeholders": [
                 {
                     "id": "OutfitIds",
@@ -884,7 +884,7 @@
         {
             "id": "Failed to load outfit tags for {OutfitIds} ({Platform})",
             "message": "Failed to load outfit tags for {OutfitIds} ({Platform})",
-            "translation": "Не удалось загрузить теги аутфитов {OutfitIds} ({Platform})",
+            "translation": "Не удалось загрузить теги подразделений {OutfitIds} ({Platform})",
             "placeholders": [
                 {
                     "id": "OutfitIds",
@@ -980,12 +980,12 @@
         {
             "id": "Which outfits do you want to track?",
             "message": "Which outfits do you want to track?",
-            "translation": "Какие аутфиты хотите отслеживать?"
+            "translation": "Какие подразделения хотите отслеживать?"
         },
         {
             "id": "Enter the outfit tags separated by comma",
             "message": "Enter the outfit tags separated by comma",
-            "translation": "Введите теги аутфитов через запятую"
+            "translation": "Введите теги подразделений через запятую"
         },
         {
             "id": "Which characters do you want to track?",
@@ -1060,7 +1060,7 @@
         {
             "id": "] outfit (",
             "message": "] outfit (",
-            "translation": "] аутфит ("
+            "translation": "] подразделение ("
         },
         {
             "id": "**Other characters:**",
@@ -1464,7 +1464,7 @@
         {
             "id": "No outfits",
             "message": "No outfits",
-            "translation": "Нет аутфитов"
+            "translation": "Нет подразделений"
         },
         {
             "id": "**Characters:**",
