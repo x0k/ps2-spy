@@ -361,24 +361,6 @@ func (m *Messages) MembersOnline(
 	}
 }
 
-func (m *Messages) OutfitIdsLoadError(outfitTags []string, platform ps2_platforms.Platform, err error) discord.ResponseEdit {
-	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
-		return nil, &discord.Error{
-			Msg: p.Sprintf("Failed to load outfits by tags %v (%s)", outfitTags, platform),
-			Err: err,
-		}
-	}
-}
-
-func (m *Messages) CharacterIdsLoadError(characterNames []string, platform ps2_platforms.Platform, err error) discord.ResponseEdit {
-	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
-		return nil, &discord.Error{
-			Msg: p.Sprintf("Failed to load characters %v (%s)", characterNames, platform),
-			Err: err,
-		}
-	}
-}
-
 func (m *Messages) TrackingSettingsSaveError(channelId discord.ChannelId, platform ps2_platforms.Platform, err error) discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
 		return nil, &discord.Error{
@@ -406,9 +388,20 @@ func (m *Messages) TrackingSettingsCharacterNamesLoadError(characterIds []ps2.Ch
 	}
 }
 
-func (m *Messages) TrackingSettingsUpdate(entities discord.TrackableEntities[[]string, []string]) discord.ResponseEdit {
+func (m *Messages) TrackingSettingsFailure(
+	requestedOutfitTags []string,
+	loadedOutfitIds map[string]ps2.OutfitId,
+	missingOutfitTags []string,
+	requestedCharacterNames []string,
+	loadedCharacterIds map[string]ps2.CharacterId,
+	missingCharacterNames []string,
+) discord.ResponseEdit {
+
+}
+
+func (m *Messages) TrackingSettingsUpdate() discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
-		content := renderSubscriptionsSettingsUpdate(p, entities)
+		content := p.Sprintf("Tracking settings have been successfully updated")
 		return &discordgo.WebhookEdit{
 			Content: &content,
 		}, nil

@@ -2,6 +2,8 @@ package discord_commands
 
 import (
 	"context"
+	"maps"
+	"slices"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/x0k/ps2-spy/internal/discord"
@@ -13,6 +15,8 @@ import (
 	"golang.org/x/text/language"
 )
 
+type CharacterIdsByNameLoader = func(context.Context, ps2_platforms.Platform, []string) (map[string]ps2.CharacterId, error)
+type OutfitIdsByTagLoader = func(context.Context, ps2_platforms.Platform, []string) (map[string]ps2.OutfitId, error)
 type ChannelTrackingSettingsSaver = func(
 	ctx context.Context,
 	channelId discord.ChannelId,
@@ -23,11 +27,9 @@ type ChannelTrackingSettingsSaver = func(
 
 func NewTracking(
 	messages *discord_messages.Messages,
-	settingsLoader loader.Keyed[discord.SettingsQuery, discord.TrackingSettings],
-	characterNamesLoader loader.Queried[discord.PlatformQuery[[]ps2.CharacterId], []string],
-	characterIdsLoader loader.Queried[discord.PlatformQuery[[]string], []ps2.CharacterId],
-	outfitTagsLoader loader.Queried[discord.PlatformQuery[[]ps2.OutfitId], []string],
-	outfitIdsLoader loader.Queried[discord.PlatformQuery[[]string], []ps2.OutfitId],
+	settingsLoader loader.Keyed[discord.SettingsQuery, discord.RichTrackingSettings],
+	outfitsByTagLoader OutfitIdsByTagLoader,
+	charactersByNameLoader CharacterIdsByNameLoader,
 	channelTrackingSettingsSaver ChannelTrackingSettingsSaver,
 ) *discord.Command {
 	submitHandlers := make(map[string]discord.InteractionHandler, len(ps2_platforms.Platforms))
@@ -38,71 +40,71 @@ func NewTracking(
 			i *discordgo.InteractionCreate,
 		) discord.ResponseEdit {
 			data := i.ModalSubmitData()
-			var err error
-			var outfitsIds []ps2.OutfitId
+			var outfitIds map[string]ps2.OutfitId
 			outfitTagsFromInput := stringsx.SplitAndTrim(
 				data.Components[0].(*discordgo.ActionsRow).Components[0].(*discordgo.TextInput).Value,
 				",",
 			)
 			if outfitTagsFromInput[0] != "" {
-				outfitsIds, err = outfitIdsLoader(ctx, discord.PlatformQuery[[]string]{
-					Platform: platform,
-					Value:    outfitTagsFromInput,
-				})
-				if err != nil {
-					return messages.OutfitIdsLoadError(outfitTagsFromInput, platform, err)
-				}
+				outfitIds, _ = outfitsByTagLoader(ctx, platform, outfitTagsFromInput)
 			}
-			var charIds []ps2.CharacterId
+			var characterIds map[string]ps2.CharacterId
 			charNamesFromInput := stringsx.SplitAndTrim(
 				data.Components[1].(*discordgo.ActionsRow).Components[0].(*discordgo.TextInput).Value,
 				",",
 			)
 			if charNamesFromInput[0] != "" {
-				charIds, err = characterIdsLoader(ctx, discord.PlatformQuery[[]string]{
-					Platform: platform,
-					Value:    charNamesFromInput,
-				})
-				if err != nil {
-					return messages.CharacterIdsLoadError(charNamesFromInput, platform, err)
+				characterIds, _ = charactersByNameLoader(ctx, platform, charNamesFromInput)
+			}
+
+			var missingOutfits []string
+			if len(outfitTagsFromInput) > len(outfitIds) {
+				missingOutfits = make([]string, 0, len(outfitTagsFromInput)-len(outfitIds))
+				for _, tag := range outfitTagsFromInput {
+					if _, ok := outfitIds[tag]; !ok {
+						missingOutfits = append(missingOutfits, tag)
+					}
 				}
 			}
+			var missingCharacters []string
+			if len(charNamesFromInput) > len(characterIds) {
+				missingCharacters = make([]string, 0, len(charNamesFromInput)-len(characterIds))
+				for _, name := range charNamesFromInput {
+					if _, ok := characterIds[name]; !ok {
+						missingCharacters = append(missingCharacters, name)
+					}
+				}
+			}
+			if len(missingOutfits) > 0 || len(missingCharacters) > 0 {
+				return messages.TrackingSettingsFailure(
+					outfitTagsFromInput,
+					outfitIds,
+					missingOutfits,
+					charNamesFromInput,
+					characterIds,
+					missingCharacters,
+				)
+			}
+
 			channelId := discord.ChannelId(i.ChannelID)
 			langTag := discord.DEFAULT_LANG_TAG
 			if i.GuildLocale != nil {
 				langTag = discord.LangTagFromInteraction(i)
 			}
-			err = channelTrackingSettingsSaver(
+			err := channelTrackingSettingsSaver(
 				ctx,
 				channelId,
 				platform,
 				discord.TrackingSettings{
-					Outfits:    outfitsIds,
-					Characters: charIds,
+					Outfits:    slices.Collect(maps.Values(outfitIds)),
+					Characters: slices.Collect(maps.Values(characterIds)),
 				},
 				langTag,
 			)
 			if err != nil {
 				return messages.TrackingSettingsSaveError(channelId, platform, err)
 			}
-			outfitTags, err := outfitTagsLoader(ctx, discord.PlatformQuery[[]ps2.OutfitId]{
-				Platform: platform,
-				Value:    outfitsIds,
-			})
-			if err != nil {
-				return messages.TrackingSettingsOutfitTagsLoadError(outfitsIds, platform, err)
-			}
-			charNames, err := characterNamesLoader(ctx, discord.PlatformQuery[[]ps2.CharacterId]{
-				Platform: platform,
-				Value:    charIds,
-			})
-			if err != nil {
-				return messages.TrackingSettingsCharacterNamesLoadError(charIds, platform, err)
-			}
-			return messages.TrackingSettingsUpdate(discord.TrackableEntities[[]string, []string]{
-				Outfits:    outfitTags,
-				Characters: charNames,
-			})
+			return messages.TrackingSettingsUpdate()
 		})
 	}
 	return &discord.Command{
@@ -160,19 +162,13 @@ func NewTracking(
 			if err != nil {
 				return messages.TrackingSettingsLoadError(channelId, platform, err)
 			}
-			tags, err := outfitTagsLoader(ctx, discord.PlatformQuery[[]ps2.OutfitId]{
-				Platform: platform,
-				Value:    settings.Outfits,
-			})
-			if err != nil {
-				return messages.OutfitTagsLoadError(settings.Outfits, platform, err)
+			tags := make([]string, 0, len(settings.Outfits))
+			for _, outfit := range settings.Outfits {
+				tags = append(tags, outfit.Tag)
 			}
-			names, err := characterNamesLoader(ctx, discord.PlatformQuery[[]ps2.CharacterId]{
-				Platform: platform,
-				Value:    settings.Characters,
-			})
-			if err != nil {
-				return messages.CharacterNamesLoadError(settings.Characters, platform, err)
+			names := make([]string, 0, len(settings.Characters))
+			for _, character := range settings.Characters {
+				names = append(names, character.Name)
 			}
 			return messages.TrackingSettingsModal(
 				discord.TRACKING_MODAL_CUSTOM_IDS[platform],

@@ -43,6 +43,8 @@ func CalculateTrackingSettingsDiff(
 	}
 }
 
+type RichTrackingSettings = TrackableEntities[[]ps2.Outfit, []ps2.Character]
+
 type SettingsQuery struct {
 	ChannelId ChannelId
 	Platform  ps2_platforms.Platform
