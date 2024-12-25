@@ -24,11 +24,11 @@ func New(db DBTX) *Queries {
 func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	q := Queries{db: db}
 	var err error
-	if q.deleteChannelCharacterStmt, err = db.PrepareContext(ctx, deleteChannelCharacter); err != nil {
-		return nil, fmt.Errorf("error preparing query DeleteChannelCharacter: %w", err)
+	if q.deleteChannelCharactersStmt, err = db.PrepareContext(ctx, deleteChannelCharacters); err != nil {
+		return nil, fmt.Errorf("error preparing query DeleteChannelCharacters: %w", err)
 	}
-	if q.deleteChannelOutfitStmt, err = db.PrepareContext(ctx, deleteChannelOutfit); err != nil {
-		return nil, fmt.Errorf("error preparing query DeleteChannelOutfit: %w", err)
+	if q.deleteChannelOutfitsStmt, err = db.PrepareContext(ctx, deleteChannelOutfits); err != nil {
+		return nil, fmt.Errorf("error preparing query DeleteChannelOutfits: %w", err)
 	}
 	if q.deleteOutfitMemberStmt, err = db.PrepareContext(ctx, deleteOutfitMember); err != nil {
 		return nil, fmt.Errorf("error preparing query DeleteOutfitMember: %w", err)
@@ -134,14 +134,14 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 
 func (q *Queries) Close() error {
 	var err error
-	if q.deleteChannelCharacterStmt != nil {
-		if cerr := q.deleteChannelCharacterStmt.Close(); cerr != nil {
-			err = fmt.Errorf("error closing deleteChannelCharacterStmt: %w", cerr)
+	if q.deleteChannelCharactersStmt != nil {
+		if cerr := q.deleteChannelCharactersStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing deleteChannelCharactersStmt: %w", cerr)
 		}
 	}
-	if q.deleteChannelOutfitStmt != nil {
-		if cerr := q.deleteChannelOutfitStmt.Close(); cerr != nil {
-			err = fmt.Errorf("error closing deleteChannelOutfitStmt: %w", cerr)
+	if q.deleteChannelOutfitsStmt != nil {
+		if cerr := q.deleteChannelOutfitsStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing deleteChannelOutfitsStmt: %w", cerr)
 		}
 	}
 	if q.deleteOutfitMemberStmt != nil {
@@ -348,8 +348,8 @@ func (q *Queries) queryRow(ctx context.Context, stmt *sql.Stmt, query string, ar
 type Queries struct {
 	db                                                      DBTX
 	tx                                                      *sql.Tx
-	deleteChannelCharacterStmt                              *sql.Stmt
-	deleteChannelOutfitStmt                                 *sql.Stmt
+	deleteChannelCharactersStmt                             *sql.Stmt
+	deleteChannelOutfitsStmt                                *sql.Stmt
 	deleteOutfitMemberStmt                                  *sql.Stmt
 	getChannelStmt                                          *sql.Stmt
 	getCountChannelStatsTrackerTasksStmt                    *sql.Stmt
@@ -389,8 +389,8 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 	return &Queries{
 		db:                                                      tx,
 		tx:                                                      tx,
-		deleteChannelCharacterStmt:                              q.deleteChannelCharacterStmt,
-		deleteChannelOutfitStmt:                                 q.deleteChannelOutfitStmt,
+		deleteChannelCharactersStmt:                             q.deleteChannelCharactersStmt,
+		deleteChannelOutfitsStmt:                                q.deleteChannelOutfitsStmt,
 		deleteOutfitMemberStmt:                                  q.deleteOutfitMemberStmt,
 		getChannelStmt:                                          q.getChannelStmt,
 		getCountChannelStatsTrackerTasksStmt:                    q.getCountChannelStatsTrackerTasksStmt,

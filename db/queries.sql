@@ -4,12 +4,12 @@ INSERT INTO
 VALUES
   (?, ?, ?);
 
--- name: DeleteChannelOutfit :exec
+-- name: DeleteChannelOutfits :exec
 DELETE FROM channel_to_outfit
 WHERE
   channel_id = ?
   AND platform = ?
-  AND outfit_id = ?;
+  AND outfit_id IN (sqlc.slice (outfit_ids));
 
 -- name: InsertChannelCharacter :exec
 INSERT INTO
@@ -17,12 +17,12 @@ INSERT INTO
 VALUES
   (?, ?, ?);
 
--- name: DeleteChannelCharacter :exec
+-- name: DeleteChannelCharacters :exec
 DELETE FROM channel_to_character
 WHERE
   channel_id = ?
   AND platform = ?
-  AND character_id = ?;
+  AND character_id IN (sqlc.slice (character_ids));
 
 -- name: InsertOutfitMember :exec
 INSERT INTO

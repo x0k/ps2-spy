@@ -75,6 +75,14 @@ func (s *Storage) Close(_ context.Context) error {
 	)
 }
 
+func (s *Storage) Queries() *db.Queries {
+	return s.queries
+}
+
+func (s *Storage) Transaction(ctx context.Context, run func(s *Storage) error) error {
+	return s.Begin(ctx, 0, run)
+}
+
 func (s *Storage) Begin(
 	ctx context.Context,
 	expectedEventsCount int,
@@ -124,10 +132,10 @@ func (s *Storage) SaveChannelOutfit(ctx context.Context, channelId discord.Chann
 }
 
 func (s *Storage) DeleteChannelOutfit(ctx context.Context, channelId discord.ChannelId, platform ps2_platforms.Platform, outfitId ps2.OutfitId) error {
-	err := s.queries.DeleteChannelOutfit(ctx, db.DeleteChannelOutfitParams{
+	err := s.queries.DeleteChannelOutfits(ctx, db.DeleteChannelOutfitsParams{
 		ChannelID: string(channelId),
-		OutfitID:  string(outfitId),
 		Platform:  string(platform),
+		OutfitIds: []string{string(outfitId)},
 	})
 	return s.publish(err, storage.ChannelOutfitDeleted{
 		ChannelId: channelId,
@@ -150,10 +158,10 @@ func (s *Storage) SaveChannelCharacter(ctx context.Context, channelId discord.Ch
 }
 
 func (s *Storage) DeleteChannelCharacter(ctx context.Context, channelId discord.ChannelId, platform ps2_platforms.Platform, characterId ps2.CharacterId) error {
-	err := s.queries.DeleteChannelCharacter(ctx, db.DeleteChannelCharacterParams{
-		ChannelID:   string(channelId),
-		CharacterID: string(characterId),
-		Platform:    string(platform),
+	err := s.queries.DeleteChannelCharacters(ctx, db.DeleteChannelCharactersParams{
+		ChannelID:    string(channelId),
+		Platform:     string(platform),
+		CharacterIds: []string{string(characterId)},
 	})
 	return s.publish(err, storage.ChannelCharacterDeleted{
 		ChannelId:   channelId,

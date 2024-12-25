@@ -23,27 +23,43 @@ func mapKeys[K comparable, V any](m map[K]V) []K {
 	return keys
 }
 
+func mapValues[K comparable, V any](m map[K]V) []V {
+	values := make([]V, 0, len(m))
+	for _, v := range m {
+		values = append(values, v)
+	}
+	return values
+}
+
+func newKeysMap[T comparable](keys []T) map[T]struct{} {
+	m := make(map[T]struct{}, len(keys))
+	for _, k := range keys {
+		m[k] = struct{}{}
+	}
+	return m
+}
+
 func diff[T comparable, V any](
-	m map[T]V,
+	old map[T]V,
 	new iter.Seq[T],
 	newCount int,
 ) Diff[T] {
 	toAdd := make([]T, 0, newCount)
 	for k := range new {
-		if _, ok := m[k]; ok {
-			delete(m, k)
+		if _, ok := old[k]; ok {
+			delete(old, k)
 		} else {
 			toAdd = append(toAdd, k)
 		}
 	}
-	if len(m) == 0 {
+	if len(old) == 0 {
 		return Diff[T]{
 			ToAdd: toAdd,
 		}
 	}
 	return Diff[T]{
 		ToAdd: toAdd,
-		ToDel: mapKeys(m),
+		ToDel: mapKeys(old),
 	}
 }
 
@@ -58,11 +74,7 @@ func SlicesDiff[T comparable](old []T, new []T) Diff[T] {
 			ToDel: old,
 		}
 	}
-	m := make(map[T]struct{}, len(old))
-	for _, v := range old {
-		m[v] = struct{}{}
-	}
-	return diff(m, slices.Values(new), len(new))
+	return diff(newKeysMap(old), slices.Values(new), len(new))
 }
 
 func MapKeysDiff[K comparable, V any](old map[K]V, new map[K]V) Diff[K] {
@@ -77,4 +89,39 @@ func MapKeysDiff[K comparable, V any](old map[K]V, new map[K]V) Diff[K] {
 		}
 	}
 	return diff(maps.Clone(old), maps.Keys(new), len(new))
+}
+
+func SliceAndMapValuesDiff[T comparable, K comparable](
+	old []T,
+	new map[K]T,
+) Diff[T] {
+	if len(old) == 0 {
+		return Diff[T]{
+			ToAdd: mapValues(new),
+		}
+	}
+	if len(new) == 0 {
+		return Diff[T]{
+			ToDel: old,
+		}
+	}
+	return diff(newKeysMap(old), maps.Values(new), len(new))
+}
+
+func MissingKeys[K comparable, V any](m map[K]V, keys []K) []K {
+	mLen := len(m)
+	kLen := len(keys)
+	if mLen == kLen {
+		return nil
+	}
+	if mLen == 0 {
+		return keys
+	}
+	result := make([]K, 0, kLen-mLen)
+	for _, k := range keys {
+		if _, ok := m[k]; !ok {
+			result = append(result, k)
+		}
+	}
+	return result
 }
