@@ -6,23 +6,18 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/x0k/ps2-spy/internal/discord"
 	discord_messages "github.com/x0k/ps2-spy/internal/discord/messages"
-	"github.com/x0k/ps2-spy/internal/lib/loader"
 	"github.com/x0k/ps2-spy/internal/lib/stringsx"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
+	"github.com/x0k/ps2-spy/internal/tracking"
 )
 
-type ChannelTrackingSettingsUpdater = func(
-	ctx context.Context,
-	channelId discord.ChannelId,
-	platform ps2_platforms.Platform,
-	outfitTags []string,
-	charNames []string,
-) error
+type TrackingSettingsLoader = func(context.Context, discord.ChannelId, ps2_platforms.Platform) (tracking.SettingsView, error)
+type TrackingSettingsUpdater = func(context.Context, discord.ChannelId, ps2_platforms.Platform, tracking.SettingsView) error
 
 func NewTracking(
 	messages *discord_messages.Messages,
-	settingsLoader loader.Keyed[discord.SettingsQuery, discord.RichTrackingSettings],
-	channelTrackingSettingsUpdater ChannelTrackingSettingsUpdater,
+	trackingSettingsLoader TrackingSettingsLoader,
+	trackingSettingsUpdater TrackingSettingsUpdater,
 ) *discord.Command {
 	submitHandlers := make(map[string]discord.InteractionHandler, len(ps2_platforms.Platforms))
 	for _, platform := range ps2_platforms.Platforms {
@@ -42,12 +37,14 @@ func NewTracking(
 			)
 
 			channelId := discord.ChannelId(i.ChannelID)
-			err := channelTrackingSettingsUpdater(
+			err := trackingSettingsUpdater(
 				ctx,
 				channelId,
 				platform,
-				outfitTagsFromInput,
-				charNamesFromInput,
+				tracking.SettingsView{
+					Characters: charNamesFromInput,
+					Outfits:    outfitTagsFromInput,
+				},
 			)
 			if err != nil {
 				return messages.TrackingSettingsSaveError(channelId, platform, err)
@@ -103,25 +100,14 @@ func NewTracking(
 			}
 			platform := ps2_platforms.Platform(i.ApplicationCommandData().Options[0].Name)
 			channelId := discord.ChannelId(i.ChannelID)
-			settings, err := settingsLoader(ctx, discord.SettingsQuery{
-				ChannelId: channelId,
-				Platform:  platform,
-			})
+			settings, err := trackingSettingsLoader(ctx, channelId, platform)
 			if err != nil {
 				return messages.TrackingSettingsLoadError(channelId, platform, err)
 			}
-			tags := make([]string, 0, len(settings.Outfits))
-			for _, outfit := range settings.Outfits {
-				tags = append(tags, outfit.Tag)
-			}
-			names := make([]string, 0, len(settings.Characters))
-			for _, character := range settings.Characters {
-				names = append(names, character.Name)
-			}
 			return messages.TrackingSettingsModal(
 				discord.TRACKING_MODAL_CUSTOM_IDS[platform],
-				tags,
-				names,
+				settings.Outfits,
+				settings.Characters,
 			)
 		}),
 		SubmitHandlers: submitHandlers,

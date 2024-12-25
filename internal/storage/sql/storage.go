@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/url"
 	"time"
@@ -79,8 +80,25 @@ func (s *Storage) Queries() *db.Queries {
 	return s.queries
 }
 
-func (s *Storage) Transaction(ctx context.Context, run func(s *Storage) error) error {
-	return s.Begin(ctx, 0, run)
+func (s *Storage) Transaction(ctx context.Context, run func(s storage.Storage) error) error {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to start transaction %w", err)
+	}
+	defer func() {
+		if err := tx.Rollback(); err != nil && !errors.Is(err, sql.ErrTxDone) {
+			s.log.Error(ctx, "failed to rollback transaction", sl.Err(err))
+		}
+	}()
+	if err := run(&Storage{
+		queries: s.queries.WithTx(tx),
+	}); err != nil {
+		return fmt.Errorf("failed to run transaction: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+	return nil
 }
 
 func (s *Storage) Begin(

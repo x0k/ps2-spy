@@ -52,6 +52,9 @@ import (
 	"github.com/x0k/ps2-spy/internal/storage"
 	sql_storage "github.com/x0k/ps2-spy/internal/storage/sql"
 	"github.com/x0k/ps2-spy/internal/tracking"
+	tracking_settings_loader "github.com/x0k/ps2-spy/internal/tracking/settings_loader"
+	tracking_settings_repo "github.com/x0k/ps2-spy/internal/tracking/settings_repo"
+	tracking_settings_updater "github.com/x0k/ps2-spy/internal/tracking/settings_updater"
 	"github.com/x0k/ps2-spy/internal/worlds_tracker"
 
 	// migration tools
@@ -441,6 +444,8 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		"voidwell":  voidwellDataProvider.Alerts,
 	}
 
+	trackingSettingsRepo := tracking_settings_repo.New(storage)
+
 	discordMessages := discord_messages.New(shared.Timezones, cfg.StatsTracker.MaxTrackingDuration)
 	discordCommands := discord_commands.New(
 		log.With(sl.Component("commands")),
@@ -476,20 +481,12 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		) (map[ps2.OutfitId]ps2.Outfit, error) {
 			return outfitsLoaders[pq.Platform](ctx, pq.Value)
 		},
-		storage.TrackingSettings,
-		func(ctx context.Context, pq discord.PlatformQuery[[]ps2.CharacterId]) ([]string, error) {
-			return censusDataProvider.CharacterNames(ctx, ps2_platforms.PlatformNamespace(pq.Platform), pq.Value)
-		},
-		func(ctx context.Context, pq discord.PlatformQuery[[]string]) ([]ps2.CharacterId, error) {
-			return censusDataProvider.CharacterIds(ctx, ps2_platforms.PlatformNamespace(pq.Platform), pq.Value)
-		},
-		func(ctx context.Context, pq discord.PlatformQuery[[]ps2.OutfitId]) ([]string, error) {
-			return censusDataProvider.OutfitTags(ctx, ps2_platforms.PlatformNamespace(pq.Platform), pq.Value)
-		},
-		func(ctx context.Context, pq discord.PlatformQuery[[]string]) ([]ps2.OutfitId, error) {
-			return censusDataProvider.OutfitIds(ctx, ps2_platforms.PlatformNamespace(pq.Platform), pq.Value)
-		},
-		storage.SaveTrackingSettings,
+		tracking_settings_loader.New(
+			trackingSettingsRepo,
+		).Load,
+		tracking_settings_updater.New(
+			trackingSettingsRepo,
+		).Update,
 		statsTracker,
 		storage.Channel,
 		storage.SaveChannelLanguage,

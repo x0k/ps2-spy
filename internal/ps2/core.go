@@ -119,6 +119,14 @@ type CharacterId string
 
 const RestrictedAreaCharacterId = CharacterId("0")
 
+func CharacterIdToString(id CharacterId) string {
+	return string(id)
+}
+
+func CharacterIdFromString(id string) CharacterId {
+	return CharacterId(id)
+}
+
 type Character struct {
 	Id        CharacterId
 	FactionId ps2_factions.Id
@@ -130,6 +138,14 @@ type Character struct {
 }
 
 type OutfitId string
+
+func OutfitIdToString(id OutfitId) string {
+	return string(id)
+}
+
+func OutfitIdFromString(id string) OutfitId {
+	return OutfitId(id)
+}
 
 type Outfit struct {
 	Id       OutfitId

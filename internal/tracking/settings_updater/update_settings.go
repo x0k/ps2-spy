@@ -1,43 +1,19 @@
-package tracking
+package tracking_settings_updater
 
 import (
 	"context"
 	"fmt"
 
 	"github.com/x0k/ps2-spy/internal/discord"
-	"github.com/x0k/ps2-spy/internal/lib/diff"
 	"github.com/x0k/ps2-spy/internal/lib/mapx"
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
+	"github.com/x0k/ps2-spy/internal/tracking"
 )
 
-var ErrTooManyOutfits = fmt.Errorf("too many outfits")
-var ErrTooManyCharacters = fmt.Errorf("too many characters")
-
-type ErrFailedToIdentifyEntities struct {
-	OutfitTags     []string
-	FoundOutfitIds map[string]ps2.OutfitId
-	CharNames      []string
-	FoundCharIds   map[string]ps2.CharacterId
-}
-
-func (e ErrFailedToIdentifyEntities) Error() string {
-	return "failed to identify entities"
-}
-
-type Settings struct {
-	Characters []ps2.CharacterId
-	Outfits    []ps2.OutfitId
-}
-
-type SettingsDiff struct {
-	Characters diff.Diff[ps2.CharacterId]
-	Outfits    diff.Diff[ps2.OutfitId]
-}
-
 type SettingsRepo interface {
-	Update(context.Context, discord.ChannelId, ps2_platforms.Platform, Settings) (SettingsDiff, error)
+	Update(context.Context, discord.ChannelId, ps2_platforms.Platform, tracking.Settings) (tracking.SettingsDiff, error)
 }
 
 type OutfitsRepo interface {
@@ -54,16 +30,16 @@ type SettingsUpdater struct {
 	charactersRepo            CharactersRepo
 	maxNumOfTrackedOutfits    int
 	maxNumOfTrackedCharacters int
-	publisher                 pubsub.Publisher[Event]
+	publisher                 pubsub.Publisher[tracking.Event]
 }
 
-func NewSettingsUpdater(
+func New(
 	repo SettingsRepo,
 	outfitsRepo OutfitsRepo,
 	charactersRepo CharactersRepo,
 	maxNumOfTrackedOutfits int,
 	maxNumOfTrackedCharacters int,
-	publisher pubsub.Publisher[Event],
+	publisher pubsub.Publisher[tracking.Event],
 ) *SettingsUpdater {
 	return &SettingsUpdater{
 		repo:                      repo,
@@ -79,29 +55,28 @@ func (s *SettingsUpdater) Update(
 	ctx context.Context,
 	channelId discord.ChannelId,
 	platform ps2_platforms.Platform,
-	outfitTags []string,
-	charNames []string,
+	settings tracking.SettingsView,
 ) error {
-	if len(outfitTags) > s.maxNumOfTrackedOutfits {
-		return ErrTooManyOutfits
+	if len(settings.Outfits) > s.maxNumOfTrackedOutfits {
+		return tracking.ErrTooManyOutfits
 	}
-	if len(charNames) > s.maxNumOfTrackedCharacters {
-		return ErrTooManyCharacters
+	if len(settings.Characters) > s.maxNumOfTrackedCharacters {
+		return tracking.ErrTooManyCharacters
 	}
 
-	outfitIds, _ := s.outfitsRepo.OutfitsByTag(ctx, platform, outfitTags)
-	charIds, _ := s.charactersRepo.CharactersByName(ctx, platform, charNames)
+	outfitIds, _ := s.outfitsRepo.OutfitsByTag(ctx, platform, settings.Outfits)
+	charIds, _ := s.charactersRepo.CharactersByName(ctx, platform, settings.Characters)
 
-	if len(outfitTags) > len(outfitIds) || len(charNames) > len(charIds) {
-		return ErrFailedToIdentifyEntities{
-			OutfitTags:     outfitTags,
+	if len(settings.Outfits) > len(outfitIds) || len(settings.Characters) > len(charIds) {
+		return tracking.ErrFailedToIdentifyEntities{
+			OutfitTags:     settings.Outfits,
 			FoundOutfitIds: outfitIds,
-			CharNames:      charNames,
+			CharNames:      settings.Characters,
 			FoundCharIds:   charIds,
 		}
 	}
 
-	settingsDiff, err := s.repo.Update(ctx, channelId, platform, Settings{
+	settingsDiff, err := s.repo.Update(ctx, channelId, platform, tracking.Settings{
 		Characters: mapx.Values(charIds),
 		Outfits:    mapx.Values(outfitIds),
 	})
@@ -109,7 +84,7 @@ func (s *SettingsUpdater) Update(
 		return fmt.Errorf("failed to update settings: %w", err)
 	}
 
-	s.publisher.Publish(TrackingSettingsUpdated{
+	s.publisher.Publish(tracking.TrackingSettingsUpdated{
 		ChannelId: channelId,
 		Platform:  platform,
 		Diff:      settingsDiff,
