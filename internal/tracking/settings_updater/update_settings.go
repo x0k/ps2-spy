@@ -17,11 +17,11 @@ type SettingsRepo interface {
 }
 
 type OutfitsRepo interface {
-	OutfitsByTag(context.Context, ps2_platforms.Platform, []string) (map[string]ps2.OutfitId, error)
+	OutfitIdsByTags(context.Context, ps2_platforms.Platform, []string) (map[string]ps2.OutfitId, error)
 }
 
 type CharactersRepo interface {
-	CharactersByName(context.Context, ps2_platforms.Platform, []string) (map[string]ps2.CharacterId, error)
+	CharacterIdsByNames(context.Context, ps2_platforms.Platform, []string) (map[string]ps2.CharacterId, error)
 }
 
 type SettingsUpdater struct {
@@ -64,8 +64,8 @@ func (s *SettingsUpdater) Update(
 		return tracking.ErrTooManyCharacters
 	}
 
-	outfitIds, _ := s.outfitsRepo.OutfitsByTag(ctx, platform, settings.Outfits)
-	charIds, _ := s.charactersRepo.CharactersByName(ctx, platform, settings.Characters)
+	outfitIds, _ := s.outfitsRepo.OutfitIdsByTags(ctx, platform, settings.Outfits)
+	charIds, _ := s.charactersRepo.CharacterIdsByNames(ctx, platform, settings.Characters)
 
 	if len(settings.Outfits) > len(outfitIds) || len(settings.Characters) > len(charIds) {
 		return tracking.ErrFailedToIdentifyEntities{

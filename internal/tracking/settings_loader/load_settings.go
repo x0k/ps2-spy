@@ -15,7 +15,7 @@ type SettingsRepo interface {
 }
 
 type OutfitsRepo interface {
-	OutfitNamesByIds(context.Context, ps2_platforms.Platform, []ps2.OutfitId) ([]string, error)
+	OutfitTagsByIds(context.Context, ps2_platforms.Platform, []ps2.OutfitId) ([]string, error)
 }
 
 type CharactersRepo interface {
@@ -41,7 +41,7 @@ func (l *SettingsLoader) Load(ctx context.Context, channelId discord.ChannelId, 
 	if err != nil {
 		return tracking.SettingsView{}, fmt.Errorf("failed to load settings: %w", err)
 	}
-	outfits, err := l.outfitsRepo.OutfitNamesByIds(ctx, platform, settings.Outfits)
+	outfits, err := l.outfitsRepo.OutfitTagsByIds(ctx, platform, settings.Outfits)
 	if err != nil {
 		return tracking.SettingsView{}, fmt.Errorf("failed to load outfits: %w", err)
 	}

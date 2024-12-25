@@ -19,14 +19,6 @@ type DataProvider struct {
 	ps4euUrl string
 	ps4usUrl string
 
-	characterIdsMu      sync.Mutex
-	characterIdsQuery   *census2.Query
-	characterIdsOperand *census2.Ptr[census2.List[census2.Str]]
-
-	characterNamesMu      sync.Mutex
-	characterNamesQuery   *census2.Query
-	characterNamesOperand *census2.Ptr[census2.List[census2.Str]]
-
 	charactersMu              sync.Mutex
 	charactersQuery           *census2.Query
 	charactersOperand         *census2.Ptr[census2.List[census2.Str]]
@@ -61,8 +53,6 @@ func New(
 	log *logger.Logger,
 	client *census2.Client,
 ) *DataProvider {
-	characterIdsOperand := census2.NewPtr(census2.StrList())
-	characterNamesOperand := census2.NewPtr(census2.StrList())
 	charactersOperand := census2.NewPtr(census2.StrList())
 	facilityOperand := census2.NewPtr(census2.Str(""))
 	outfitIdsOperand := census2.NewPtr(census2.StrList())
@@ -92,14 +82,6 @@ func New(
 			Where(census2.Cond("type").Equals(census2.Str("METAGAME"))).
 			Where(census2.Cond("world_id").Equals(census2.Str("1000"))).
 			SetLimit(30)),
-
-		characterIdsOperand: &characterIdsOperand,
-		characterIdsQuery: census2.NewQuery(census2.GetQuery, census2.Ps2_v2_NS, ps2_collections.Character).
-			Where(census2.Cond("name.first_lower").Equals(&characterIdsOperand)).Show("character_id"),
-
-		characterNamesOperand: &characterNamesOperand,
-		characterNamesQuery: census2.NewQuery(census2.GetQuery, census2.Ps2_v2_NS, ps2_collections.Character).
-			Where(census2.Cond("character_id").Equals(&characterNamesOperand)).Show("name.first"),
 
 		charactersOperand: &charactersOperand,
 		charactersQuery: census2.NewQuery(census2.GetQuery, census2.Ps2_v2_NS, ps2_collections.Character).

@@ -46,6 +46,7 @@ import (
 	events_module "github.com/x0k/ps2-spy/internal/modules/events"
 	"github.com/x0k/ps2-spy/internal/outfit_members_synchronizer"
 	"github.com/x0k/ps2-spy/internal/ps2"
+	"github.com/x0k/ps2-spy/internal/ps2/census_characters_repo"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 	"github.com/x0k/ps2-spy/internal/shared"
 	"github.com/x0k/ps2-spy/internal/stats_tracker"
@@ -115,9 +116,11 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		),
 	}
 
+	censusClient := census2.NewClient("https://census.daybreakgames.com", cfg.Census.ServiceId, httpClient)
+
 	censusDataProvider := census_data_provider.New(
 		log.With(sl.Component("census_data_provider")),
-		census2.NewClient("https://census.daybreakgames.com", cfg.Census.ServiceId, httpClient),
+		censusClient,
 	)
 	honuDataProvider := honu_data_provider.New(
 		honu.NewClient("https://wt.honu.pw", httpClient),
@@ -445,6 +448,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	}
 
 	trackingSettingsRepo := tracking_settings_repo.New(storage)
+	censusCharactersRepo := census_characters_repo.New(censusClient)
 
 	discordMessages := discord_messages.New(shared.Timezones, cfg.StatsTracker.MaxTrackingDuration)
 	discordCommands := discord_commands.New(
