@@ -4,6 +4,8 @@ import (
 	"iter"
 	"maps"
 	"slices"
+
+	"github.com/x0k/ps2-spy/internal/lib/slicesx"
 )
 
 type Diff[T any] struct {
@@ -13,6 +15,16 @@ type Diff[T any] struct {
 
 func (d Diff[T]) IsEmpty() bool {
 	return len(d.ToAdd) == 0 && len(d.ToDel) == 0
+}
+
+func Map[T any, R any](d Diff[T], f func(T) R) Diff[R] {
+	if d.IsEmpty() {
+		return Diff[R]{}
+	}
+	return Diff[R]{
+		ToAdd: slicesx.Map(d.ToAdd, f),
+		ToDel: slicesx.Map(d.ToDel, f),
+	}
 }
 
 func mapKeys[K comparable, V any](m map[K]V) []K {
@@ -106,6 +118,28 @@ func SliceAndMapValuesDiff[T comparable, K comparable](
 		}
 	}
 	return diff(newKeysMap(old), maps.Values(new), len(new))
+}
+
+func SeqAndSliceDiff[T comparable](
+	old iter.Seq[T],
+	oldLen int,
+	new []T,
+) Diff[T] {
+	if oldLen == 0 {
+		return Diff[T]{
+			ToAdd: new,
+		}
+	}
+	if len(new) == 0 {
+		return Diff[T]{
+			ToDel: slices.Collect(old),
+		}
+	}
+	d := diff(newKeysMap(new), old, oldLen)
+	return Diff[T]{
+		ToAdd: d.ToDel,
+		ToDel: d.ToAdd,
+	}
 }
 
 func MissingKeys[K comparable, V any](m map[K]V, keys []K) []K {

@@ -1,3 +1,12 @@
+-- name: ListChannelOutfitIdsForPlatform :many
+SELECT
+  outfit_id
+FROM
+  channel_to_outfit
+WHERE
+  channel_id = ?
+  AND platform = ?;
+
 -- name: InsertChannelOutfit :exec
 INSERT INTO
   channel_to_outfit (channel_id, platform, outfit_id)
@@ -10,6 +19,15 @@ WHERE
   channel_id = ?
   AND platform = ?
   AND outfit_id IN (sqlc.slice (outfit_ids));
+
+-- name: ListChannelCharacterIdsForPlatform :many
+SELECT
+  character_id
+FROM
+  channel_to_character
+WHERE
+  channel_id = ?
+  AND platform = ?;
 
 -- name: InsertChannelCharacter :exec
 INSERT INTO
@@ -94,24 +112,6 @@ WHERE
       platform = ?
       AND outfit_id = ?
   );
-
--- name: ListChannelOutfitIdsForPlatform :many
-SELECT
-  outfit_id
-FROM
-  channel_to_outfit
-WHERE
-  channel_id = ?
-  AND platform = ?;
-
--- name: ListChannelCharacterIdsForPlatform :many
-SELECT
-  character_id
-FROM
-  channel_to_character
-WHERE
-  channel_id = ?
-  AND platform = ?;
 
 -- name: ListTrackableCharacterIdsWithDuplicationForPlatform :many
 SELECT

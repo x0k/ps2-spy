@@ -6,6 +6,7 @@ import (
 
 	"github.com/x0k/ps2-spy/internal/discord"
 	"github.com/x0k/ps2-spy/internal/lib/diff"
+	"github.com/x0k/ps2-spy/internal/lib/mapx"
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
@@ -30,11 +31,13 @@ type Settings struct {
 	Outfits    []ps2.OutfitId
 }
 
+type SettingsDiff struct {
+	Characters diff.Diff[ps2.CharacterId]
+	Outfits    diff.Diff[ps2.OutfitId]
+}
+
 type SettingsRepo interface {
-	Settings(context.Context, discord.ChannelId, ps2_platforms.Platform) (Settings, error)
-	Delete(context.Context, discord.ChannelId, ps2_platforms.Platform, []ps2.OutfitId, []ps2.CharacterId) error
-	Save(context.Context, discord.ChannelId, ps2_platforms.Platform, []ps2.OutfitId, []ps2.CharacterId) error
-	Transaction(ctx context.Context, f func(r SettingsRepo) error) error
+	Update(context.Context, discord.ChannelId, ps2_platforms.Platform, Settings) (SettingsDiff, error)
 }
 
 type OutfitsRepo interface {
@@ -98,34 +101,18 @@ func (s *SettingsUpdater) Update(
 		}
 	}
 
-	var outfitsDiff diff.Diff[ps2.OutfitId]
-	var charactersDiff diff.Diff[ps2.CharacterId]
-	err := s.repo.Transaction(ctx, func(r SettingsRepo) error {
-		settings, err := r.Settings(channelId, platform)
-		if err != nil {
-			return fmt.Errorf("failed to get settings: %w", err)
-		}
-		outfitsDiff = diff.SliceAndMapValuesDiff(settings.Outfits, outfitIds)
-		charactersDiff = diff.SliceAndMapValuesDiff(settings.Characters, charIds)
-		if outfitsDiff.IsEmpty() && charactersDiff.IsEmpty() {
-			return nil
-		}
-		if err := r.Delete(channelId, platform, outfitsDiff.ToDel, charactersDiff.ToDel); err != nil {
-			return fmt.Errorf("failed to delete settings: %w", err)
-		}
-		if err := r.Save(channelId, platform, outfitsDiff.ToAdd, charactersDiff.ToAdd); err != nil {
-			return fmt.Errorf("failed to save settings: %w", err)
-		}
-		return nil
+	settingsDiff, err := s.repo.Update(ctx, channelId, platform, Settings{
+		Characters: mapx.Values(charIds),
+		Outfits:    mapx.Values(outfitIds),
 	})
 	if err != nil {
 		return fmt.Errorf("failed to update settings: %w", err)
 	}
+
 	s.publisher.Publish(TrackingSettingsUpdated{
-		ChannelId:  channelId,
-		Platform:   platform,
-		Outfits:    outfitsDiff,
-		Characters: charactersDiff,
+		ChannelId: channelId,
+		Platform:  platform,
+		Diff:      settingsDiff,
 	})
 	return nil
 }

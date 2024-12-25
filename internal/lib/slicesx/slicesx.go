@@ -1,15 +1,13 @@
 package slicesx
 
 import (
-	"iter"
 	"slices"
 )
 
-func GroupBy[A any, K comparable](input iter.Seq[A], f func(A) K) map[K][]A {
-	result := make(map[K][]A)
-	for v := range input {
-		key := f(v)
-		result[key] = append(result[key], v)
+func Map[T any, R any](slice []T, f func(T) R) []R {
+	result := make([]R, 0, len(slice))
+	for _, v := range slice {
+		result = append(result, f(v))
 	}
 	return result
 }
