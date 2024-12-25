@@ -11,13 +11,13 @@ import (
 	"github.com/x0k/ps2-spy/internal/outfit_members_synchronizer"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 	"github.com/x0k/ps2-spy/internal/storage"
-	"github.com/x0k/ps2-spy/internal/tracking_manager"
+	"github.com/x0k/ps2-spy/internal/tracking"
 )
 
 func newStorageEventsSubscriptionService(
 	log *logger.Logger,
 	ps module.PostStopper,
-	tms map[ps2_platforms.Platform]*tracking_manager.TrackingManager,
+	tms map[ps2_platforms.Platform]*tracking.Manager,
 	oss map[ps2_platforms.Platform]*outfit_members_synchronizer.OutfitMembersSynchronizer,
 	subs pubsub.SubscriptionsManager[storage.EventType],
 ) module.Runnable {

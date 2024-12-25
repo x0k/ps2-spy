@@ -57,11 +57,18 @@ type PlatformQuery[T any] struct {
 
 var DEFAULT_LANG_TAG = language.English
 
-func LangTagFromInteraction(i *discordgo.InteractionCreate) language.Tag {
+func UserLocale(i *discordgo.InteractionCreate) language.Tag {
 	if t, err := language.Parse(string(i.Locale)); err == nil {
 		return t
 	}
 	return DEFAULT_LANG_TAG
+}
+
+func ChannelLocaleOrDefaultToUser(i *discordgo.InteractionCreate) language.Tag {
+	if t, err := language.Parse(string(*i.GuildLocale)); err == nil {
+		return t
+	}
+	return UserLocale(i)
 }
 
 type Channel struct {

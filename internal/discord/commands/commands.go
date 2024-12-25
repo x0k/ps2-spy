@@ -48,7 +48,7 @@ func New(
 	characterIdsLoader loader.Queried[discord.PlatformQuery[[]string], []ps2.CharacterId],
 	outfitTagsLoader loader.Queried[discord.PlatformQuery[[]ps2.OutfitId], []string],
 	outfitIdsLoader loader.Queried[discord.PlatformQuery[[]string], []ps2.OutfitId],
-	channelTrackingSettingsSaver ChannelTrackingSettingsSaver,
+	channelTrackingSettingsSaver ChannelTrackingSettingsUpdater,
 	statsTracker *stats_tracker.StatsTracker,
 	channelLoader ChannelLoader,
 	channelLanguageSaver ChannelLanguageSaver,

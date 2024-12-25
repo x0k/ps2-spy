@@ -2,35 +2,27 @@ package discord_commands
 
 import (
 	"context"
-	"maps"
-	"slices"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/x0k/ps2-spy/internal/discord"
 	discord_messages "github.com/x0k/ps2-spy/internal/discord/messages"
 	"github.com/x0k/ps2-spy/internal/lib/loader"
 	"github.com/x0k/ps2-spy/internal/lib/stringsx"
-	"github.com/x0k/ps2-spy/internal/ps2"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
-	"golang.org/x/text/language"
 )
 
-type CharacterIdsByNameLoader = func(context.Context, ps2_platforms.Platform, []string) (map[string]ps2.CharacterId, error)
-type OutfitIdsByTagLoader = func(context.Context, ps2_platforms.Platform, []string) (map[string]ps2.OutfitId, error)
-type ChannelTrackingSettingsSaver = func(
+type ChannelTrackingSettingsUpdater = func(
 	ctx context.Context,
 	channelId discord.ChannelId,
 	platform ps2_platforms.Platform,
-	settings discord.TrackingSettings,
-	lang language.Tag,
+	outfitTags []string,
+	charNames []string,
 ) error
 
 func NewTracking(
 	messages *discord_messages.Messages,
 	settingsLoader loader.Keyed[discord.SettingsQuery, discord.RichTrackingSettings],
-	outfitsByTagLoader OutfitIdsByTagLoader,
-	charactersByNameLoader CharacterIdsByNameLoader,
-	channelTrackingSettingsSaver ChannelTrackingSettingsSaver,
+	channelTrackingSettingsUpdater ChannelTrackingSettingsUpdater,
 ) *discord.Command {
 	submitHandlers := make(map[string]discord.InteractionHandler, len(ps2_platforms.Platforms))
 	for _, platform := range ps2_platforms.Platforms {
@@ -40,66 +32,22 @@ func NewTracking(
 			i *discordgo.InteractionCreate,
 		) discord.ResponseEdit {
 			data := i.ModalSubmitData()
-			var outfitIds map[string]ps2.OutfitId
 			outfitTagsFromInput := stringsx.SplitAndTrim(
 				data.Components[0].(*discordgo.ActionsRow).Components[0].(*discordgo.TextInput).Value,
 				",",
 			)
-			if outfitTagsFromInput[0] != "" {
-				outfitIds, _ = outfitsByTagLoader(ctx, platform, outfitTagsFromInput)
-			}
-			var characterIds map[string]ps2.CharacterId
 			charNamesFromInput := stringsx.SplitAndTrim(
 				data.Components[1].(*discordgo.ActionsRow).Components[0].(*discordgo.TextInput).Value,
 				",",
 			)
-			if charNamesFromInput[0] != "" {
-				characterIds, _ = charactersByNameLoader(ctx, platform, charNamesFromInput)
-			}
-
-			var missingOutfits []string
-			if len(outfitTagsFromInput) > len(outfitIds) {
-				missingOutfits = make([]string, 0, len(outfitTagsFromInput)-len(outfitIds))
-				for _, tag := range outfitTagsFromInput {
-					if _, ok := outfitIds[tag]; !ok {
-						missingOutfits = append(missingOutfits, tag)
-					}
-				}
-			}
-			var missingCharacters []string
-			if len(charNamesFromInput) > len(characterIds) {
-				missingCharacters = make([]string, 0, len(charNamesFromInput)-len(characterIds))
-				for _, name := range charNamesFromInput {
-					if _, ok := characterIds[name]; !ok {
-						missingCharacters = append(missingCharacters, name)
-					}
-				}
-			}
-			if len(missingOutfits) > 0 || len(missingCharacters) > 0 {
-				return messages.TrackingSettingsFailure(
-					outfitTagsFromInput,
-					outfitIds,
-					missingOutfits,
-					charNamesFromInput,
-					characterIds,
-					missingCharacters,
-				)
-			}
 
 			channelId := discord.ChannelId(i.ChannelID)
-			langTag := discord.DEFAULT_LANG_TAG
-			if i.GuildLocale != nil {
-				langTag = discord.LangTagFromInteraction(i)
-			}
-			err := channelTrackingSettingsSaver(
+			err := channelTrackingSettingsUpdater(
 				ctx,
 				channelId,
 				platform,
-				discord.TrackingSettings{
-					Outfits:    slices.Collect(maps.Values(outfitIds)),
-					Characters: slices.Collect(maps.Values(characterIds)),
-				},
-				langTag,
+				outfitTagsFromInput,
+				charNamesFromInput,
 			)
 			if err != nil {
 				return messages.TrackingSettingsSaveError(channelId, platform, err)

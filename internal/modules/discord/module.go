@@ -21,7 +21,7 @@ import (
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 	"github.com/x0k/ps2-spy/internal/stats_tracker"
 	"github.com/x0k/ps2-spy/internal/storage"
-	"github.com/x0k/ps2-spy/internal/tracking_manager"
+	"github.com/x0k/ps2-spy/internal/tracking"
 	"github.com/x0k/ps2-spy/internal/worlds_tracker"
 )
 
@@ -34,7 +34,7 @@ func New(
 	messages *discord_messages.Messages,
 	commands *discord_commands.Commands,
 	charactersTrackerSubsManagers map[ps2_platforms.Platform]pubsub.SubscriptionsManager[characters_tracker.EventType],
-	trackingManagers map[ps2_platforms.Platform]*tracking_manager.TrackingManager,
+	trackingManagers map[ps2_platforms.Platform]*tracking.Manager,
 	storageSubs pubsub.SubscriptionsManager[storage.EventType],
 	worldTrackerSubsMangers map[ps2_platforms.Platform]pubsub.SubscriptionsManager[worlds_tracker.EventType],
 	characterLoaders map[ps2_platforms.Platform]loader.Keyed[ps2.CharacterId, ps2.Character],

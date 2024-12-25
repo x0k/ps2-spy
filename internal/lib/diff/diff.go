@@ -11,6 +11,10 @@ type Diff[T any] struct {
 	ToDel []T
 }
 
+func (d Diff[T]) IsEmpty() bool {
+	return len(d.ToAdd) == 0 && len(d.ToDel) == 0
+}
+
 func mapKeys[K comparable, V any](m map[K]V) []K {
 	keys := make([]K, 0, len(m))
 	for k := range m {

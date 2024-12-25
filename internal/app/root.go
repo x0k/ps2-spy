@@ -51,7 +51,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/stats_tracker"
 	"github.com/x0k/ps2-spy/internal/storage"
 	sql_storage "github.com/x0k/ps2-spy/internal/storage/sql"
-	"github.com/x0k/ps2-spy/internal/tracking_manager"
+	"github.com/x0k/ps2-spy/internal/tracking"
 	"github.com/x0k/ps2-spy/internal/worlds_tracker"
 
 	// migration tools
@@ -147,7 +147,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	charactersTrackers := make(map[ps2_platforms.Platform]*characters_tracker.CharactersTracker, len(ps2_platforms.Platforms))
 	worldTrackerSubsMangers := make(map[ps2_platforms.Platform]pubsub.SubscriptionsManager[worlds_tracker.EventType], len(ps2_platforms.Platforms))
 	worldTrackers := make(map[ps2_platforms.Platform]*worlds_tracker.WorldsTracker, len(ps2_platforms.Platforms))
-	trackingManagers := make(map[ps2_platforms.Platform]*tracking_manager.TrackingManager, len(ps2_platforms.Platforms))
+	trackingManagers := make(map[ps2_platforms.Platform]*tracking.Manager, len(ps2_platforms.Platforms))
 	outfitMembersSynchronizers := make(map[ps2_platforms.Platform]*outfit_members_synchronizer.OutfitMembersSynchronizer, len(ps2_platforms.Platforms))
 	charactersLoaders := make(map[ps2_platforms.Platform]loader.Multi[ps2.CharacterId, ps2.Character], len(ps2_platforms.Platforms))
 	characterLoaders := make(map[ps2_platforms.Platform]loader.Keyed[ps2.CharacterId, ps2.Character], len(ps2_platforms.Platforms))
@@ -293,7 +293,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			statsTracker,
 		))
 
-		trackingManager := tracking_manager.New(
+		trackingManager := tracking.New(
 			pl.With(sl.Component("tracking_manager")),
 			cachedBatchedCharactersLoader,
 			func(ctx context.Context, c ps2.Character) ([]discord.Channel, error) {

@@ -388,17 +388,6 @@ func (m *Messages) TrackingSettingsCharacterNamesLoadError(characterIds []ps2.Ch
 	}
 }
 
-func (m *Messages) TrackingSettingsFailure(
-	requestedOutfitTags []string,
-	loadedOutfitIds map[string]ps2.OutfitId,
-	missingOutfitTags []string,
-	requestedCharacterNames []string,
-	loadedCharacterIds map[string]ps2.CharacterId,
-	missingCharacterNames []string,
-) discord.ResponseEdit {
-
-}
-
 func (m *Messages) TrackingSettingsUpdate() discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
 		content := p.Sprintf("Tracking settings have been successfully updated")

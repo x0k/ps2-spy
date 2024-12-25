@@ -40,7 +40,7 @@ type interactionHandler[R any] func(
 
 func ShowModal(handle interactionHandler[Response]) InteractionHandler {
 	return func(ctx context.Context, log *logger.Logger, s *discordgo.Session, i *discordgo.InteractionCreate) error {
-		data, customErr := handle(ctx, s, i)(message.NewPrinter(LangTagFromInteraction(i)))
+		data, customErr := handle(ctx, s, i)(message.NewPrinter(UserLocale(i)))
 		if customErr != nil {
 			if err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -66,7 +66,7 @@ func MessageUpdate(handle interactionHandler[Response]) InteractionHandler {
 		s *discordgo.Session,
 		i *discordgo.InteractionCreate,
 	) error {
-		data, customErr := handle(ctx, s, i)(message.NewPrinter(LangTagFromInteraction(i)))
+		data, customErr := handle(ctx, s, i)(message.NewPrinter(UserLocale(i)))
 		if customErr != nil {
 			if err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseUpdateMessage,
@@ -98,7 +98,7 @@ func DeferredMessageEdit(handle interactionHandler[MessageEdit]) InteractionHand
 		if err != nil {
 			return err
 		}
-		data, customErr := handle(ctx, s, i)(message.NewPrinter(LangTagFromInteraction(i)))
+		data, customErr := handle(ctx, s, i)(message.NewPrinter(UserLocale(i)))
 		if customErr != nil {
 			if _, err := s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
 				Content: customErr.Msg,
@@ -128,7 +128,7 @@ func DeferredEphemeralResponse(handle interactionHandler[ResponseEdit]) Interact
 		if err != nil {
 			return err
 		}
-		data, customErr := handle(ctx, s, i)(message.NewPrinter(LangTagFromInteraction(i)))
+		data, customErr := handle(ctx, s, i)(message.NewPrinter(UserLocale(i)))
 		if customErr != nil {
 			if _, err := s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
 				Content: customErr.Msg,
@@ -156,7 +156,7 @@ func DeferredEphemeralFollowUp(handle interactionHandler[FollowUp]) InteractionH
 		if err != nil {
 			return err
 		}
-		data, customErr := handle(ctx, s, i)(message.NewPrinter(LangTagFromInteraction(i)))
+		data, customErr := handle(ctx, s, i)(message.NewPrinter(UserLocale(i)))
 		if customErr != nil {
 			if _, err := s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
 				Content: customErr.Msg,
