@@ -28,17 +28,9 @@ type DataProvider struct {
 	facilityQuery   *census2.Query
 	facilityOperand *census2.Ptr[census2.Str]
 
-	outfitIdsMu      sync.Mutex
-	outfitIdsQuery   *census2.Query
-	outfitIdsOperand *census2.Ptr[census2.List[census2.Str]]
-
 	outfitMemberIdsMu      sync.Mutex
 	outfitMemberIdsQuery   *census2.Query
 	outfitMemberIdsOperand *census2.Ptr[census2.Str]
-
-	outfitTagsMu      sync.Mutex
-	outfitTagsQuery   *census2.Query
-	outfitTagsOperand *census2.Ptr[census2.List[census2.Str]]
 
 	outfitsMu      sync.Mutex
 	outfitsQuery   *census2.Query
@@ -55,9 +47,7 @@ func New(
 ) *DataProvider {
 	charactersOperand := census2.NewPtr(census2.StrList())
 	facilityOperand := census2.NewPtr(census2.Str(""))
-	outfitIdsOperand := census2.NewPtr(census2.StrList())
 	outfitMemberIdsOperand := census2.NewPtr(census2.Str(""))
-	outfitTagsOperand := census2.NewPtr(census2.StrList())
 	outfitsOperand := census2.NewPtr(census2.StrList())
 	worldMapOperand := census2.NewPtr(census2.Str(""))
 	zoneIds := strings.Builder{}
@@ -105,10 +95,6 @@ func New(
 			Where(census2.Cond("facility_id").Equals(&facilityOperand)).
 			Show("facility_id", "facility_name", "facility_type", "zone_id"),
 
-		outfitIdsOperand: &outfitIdsOperand,
-		outfitIdsQuery: census2.NewQuery(census2.GetQuery, census2.Ps2_v2_NS, ps2_collections.Outfit).
-			Where(census2.Cond("alias_lower").Equals(&outfitIdsOperand)).Show("outfit_id"),
-
 		outfitMemberIdsOperand: &outfitMemberIdsOperand,
 		outfitMemberIdsQuery: census2.NewQuery(census2.GetQuery, census2.Ps2_v2_NS, ps2_collections.Outfit).
 			Where(census2.Cond("outfit_id").Equals(&outfitMemberIdsOperand)).
@@ -119,10 +105,6 @@ func New(
 					InjectAt("outfit_members").
 					IsList(true),
 			),
-
-		outfitTagsOperand: &outfitTagsOperand,
-		outfitTagsQuery: census2.NewQuery(census2.GetQuery, census2.Ps2_v2_NS, ps2_collections.Outfit).
-			Where(census2.Cond("outfit_id").Equals(&outfitTagsOperand)).Show("alias"),
 
 		outfitsOperand: &outfitsOperand,
 		outfitsQuery: census2.NewQuery(census2.GetQuery, census2.Ps2_v2_NS, ps2_collections.Outfit).

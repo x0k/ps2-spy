@@ -47,6 +47,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/outfit_members_synchronizer"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/ps2/census_characters_repo"
+	"github.com/x0k/ps2-spy/internal/ps2/census_outfits_repo"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 	"github.com/x0k/ps2-spy/internal/shared"
 	"github.com/x0k/ps2-spy/internal/stats_tracker"
@@ -449,6 +450,9 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 
 	trackingSettingsRepo := tracking_settings_repo.New(storage)
 	censusCharactersRepo := census_characters_repo.New(censusClient)
+	censusOutfitsRepo := census_outfits_repo.New(censusClient)
+
+	trackingPubSub := pubsub.New[tracking.EventType]()
 
 	discordMessages := discord_messages.New(shared.Timezones, cfg.StatsTracker.MaxTrackingDuration)
 	discordCommands := discord_commands.New(
@@ -487,9 +491,16 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		},
 		tracking_settings_loader.New(
 			trackingSettingsRepo,
+			censusOutfitsRepo,
+			censusCharactersRepo,
 		).Load,
 		tracking_settings_updater.New(
 			trackingSettingsRepo,
+			censusOutfitsRepo,
+			censusCharactersRepo,
+			cfg.Tracking.MaxNumberTrackedOutfits,
+			cfg.Tracking.MaxNumberTrackedCharacters,
+			trackingPubSub,
 		).Update,
 		statsTracker,
 		storage.Channel,

@@ -47,6 +47,11 @@ type StatsTrackerConfig struct {
 	MaxTrackingDuration time.Duration `yaml:"max_tracking_duration" env:"STATS_TRACKER_MAX_TRACKING_DURATION" env-default:"4h"`
 }
 
+type TrackingConfig struct {
+	MaxNumberTrackedOutfits    int `yaml:"max_number_tracked_outfits" env:"TRACKING_MAX_NUMBER_TRACKED_OUTFITS" env-default:"3"`
+	MaxNumberTrackedCharacters int `yaml:"max_number_tracked_characters" env:"TRACKING_MAX_NUMBER_TRACKED_CHARACTERS" env-default:"12"`
+}
+
 type Config struct {
 	AppName string `yaml:"app_name" env:"APP_NAME" env-default:"PS 2 Spy"`
 
@@ -58,6 +63,7 @@ type Config struct {
 	HttpClient   HttpClientConfig   `yaml:"http_client"`
 	Census       CensusConfig       `yaml:"census"`
 	StatsTracker StatsTrackerConfig `yaml:"stats_tracker"`
+	Tracking     TrackingConfig     `yaml:"tracking"`
 }
 
 func MustLoadConfig(configPath string) *Config {
