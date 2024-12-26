@@ -136,58 +136,6 @@ func (s *Storage) Begin(
 	return nil
 }
 
-func (s *Storage) SaveChannelOutfit(ctx context.Context, channelId discord.ChannelId, platform ps2_platforms.Platform, outfitId ps2.OutfitId) error {
-	err := s.queries.InsertChannelOutfit(ctx, db.InsertChannelOutfitParams{
-		ChannelID: string(channelId),
-		OutfitID:  string(outfitId),
-		Platform:  string(platform),
-	})
-	return s.publish(err, storage.ChannelOutfitSaved{
-		ChannelId: channelId,
-		Platform:  platform,
-		OutfitId:  outfitId,
-	})
-}
-
-func (s *Storage) DeleteChannelOutfit(ctx context.Context, channelId discord.ChannelId, platform ps2_platforms.Platform, outfitId ps2.OutfitId) error {
-	err := s.queries.DeleteChannelOutfits(ctx, db.DeleteChannelOutfitsParams{
-		ChannelID: string(channelId),
-		Platform:  string(platform),
-		OutfitIds: []string{string(outfitId)},
-	})
-	return s.publish(err, storage.ChannelOutfitDeleted{
-		ChannelId: channelId,
-		Platform:  platform,
-		OutfitId:  outfitId,
-	})
-}
-
-func (s *Storage) SaveChannelCharacter(ctx context.Context, channelId discord.ChannelId, platform ps2_platforms.Platform, characterId ps2.CharacterId) error {
-	err := s.queries.InsertChannelCharacter(ctx, db.InsertChannelCharacterParams{
-		ChannelID:   string(channelId),
-		CharacterID: string(characterId),
-		Platform:    string(platform),
-	})
-	return s.publish(err, storage.ChannelCharacterSaved{
-		ChannelId:   channelId,
-		Platform:    platform,
-		CharacterId: characterId,
-	})
-}
-
-func (s *Storage) DeleteChannelCharacter(ctx context.Context, channelId discord.ChannelId, platform ps2_platforms.Platform, characterId ps2.CharacterId) error {
-	err := s.queries.DeleteChannelCharacters(ctx, db.DeleteChannelCharactersParams{
-		ChannelID:    string(channelId),
-		Platform:     string(platform),
-		CharacterIds: []string{string(characterId)},
-	})
-	return s.publish(err, storage.ChannelCharacterDeleted{
-		ChannelId:   channelId,
-		Platform:    platform,
-		CharacterId: characterId,
-	})
-}
-
 func (s *Storage) SaveOutfitMember(ctx context.Context, platform ps2_platforms.Platform, outfitId ps2.OutfitId, characterId ps2.CharacterId) error {
 	err := s.queries.InsertOutfitMember(ctx, db.InsertOutfitMemberParams{
 		OutfitID:    string(outfitId),

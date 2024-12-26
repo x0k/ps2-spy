@@ -4,13 +4,17 @@ import (
 	"strings"
 
 	"github.com/x0k/ps2-spy/internal/discord"
+	"github.com/x0k/ps2-spy/internal/tracking"
 	"golang.org/x/text/message"
 )
 
-func renderTrackingSettings(p *message.Printer, newSettings discord.TrackableEntities[[]string, []string]) string {
+func renderTrackingSettings(
+	p *message.Printer,
+	settings tracking.SettingsView,
+) string {
 	builder := strings.Builder{}
-	builder.WriteString(p.Sprintf("Settings are updated.\n\n**Outfits:**\n"))
-	outfits := newSettings.Outfits
+	builder.WriteString(p.Sprintf("**Tracked outfits:**\n"))
+	outfits := settings.Outfits
 	if len(outfits) == 0 {
 		builder.WriteString(p.Sprintf("No outfits"))
 	} else {
@@ -20,8 +24,8 @@ func renderTrackingSettings(p *message.Printer, newSettings discord.TrackableEnt
 			builder.WriteString(outfits[i])
 		}
 	}
-	builder.WriteString(p.Sprintf("\n\n**Characters:**\n"))
-	characters := newSettings.Characters
+	builder.WriteString(p.Sprintf("\n\n**Tracked characters:**\n"))
+	characters := settings.Characters
 	if len(characters) == 0 {
 		builder.WriteString(p.Sprintf("No characters"))
 	} else {
@@ -34,7 +38,20 @@ func renderTrackingSettings(p *message.Printer, newSettings discord.TrackableEnt
 	return builder.String()
 }
 
-func renderTrackingSettingsFailureText(
+func renderTrackingSettingsUpdate(
+	p *message.Printer,
+	updater discord.UserId,
+	_ tracking.SettingsDiff,
+) string {
+	b := strings.Builder{}
+	b.WriteString(p.Sprintf(
+		"Settings updated by <@%s>",
+		updater,
+	))
+	return b.String()
+}
+
+func renderTrackingMissingEntities(
 	p *message.Printer,
 	missingOutfitTags []string,
 	missingCharacterNames []string,

@@ -84,16 +84,16 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	)
 	m.PreStartR("migrator", mig.Migrate)
 
-	storagePubSub := pubsub.New[storage.EventType]()
+	storePubSub := pubsub.New[storage.EventType]()
 
-	storage := sql_storage.New(
+	store := sql_storage.New(
 		log.With(sl.Component("storage")),
 		cfg.Storage.Path,
 		cfg.StatsTracker.MaxTrackingDuration,
-		storagePubSub,
+		storePubSub,
 	)
-	m.PreStartR("storage", storage.Open)
-	m.PostStopR("storage", storage.Close)
+	m.PreStartR("storage", store.Open)
+	m.PostStopR("storage", store.Close)
 
 	retryableHttpTransport := httpx.NewRetryRoundTripper(
 		log.Logger.With(sl.Component("http_client")),
@@ -147,7 +147,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 
 	facilityCache := sql_facility_cache.New(
 		log.With(sl.Component("facility_cache")),
-		storage,
+		store,
 	)
 
 	characterTrackerSubsMangers := make(map[ps2_platforms.Platform]pubsub.SubscriptionsManager[characters_tracker.EventType], len(ps2_platforms.Platforms))
@@ -179,8 +179,8 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			}
 			return channelIds, nil
 		},
-		storage.ChannelTrackablePlatforms,
-		storage.ActiveStatsTrackerTasks,
+		store.ChannelTrackablePlatforms,
+		store.ActiveStatsTrackerTasks,
 		charactersLoaders,
 		cfg.StatsTracker.MaxTrackingDuration,
 	)
@@ -304,37 +304,37 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			pl.With(sl.Component("tracking_manager")),
 			cachedBatchedCharactersLoader,
 			func(ctx context.Context, c ps2.Character) ([]discord.Channel, error) {
-				return storage.TrackingChannelsForCharacter(ctx, platform, c.Id, c.OutfitId)
+				return store.TrackingChannelsForCharacter(ctx, platform, c.Id, c.OutfitId)
 			},
 			func(ctx context.Context) ([]ps2.CharacterId, error) {
-				return storage.AllTrackableCharacterIdsWithDuplicationsForPlatform(ctx, platform)
+				return store.AllTrackableCharacterIdsWithDuplicationsForPlatform(ctx, platform)
 			},
 			func(ctx context.Context, oi ps2.OutfitId) ([]ps2.CharacterId, error) {
-				return storage.OutfitMembers(ctx, platform, oi)
+				return store.OutfitMembers(ctx, platform, oi)
 			},
 			func(ctx context.Context, oi ps2.OutfitId) ([]discord.Channel, error) {
-				return storage.TrackingChannelsForOutfit(ctx, platform, oi)
+				return store.TrackingChannelsForOutfit(ctx, platform, oi)
 			},
 			func(ctx context.Context) ([]ps2.OutfitId, error) {
-				return storage.AllTrackableOutfitIdsWithDuplicationsForPlatform(ctx, platform)
+				return store.AllTrackableOutfitIdsWithDuplicationsForPlatform(ctx, platform)
 			},
 		)
-		m.AppendR(fmt.Sprintf("%s.tracking_manager", platform), trackingManager.Start)
+		m.AppendVR(fmt.Sprintf("%s.tracking_manager", platform), trackingManager.Start)
 		trackingManagers[platform] = trackingManager
 
 		outfitMembersSynchronizer := outfit_members_synchronizer.New(
 			pl.With(sl.Component("outfit_members_synchronizer")),
 			func(ctx context.Context) ([]ps2.OutfitId, error) {
-				return storage.AllUniqueTrackableOutfitIdsForPlatform(ctx, platform)
+				return store.AllUniqueTrackableOutfitIdsForPlatform(ctx, platform)
 			},
 			func(ctx context.Context, oi ps2.OutfitId) (time.Time, error) {
-				return storage.OutfitSynchronizedAt(ctx, platform, oi)
+				return store.OutfitSynchronizedAt(ctx, platform, oi)
 			},
 			func(ctx context.Context, oi ps2.OutfitId) ([]ps2.CharacterId, error) {
 				return censusDataProvider.OutfitMemberIds(ctx, ns, oi)
 			},
 			func(ctx context.Context, outfitId ps2.OutfitId, members []ps2.CharacterId) error {
-				return storage.SaveOutfitMembers(ctx, platform, outfitId, members)
+				return store.SaveOutfitMembers(ctx, platform, outfitId, members)
 			},
 			24*time.Hour,
 		)
@@ -354,7 +354,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			},
 			sql_outfits_cache.New(
 				log.With(sl.Component("outfits_cache")),
-				storage,
+				store,
 				platform,
 			),
 		)
@@ -377,13 +377,22 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		)
 	}
 
-	m.Append(newStorageEventsSubscriptionService(
-		log.With(sl.Component("storage_events_subscription_service")),
-		m,
-		trackingManagers,
-		outfitMembersSynchronizers,
-		storagePubSub,
-	))
+	outfitMemberSaved := storage.Subscribe[storage.OutfitMemberSaved](m, storePubSub)
+	outfitMemberDeleted := storage.Subscribe[storage.OutfitMemberDeleted](m, storePubSub)
+	m.AppendVR("storage_events_subscription", func(ctx context.Context) {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case e := <-outfitMemberSaved:
+				tm := trackingManagers[e.Platform]
+				tm.TrackOutfitMember(e.CharacterId, e.OutfitId)
+			case e := <-outfitMemberDeleted:
+				tm := trackingManagers[e.Platform]
+				tm.UntrackOutfitMember(e.CharacterId, e.OutfitId)
+			}
+		}
+	})
 
 	populationLoaders := map[string]loader.Simple[meta.Loaded[ps2.WorldsPopulation]]{
 		"spy": func(ctx context.Context) (meta.Loaded[ps2.WorldsPopulation], error) {
@@ -448,13 +457,32 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		"voidwell":  voidwellDataProvider.Alerts,
 	}
 
-	trackingSettingsRepo := tracking_settings_repo.New(storage)
+	trackingSettingsRepo := tracking_settings_repo.New(store)
+	trackingPubSub := pubsub.New[tracking.EventType]()
+
+	settingsUpdate := tracking.Subscribe[tracking.TrackingSettingsUpdated](m, trackingPubSub)
+	m.AppendVR("tracking_settings_events_subscription", func(ctx context.Context) {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case e := <-settingsUpdate:
+				tm := trackingManagers[e.Platform]
+				tm.HandleTrackingSettingsUpdate(ctx, e)
+				os := outfitMembersSynchronizers[e.Platform]
+				for _, oId := range e.Diff.Outfits.ToAdd {
+					os.SyncOutfit(ctx, oId)
+				}
+			}
+		}
+	})
+
 	censusCharactersRepo := census_characters_repo.New(censusClient)
 	censusOutfitsRepo := census_outfits_repo.New(censusClient)
 
-	trackingPubSub := pubsub.New[tracking.EventType]()
-
-	discordMessages := discord_messages.New(shared.Timezones, cfg.StatsTracker.MaxTrackingDuration)
+	discordMessages := discord_messages.New(
+		shared.Timezones, cfg.StatsTracker.MaxTrackingDuration,
+	)
 	discordCommands := discord_commands.New(
 		log.With(sl.Component("commands")),
 		discordMessages,
@@ -478,7 +506,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		func(
 			ctx context.Context, sq discord.SettingsQuery,
 		) (discord.TrackableEntities[map[ps2.OutfitId][]ps2.Character, []ps2.Character], error) {
-			settings, err := storage.TrackingSettings(ctx, sq)
+			settings, err := trackingSettingsRepo.Get(ctx, sq.ChannelId, sq.Platform)
 			if err != nil {
 				return discord.TrackableEntities[map[ps2.OutfitId][]ps2.Character, []ps2.Character]{}, err
 			}
@@ -503,17 +531,17 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			trackingPubSub,
 		).Update,
 		statsTracker,
-		storage.Channel,
-		storage.SaveChannelLanguage,
-		storage.SaveChannelCharacterNotifications,
-		storage.SaveChannelOutfitNotifications,
-		storage.SaveChannelTitleUpdates,
-		storage.SaveChannelDefaultTimezone,
-		storage.ChannelStatsTrackerTasks,
-		storage.CreateStatsTrackerTask,
-		storage.RemoveStatsTrackerTask,
-		storage.StatsTrackerTask,
-		storage.UpdateStatsTrackerTask,
+		store.Channel,
+		store.SaveChannelLanguage,
+		store.SaveChannelCharacterNotifications,
+		store.SaveChannelOutfitNotifications,
+		store.SaveChannelTitleUpdates,
+		store.SaveChannelDefaultTimezone,
+		store.ChannelStatsTrackerTasks,
+		store.CreateStatsTrackerTask,
+		store.RemoveStatsTrackerTask,
+		store.StatsTrackerTask,
+		store.UpdateStatsTrackerTask,
 	)
 	m.AppendR("discord.commands", discordCommands.Start)
 
@@ -527,7 +555,8 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		discordCommands,
 		characterTrackerSubsMangers,
 		trackingManagers,
-		storagePubSub,
+		storePubSub,
+		trackingPubSub,
 		worldTrackerSubsMangers,
 		characterLoaders,
 		outfitLoaders,
@@ -537,10 +566,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			count := 0
 			errs := make([]error, 0, len(ps2_platforms.Platforms))
 			for _, platform := range ps2_platforms.Platforms {
-				settings, err := storage.TrackingSettings(ctx, discord.SettingsQuery{
-					ChannelId: channelId,
-					Platform:  platform,
-				})
+				settings, err := trackingSettingsRepo.Get(ctx, channelId, platform)
 				if err != nil {
 					errs = append(errs, err)
 					continue
@@ -554,7 +580,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			return count, errors.Join(errs...)
 		},
 		statsTrackerPubSub,
-		storage.Channel,
+		store.Channel,
 	)
 	if err != nil {
 		return nil, err

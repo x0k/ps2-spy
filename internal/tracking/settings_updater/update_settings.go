@@ -56,6 +56,7 @@ func (s *SettingsUpdater) Update(
 	channelId discord.ChannelId,
 	platform ps2_platforms.Platform,
 	settings tracking.SettingsView,
+	updater discord.UserId,
 ) error {
 	if len(settings.Outfits) > s.maxNumOfTrackedOutfits {
 		return tracking.ErrTooManyOutfits
@@ -88,6 +89,7 @@ func (s *SettingsUpdater) Update(
 		ChannelId: channelId,
 		Platform:  platform,
 		Diff:      settingsDiff,
+		Updater:   updater,
 	})
 	return nil
 }

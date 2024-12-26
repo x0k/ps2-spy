@@ -6,12 +6,14 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/x0k/ps2-spy/internal/discord"
+	discord_events "github.com/x0k/ps2-spy/internal/discord/events"
 	"github.com/x0k/ps2-spy/internal/lib/diff"
 	"github.com/x0k/ps2-spy/internal/meta"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	ps2_factions "github.com/x0k/ps2-spy/internal/ps2/factions"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 	"github.com/x0k/ps2-spy/internal/stats_tracker"
+	"github.com/x0k/ps2-spy/internal/tracking"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 )
@@ -361,7 +363,7 @@ func (m *Messages) MembersOnline(
 	}
 }
 
-func (m *Messages) TrackingSettingsSaveError(channelId discord.ChannelId, platform ps2_platforms.Platform, err error) discord.ResponseEdit {
+func (m *Messages) TrackingSettingsUpdateError(channelId discord.ChannelId, platform ps2_platforms.Platform, err error) discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
 		return nil, &discord.Error{
 			Msg: p.Sprintf("Failed to save tracking settings for %s channel (%s)", channelId, platform),
@@ -385,15 +387,6 @@ func (m *Messages) TrackingSettingsCharacterNamesLoadError(characterIds []ps2.Ch
 			Msg: p.Sprintf("Settings are saved, but failed to load character names %v (%s)", characterIds, platform),
 			Err: err,
 		}
-	}
-}
-
-func (m *Messages) TrackingSettingsUpdate() discord.ResponseEdit {
-	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
-		content := p.Sprintf("Tracking settings have been successfully updated")
-		return &discordgo.WebhookEdit{
-			Content: &content,
-		}, nil
 	}
 }
 
@@ -557,8 +550,10 @@ func (m *Messages) ChannelStatsTrackerTaskStateNotFound(err error) discord.Respo
 	}
 }
 
-func (m *Messages) TrackingSettingsLoadError(channelId discord.ChannelId, platform ps2_platforms.Platform, err error) discord.Response {
-	return func(p *message.Printer) (*discordgo.InteractionResponseData, *discord.Error) {
+func TrackingSettingsLoadError[R any](
+	channelId discord.ChannelId, platform ps2_platforms.Platform, err error,
+) func(*message.Printer) (*R, *discord.Error) {
+	return func(p *message.Printer) (*R, *discord.Error) {
 		return nil, &discord.Error{
 			Msg: p.Sprintf("Failed to load tracking settings for %s channel (%s)", channelId, platform),
 			Err: err,
@@ -678,6 +673,36 @@ func (m *Messages) TrackingSettingsModal(
 				},
 			},
 		}, nil
+	}
+}
+
+func (m *Messages) TrackingSettings(
+	settings tracking.SettingsView,
+) discord.ResponseEdit {
+	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
+		content := renderTrackingSettings(p, settings)
+		return &discordgo.WebhookEdit{
+			Content: &content,
+		}, nil
+	}
+}
+
+func (m *Messages) TrackingSettingsUpdate() discord.ResponseEdit {
+	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
+		content := p.Sprintf("Tracking settings have been successfully updated")
+		return &discordgo.WebhookEdit{
+			Content: &content,
+		}, nil
+	}
+}
+
+func (m *Messages) TrackingSettingsUpdated(
+	e discord_events.ChannelTrackingSettingsUpdated,
+) discord.Message {
+	return func(p *message.Printer) (string, *discord.Error) {
+		return renderTrackingSettingsUpdate(
+			p, e.Event.Updater, e.Event.Diff,
+		), nil
 	}
 }
 

@@ -18,6 +18,13 @@ type ChannelId string
 
 type UserId string
 
+func MemberOrUserId(i *discordgo.InteractionCreate) UserId {
+	if i.Member != nil {
+		return UserId(i.Member.User.ID)
+	}
+	return UserId(i.User.ID)
+}
+
 type ChannelAndUserIds string
 
 const idsSeparator = "+"

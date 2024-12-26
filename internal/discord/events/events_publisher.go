@@ -12,6 +12,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
 	"github.com/x0k/ps2-spy/internal/stats_tracker"
 	"github.com/x0k/ps2-spy/internal/storage"
+	"github.com/x0k/ps2-spy/internal/tracking"
 )
 
 type ChannelLoader = loader.Keyed[discord.ChannelId, discord.Channel]
@@ -67,6 +68,14 @@ func (p *EventsPublisher) PublishChannelTrackerStarted(
 func (p *EventsPublisher) PublishChannelTrackerStopped(
 	ctx context.Context,
 	event stats_tracker.ChannelTrackerStopped,
+) {
+	p.wg.Add(1)
+	go publishChannelEventTask(ctx, p, event.ChannelId, event)
+}
+
+func (p *EventsPublisher) PublishChannelTrackingSettingsUpdated(
+	ctx context.Context,
+	event tracking.TrackingSettingsUpdated,
 ) {
 	p.wg.Add(1)
 	go publishChannelEventTask(ctx, p, event.ChannelId, event)

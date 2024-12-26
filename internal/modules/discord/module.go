@@ -36,6 +36,7 @@ func New(
 	charactersTrackerSubsManagers map[ps2_platforms.Platform]pubsub.SubscriptionsManager[characters_tracker.EventType],
 	trackingManagers map[ps2_platforms.Platform]*tracking.Manager,
 	storageSubs pubsub.SubscriptionsManager[storage.EventType],
+	trackingSubs pubsub.SubscriptionsManager[tracking.EventType],
 	worldTrackerSubsMangers map[ps2_platforms.Platform]pubsub.SubscriptionsManager[worlds_tracker.EventType],
 	characterLoaders map[ps2_platforms.Platform]loader.Keyed[ps2.CharacterId, ps2.Character],
 	outfitLoaders map[ps2_platforms.Platform]loader.Keyed[ps2.OutfitId, ps2.Outfit],
@@ -95,6 +96,7 @@ func New(
 	channelTitleUpdates := storage.Subscribe[storage.ChannelTitleUpdatesSaved](m, storageSubs)
 	channelTrackerStarted := stats_tracker.Subscribe[stats_tracker.ChannelTrackerStarted](m, statsTrackerSubs)
 	channelTrackerStopped := stats_tracker.Subscribe[stats_tracker.ChannelTrackerStopped](m, statsTrackerSubs)
+	trackingSettingsUpdated := tracking.Subscribe[tracking.TrackingSettingsUpdated](m, trackingSubs)
 	m.AppendVR("discord.events_subscription", func(ctx context.Context) {
 		for {
 			select {
@@ -108,6 +110,8 @@ func New(
 				eventsPublisher.PublishChannelTrackerStarted(ctx, e)
 			case e := <-channelTrackerStopped:
 				eventsPublisher.PublishChannelTrackerStopped(ctx, e)
+			case e := <-trackingSettingsUpdated:
+				eventsPublisher.PublishChannelTrackingSettingsUpdated(ctx, e)
 			}
 		}
 	})

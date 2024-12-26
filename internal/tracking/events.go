@@ -17,6 +17,7 @@ const (
 type TrackingSettingsUpdated struct {
 	ChannelId discord.ChannelId
 	Platform  ps2_platforms.Platform
+	Updater   discord.UserId
 	Diff      SettingsDiff
 }
 

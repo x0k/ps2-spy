@@ -6,6 +6,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
 	"github.com/x0k/ps2-spy/internal/stats_tracker"
 	"github.com/x0k/ps2-spy/internal/storage"
+	"github.com/x0k/ps2-spy/internal/tracking"
 	"github.com/x0k/ps2-spy/internal/worlds_tracker"
 )
 
@@ -25,6 +26,7 @@ const (
 	ChannelTitleUpdatesSavedType           = EventType(storage.ChannelTitleUpdatesSavedType)
 	ChannelTrackerStartedType              = EventType(stats_tracker.ChannelTrackerStartedType)
 	ChannelTrackerStoppedType              = EventType(stats_tracker.ChannelTrackerStoppedType)
+	ChannelTrackingSettingsUpdatedType     = EventType(tracking.TrackingSettingsUpdatedType)
 )
 
 type channelsEvent[T pubsub.EventType, E pubsub.Event[T]] struct {
@@ -50,6 +52,7 @@ type ChannelTitleUpdatesSaved = channelEvent[storage.EventType, storage.ChannelT
 
 type ChannelTrackerStarted = channelEvent[stats_tracker.EventType, stats_tracker.ChannelTrackerStarted]
 type ChannelTrackerStopped = channelEvent[stats_tracker.EventType, stats_tracker.ChannelTrackerStopped]
+type ChannelTrackingSettingsUpdated = channelEvent[tracking.EventType, tracking.TrackingSettingsUpdated]
 
 type PlayerLogin = channelsEvent[characters_tracker.EventType, characters_tracker.PlayerLogin]
 type PlayerFakeLogin = channelsEvent[characters_tracker.EventType, characters_tracker.PlayerFakeLogin]

@@ -22,6 +22,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/ps2"
 	ps2_factions "github.com/x0k/ps2-spy/internal/ps2/factions"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
+	"github.com/x0k/ps2-spy/internal/tracking"
 )
 
 var ErrWorldPopulationTrackerNotFound = fmt.Errorf("world population tracker not found")
@@ -118,7 +119,7 @@ func (p *CharactersTracker) Start(ctx context.Context) {
 		case t := <-ticker.C:
 			removedPlayers := p.handleInactive(ctx, t)
 			for _, pl := range removedPlayers {
-				p.publishPlayerLogout(ctx, t, pl)
+				p.publishPlayerLogout(t, pl)
 			}
 		}
 	}
@@ -130,7 +131,7 @@ func (p *CharactersTracker) HandleLogin(ctx context.Context, event events.Player
 		defer p.wg.Done()
 		charId := ps2.CharacterId(event.CharacterID)
 		if char, ok := p.handleLogin(ctx, charId); ok {
-			p.publishPlayerLogin(ctx, event, char)
+			p.publishPlayerLogin(event, char)
 		}
 	}()
 }
@@ -145,7 +146,7 @@ func (p *CharactersTracker) HandleLogout(ctx context.Context, event events.Playe
 		} else {
 			t = time.Now()
 		}
-		p.publishPlayerLogout(ctx, t, player{charId, worldId})
+		p.publishPlayerLogout(t, player{charId, worldId})
 	}
 }
 
@@ -164,7 +165,7 @@ func (p *CharactersTracker) HandleWorldZoneAction(ctx context.Context, worldId, 
 		go func() {
 			defer p.wg.Done()
 			if char, ok := p.handleLogin(ctx, cId); ok {
-				p.publishPlayerFakeLogin(ctx, char)
+				p.publishPlayerFakeLogin(char)
 			}
 		}()
 	}
@@ -176,7 +177,7 @@ func (p *CharactersTracker) HandleWorldZoneAction(ctx context.Context, worldId, 
 }
 
 func (p *CharactersTracker) TrackableOnlineEntities(
-	settings discord.TrackableEntities[[]ps2.OutfitId, []ps2.CharacterId],
+	settings tracking.Settings,
 ) discord.TrackableEntities[map[ps2.OutfitId][]ps2.Character, []ps2.Character] {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
@@ -305,7 +306,6 @@ func (p *CharactersTracker) handleLogout(ctx context.Context, charId ps2.Charact
 }
 
 func (p *CharactersTracker) publishPlayerLogin(
-	ctx context.Context,
 	event events.PlayerLogin,
 	char ps2.Character,
 ) {
@@ -322,7 +322,7 @@ func (p *CharactersTracker) publishPlayerLogin(
 	})
 }
 
-func (p *CharactersTracker) publishPlayerFakeLogin(ctx context.Context, char ps2.Character) {
+func (p *CharactersTracker) publishPlayerFakeLogin(char ps2.Character) {
 	now := time.Now()
 	p.publisher.Publish(PlayerFakeLogin{
 		Time:      now,
@@ -330,7 +330,7 @@ func (p *CharactersTracker) publishPlayerFakeLogin(ctx context.Context, char ps2
 	})
 }
 
-func (p *CharactersTracker) publishPlayerLogout(ctx context.Context, t time.Time, pl player) {
+func (p *CharactersTracker) publishPlayerLogout(t time.Time, pl player) {
 	p.publisher.Publish(PlayerLogout{
 		Time:        t,
 		CharacterId: pl.characterId,
