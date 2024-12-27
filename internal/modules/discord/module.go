@@ -45,6 +45,7 @@ func New(
 	onlineTrackableEntitiesCountLoader loader.Keyed[discord.ChannelId, int],
 	statsTrackerSubs pubsub.SubscriptionsManager[stats_tracker.EventType],
 	channelLoader discord_events.ChannelLoader,
+	trackingSettingsDiffViewLoader discord_event_handlers.TrackingSettingsDiffViewLoader,
 ) (*module.Module, error) {
 	m := module.New(log.Logger, "discord")
 	session, err := discordgo.New("Bot " + token)
@@ -83,6 +84,7 @@ func New(
 		messages,
 		onlineTrackableEntitiesCountLoader,
 		handlersChannelTitleUpdater,
+		trackingSettingsDiffViewLoader,
 	) {
 		eventsPubSub.AddHandler(handler)
 	}

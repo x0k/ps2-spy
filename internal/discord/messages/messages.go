@@ -6,7 +6,6 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/x0k/ps2-spy/internal/discord"
-	discord_events "github.com/x0k/ps2-spy/internal/discord/events"
 	"github.com/x0k/ps2-spy/internal/lib/diff"
 	"github.com/x0k/ps2-spy/internal/meta"
 	"github.com/x0k/ps2-spy/internal/ps2"
@@ -552,9 +551,10 @@ func (m *Messages) ChannelStatsTrackerTaskStateNotFound(err error) discord.Respo
 
 func TrackingSettingsLoadError[R any](
 	channelId discord.ChannelId, platform ps2_platforms.Platform, err error,
-) func(*message.Printer) (*R, *discord.Error) {
-	return func(p *message.Printer) (*R, *discord.Error) {
-		return nil, &discord.Error{
+) func(*message.Printer) (R, *discord.Error) {
+	return func(p *message.Printer) (R, *discord.Error) {
+		var r R
+		return r, &discord.Error{
 			Msg: p.Sprintf("Failed to load tracking settings for %s channel (%s)", channelId, platform),
 			Err: err,
 		}
@@ -697,12 +697,11 @@ func (m *Messages) TrackingSettingsUpdate() discord.ResponseEdit {
 }
 
 func (m *Messages) TrackingSettingsUpdated(
-	e discord_events.ChannelTrackingSettingsUpdated,
+	updater discord.UserId,
+	diff tracking.SettingsDiffView,
 ) discord.Message {
 	return func(p *message.Printer) (string, *discord.Error) {
-		return renderTrackingSettingsUpdate(
-			p, e.Event.Updater, e.Event.Diff,
-		), nil
+		return renderTrackingSettingsUpdate(p, updater, diff), nil
 	}
 }
 

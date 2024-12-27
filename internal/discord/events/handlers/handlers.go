@@ -10,12 +10,14 @@ func New(
 	messages *discord_messages.Messages,
 	onlineTrackableEntitiesCountLoader OnlineTrackableEntitiesCountLoader,
 	channelTitleUpdater ChannelTitleUpdater,
+	trackingSettingsDiffViewLoader TrackingSettingsDiffViewLoader,
 ) []Handler {
 	return []Handler{
 		NewChannelLanguageSaved(m, messages, onlineTrackableEntitiesCountLoader, channelTitleUpdater),
 		NewChannelTitleUpdatesSaved(m, messages, onlineTrackableEntitiesCountLoader, channelTitleUpdater),
 		NewChannelTrackerStarted(m, messages),
 		NewChannelTrackerStopped(m, messages),
+		NewTrackingSettingsUpdateHandler(m, messages, trackingSettingsDiffViewLoader),
 	}
 }
 

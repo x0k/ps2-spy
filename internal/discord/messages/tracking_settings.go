@@ -41,13 +41,45 @@ func renderTrackingSettings(
 func renderTrackingSettingsUpdate(
 	p *message.Printer,
 	updater discord.UserId,
-	_ tracking.SettingsDiff,
+	diff tracking.SettingsDiffView,
 ) string {
 	b := strings.Builder{}
 	b.WriteString(p.Sprintf(
-		"Settings updated by <@%s>",
+		"Settings updated by <@%s>\n\b",
 		updater,
 	))
+	if len(diff.Characters.ToAdd) > 0 {
+		b.WriteString(p.Sprintf("**Added characters:**\n"))
+		b.WriteString(diff.Characters.ToAdd[0])
+		for i := 1; i < len(diff.Characters.ToAdd); i++ {
+			b.WriteString(", ")
+			b.WriteString(diff.Characters.ToAdd[i])
+		}
+	}
+	if len(diff.Characters.ToDel) > 0 {
+		b.WriteString(p.Sprintf("\n\n**Removed characters:**\n"))
+		b.WriteString(diff.Characters.ToDel[0])
+		for i := 1; i < len(diff.Characters.ToDel); i++ {
+			b.WriteString(", ")
+			b.WriteString(diff.Characters.ToDel[i])
+		}
+	}
+	if len(diff.Outfits.ToAdd) > 0 {
+		b.WriteString(p.Sprintf("\n\n**Added outfits:**\n"))
+		b.WriteString(diff.Outfits.ToAdd[0])
+		for i := 1; i < len(diff.Outfits.ToAdd); i++ {
+			b.WriteString(", ")
+			b.WriteString(diff.Outfits.ToAdd[i])
+		}
+	}
+	if len(diff.Outfits.ToDel) > 0 {
+		b.WriteString(p.Sprintf("\n\n**Removed outfits:**\n"))
+		b.WriteString(diff.Outfits.ToDel[0])
+		for i := 1; i < len(diff.Outfits.ToDel); i++ {
+			b.WriteString(", ")
+			b.WriteString(diff.Outfits.ToDel[i])
+		}
+	}
 	return b.String()
 }
 

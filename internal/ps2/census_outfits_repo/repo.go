@@ -27,10 +27,10 @@ func New(client *census2.Client) *Repository {
 
 		outfitIdsOperand: &outfitIdsOperand,
 		outfitIdsQuery: census2.NewQuery(census2.GetQuery, census2.Ps2_v2_NS, ps2_collections.Outfit).
-			Where(census2.Cond("alias_lower").Equals(&outfitIdsOperand)).Show("outfit_id"),
+			Where(census2.Cond("alias_lower").Equals(&outfitIdsOperand)).Show("outfit_id", "alias"),
 
 		outfitTagsOperand: &outfitTagsOperand,
 		outfitTagsQuery: census2.NewQuery(census2.GetQuery, census2.Ps2_v2_NS, ps2_collections.Outfit).
-			Where(census2.Cond("outfit_id").Equals(&outfitTagsOperand)).Show("alias"),
+			Where(census2.Cond("outfit_id").Equals(&outfitTagsOperand)).Show("outfit_id", "alias"),
 	}
 }

@@ -1,10 +1,11 @@
-package tracking_settings_loader
+package tracking_settings_view_loader
 
 import (
 	"context"
 	"fmt"
 
 	"github.com/x0k/ps2-spy/internal/discord"
+	"github.com/x0k/ps2-spy/internal/lib/mapx"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 	"github.com/x0k/ps2-spy/internal/tracking"
@@ -15,11 +16,11 @@ type SettingsRepo interface {
 }
 
 type OutfitsRepo interface {
-	OutfitTagsByIds(context.Context, ps2_platforms.Platform, []ps2.OutfitId) ([]string, error)
+	OutfitTagsByIds(context.Context, ps2_platforms.Platform, []ps2.OutfitId) (map[ps2.OutfitId]string, error)
 }
 
 type CharactersRepo interface {
-	CharacterNamesByIds(context.Context, ps2_platforms.Platform, []ps2.CharacterId) ([]string, error)
+	CharacterNamesByIds(context.Context, ps2_platforms.Platform, []ps2.CharacterId) (map[ps2.CharacterId]string, error)
 }
 
 type SettingsLoader struct {
@@ -50,7 +51,7 @@ func (l *SettingsLoader) Load(ctx context.Context, channelId discord.ChannelId, 
 		return tracking.SettingsView{}, fmt.Errorf("failed to load characters: %w", err)
 	}
 	return tracking.SettingsView{
-		Outfits:    outfits,
-		Characters: characters,
+		Outfits:    mapx.Values(outfits),
+		Characters: mapx.Values(characters),
 	}, nil
 }

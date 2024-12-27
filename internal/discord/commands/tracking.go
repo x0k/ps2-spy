@@ -62,7 +62,7 @@ func NewTracking(
 		channelId := discord.ChannelId(i.ChannelID)
 		settings, err := trackingSettingsLoader(ctx, channelId, platform)
 		if err != nil {
-			return discord_messages.TrackingSettingsLoadError[discordgo.InteractionResponseData](
+			return discord_messages.TrackingSettingsLoadError[*discordgo.InteractionResponseData](
 				channelId, platform, err,
 			)
 		}
@@ -79,7 +79,7 @@ func NewTracking(
 		channelId := discord.ChannelId(i.ChannelID)
 		settings, err := trackingSettingsLoader(ctx, channelId, platform)
 		if err != nil {
-			return discord_messages.TrackingSettingsLoadError[discordgo.WebhookEdit](
+			return discord_messages.TrackingSettingsLoadError[*discordgo.WebhookEdit](
 				channelId, platform, err,
 			)
 		}

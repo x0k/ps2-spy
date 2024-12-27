@@ -18,7 +18,9 @@ func (l *Repository) outfitTagsUrl(ns string, values []census2.Str) string {
 	return l.client.ToURL(l.outfitTagsQuery)
 }
 
-func (l *Repository) OutfitTagsByIds(ctx context.Context, platform ps2_platforms.Platform, outfitIds []ps2.OutfitId) ([]string, error) {
+func (l *Repository) OutfitTagsByIds(
+	ctx context.Context, platform ps2_platforms.Platform, outfitIds []ps2.OutfitId,
+) (map[ps2.OutfitId]string, error) {
 	if len(outfitIds) == 0 {
 		return nil, nil
 	}
@@ -36,9 +38,9 @@ func (l *Repository) OutfitTagsByIds(ctx context.Context, platform ps2_platforms
 	if err != nil {
 		return nil, err
 	}
-	tags := make([]string, len(outfits))
-	for i, outfit := range outfits {
-		tags[i] = outfit.Alias
+	tags := make(map[ps2.OutfitId]string, len(outfits))
+	for _, outfit := range outfits {
+		tags[ps2.OutfitId(outfit.OutfitId)] = outfit.Alias
 	}
 	return tags, nil
 }

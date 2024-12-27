@@ -28,6 +28,10 @@ type settings[C any, O any] struct {
 
 type Settings = settings[[]ps2.CharacterId, []ps2.OutfitId]
 
-type SettingsDiff = settings[diff.Diff[ps2.CharacterId], diff.Diff[ps2.OutfitId]]
-
 type SettingsView = settings[[]string, []string]
+
+type settingsDiff[C any, O any] settings[diff.Diff[C], diff.Diff[O]]
+
+type SettingsDiff = settingsDiff[ps2.CharacterId, ps2.OutfitId]
+
+type SettingsDiffView = settingsDiff[string, string]

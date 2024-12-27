@@ -54,9 +54,10 @@ import (
 	"github.com/x0k/ps2-spy/internal/storage"
 	sql_storage "github.com/x0k/ps2-spy/internal/storage/sql"
 	"github.com/x0k/ps2-spy/internal/tracking"
-	tracking_settings_loader "github.com/x0k/ps2-spy/internal/tracking/settings_loader"
+	tracking_settings_diff_view_loader "github.com/x0k/ps2-spy/internal/tracking/settings_diff_view_loader"
 	tracking_settings_repo "github.com/x0k/ps2-spy/internal/tracking/settings_repo"
 	tracking_settings_updater "github.com/x0k/ps2-spy/internal/tracking/settings_updater"
+	tracking_settings_view_loader "github.com/x0k/ps2-spy/internal/tracking/settings_view_loader"
 	"github.com/x0k/ps2-spy/internal/worlds_tracker"
 
 	// migration tools
@@ -517,7 +518,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		) (map[ps2.OutfitId]ps2.Outfit, error) {
 			return outfitsLoaders[pq.Platform](ctx, pq.Value)
 		},
-		tracking_settings_loader.New(
+		tracking_settings_view_loader.New(
 			trackingSettingsRepo,
 			censusOutfitsRepo,
 			censusCharactersRepo,
@@ -581,6 +582,10 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		},
 		statsTrackerPubSub,
 		store.Channel,
+		tracking_settings_diff_view_loader.New(
+			censusOutfitsRepo,
+			censusCharactersRepo,
+		).Load,
 	)
 	if err != nil {
 		return nil, err

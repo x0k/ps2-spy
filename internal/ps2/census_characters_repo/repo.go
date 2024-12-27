@@ -31,6 +31,6 @@ func New(client *census2.Client) *Repository {
 
 		characterNamesOperand: &characterNamesOperand,
 		characterNamesQuery: census2.NewQuery(census2.GetQuery, census2.Ps2_v2_NS, ps2_collections.Character).
-			Where(census2.Cond("character_id").Equals(&characterNamesOperand)).Show("name.first"),
+			Where(census2.Cond("character_id").Equals(&characterNamesOperand)).Show("character_id", "name.first"),
 	}
 }

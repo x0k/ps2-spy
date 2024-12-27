@@ -17,7 +17,9 @@ func (l *Repository) characterNamesUrl(ns string, charIds []census2.Str) string 
 	return l.client.ToURL(l.characterNamesQuery)
 }
 
-func (l *Repository) CharacterNamesByIds(ctx context.Context, platform ps2_platforms.Platform, characterIds []ps2.CharacterId) ([]string, error) {
+func (l *Repository) CharacterNamesByIds(
+	ctx context.Context, platform ps2_platforms.Platform, characterIds []ps2.CharacterId,
+) (map[ps2.CharacterId]string, error) {
 	if len(characterIds) == 0 {
 		return nil, nil
 	}
@@ -35,9 +37,9 @@ func (l *Repository) CharacterNamesByIds(ctx context.Context, platform ps2_platf
 	if err != nil {
 		return nil, err
 	}
-	names := make([]string, len(chars))
-	for i, char := range chars {
-		names[i] = char.Name.First
+	names := make(map[ps2.CharacterId]string, len(chars))
+	for _, char := range chars {
+		names[ps2.CharacterId(char.CharacterId)] = char.Name.First
 	}
 	return names, nil
 }
