@@ -482,7 +482,10 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	censusOutfitsRepo := census_outfits_repo.New(censusClient)
 
 	discordMessages := discord_messages.New(
-		shared.Timezones, cfg.StatsTracker.MaxTrackingDuration,
+		shared.Timezones,
+		cfg.StatsTracker.MaxTrackingDuration,
+		cfg.Tracking.MaxNumberTrackedCharacters,
+		cfg.Tracking.MaxNumberTrackedOutfits,
 	)
 	discordCommands := discord_commands.New(
 		log.With(sl.Component("commands")),

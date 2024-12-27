@@ -59,10 +59,10 @@ func (s *SettingsUpdater) Update(
 	updater discord.UserId,
 ) error {
 	if len(settings.Outfits) > s.maxNumOfTrackedOutfits {
-		return tracking.ErrTooManyOutfits
+		return tracking.ErrTooManyOutfits(settings)
 	}
 	if len(settings.Characters) > s.maxNumOfTrackedCharacters {
-		return tracking.ErrTooManyCharacters
+		return tracking.ErrTooManyCharacters(settings)
 	}
 
 	outfitIds, _ := s.outfitsRepo.OutfitIdsByTags(ctx, platform, settings.Outfits)
@@ -85,11 +85,14 @@ func (s *SettingsUpdater) Update(
 		return fmt.Errorf("failed to update settings: %w", err)
 	}
 
-	s.publisher.Publish(tracking.TrackingSettingsUpdated{
-		ChannelId: channelId,
-		Platform:  platform,
-		Diff:      settingsDiff,
-		Updater:   updater,
-	})
+	if !settingsDiff.IsEmpty() {
+		s.publisher.Publish(tracking.TrackingSettingsUpdated{
+			ChannelId: channelId,
+			Platform:  platform,
+			Diff:      settingsDiff,
+			Updater:   updater,
+		})
+	}
+
 	return nil
 }

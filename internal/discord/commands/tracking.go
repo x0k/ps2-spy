@@ -48,7 +48,7 @@ func NewTracking(
 				discord.MemberOrUserId(i),
 			)
 			if err != nil {
-				return messages.TrackingSettingsUpdateError(channelId, platform, err)
+				return messages.TrackingSettingsUpdateFailure(platform, err)
 			}
 			return messages.TrackingSettingsUpdate()
 		})
@@ -131,5 +131,19 @@ func NewTracking(
 			return showSettingsMessage(ctx, log, s, i)
 		},
 		SubmitHandlers: submitHandlers,
+		ComponentHandlers: map[string]discord.InteractionHandler{
+			discord.TRACKING_EDIT_BUTTON_CUSTOM_ID: discord.ShowModal(func(
+				ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate,
+			) discord.Response {
+				platform, outfits, characters := discord.CustomIdToPlatformAndOutfitsAndCharacters(
+					i.MessageComponentData().CustomID,
+				)
+				return messages.TrackingSettingsModal(
+					discord.TRACKING_MODAL_CUSTOM_IDS[platform],
+					outfits,
+					characters,
+				)
+			}),
+		},
 	}
 }

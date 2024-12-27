@@ -3,7 +3,9 @@ package discord_messages
 import (
 	"strings"
 
+	"github.com/bwmarrin/discordgo"
 	"github.com/x0k/ps2-spy/internal/discord"
+	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 	"github.com/x0k/ps2-spy/internal/tracking"
 	"golang.org/x/text/message"
 )
@@ -45,7 +47,7 @@ func renderTrackingSettingsUpdate(
 ) string {
 	b := strings.Builder{}
 	b.WriteString(p.Sprintf(
-		"Settings updated by <@%s>\n\b",
+		"Settings have been updated by <@%s>\n\n",
 		updater,
 	))
 	if len(diff.Characters.ToAdd) > 0 {
@@ -90,22 +92,41 @@ func renderTrackingMissingEntities(
 ) string {
 	b := strings.Builder{}
 	b.WriteString(p.Sprintf(
-		"Something went wrong during the identification of the entities. We couldn't find the following:",
+		"We couldn't find the following:",
 	))
 	if len(missingOutfitTags) > 0 {
-		b.WriteString(p.Sprintf("\noutfits: %s", missingOutfitTags[0]))
+		b.WriteString(p.Sprintf("\n- Outfits: %s", missingOutfitTags[0]))
 		for i := 1; i < len(missingOutfitTags); i++ {
 			b.WriteString(", ")
 			b.WriteString(missingOutfitTags[i])
 		}
 	}
 	if len(missingCharacterNames) > 0 {
-		b.WriteString(p.Sprintf("\ncharacters: %s", missingCharacterNames[0]))
+		b.WriteString(p.Sprintf("\n- Characters: %s", missingCharacterNames[0]))
 		for i := 1; i < len(missingCharacterNames); i++ {
 			b.WriteString(", ")
 			b.WriteString(missingCharacterNames[i])
 		}
 	}
-	b.WriteString(p.Sprintf("\n\nSo you can:"))
 	return b.String()
+}
+
+func newTrackingEditButton(
+	p *message.Printer,
+	platform ps2_platforms.Platform,
+	outfits []string,
+	characters []string,
+) []discordgo.MessageComponent {
+	return []discordgo.MessageComponent{
+		discordgo.ActionsRow{
+			Components: []discordgo.MessageComponent{
+				discordgo.Button{
+					Label: p.Sprintf("Edit"),
+					CustomID: discord.NewTrackingSettingsEditButtonCustomId(
+						platform, outfits, characters,
+					),
+				},
+			},
+		},
+	}
 }
