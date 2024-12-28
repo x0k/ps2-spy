@@ -69,7 +69,6 @@ func DecodeCollection[T any](items json.RawMessage) ([]T, error) {
 	return res, nil
 }
 
-// Provided type `T` should have `mapstructure` tags
 func ExecuteAndDecode[T any](ctx context.Context, c *Client, q *Query) ([]T, error) {
 	data, err := c.Execute(ctx, q)
 	if err != nil {

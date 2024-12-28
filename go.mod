@@ -50,7 +50,6 @@ require (
 	github.com/bwmarrin/discordgo v0.28.1
 	github.com/fatih/color v1.18.0
 	github.com/hashicorp/golang-lru/v2 v2.0.7
-	github.com/mitchellh/mapstructure v1.5.0
 	github.com/prometheus/client_golang v1.20.5
 	golang.org/x/sys v0.28.0 // indirect
 	golang.org/x/text v0.21.0

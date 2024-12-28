@@ -2,12 +2,12 @@ package streaming
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
-	"github.com/mitchellh/mapstructure"
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/commands"
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/core"
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
@@ -31,13 +31,17 @@ type Client struct {
 	env                      string
 	serviceId                string
 	conn                     *websocket.Conn
-	msgBuffer                core.MessageBase
 	connStateChangeMsgBuffer ConnectionStateChanged
 	connectionTimeout        time.Duration
-	publisher                pubsub.Publisher[map[string]any]
+	publisher                pubsub.Publisher[json.RawMessage]
 }
 
-func NewClient(endpoint string, env string, serviceId string, publisher pubsub.Publisher[map[string]any]) *Client {
+func NewClient(
+	endpoint string,
+	env string,
+	serviceId string,
+	publisher pubsub.Publisher[json.RawMessage],
+) *Client {
 	return &Client{
 		endpoint:          endpoint,
 		env:               env,
@@ -51,17 +55,13 @@ func (c *Client) Environment() string {
 	return c.env
 }
 
-func (c *Client) checkConnectionStateChanged(msg map[string]any) error {
-	err := core.AsMessageBase(msg, &c.msgBuffer)
+func (c *Client) checkConnectionStateChanged(msg json.RawMessage) error {
+	err := json.Unmarshal(msg, &c.connStateChangeMsgBuffer)
 	if err != nil {
 		return err
 	}
-	if !IsConnectionStateChangedMessage(c.msgBuffer) {
+	if !IsConnectionStateChangedMessage(c.connStateChangeMsgBuffer.MessageBase) {
 		return ErrInvalidConnectionMessage
-	}
-	err = mapstructure.Decode(msg, &c.connStateChangeMsgBuffer)
-	if err != nil {
-		return err
 	}
 	if c.connStateChangeMsgBuffer.Connected != core.True {
 		return ErrDisconnectedByServer
@@ -85,7 +85,7 @@ func (c *Client) Connect(ctx context.Context) error {
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, c.connectionTimeout)
 	defer cancel()
 
-	var data map[string]any
+	var data json.RawMessage
 	if err = wsjson.Read(ctxWithTimeout, conn, &data); err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
@@ -103,19 +103,14 @@ func (c *Client) Subscribe(ctx context.Context, settings commands.SubscriptionSe
 		return fmt.Errorf("%s: %w", op, err)
 	}
 	for {
-		var data interface{}
+		var data json.RawMessage
 		if err := wsjson.Read(ctx, c.conn, &data); err != nil {
 			return fmt.Errorf("%s: %w", op, err)
 		}
-		msg, ok := data.(map[string]any)
-		if !ok {
-			// TODO: Use optional unknown message publisher
-			continue
-		}
-		if err := c.checkConnectionStateChanged(msg); err == ErrDisconnectedByServer {
+		if err := c.checkConnectionStateChanged(data); err == ErrDisconnectedByServer {
 			return fmt.Errorf("%s: %w", op, err)
 		}
-		c.publisher.Publish(msg)
+		c.publisher.Publish(data)
 	}
 }
 

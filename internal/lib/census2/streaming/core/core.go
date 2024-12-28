@@ -1,6 +1,8 @@
 package core
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type StrBool string
 
@@ -28,35 +30,13 @@ const (
 )
 
 type MessageBase struct {
-	Service string `json:"service" mapstructure:"service"`
-	Type    string `json:"type" mapstructure:"type"`
-}
-
-func AsMessageBase(m map[string]any, b *MessageBase) error {
-	serviceAny, ok := m[ServiceMessageField]
-	if !ok {
-		return fmt.Errorf("MessageBase.Service: %w", ErrNoRequiredField)
-	}
-	serviceStr, ok := serviceAny.(string)
-	if !ok {
-		return fmt.Errorf("MessageBase.Service: %w", ErrUnexpectedType)
-	}
-	b.Service = serviceStr
-	typeAny, ok := m[TypeMessageField]
-	if !ok {
-		return fmt.Errorf("MessageBase.Type: %w", ErrNoRequiredField)
-	}
-	typeStr, ok := typeAny.(string)
-	if !ok {
-		return fmt.Errorf("MessageBase.Type: %w", ErrUnexpectedType)
-	}
-	b.Type = typeStr
-	return nil
+	Service string `json:"service"`
+	Type    string `json:"type"`
 }
 
 const EventNameField = "event_name"
 
 type EventBase struct {
-	EventName string `json:"event_name" mapstructure:"event_name"`
-	Timestamp string `json:"timestamp" mapstructure:"timestamp"`
+	EventName string `json:"event_name"`
+	Timestamp string `json:"timestamp"`
 }

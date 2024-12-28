@@ -1,9 +1,9 @@
 package streaming
 
 import (
+	"encoding/json"
 	"fmt"
 
-	"github.com/mitchellh/mapstructure"
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/core"
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
 )
@@ -14,11 +14,8 @@ var ErrUnknownMessageHandler = fmt.Errorf("unknown message handler")
 var ErrUnsupportedMessageService = fmt.Errorf("unsupported message service")
 
 type Publisher struct {
-	pubsub.Publisher[Message]
-	msgBaseBuff              core.MessageBase
-	subscriptionSettingsBuff *SubscriptionSettings
-	buffers                  map[MessageType]Message
-	onError                  func(err error)
+	publisher pubsub.Publisher[Message]
+	onError   func(err error)
 }
 
 func NewPublisher(
@@ -26,48 +23,60 @@ func NewPublisher(
 	onError func(err error),
 ) *Publisher {
 	return &Publisher{
-		Publisher:                publisher,
-		subscriptionSettingsBuff: &SubscriptionSettings{},
-		buffers: map[MessageType]Message{
-			ServiceStateChangedType: ServiceStateChanged{},
-			HeartbeatType:           Heartbeat{},
-			ServiceMessageType:      ServiceMessage[map[string]any]{},
-		},
+		publisher: publisher,
+		onError:   onError,
 	}
 }
 
-func (p *Publisher) Publish(msg map[string]any) {
+func (p *Publisher) Publish(msg json.RawMessage) {
+	var content map[string]json.RawMessage
+	if err := json.Unmarshal(msg, &content); err != nil {
+		p.onError(fmt.Errorf("failed to decode message base: %w", err))
+		return
+	}
 	// Ignore help message
-	if _, ok := msg[HelpSignatureField]; ok {
+	if _, ok := content[HelpSignatureField]; ok {
 		return
 	}
 	// Subscription
-	if s, ok := msg[SubscriptionSignatureField]; ok {
-		err := mapstructure.Decode(s, p.subscriptionSettingsBuff)
+	if s, ok := content[SubscriptionSignatureField]; ok {
+		var subscriptionSettings SubscriptionSettings
+		err := json.Unmarshal(s, &subscriptionSettings)
 		if err != nil {
 			p.onError(fmt.Errorf("%q decoding: %w", SubscriptionSignatureField, err))
 			return
 		}
-		p.Publisher.Publish(*p.subscriptionSettingsBuff)
+		p.publisher.Publish(subscriptionSettings)
 		return
 	}
-	err := core.AsMessageBase(msg, &p.msgBaseBuff)
+	var base core.MessageBase
+	err := json.Unmarshal(msg, &base)
 	if err != nil {
-		p.onError(err)
+		p.onError(fmt.Errorf("failed to decode message base: %w", err))
 		return
 	}
-	if p.msgBaseBuff.Service != core.EventService {
-		p.onError(fmt.Errorf("%s: %w", p.msgBaseBuff.Service, ErrUnsupportedMessageService))
+	if base.Service != core.EventService {
+		p.onError(fmt.Errorf("%w: %s", ErrUnsupportedMessageService, base.Service))
 		return
 	}
-	buff, ok := p.buffers[MessageType(p.msgBaseBuff.Type)]
-	if !ok {
-		p.onError(fmt.Errorf("%s: %w", p.msgBaseBuff.Type, ErrUnknownMessageType))
+	switch MessageType(base.Type) {
+	case ServiceStateChangedType:
+		parseAndPublish[ServiceStateChanged](p, msg)
+	case HeartbeatType:
+		parseAndPublish[Heartbeat](p, msg)
+	case ServiceMessageType:
+		parseAndPublish[ServiceMessage[json.RawMessage]](p, msg)
+	default:
+		p.onError(fmt.Errorf("%w: %s", ErrUnknownMessageType, base.Type))
 		return
 	}
-	if err = mapstructure.Decode(msg, &buff); err != nil {
-		p.onError(fmt.Errorf("%q decoding: %w", p.msgBaseBuff.Type, err))
+}
+
+func parseAndPublish[T Message](p *Publisher, rawMsg json.RawMessage) {
+	var msg T
+	if err := json.Unmarshal(rawMsg, &msg); err != nil {
+		p.onError(fmt.Errorf("failed to decode service message: %w", err))
 		return
 	}
-	p.Publisher.Publish(buff)
+	p.publisher.Publish(msg)
 }
