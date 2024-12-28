@@ -19,7 +19,6 @@ import (
 )
 
 type ChannelStatsTrackerTasksLoader = loader.Keyed[discord.ChannelId, []discord.StatsTrackerTask]
-type ChannelTimezoneLoader = loader.Keyed[discord.ChannelId, *time.Location]
 type ChannelStatsTrackerTaskCreator = func(
 	context.Context, discord.ChannelId, discord.StatsTrackerTaskState,
 ) error

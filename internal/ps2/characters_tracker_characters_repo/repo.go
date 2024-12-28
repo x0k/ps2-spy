@@ -1,4 +1,4 @@
-package characters_tracker_characters_repo
+package characters_tracker_ps2_characters_repo
 
 import (
 	"context"

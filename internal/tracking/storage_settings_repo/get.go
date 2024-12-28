@@ -1,4 +1,4 @@
-package tracking_settings_repo
+package storage_tracking_settings_repo
 
 import (
 	"context"

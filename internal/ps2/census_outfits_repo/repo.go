@@ -1,4 +1,4 @@
-package census_outfits_repo
+package census_ps2_outfits_repo
 
 import (
 	"sync"

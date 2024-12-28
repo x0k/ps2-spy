@@ -1,8 +1,6 @@
-package tracking_settings_repo
+package storage_discord_channels_settings_repo
 
-import (
-	"github.com/x0k/ps2-spy/internal/storage"
-)
+import "github.com/x0k/ps2-spy/internal/storage"
 
 type Repository struct {
 	storage storage.Storage
