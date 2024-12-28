@@ -38,10 +38,7 @@ func New(
 	worldTerritoryControlLoader loader.Keyed[ps2.WorldId, meta.Loaded[ps2.WorldTerritoryControl]],
 	alertsLoaders map[string]loader.Simple[meta.Loaded[ps2.Alerts]],
 	alertsLoadersPriority []string,
-	onlineTrackableEntitiesLoader loader.Keyed[discord.SettingsQuery, discord.TrackableEntities[
-		map[ps2.OutfitId][]ps2.Character,
-		[]ps2.Character,
-	]],
+	onlineTrackableEntitiesLoader OnlineTrackableEntitiesLoader,
 	outfitsLoader OutfitsLoader,
 	trackingSettingsLoader TrackingSettingsLoader,
 	trackingSettingsUpdater TrackingSettingsUpdater,

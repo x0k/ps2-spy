@@ -10,7 +10,6 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/x0k/ps2-spy/internal/lib/diff"
 	"github.com/x0k/ps2-spy/internal/ps2"
-	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 	"github.com/x0k/ps2-spy/internal/shared"
 )
 
@@ -51,11 +50,6 @@ func CalculateTrackingSettingsDiff(
 }
 
 type RichTrackingSettings = TrackableEntities[[]ps2.Outfit, []ps2.Character]
-
-type SettingsQuery struct {
-	ChannelId ChannelId
-	Platform  ps2_platforms.Platform
-}
 
 var DEFAULT_LANG_TAG = language.English
 

@@ -499,13 +499,13 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		alertsLoaders,
 		[]string{"spy", "ps2alerts", "honu", "census", "voidwell"},
 		func(
-			ctx context.Context, sq discord.SettingsQuery,
+			ctx context.Context, channelId discord.ChannelId, platform ps2_platforms.Platform,
 		) (discord.TrackableEntities[map[ps2.OutfitId][]ps2.Character, []ps2.Character], error) {
-			settings, err := trackingSettingsRepo.Get(ctx, sq.ChannelId, sq.Platform)
+			settings, err := trackingSettingsRepo.Get(ctx, channelId, platform)
 			if err != nil {
 				return discord.TrackableEntities[map[ps2.OutfitId][]ps2.Character, []ps2.Character]{}, err
 			}
-			return charactersTrackers[sq.Platform].TrackableOnlineEntities(settings), nil
+			return charactersTrackers[platform].TrackableOnlineEntities(settings), nil
 		},
 		func(
 			ctx context.Context, platform ps2_platforms.Platform, outfitIds []ps2.OutfitId,

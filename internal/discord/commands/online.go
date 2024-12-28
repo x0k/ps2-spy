@@ -6,7 +6,6 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/x0k/ps2-spy/internal/discord"
 	discord_messages "github.com/x0k/ps2-spy/internal/discord/messages"
-	"github.com/x0k/ps2-spy/internal/lib/loader"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
@@ -15,12 +14,13 @@ type OutfitsLoader = func(
 	context.Context, ps2_platforms.Platform, []ps2.OutfitId,
 ) (map[ps2.OutfitId]ps2.Outfit, error)
 
+type OnlineTrackableEntitiesLoader = func(
+	context.Context, discord.ChannelId, ps2_platforms.Platform,
+) (discord.TrackableEntities[map[ps2.OutfitId][]ps2.Character, []ps2.Character], error)
+
 func NewOnline(
 	messages *discord_messages.Messages,
-	onlineTrackableEntitiesLoader loader.Keyed[discord.SettingsQuery, discord.TrackableEntities[
-		map[ps2.OutfitId][]ps2.Character,
-		[]ps2.Character,
-	]],
+	onlineTrackableEntitiesLoader OnlineTrackableEntitiesLoader,
 	outfitsLoader OutfitsLoader,
 ) *discord.Command {
 	return &discord.Command{
@@ -64,10 +64,7 @@ func NewOnline(
 		) discord.ResponseEdit {
 			platform := ps2_platforms.Platform(i.ApplicationCommandData().Options[0].Name)
 			channelId := discord.ChannelId(i.ChannelID)
-			onlineMembers, err := onlineTrackableEntitiesLoader(ctx, discord.SettingsQuery{
-				ChannelId: channelId,
-				Platform:  platform,
-			})
+			onlineMembers, err := onlineTrackableEntitiesLoader(ctx, channelId, platform)
 			if err != nil {
 				return messages.OnlineMembersLoadError(channelId, platform, err)
 			}
