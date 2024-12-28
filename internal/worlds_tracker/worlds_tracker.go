@@ -13,9 +13,6 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
-	"github.com/x0k/ps2-spy/internal/lib/retryable"
-	"github.com/x0k/ps2-spy/internal/lib/retryable/perform"
-	"github.com/x0k/ps2-spy/internal/lib/retryable/while"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	ps2_factions "github.com/x0k/ps2-spy/internal/ps2/factions"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
@@ -77,17 +74,17 @@ func (z zoneState) update(
 	return z
 }
 
-type WorldsTracker struct {
-	log                     *logger.Logger
-	retryableWorldMapLoader func(context.Context, ps2.WorldId, ...any) (ps2.WorldMap, error)
-	worldIds                []ps2.WorldId
-	mutex                   sync.RWMutex
-	worlds                  map[ps2.WorldId]map[ps2.ZoneId]zoneState
-	invalidationInterval    time.Duration
-	publisher               pubsub.Publisher[Event]
-}
-
 type WorldMapLoader = loader.Keyed[ps2.WorldId, ps2.WorldMap]
+
+type WorldsTracker struct {
+	log                  *logger.Logger
+	worldMapLoader       WorldMapLoader
+	worldIds             []ps2.WorldId
+	mutex                sync.RWMutex
+	worlds               map[ps2.WorldId]map[ps2.ZoneId]zoneState
+	invalidationInterval time.Duration
+	publisher            pubsub.Publisher[Event]
+}
 
 func New(
 	log *logger.Logger,
@@ -112,12 +109,12 @@ func New(
 		worlds[worldId] = world
 	}
 	return &WorldsTracker{
-		log:                     log,
-		worldIds:                worldIds,
-		retryableWorldMapLoader: retryable.NewWithArg(worldMapLoader),
-		worlds:                  worlds,
-		invalidationInterval:    invalidationInterval,
-		publisher:               publisher,
+		log:                  log,
+		worldIds:             worldIds,
+		worldMapLoader:       worldMapLoader,
+		worlds:               worlds,
+		invalidationInterval: invalidationInterval,
+		publisher:            publisher,
 	}
 }
 
@@ -206,20 +203,7 @@ func (w *WorldsTracker) invalidateWorldFacilities(
 	worldId ps2.WorldId,
 ) {
 	log := w.log.With(slog.String("world_id", string(worldId)))
-	worldMap, err := w.retryableWorldMapLoader(
-		ctx,
-		worldId,
-		while.ErrorIsHere,
-		while.HasAttempts(3),
-		while.ContextIsNotCancelled,
-		perform.Log(
-			w.log.Logger,
-			slog.LevelDebug,
-			"[ERROR] failed to get world map, retrying",
-			slog.String("world_id", string(worldId)),
-		),
-		perform.ExponentialBackoff(1*time.Second),
-	)
+	worldMap, err := w.worldMapLoader(ctx, worldId)
 	if err != nil {
 		log.Error(ctx, "failed to invalidate world facilities", sl.Err(err))
 		return

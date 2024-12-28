@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/x0k/ps2-spy/internal/lib/census2"
+	census2_adapters "github.com/x0k/ps2-spy/internal/adapters/census2"
 	ps2_collections "github.com/x0k/ps2-spy/internal/lib/census2/collections/ps2"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/meta"
@@ -16,7 +16,9 @@ import (
 )
 
 func (p *DataProvider) alerts(ctx context.Context, url string) (ps2.Alerts, error) {
-	events, err := census2.ExecutePreparedAndDecode[ps2_collections.MetagameWorldEventItem](ctx, p.client, ps2_collections.WorldEvent, url)
+	events, err := census2_adapters.RetryableExecutePreparedAndDecode[ps2_collections.MetagameWorldEventItem](
+		ctx, p.log, p.client, ps2_collections.WorldEvent, url,
+	)
 	if err != nil {
 		return ps2.Alerts{}, err
 	}

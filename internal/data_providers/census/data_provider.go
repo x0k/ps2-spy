@@ -1,14 +1,12 @@
 package census_data_provider
 
 import (
-	"context"
 	"strings"
 	"sync"
 
 	"github.com/x0k/ps2-spy/internal/lib/census2"
 	ps2_collections "github.com/x0k/ps2-spy/internal/lib/census2/collections/ps2"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
-	"github.com/x0k/ps2-spy/internal/lib/retryable"
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
@@ -19,10 +17,9 @@ type DataProvider struct {
 	ps4euUrl string
 	ps4usUrl string
 
-	charactersMu              sync.Mutex
-	charactersQuery           *census2.Query
-	charactersOperand         *census2.Ptr[census2.List[census2.Str]]
-	retryableCharactersLoader func(context.Context, string, ...any) ([]ps2_collections.CharacterItem, error)
+	charactersMu      sync.Mutex
+	charactersQuery   *census2.Query
+	charactersOperand *census2.Ptr[census2.List[census2.Str]]
 
 	facilityMu      sync.Mutex
 	facilityQuery   *census2.Query
@@ -84,11 +81,6 @@ func New(
 				census2.Join(ps2_collections.CharactersWorld).
 					InjectAt("characters_world"),
 			),
-		retryableCharactersLoader: retryable.NewWithArg(
-			func(ctx context.Context, url string) ([]ps2_collections.CharacterItem, error) {
-				return census2.ExecutePreparedAndDecode[ps2_collections.CharacterItem](ctx, client, ps2_collections.Character, url)
-			},
-		),
 
 		facilityOperand: &facilityOperand,
 		facilityQuery: census2.NewQuery(census2.GetQuery, census2.Ps2_v2_NS, ps2_collections.MapRegion).

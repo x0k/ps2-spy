@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"net"
 	"net/http"
 	"time"
 
@@ -29,7 +28,6 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
 	"github.com/x0k/ps2-spy/internal/lib/fisu"
 	"github.com/x0k/ps2-spy/internal/lib/honu"
-	"github.com/x0k/ps2-spy/internal/lib/httpx"
 	"github.com/x0k/ps2-spy/internal/lib/loader"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
@@ -96,25 +94,12 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	m.PreStartR("storage", store.Open)
 	m.PostStopR("storage", store.Close)
 
-	retryableHttpTransport := httpx.NewRetryRoundTripper(
-		log.Logger.With(sl.Component("http_client")),
-		&http.Transport{
-			Proxy: http.ProxyFromEnvironment,
-			DialContext: (&net.Dialer{
-				Timeout:   cfg.HttpClient.Timeout,
-				KeepAlive: cfg.HttpClient.KeepAlive,
-			}).DialContext,
-			TLSHandshakeTimeout:   cfg.HttpClient.TLSHandshakeTimeout,
-			ResponseHeaderTimeout: cfg.HttpClient.ResponseHeaderTimeout,
-			ExpectContinueTimeout: cfg.HttpClient.ExpectContinueTimeout,
-		},
-	)
 	httpClient := &http.Client{
-		Timeout: 0,
+		Timeout: cfg.HttpClient.Timeout,
 		Transport: metrics.InstrumentTransport(
 			mt,
 			metrics.DefaultTransportName,
-			retryableHttpTransport,
+			http.DefaultTransport,
 		),
 	}
 

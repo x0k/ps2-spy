@@ -15,9 +15,6 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
-	"github.com/x0k/ps2-spy/internal/lib/retryable"
-	"github.com/x0k/ps2-spy/internal/lib/retryable/perform"
-	"github.com/x0k/ps2-spy/internal/lib/retryable/while"
 	"github.com/x0k/ps2-spy/internal/metrics"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	ps2_factions "github.com/x0k/ps2-spy/internal/ps2/factions"
@@ -35,18 +32,18 @@ type player struct {
 type CharacterLoader = loader.Keyed[ps2.CharacterId, ps2.Character]
 
 type CharactersTracker struct {
-	wg                       sync.WaitGroup
-	log                      *logger.Logger
-	platform                 ps2_platforms.Platform
-	mutex                    sync.RWMutex
-	worldPopulationTrackers  map[ps2.WorldId]worldPopulationTracker
-	onlineCharactersTracker  onlineCharactersTracker
-	activePlayers            *containers.ExpirationQueue[player]
-	inactivityCheckInterval  time.Duration
-	inactiveTimeout          time.Duration
-	retryableCharacterLoader func(context.Context, ps2.CharacterId, ...any) (ps2.Character, error)
-	publisher                pubsub.Publisher[Event]
-	mt                       *metrics.Metrics
+	wg                      sync.WaitGroup
+	log                     *logger.Logger
+	platform                ps2_platforms.Platform
+	mutex                   sync.RWMutex
+	worldPopulationTrackers map[ps2.WorldId]worldPopulationTracker
+	onlineCharactersTracker onlineCharactersTracker
+	activePlayers           *containers.ExpirationQueue[player]
+	inactivityCheckInterval time.Duration
+	inactiveTimeout         time.Duration
+	characterLoader         CharacterLoader
+	publisher               pubsub.Publisher[Event]
+	mt                      *metrics.Metrics
 }
 
 func New(
@@ -69,11 +66,9 @@ func New(
 		activePlayers:           containers.NewExpirationQueue[player](),
 		inactivityCheckInterval: time.Minute,
 		inactiveTimeout:         10 * time.Minute,
-		retryableCharacterLoader: retryable.NewWithArg(
-			characterLoader,
-		),
-		publisher: publisher,
-		mt:        mt,
+		characterLoader:         characterLoader,
+		publisher:               publisher,
+		mt:                      mt,
 	}
 }
 
@@ -259,20 +254,7 @@ func (p *CharactersTracker) DetailedWorldPopulation(worldId ps2.WorldId) (ps2.De
 }
 
 func (p *CharactersTracker) handleLogin(ctx context.Context, charId ps2.CharacterId) (ps2.Character, bool) {
-	char, err := p.retryableCharacterLoader(
-		ctx,
-		charId,
-		while.ErrorIsHere,
-		while.HasAttempts(2),
-		while.ContextIsNotCancelled,
-		perform.Log(
-			p.log.Logger,
-			slog.LevelDebug,
-			"[ERROR] failed to get character, retrying",
-			slog.String("character_id", string(charId)),
-		),
-		perform.ExponentialBackoff(1*time.Second),
-	)
+	char, err := p.characterLoader(ctx, charId)
 	if err != nil {
 		p.log.Debug(
 			ctx,

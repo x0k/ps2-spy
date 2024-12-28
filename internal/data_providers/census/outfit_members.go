@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	census2_adapters "github.com/x0k/ps2-spy/internal/adapters/census2"
 	"github.com/x0k/ps2-spy/internal/lib/census2"
 	ps2_collections "github.com/x0k/ps2-spy/internal/lib/census2/collections/ps2"
 	"github.com/x0k/ps2-spy/internal/ps2"
@@ -20,8 +21,9 @@ func (l *DataProvider) outfitMemberIdsUrl(ns string, outfitId ps2.OutfitId) stri
 
 func (l *DataProvider) OutfitMemberIds(ctx context.Context, ns string, outfitId ps2.OutfitId) ([]ps2.CharacterId, error) {
 	url := l.outfitMemberIdsUrl(ns, outfitId)
-	outfits, err := census2.ExecutePreparedAndDecode[ps2_collections.OutfitItem](
+	outfits, err := census2_adapters.RetryableExecutePreparedAndDecode[ps2_collections.OutfitItem](
 		ctx,
+		l.log,
 		l.client,
 		ps2_collections.Outfit,
 		url,

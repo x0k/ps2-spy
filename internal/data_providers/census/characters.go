@@ -2,13 +2,10 @@ package census_data_provider
 
 import (
 	"context"
-	"log/slog"
-	"time"
 
+	census2_adapters "github.com/x0k/ps2-spy/internal/adapters/census2"
 	"github.com/x0k/ps2-spy/internal/lib/census2"
 	ps2_collections "github.com/x0k/ps2-spy/internal/lib/census2/collections/ps2"
-	"github.com/x0k/ps2-spy/internal/lib/retryable/perform"
-	"github.com/x0k/ps2-spy/internal/lib/retryable/while"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	ps2_factions "github.com/x0k/ps2-spy/internal/ps2/factions"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
@@ -28,19 +25,8 @@ func (l *DataProvider) characters(ctx context.Context, ns string, charIds []ps2.
 		strCharIds[i] = census2.Str(charId)
 	}
 	url := l.charactersUrl(ns, strCharIds)
-	return l.retryableCharactersLoader(
-		ctx,
-		url,
-		while.ErrorIsHere,
-		while.HasAttempts(2),
-		while.ContextIsNotCancelled,
-		perform.Log(
-			l.log.Logger,
-			slog.LevelDebug,
-			"[ERROR] failed to load characters, retrying",
-			slog.String("url", url),
-		),
-		perform.ExponentialBackoff(1*time.Second),
+	return census2_adapters.RetryableExecutePreparedAndDecode[ps2_collections.CharacterItem](
+		ctx, l.log, l.client, ps2_collections.Character, url,
 	)
 }
 
