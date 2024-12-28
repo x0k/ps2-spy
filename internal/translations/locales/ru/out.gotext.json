@@ -1575,7 +1575,7 @@
         {
             "id": "Tracking settings have been updated by \u003c@{Updater}\u003e",
             "message": "Tracking settings have been updated by \u003c@{Updater}\u003e",
-            "translation": "",
+            "translation": "Настроики отслеживания были обновлены \u003c@{Updater}\u003e",
             "placeholders": [
                 {
                     "id": "Updater",
