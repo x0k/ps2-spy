@@ -42,7 +42,7 @@ func New(
 		map[ps2.OutfitId][]ps2.Character,
 		[]ps2.Character,
 	]],
-	outfitsLoader loader.Queried[discord.PlatformQuery[[]ps2.OutfitId], map[ps2.OutfitId]ps2.Outfit],
+	outfitsLoader OutfitsLoader,
 	trackingSettingsLoader TrackingSettingsLoader,
 	trackingSettingsUpdater TrackingSettingsUpdater,
 	statsTracker *stats_tracker.StatsTracker,

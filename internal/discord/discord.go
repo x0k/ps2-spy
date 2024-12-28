@@ -57,11 +57,6 @@ type SettingsQuery struct {
 	Platform  ps2_platforms.Platform
 }
 
-type PlatformQuery[T any] struct {
-	Platform ps2_platforms.Platform
-	Value    T
-}
-
 var DEFAULT_LANG_TAG = language.English
 
 func UserLocale(i *discordgo.InteractionCreate) language.Tag {

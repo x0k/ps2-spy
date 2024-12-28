@@ -26,8 +26,11 @@ var ErrNoChannelTrackerToStop = errors.New("no channel tracker to stop")
 var ErrChannelStatsTrackerIsAlreadyStarted = errors.New("channel stats tracker is already started")
 
 type TrackablePlatformsLoader = loader.Keyed[discord.ChannelId, []ps2_platforms.Platform]
-type CharacterTrackingChannelsLoader = loader.Keyed[discord.PlatformQuery[ps2.CharacterId], []discord.ChannelId]
 type StatsTasksLoader = loader.Keyed[time.Time, []discord.ChannelId]
+
+type CharacterTrackingChannelsLoader = func(
+	context.Context, ps2_platforms.Platform, ps2.CharacterId,
+) ([]discord.ChannelId, error)
 
 type StatsTracker struct {
 	trackersMu               sync.RWMutex
@@ -209,7 +212,7 @@ func (s *StatsTracker) handleTrackersOvertime(ctx context.Context) error {
 
 func (s *StatsTracker) handleGainExperienceEvent(ctx context.Context, platform ps2_platforms.Platform, event events.GainExperience) error {
 	charId := ps2.CharacterId(event.CharacterID)
-	if channels, err := s.channelsLoader(ctx, discord.PlatformQuery[ps2.CharacterId]{Platform: platform, Value: charId}); err == nil {
+	if channels, err := s.channelsLoader(ctx, platform, charId); err == nil {
 		s.handleCharacterEvent(
 			ctx,
 			channels,
@@ -235,7 +238,7 @@ func (s *StatsTracker) handleDeathEvent(ctx context.Context, platform ps2_platfo
 	} else if isDeathByRestrictedArea {
 		deathAdder = addDeathByRestrictedArea
 	}
-	if channels, err := s.channelsLoader(ctx, discord.PlatformQuery[ps2.CharacterId]{Platform: platform, Value: charId}); err == nil {
+	if channels, err := s.channelsLoader(ctx, platform, charId); err == nil {
 		s.handleCharacterEvent(
 			ctx,
 			channels,
@@ -257,7 +260,7 @@ func (s *StatsTracker) handleDeathEvent(ctx context.Context, platform ps2_platfo
 	} else if event.IsHeadshot == "1" {
 		killAdder = addHeadShotKill
 	}
-	if channels, err := s.channelsLoader(ctx, discord.PlatformQuery[ps2.CharacterId]{Platform: platform, Value: charId}); err == nil {
+	if channels, err := s.channelsLoader(ctx, platform, charId); err == nil {
 		s.handleCharacterEvent(
 			ctx,
 			channels,

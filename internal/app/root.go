@@ -153,9 +153,9 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	statsTracker := stats_tracker.New(
 		log.With(sl.Component("stats_tracker")),
 		statsTrackerPubSub,
-		func(ctx context.Context, pq discord.PlatformQuery[ps2.CharacterId]) ([]discord.ChannelId, error) {
-			manager := trackingManagers[pq.Platform]
-			channels, err := manager.ChannelIdsForCharacter(ctx, pq.Value)
+		func(ctx context.Context, platform ps2_platforms.Platform, charId ps2.CharacterId) ([]discord.ChannelId, error) {
+			manager := trackingManagers[platform]
+			channels, err := manager.ChannelIdsForCharacter(ctx, charId)
 			if err != nil {
 				return nil, err
 			}
@@ -508,9 +508,9 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			return charactersTrackers[sq.Platform].TrackableOnlineEntities(settings), nil
 		},
 		func(
-			ctx context.Context, pq discord.PlatformQuery[[]ps2.OutfitId],
+			ctx context.Context, platform ps2_platforms.Platform, outfitIds []ps2.OutfitId,
 		) (map[ps2.OutfitId]ps2.Outfit, error) {
-			return outfitsLoaders[pq.Platform](ctx, pq.Value)
+			return outfitsLoaders[platform](ctx, outfitIds)
 		},
 		tracking_settings_view_loader.New(
 			trackingSettingsRepo,

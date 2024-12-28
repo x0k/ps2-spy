@@ -11,13 +11,17 @@ import (
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
 
+type OutfitsLoader = func(
+	context.Context, ps2_platforms.Platform, []ps2.OutfitId,
+) (map[ps2.OutfitId]ps2.Outfit, error)
+
 func NewOnline(
 	messages *discord_messages.Messages,
 	onlineTrackableEntitiesLoader loader.Keyed[discord.SettingsQuery, discord.TrackableEntities[
 		map[ps2.OutfitId][]ps2.Character,
 		[]ps2.Character,
 	]],
-	outfitsLoader loader.Queried[discord.PlatformQuery[[]ps2.OutfitId], map[ps2.OutfitId]ps2.Outfit],
+	outfitsLoader OutfitsLoader,
 ) *discord.Command {
 	return &discord.Command{
 		Cmd: &discordgo.ApplicationCommand{
@@ -71,10 +75,7 @@ func NewOnline(
 			for id := range onlineMembers.Outfits {
 				outfitIds = append(outfitIds, id)
 			}
-			outfits, err := outfitsLoader(ctx, discord.PlatformQuery[[]ps2.OutfitId]{
-				Platform: platform,
-				Value:    outfitIds,
-			})
+			outfits, err := outfitsLoader(ctx, platform, outfitIds)
 			if err != nil {
 				return messages.OutfitsLoadError(outfitIds, platform, err)
 			}
