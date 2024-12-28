@@ -1,29 +1,27 @@
-package expirable_state_container
+package containers
 
 import (
 	"context"
 	"sync"
 	"time"
-
-	"github.com/x0k/ps2-spy/internal/lib/containers"
 )
 
-type ExpirableStateContainer[K comparable, S any] struct {
+type ExpirableState[K comparable, S any] struct {
 	ttl    time.Duration
 	mu     sync.RWMutex
-	keys   *containers.ExpirationQueue[K]
+	keys   *ExpirationQueue[K]
 	values map[K]S
 }
 
-func New[K comparable, S any](ttl time.Duration) *ExpirableStateContainer[K, S] {
-	return &ExpirableStateContainer[K, S]{
+func NewExpirableState[K comparable, S any](ttl time.Duration) *ExpirableState[K, S] {
+	return &ExpirableState[K, S]{
 		ttl:    ttl,
-		keys:   containers.NewExpirationQueue[K](),
+		keys:   NewExpirationQueue[K](),
 		values: make(map[K]S),
 	}
 }
 
-func (c *ExpirableStateContainer[K, S]) flush(now time.Time) {
+func (c *ExpirableState[K, S]) flush(now time.Time) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.keys.RemoveExpired(now.Add(-c.ttl), func(key K) {
@@ -31,7 +29,7 @@ func (c *ExpirableStateContainer[K, S]) flush(now time.Time) {
 	})
 }
 
-func (c *ExpirableStateContainer[K, S]) Start(ctx context.Context) {
+func (c *ExpirableState[K, S]) Start(ctx context.Context) {
 	ticker := time.NewTicker(1 * time.Minute)
 	defer ticker.Stop()
 	for {
@@ -44,21 +42,21 @@ func (c *ExpirableStateContainer[K, S]) Start(ctx context.Context) {
 	}
 }
 
-func (c *ExpirableStateContainer[K, S]) Load(key K) (S, bool) {
+func (c *ExpirableState[K, S]) Load(key K) (S, bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	value, ok := c.values[key]
 	return value, ok
 }
 
-func (c *ExpirableStateContainer[K, S]) Store(key K, value S) {
+func (c *ExpirableState[K, S]) Store(key K, value S) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.keys.Push(key)
 	c.values[key] = value
 }
 
-func (c *ExpirableStateContainer[K, S]) Pop(key K) (S, bool) {
+func (c *ExpirableState[K, S]) Pop(key K) (S, bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	value, ok := c.values[key]
@@ -69,7 +67,7 @@ func (c *ExpirableStateContainer[K, S]) Pop(key K) (S, bool) {
 	return value, ok
 }
 
-func (c *ExpirableStateContainer[K, S]) Remove(key K) {
+func (c *ExpirableState[K, S]) Remove(key K) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.keys.Remove(key)

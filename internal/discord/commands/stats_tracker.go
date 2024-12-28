@@ -10,7 +10,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/x0k/ps2-spy/internal/discord"
 	discord_messages "github.com/x0k/ps2-spy/internal/discord/messages"
-	"github.com/x0k/ps2-spy/internal/expirable_state_container"
+	"github.com/x0k/ps2-spy/internal/lib/containers"
 	"github.com/x0k/ps2-spy/internal/lib/loader"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
@@ -52,7 +52,7 @@ func NewStatsTracker(
 	statsTracker *stats_tracker.StatsTracker,
 	channelStatsTrackerTasksLoader ChannelStatsTrackerTasksLoader,
 	channelLoader ChannelLoader,
-	taskStateContainer *expirable_state_container.ExpirableStateContainer[
+	taskStateContainer *containers.ExpirableState[
 		discord.ChannelAndUserIds,
 		discord.StatsTrackerTaskState,
 	],

@@ -8,7 +8,7 @@ import (
 
 	"github.com/x0k/ps2-spy/internal/discord"
 	discord_messages "github.com/x0k/ps2-spy/internal/discord/messages"
-	"github.com/x0k/ps2-spy/internal/expirable_state_container"
+	"github.com/x0k/ps2-spy/internal/lib/containers"
 	"github.com/x0k/ps2-spy/internal/lib/loader"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
@@ -22,7 +22,7 @@ type Commands struct {
 	populationLoader         *populationLoader
 	worldPopulationLoader    *worldPopulationLoader
 	alertsLoader             *alertsLoader
-	createTaskStateContainer *expirable_state_container.ExpirableStateContainer[
+	createTaskStateContainer *containers.ExpirableState[
 		discord.ChannelAndUserIds,
 		discord.StatsTrackerTaskState,
 	]
@@ -73,9 +73,7 @@ func New(
 		alertsLoaders,
 		alertsLoadersPriority,
 	)
-	createTaskStateContainer := expirable_state_container.New[discord.ChannelAndUserIds, discord.StatsTrackerTaskState](
-		10 * time.Minute,
-	)
+	createTaskStateContainer := containers.NewExpirableState[discord.ChannelAndUserIds, discord.StatsTrackerTaskState](10 * time.Minute)
 	return &Commands{
 		populationLoader:         populationLoader,
 		worldPopulationLoader:    worldPopulationLoader,
