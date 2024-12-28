@@ -39,39 +39,47 @@ func init() {
 }
 
 var messageKeyToIndex = map[string]int{
-	"\n\n**Characters:**\n":        119,
-	"\n**Left the outfit:**":       34,
-	"\n**Other characters:**":      87,
-	"\n**Welcome to the outfit:**": 33,
-	"\n- %s, %02d:%02d, %s":        107,
-	"\n- No tasks were found":      106,
-	"\nStatus: _":                  124,
+	"\n\n**Tracked characters:**\n": 137,
+	"\n**Added characters:** ":      140,
+	"\n**Added outfits:** ":         142,
+	"\n**Left the outfit:**":        34,
+	"\n**Other characters:**":       88,
+	"\n**Removed characters:** ":    141,
+	"\n**Removed outfits:** ":       143,
+	"\n**Welcome to the outfit:**":  33,
+	"\n- %s, %02d:%02d, %s":         108,
+	"\n- Characters: %s":            146,
+	"\n- No tasks were found":       107,
+	"\n- Outfits: %s":               145,
+	"\nStatus: _":                   120,
 	"# PlanetSide 2 Spy\n\nSimple discord bot for PlanetSide 2 outfits\n\n## Links\n\n- [GitHub](https://github.com/x0k/ps2-spy)\n\t\t\n": 42,
-	"%dh ":                                131,
-	"%dm":                                 130,
-	"%d・online":                           82,
+	"%dh ":                                127,
+	"%dm":                                 126,
+	"%d・online":                           83,
 	"%s (%s) is now offline (%s)":         28,
 	"%s (%s) is now online (%s)":          26,
-	"%s - %d":                             92,
-	"%s - %s (Ends %s)":                   95,
-	"%s - No alerts":                      97,
+	"%s - %d":                             93,
+	"%s - %s (Ends %s)":                   96,
+	"%s - No alerts":                      98,
 	"%s [%s] captured %s (%s) on %s (%s)": 40,
 	"%s [%s] lost %s (%s) on %s (%s)":     41,
-	"%s alerts":                           98,
-	") by `":                              123,
-	"Add new task":                        102,
-	"Cancel":                              112,
+	"%s alerts":                           99,
+	") by `":                              119,
+	"**Tracked outfits:**\n":              135,
+	"Add new task":                        103,
+	"Cancel":                              113,
 	"Character":                           19,
 	"Character notifications: off":        5,
 	"Character notifications: on":         4,
-	"Characters online:":                  85,
+	"Characters online:":                  86,
 	"Default timezone":                    0,
 	"Duration":                            24,
-	"Duration too long: expected max %s got %s": 114,
-	"Duration: %s": 110,
+	"Duration too long: expected max %s got %s": 115,
+	"Duration: %s": 111,
 	"ENG":          13,
-	"Enter the character names separated by comma": 79,
-	"Enter the outfit tags separated by comma":     77,
+	"Edit":         147,
+	"Enter the character names separated by comma, maximum %d": 79,
+	"Enter the outfit tags separated by comma, maximum %d":     77,
 	"Faction":                                              17,
 	"Failed to extract field value":                        71,
 	"Failed to load %s channel":                            70,
@@ -79,7 +87,6 @@ var messageKeyToIndex = map[string]int{
 	"Failed to load %s territory control":                  46,
 	"Failed to load character names for %v (%s)":           69,
 	"Failed to load character: %s":                         35,
-	"Failed to load characters %v (%s)":                    52,
 	"Failed to load characters: %v (%s)":                   30,
 	"Failed to load facility: %s":                          36,
 	"Failed to load global alerts from %s":                 48,
@@ -88,18 +95,16 @@ var messageKeyToIndex = map[string]int{
 	"Failed to load outfit tags for %v (%s)":               68,
 	"Failed to load outfit: %s (%s)":                       29,
 	"Failed to load outfits %v (%s)":                       50,
-	"Failed to load outfits by tags %v (%s)":               51,
 	"Failed to load stats tracker task":                    64,
 	"Failed to load stats tracker tasks":                   63,
 	"Failed to load tracking settings for %s channel (%s)": 67,
 	"Failed to load world alerts for %s from %s":           47,
-	"Failed to parse language %q":                          80,
+	"Failed to parse language %q":                          81,
 	"Failed to remove stats tracker task":                  65,
 	"Failed to save field value for %s channel":            72,
-	"Failed to save tracking settings for %s channel (%s)": 53,
 	"Failed to start stats tracker":                        58,
 	"Failed to stop stats tracker":                         60,
-	"Friday":                                               136,
+	"Friday":                                               132,
 	"HA":                                                   14,
 	"HS":                                                   21,
 	"INF":                                                  10,
@@ -109,78 +114,82 @@ var messageKeyToIndex = map[string]int{
 	"Kills":                                                20,
 	"LA":                                                   11,
 	"Language":                                             1,
-	"Language for this channel has been set to %q":         81,
+	"Language for this channel has been set to %q":         82,
 	"Language: english":                                    2,
 	"Language: russian":                                    3,
 	"Loadout":                                              23,
-	"Locked ":                                              122,
+	"Locked ":                                              118,
 	"MAX":                                                  15,
 	"MED":                                                  12,
-	"Max amount of tasks per channel is %d":                113,
-	"Monday":                                               132,
-	"NC":                                                   89,
-	"Next":                                                 104,
-	"No":                                                   129,
-	"No alerts":                                            99,
-	"No characters":                                        120,
-	"No characters online":                                 84,
+	"Max amount of tasks per channel is %d":                114,
+	"Monday":                                               128,
+	"NC":                                                   90,
+	"Next":                                                 105,
+	"No":                                                   125,
+	"No alerts":                                            100,
+	"No characters":                                        138,
+	"No characters online":                                 85,
 	"No data collected":                                    39,
-	"No outfits":                                           118,
-	"Notes:\n- The time is specified in the time zone %q. This can be changed in the channel settings;\n- The maximum amount of tasks per channel is %d;\n- You can edit a task by clicking on it;\n- The “Remove” button deletes immediately without confirmation.\n": 100,
+	"No outfits":                                           136,
+	"Notes:\n- The time is specified in the time zone %q. This can be changed in the channel settings;\n- The maximum amount of tasks per channel is %d;\n- You can edit a task by clicking on it;\n- The “Remove” button deletes immediately without confirmation.\n": 101,
 	"Nothing to track, please set tracking settings first": 56,
 	"Outfit":                    18,
 	"Outfit notifications: off": 7,
 	"Outfit notifications: on":  6,
-	"Period":                    94,
+	"Period":                    95,
 	"Platform: %s, started at: %s, stopped: %s, duration: %s\n```": 38,
-	"Previous":  103,
-	"Remove":    101,
-	"Saturday":  137,
-	"Schedule:": 105,
+	"Previous":  104,
+	"Remove":    102,
+	"Saturday":  133,
+	"Schedule:": 106,
 	"Settings are saved, but failed to load character names %v (%s)": 55,
 	"Settings are saved, but failed to load outfit tags %v (%s)":     54,
-	"Settings are updated.\n\n**Outfits:**\n":                        117,
-	"Source: %s":                             91,
-	"Stable":                                 125,
-	"Starting hour: %d":                      108,
-	"Starting minute: %d":                    109,
-	"Stats tracker started":                  37,
-	"Stats tracker task state not found":     66,
-	"Stats tracker will be started soon":     61,
-	"Stats tracker will be stopped soon":     62,
-	"Submit":                                 111,
-	"Sunday":                                 138,
-	"TR":                                     88,
-	"Territory Control":                      96,
-	"There is no stats tracker to stop":      59,
-	"Thursday":                               135,
-	"Title updates: off":                     9,
-	"Title updates: on":                      8,
-	"Total population - %d":                  93,
-	"Tracking Settings (PC)":                 73,
-	"Tracking Settings (PS4 EU)":             74,
-	"Tracking Settings (PS4 US)":             75,
-	"Tuesday":                                133,
-	"Unknown":                                16,
-	"Unlocked ":                              121,
-	"Unstable":                               126,
-	"Update of ":                             31,
-	"VS":                                     90,
-	"Wednesday":                              134,
-	"Which characters do you want to track?": 78,
-	"Which outfits do you want to track?":    76,
-	"Yes":                                    128,
-	"You must have `Manage Channels` permission to use this command":  83,
-	"Your task (%s, %s, %s) overlaps with existing task (%s, %s, %s)": 115,
+	"Settings have been updated by <@%s>":                            139,
+	"Something went wrong":                                           51,
+	"Source: %s":                                                     92,
+	"Stable":                                                         121,
+	"Starting hour: %d":                                              109,
+	"Starting minute: %d":                                            110,
+	"Stats tracker started":                                          37,
+	"Stats tracker task state not found":                             66,
+	"Stats tracker will be started soon":                             61,
+	"Stats tracker will be stopped soon":                             62,
+	"Submit":                                                         112,
+	"Sunday":                                                         134,
+	"TR":                                                             89,
+	"Territory Control":                                              97,
+	"There is no stats tracker to stop":                              59,
+	"Thursday":                                                       131,
+	"Title updates: off":                                             9,
+	"Title updates: on":                                              8,
+	"Too many characters, maximum is %d":                             52,
+	"Too many outfits, maximum is %d":                                53,
+	"Total population - %d":                                          94,
+	"Tracking Settings (PC)":                                         73,
+	"Tracking Settings (PS4 EU)":                                     74,
+	"Tracking Settings (PS4 US)":                                     75,
+	"Tracking settings have been successfully updated":               80,
+	"Tuesday":                                                        129,
+	"Unknown":                                                        16,
+	"Unlocked ":                                                      117,
+	"Unstable":                                                       122,
+	"Update of ":                                                     31,
+	"VS":                                                             91,
+	"We couldn't find the following:":                                144,
+	"Wednesday":                                                      130,
+	"Which characters do you want to track?":                         78,
+	"Which outfits do you want to track?":                            76,
+	"Yes":                                                            124,
+	"You must have `Manage Channels` permission to use this command":  84,
+	"Your task (%s, %s, %s) overlaps with existing task (%s, %s, %s)": 116,
 	"[%s] %s (%s) is now offline (%s)":                                27,
 	"[%s] %s (%s) is now online (%s)":                                 25,
-	"] outfit (":                                                      86,
+	"] outfit (":                                                      87,
 	"] outfit members:":                                               32,
-	"_\nAlerts: _":                                                    127,
-	"something went wrong":                                            116,
+	"_\nAlerts: _":                                                    123,
 }
 
-var enIndex = []uint32{ // 140 elements
+var enIndex = []uint32{ // 149 elements
 	// Entry 0 - 1F
 	0x00000000, 0x00000011, 0x0000001a, 0x0000002c,
 	0x0000003e, 0x0000005a, 0x00000077, 0x00000090,
@@ -196,34 +205,37 @@ var enIndex = []uint32{ // 140 elements
 	0x0000031d, 0x00000353, 0x00000385, 0x00000403,
 	0x00000422, 0x0000044e, 0x00000479, 0x000004a0,
 	0x000004d1, 0x000004f9, 0x00000531, 0x00000556,
-	0x00000583, 0x000005ab, 0x000005e6, 0x00000627,
-	0x0000066c, 0x000006a1, 0x000006c9, 0x000006e7,
-	0x00000709, 0x00000726, 0x00000749, 0x0000076c,
+	0x0000056b, 0x00000591, 0x000005b4, 0x000005f5,
+	0x0000063a, 0x0000066f, 0x00000697, 0x000006b5,
+	0x000006d7, 0x000006f4, 0x00000717, 0x0000073a,
 	// Entry 40 - 5F
-	0x0000078f, 0x000007b1, 0x000007d5, 0x000007f8,
-	0x00000833, 0x00000860, 0x00000891, 0x000008ae,
-	0x000008cc, 0x000008f9, 0x00000910, 0x0000092b,
-	0x00000946, 0x0000096a, 0x00000993, 0x000009ba,
-	0x000009e7, 0x00000a06, 0x00000a36, 0x00000a45,
-	0x00000a84, 0x00000a99, 0x00000aac, 0x00000ab7,
-	0x00000ad2, 0x00000ad5, 0x00000ad8, 0x00000adb,
-	0x00000ae9, 0x00000af7, 0x00000b10, 0x00000b17,
+	0x0000075d, 0x0000077f, 0x000007a3, 0x000007c6,
+	0x00000801, 0x0000082e, 0x0000085f, 0x0000087c,
+	0x0000089a, 0x000008c7, 0x000008de, 0x000008f9,
+	0x00000914, 0x00000938, 0x00000970, 0x00000997,
+	0x000009d3, 0x00000a04, 0x00000a23, 0x00000a53,
+	0x00000a62, 0x00000aa1, 0x00000ab6, 0x00000ac9,
+	0x00000ad4, 0x00000aef, 0x00000af2, 0x00000af5,
+	0x00000af8, 0x00000b06, 0x00000b14, 0x00000b2d,
 	// Entry 60 - 7F
-	0x00000b32, 0x00000b44, 0x00000b56, 0x00000b63,
-	0x00000b6d, 0x00000c78, 0x00000c7f, 0x00000c8c,
-	0x00000c95, 0x00000c9a, 0x00000ca4, 0x00000cbf,
-	0x00000ce4, 0x00000cf9, 0x00000d10, 0x00000d20,
-	0x00000d27, 0x00000d2e, 0x00000d57, 0x00000d87,
-	0x00000dd9, 0x00000dee, 0x00000e17, 0x00000e22,
-	0x00000e39, 0x00000e47, 0x00000e55, 0x00000e61,
-	0x00000e68, 0x00000e77, 0x00000e7e, 0x00000e87,
+	0x00000b34, 0x00000b4f, 0x00000b61, 0x00000b73,
+	0x00000b80, 0x00000b8a, 0x00000c95, 0x00000c9c,
+	0x00000ca9, 0x00000cb2, 0x00000cb7, 0x00000cc1,
+	0x00000cdc, 0x00000d01, 0x00000d16, 0x00000d2d,
+	0x00000d3d, 0x00000d44, 0x00000d4b, 0x00000d74,
+	0x00000da4, 0x00000df6, 0x00000e04, 0x00000e10,
+	0x00000e17, 0x00000e26, 0x00000e2d, 0x00000e36,
+	0x00000e42, 0x00000e46, 0x00000e49, 0x00000e50,
 	// Entry 80 - 9F
-	0x00000e93, 0x00000e97, 0x00000e9a, 0x00000ea1,
-	0x00000ead, 0x00000eb4, 0x00000ebc, 0x00000ec6,
-	0x00000ecf, 0x00000ed6, 0x00000edf, 0x00000ee6,
-} // Size: 584 bytes
+	0x00000e5c, 0x00000e63, 0x00000e6b, 0x00000e75,
+	0x00000e7e, 0x00000e85, 0x00000e8e, 0x00000e95,
+	0x00000eaf, 0x00000eba, 0x00000ed9, 0x00000ee7,
+	0x00000f0e, 0x00000f2a, 0x00000f48, 0x00000f61,
+	0x00000f7c, 0x00000f9c, 0x00000fb2, 0x00000fcb,
+	0x00000fd0,
+} // Size: 620 bytes
 
-const enData string = "" + // Size: 3814 bytes
+const enData string = "" + // Size: 4048 bytes
 	"\x02Default timezone\x02Language\x02Language: english\x02Language: russi" +
 	"an\x02Character notifications: on\x02Character notifications: off\x02Out" +
 	"fit notifications: on\x02Outfit notifications: off\x02Title updates: on" +
@@ -246,49 +258,54 @@ const enData string = "" + // Size: 3814 bytes
 	"h %[2]s\x02Failed to load %[1]s territory control\x02Failed to load worl" +
 	"d alerts for %[1]s from %[2]s\x02Failed to load global alerts from %[1]s" +
 	"\x02Failed to load online members for %[1]s channel (%[2]s)\x02Failed to" +
-	" load outfits %[1]v (%[2]s)\x02Failed to load outfits by tags %[1]v (%[2" +
-	"]s)\x02Failed to load characters %[1]v (%[2]s)\x02Failed to save trackin" +
-	"g settings for %[1]s channel (%[2]s)\x02Settings are saved, but failed t" +
-	"o load outfit tags %[1]v (%[2]s)\x02Settings are saved, but failed to lo" +
-	"ad character names %[1]v (%[2]s)\x02Nothing to track, please set trackin" +
-	"g settings first\x02Invalid stats tracker subcommand: %[1]s\x02Failed to" +
-	" start stats tracker\x02There is no stats tracker to stop\x02Failed to s" +
-	"top stats tracker\x02Stats tracker will be started soon\x02Stats tracker" +
-	" will be stopped soon\x02Failed to load stats tracker tasks\x02Failed to" +
-	" load stats tracker task\x02Failed to remove stats tracker task\x02Stats" +
-	" tracker task state not found\x02Failed to load tracking settings for %[" +
-	"1]s channel (%[2]s)\x02Failed to load outfit tags for %[1]v (%[2]s)\x02F" +
-	"ailed to load character names for %[1]v (%[2]s)\x02Failed to load %[1]s " +
-	"channel\x02Failed to extract field value\x02Failed to save field value f" +
-	"or %[1]s channel\x02Tracking Settings (PC)\x02Tracking Settings (PS4 EU)" +
-	"\x02Tracking Settings (PS4 US)\x02Which outfits do you want to track?" +
-	"\x02Enter the outfit tags separated by comma\x02Which characters do you " +
-	"want to track?\x02Enter the character names separated by comma\x02Failed" +
-	" to parse language %[1]q\x02Language for this channel has been set to %[" +
-	"1]q\x02%[1]d・online\x02You must have `Manage Channels` permission to use" +
-	" this command\x02No characters online\x02Characters online:\x02] outfit " +
-	"(\x04\x01\x0a\x00\x16\x02**Other characters:**\x02TR\x02NC\x02VS\x02Sour" +
-	"ce: %[1]s\x02%[1]s - %[2]d\x02Total population - %[1]d\x02Period\x02%[1]" +
-	"s - %[2]s (Ends %[3]s)\x02Territory Control\x02%[1]s - No alerts\x02%[1]" +
-	"s alerts\x02No alerts\x04\x00\x01\x0a\x85\x02\x02Notes:\x0a- The time is" +
-	" specified in the time zone %[1]q. This can be changed in the channel se" +
-	"ttings;\x0a- The maximum amount of tasks per channel is %[2]d;\x0a- You " +
-	"can edit a task by clicking on it;\x0a- The “Remove” button deletes imme" +
-	"diately without confirmation.\x02Remove\x02Add new task\x02Previous\x02N" +
-	"ext\x02Schedule:\x04\x01\x0a\x00\x16\x02- No tasks were found\x04\x01" +
-	"\x0a\x00 \x02- %[1]s, %02[2]d:%02[3]d, %[4]s\x02Starting hour: %[1]d\x02" +
-	"Starting minute: %[1]d\x02Duration: %[1]s\x02Submit\x02Cancel\x02Max amo" +
-	"unt of tasks per channel is %[1]d\x02Duration too long: expected max %[1" +
-	"]s got %[2]s\x02Your task (%[1]s, %[2]s, %[3]s) overlaps with existing t" +
-	"ask (%[4]s, %[5]s, %[6]s)\x02something went wrong\x04\x00\x01\x0a$\x02Se" +
-	"ttings are updated.\x0a\x0a**Outfits:**\x02No outfits\x04\x02\x0a\x0a" +
-	"\x01\x0a\x10\x02**Characters:**\x02No characters\x04\x00\x01 \x09\x02Unl" +
-	"ocked\x04\x00\x01 \x07\x02Locked\x02) by `\x04\x01\x0a\x00\x0a\x02Status" +
-	": _\x02Stable\x02Unstable\x02_\x0aAlerts: _\x02Yes\x02No\x02%[1]dm\x04" +
-	"\x00\x01 \x07\x02%[1]dh\x02Monday\x02Tuesday\x02Wednesday\x02Thursday" +
-	"\x02Friday\x02Saturday\x02Sunday"
+	" load outfits %[1]v (%[2]s)\x02Something went wrong\x02Too many characte" +
+	"rs, maximum is %[1]d\x02Too many outfits, maximum is %[1]d\x02Settings a" +
+	"re saved, but failed to load outfit tags %[1]v (%[2]s)\x02Settings are s" +
+	"aved, but failed to load character names %[1]v (%[2]s)\x02Nothing to tra" +
+	"ck, please set tracking settings first\x02Invalid stats tracker subcomma" +
+	"nd: %[1]s\x02Failed to start stats tracker\x02There is no stats tracker " +
+	"to stop\x02Failed to stop stats tracker\x02Stats tracker will be started" +
+	" soon\x02Stats tracker will be stopped soon\x02Failed to load stats trac" +
+	"ker tasks\x02Failed to load stats tracker task\x02Failed to remove stats" +
+	" tracker task\x02Stats tracker task state not found\x02Failed to load tr" +
+	"acking settings for %[1]s channel (%[2]s)\x02Failed to load outfit tags " +
+	"for %[1]v (%[2]s)\x02Failed to load character names for %[1]v (%[2]s)" +
+	"\x02Failed to load %[1]s channel\x02Failed to extract field value\x02Fai" +
+	"led to save field value for %[1]s channel\x02Tracking Settings (PC)\x02T" +
+	"racking Settings (PS4 EU)\x02Tracking Settings (PS4 US)\x02Which outfits" +
+	" do you want to track?\x02Enter the outfit tags separated by comma, maxi" +
+	"mum %[1]d\x02Which characters do you want to track?\x02Enter the charact" +
+	"er names separated by comma, maximum %[1]d\x02Tracking settings have bee" +
+	"n successfully updated\x02Failed to parse language %[1]q\x02Language for" +
+	" this channel has been set to %[1]q\x02%[1]d・online\x02You must have `Ma" +
+	"nage Channels` permission to use this command\x02No characters online" +
+	"\x02Characters online:\x02] outfit (\x04\x01\x0a\x00\x16\x02**Other char" +
+	"acters:**\x02TR\x02NC\x02VS\x02Source: %[1]s\x02%[1]s - %[2]d\x02Total p" +
+	"opulation - %[1]d\x02Period\x02%[1]s - %[2]s (Ends %[3]s)\x02Territory C" +
+	"ontrol\x02%[1]s - No alerts\x02%[1]s alerts\x02No alerts\x04\x00\x01\x0a" +
+	"\x85\x02\x02Notes:\x0a- The time is specified in the time zone %[1]q. Th" +
+	"is can be changed in the channel settings;\x0a- The maximum amount of ta" +
+	"sks per channel is %[2]d;\x0a- You can edit a task by clicking on it;" +
+	"\x0a- The “Remove” button deletes immediately without confirmation.\x02R" +
+	"emove\x02Add new task\x02Previous\x02Next\x02Schedule:\x04\x01\x0a\x00" +
+	"\x16\x02- No tasks were found\x04\x01\x0a\x00 \x02- %[1]s, %02[2]d:%02[3" +
+	"]d, %[4]s\x02Starting hour: %[1]d\x02Starting minute: %[1]d\x02Duration:" +
+	" %[1]s\x02Submit\x02Cancel\x02Max amount of tasks per channel is %[1]d" +
+	"\x02Duration too long: expected max %[1]s got %[2]s\x02Your task (%[1]s," +
+	" %[2]s, %[3]s) overlaps with existing task (%[4]s, %[5]s, %[6]s)\x04\x00" +
+	"\x01 \x09\x02Unlocked\x04\x00\x01 \x07\x02Locked\x02) by `\x04\x01\x0a" +
+	"\x00\x0a\x02Status: _\x02Stable\x02Unstable\x02_\x0aAlerts: _\x02Yes\x02" +
+	"No\x02%[1]dm\x04\x00\x01 \x07\x02%[1]dh\x02Monday\x02Tuesday\x02Wednesda" +
+	"y\x02Thursday\x02Friday\x02Saturday\x02Sunday\x04\x00\x01\x0a\x15\x02**T" +
+	"racked outfits:**\x02No outfits\x04\x02\x0a\x0a\x01\x0a\x18\x02**Tracked" +
+	" characters:**\x02No characters\x02Settings have been updated by <@%[1]s" +
+	">\x04\x01\x0a\x01 \x16\x02**Added characters:**\x04\x01\x0a\x01 \x18\x02" +
+	"**Removed characters:**\x04\x01\x0a\x01 \x13\x02**Added outfits:**\x04" +
+	"\x01\x0a\x01 \x15\x02**Removed outfits:**\x02We couldn't find the follow" +
+	"ing:\x04\x01\x0a\x00\x11\x02- Outfits: %[1]s\x04\x01\x0a\x00\x14\x02- Ch" +
+	"aracters: %[1]s\x02Edit"
 
-var ruIndex = []uint32{ // 140 elements
+var ruIndex = []uint32{ // 149 elements
 	// Entry 0 - 1F
 	0x00000000, 0x00000034, 0x0000003d, 0x0000005c,
 	0x00000075, 0x000000aa, 0x000000e1, 0x0000011c,
@@ -304,34 +321,37 @@ var ruIndex = []uint32{ // 140 elements
 	0x00000582, 0x000005dd, 0x00000636, 0x000006cd,
 	0x00000701, 0x00000751, 0x00000790, 0x000007f4,
 	0x00000849, 0x00000891, 0x000008ee, 0x00000935,
-	0x0000098c, 0x000009cf, 0x00000a3d, 0x00000ac4,
-	0x00000b49, 0x00000bc9, 0x00000c1e, 0x00000c73,
-	0x00000cb7, 0x00000d0e, 0x00000d5c, 0x00000dac,
+	0x00000958, 0x0000099f, 0x000009ec, 0x00000a73,
+	0x00000af8, 0x00000b78, 0x00000bcd, 0x00000c22,
+	0x00000c66, 0x00000cbd, 0x00000d0b, 0x00000d5b,
 	// Entry 40 - 5F
-	0x00000e03, 0x00000e5c, 0x00000eb5, 0x00000f19,
-	0x00000f7b, 0x00000fd4, 0x0000102b, 0x00001069,
-	0x000010a5, 0x000010fb, 0x0000112c, 0x00001161,
-	0x00001196, 0x000011e1, 0x0000122e, 0x0000126d,
-	0x000012b8, 0x000012ff, 0x00001349, 0x00001360,
-	0x000013de, 0x0000140b, 0x0000142e, 0x0000144d,
-	0x00001477, 0x0000147c, 0x00001481, 0x00001486,
-	0x0000149e, 0x000014ac, 0x000014dc, 0x000014e9,
+	0x00000db2, 0x00000e0b, 0x00000e64, 0x00000ec8,
+	0x00000f2a, 0x00000f83, 0x00000fda, 0x00001018,
+	0x00001054, 0x000010aa, 0x000010db, 0x00001110,
+	0x00001145, 0x00001190, 0x000011f5, 0x00001234,
+	0x00001295, 0x000012e3, 0x0000132a, 0x00001374,
+	0x0000138b, 0x00001409, 0x00001436, 0x00001459,
+	0x00001478, 0x000014a2, 0x000014a7, 0x000014ac,
+	0x000014b1, 0x000014c9, 0x000014d7, 0x00001507,
 	// Entry 60 - 7F
-	0x00001510, 0x00001536, 0x00001552, 0x00001567,
-	0x0000157b, 0x00001743, 0x00001752, 0x00001770,
-	0x00001785, 0x00001798, 0x000017ae, 0x000017d8,
-	0x000017fd, 0x00001818, 0x00001839, 0x00001859,
-	0x00001870, 0x0000187d, 0x000018d2, 0x00001933,
-	0x000019bd, 0x000019e0, 0x00001a23, 0x00001a45,
-	0x00001a64, 0x00001a82, 0x00001aa2, 0x00001ac0,
-	0x00001ad5, 0x00001aea, 0x00001aff, 0x00001b19,
+	0x00001514, 0x0000153b, 0x00001561, 0x0000157d,
+	0x00001592, 0x000015a6, 0x0000176e, 0x0000177d,
+	0x0000179b, 0x000017b0, 0x000017c3, 0x000017d9,
+	0x00001803, 0x00001828, 0x00001843, 0x00001864,
+	0x00001884, 0x0000189b, 0x000018a8, 0x000018fd,
+	0x0000195e, 0x000019e8, 0x00001a08, 0x00001a26,
+	0x00001a3b, 0x00001a50, 0x00001a65, 0x00001a7f,
+	0x00001a93, 0x00001a98, 0x00001a9f, 0x00001aa7,
 	// Entry 80 - 9F
-	0x00001b2d, 0x00001b32, 0x00001b39, 0x00001b41,
-	0x00001b4e, 0x00001b65, 0x00001b74, 0x00001b7f,
-	0x00001b8e, 0x00001b9d, 0x00001bac, 0x00001bc3,
-} // Size: 584 bytes
+	0x00001ab4, 0x00001acb, 0x00001ada, 0x00001ae5,
+	0x00001af4, 0x00001b03, 0x00001b12, 0x00001b29,
+	0x00001b69, 0x00001b8b, 0x00001bc5, 0x00001be3,
+	0x00001c36, 0x00001c6b, 0x00001c9c, 0x00001cd9,
+	0x00001d12, 0x00001d37, 0x00001d60, 0x00001d83,
+	0x00001d9e,
+} // Size: 620 bytes
 
-const ruData string = "" + // Size: 7107 bytes
+const ruData string = "" + // Size: 7582 bytes
 	"\x02Временная зона по умолчанию\x02Язык\x02Язык: английский\x02Язык: рус" +
 	"ский\x02Уведомления персонажей: вкл.\x02Уведомления персонажей: выкл." +
 	"\x02Уведомления подразделений: вкл.\x02Уведомления подразделений: выкл." +
@@ -356,50 +376,56 @@ const ruData string = "" + // Size: 7107 bytes
 	"й для %[1]s\x02Ошибка загрузки актуальных тревог для %[1]s (%[2]s)\x02О" +
 	"шибка загрузки глобальных тревог (%[1]s)\x02Ошибка загрузки онлайн уча" +
 	"стников канала %[1]s (%[2]s)\x02Ошибка загрузки подразделений %[1]v (%[" +
-	"2]s)\x02Ошибка загрузки подразделений по тегам %[1]v (%[2]s)\x02Ошибка з" +
-	"агрузки персонажей %[1]v (%[2]s)\x02Ошибка сохранения настроек отслежи" +
-	"вания для канала %[1]s (%[2]s)\x02Настройки сохранены, но не удалось з" +
-	"агрузить теги подразделений %[1]v (%[2]s)\x02Настройки сохранены, но н" +
-	"е удалось загрузить имена персонажей %[1]v (%[2]s)\x02Нечего отслежива" +
-	"ть, пожалуйста, установите настройки отслеживания\x02Неверная команда" +
-	" отслеживания статистики: %[1]s\x02Не удалось запустить отслеживание ста" +
-	"тистики\x02Отслеживание статистики не запущено\x02Не удалось остановить" +
-	" отслеживание статистики\x02Отслеживание статистики скоро запустится\x02" +
-	"Отслеживание статистики скоро остановится\x02Ошибка загрузки задач отсл" +
-	"еживания статистики\x02Ошибка загрузки задачи отслеживания статистики" +
-	"\x02Ошибка удаления задачи отслеживания статистики\x02Состояние задачи о" +
-	"тслеживания статистики не найдено\x02Ошибка загрузки настроек подписки" +
-	" для канала %[1]s (%[2]s)\x02Не удалось загрузить теги подразделений %[1" +
-	"]v (%[2]s)\x02Не удалось загрузить имена персонажей %[1]v (%[2]s)\x02Ош" +
-	"ибка загрузки данных канала %[1]s\x02Ошибка извлечения значения поля" +
-	"\x02Ошибка сохранения значения поля для канала %[1]s\x02Настройки отслеж" +
-	"ивания (PC)\x02Настройки отслеживания (PS4 EU)\x02Настройки отслеживани" +
-	"я (PS4 US)\x02Какие подразделения хотите отслеживать?\x02Введите теги п" +
-	"одразделений через запятую\x02Каких игроков хотите отслеживать?\x02Введ" +
-	"ите имена персонажей через запятую\x02Невозможно распознать локализаци" +
-	"ю %[1]q\x02Для этого канала был установлен язык %[1]q\x02%[1]d・онлайн" +
-	"\x02Вы должны иметь разрешение `Manage Channels` чтобы использовать эту " +
-	"команду\x02Нет персонажей онлайн\x02Персонажи онлайн:\x02] подраздел" +
-	"ение (\x04\x01\x0a\x00%\x02**Другие персонажи:**\x02ТР\x02НК\x02СВ\x02И" +
-	"сточник: %[1]s\x02%[1]s - %[2]d\x02Глобальная популяция - %[1]d\x02Пери" +
-	"од\x02%[1]s - %[2]s (Кончится %[3]s)\x02Контроль территорий\x02%[1]s - " +
-	"Нет тревог\x02%[1]s тревоги\x02Нет тревог\x04\x00\x01\x0a\xc2\x03\x02Пр" +
-	"имечание:\x0a- Время указано в %[1]q временной зоне. Это может быть изм" +
-	"енено в настройках канала;\x0a- Максимальное количество задач для канал" +
-	"а - %[2]d;\x0a- Вы можете редактировать задачу, нажав на нее;\x0a- Кноп" +
-	"ка “Удалить” удаляет немедленно без подтверждения.\x02Удалить\x02Добави" +
-	"ть задачу\x02Предыдущая\x02Следующая\x02Расписание:\x04\x01\x0a\x00%" +
-	"\x02- Задачи не найдены\x04\x01\x0a\x00 \x02- %[1]s, %02[2]d:%02[3]d, %" +
-	"[4]s\x02Час начала: %[1]d\x02Минута начала: %[1]d\x02Длительность: %[1]s" +
-	"\x02Подтвердить\x02Отмена\x02Максимальное количество задач для канала - " +
-	"%[1]d\x02Превышена максимальная длительность задачи (%[1]s): %[2]s\x02Ва" +
-	"ша задача (%[1]s, %[2]s, %[3]s) пересекается с существующей задачей (" +
-	"%[4]s, %[5]s, %[6]s)\x02что-то пошло не так\x04\x00\x01\x0a>\x02Настрой" +
-	"ки обновлены.\x0a\x0a**Аутфиты:**\x02Нет подразделений\x04\x02\x0a\x0a" +
-	"\x01\x0a\x18\x02**Персонажи:**\x02Нет персонажей\x04\x00\x01 \x1b\x02Ра" +
-	"зблокирован\x04\x00\x01 \x19\x02Заблокирован\x02) фракцией `\x04\x01" +
-	"\x0a\x00\x10\x02Статус: _\x02Стабильный\x02Не стабильный\x02_\x0aТревоги" +
-	": _\x02Да\x02Нет\x02%[1]dм\x04\x00\x01 \x08\x02%[1]dч\x02Понедельник\x02" +
-	"Вторник\x02Среда\x02Четверг\x02Пятница\x02Суббота\x02Воскресенье"
+	"2]s)\x02Что-то пошло не так\x02Слишком много персонажей, максимум %[1]d" +
+	"\x02Слишком много подразделений, максимум %[1]d\x02Настройки сохранены," +
+	" но не удалось загрузить теги подразделений %[1]v (%[2]s)\x02Настройки " +
+	"сохранены, но не удалось загрузить имена персонажей %[1]v (%[2]s)\x02Н" +
+	"ечего отслеживать, пожалуйста, установите настройки отслеживания\x02Н" +
+	"еверная команда отслеживания статистики: %[1]s\x02Не удалось запустить " +
+	"отслеживание статистики\x02Отслеживание статистики не запущено\x02Не уд" +
+	"алось остановить отслеживание статистики\x02Отслеживание статистики ско" +
+	"ро запустится\x02Отслеживание статистики скоро остановится\x02Ошибка за" +
+	"грузки задач отслеживания статистики\x02Ошибка загрузки задачи отслежив" +
+	"ания статистики\x02Ошибка удаления задачи отслеживания статистики\x02Со" +
+	"стояние задачи отслеживания статистики не найдено\x02Ошибка загрузки н" +
+	"астроек подписки для канала %[1]s (%[2]s)\x02Не удалось загрузить теги " +
+	"подразделений %[1]v (%[2]s)\x02Не удалось загрузить имена персонажей %" +
+	"[1]v (%[2]s)\x02Ошибка загрузки данных канала %[1]s\x02Ошибка извлечения" +
+	" значения поля\x02Ошибка сохранения значения поля для канала %[1]s\x02На" +
+	"стройки отслеживания (PC)\x02Настройки отслеживания (PS4 EU)\x02Настрой" +
+	"ки отслеживания (PS4 US)\x02Какие подразделения хотите отслеживать?\x02" +
+	"Введите теги подразделений через запятую, максимум %[1]d\x02Каких игрок" +
+	"ов хотите отслеживать?\x02Введите имена персонажей через запятую, макси" +
+	"мум %[1]d\x02Настройки отслеживания успешно обновлены\x02Невозможно рас" +
+	"познать локализацию %[1]q\x02Для этого канала был установлен язык %[1]q" +
+	"\x02%[1]d・онлайн\x02Вы должны иметь разрешение `Manage Channels` чтобы " +
+	"использовать эту команду\x02Нет персонажей онлайн\x02Персонажи онлай" +
+	"н:\x02] подразделение (\x04\x01\x0a\x00%\x02**Другие персонажи:**\x02ТР" +
+	"\x02НК\x02СВ\x02Источник: %[1]s\x02%[1]s - %[2]d\x02Глобальная популяция" +
+	" - %[1]d\x02Период\x02%[1]s - %[2]s (Кончится %[3]s)\x02Контроль террито" +
+	"рий\x02%[1]s - Нет тревог\x02%[1]s тревоги\x02Нет тревог\x04\x00\x01" +
+	"\x0a\xc2\x03\x02Примечание:\x0a- Время указано в %[1]q временной зоне. Э" +
+	"то может быть изменено в настройках канала;\x0a- Максимальное количеств" +
+	"о задач для канала - %[2]d;\x0a- Вы можете редактировать задачу, нажав " +
+	"на нее;\x0a- Кнопка “Удалить” удаляет немедленно без подтверждения.\x02" +
+	"Удалить\x02Добавить задачу\x02Предыдущая\x02Следующая\x02Расписание:" +
+	"\x04\x01\x0a\x00%\x02- Задачи не найдены\x04\x01\x0a\x00 \x02- %[1]s, %" +
+	"02[2]d:%02[3]d, %[4]s\x02Час начала: %[1]d\x02Минута начала: %[1]d\x02Дл" +
+	"ительность: %[1]s\x02Подтвердить\x02Отмена\x02Максимальное количество з" +
+	"адач для канала - %[1]d\x02Превышена максимальная длительность задачи (" +
+	"%[1]s): %[2]s\x02Ваша задача (%[1]s, %[2]s, %[3]s) пересекается с сущест" +
+	"вующей задачей (%[4]s, %[5]s, %[6]s)\x04\x00\x01 \x1b\x02Разблокирова" +
+	"н\x04\x00\x01 \x19\x02Заблокирован\x02) фракцией `\x04\x01\x0a\x00\x10" +
+	"\x02Статус: _\x02Стабильный\x02Не стабильный\x02_\x0aТревоги: _\x02Да" +
+	"\x02Нет\x02%[1]dм\x04\x00\x01 \x08\x02%[1]dч\x02Понедельник\x02Вторник" +
+	"\x02Среда\x02Четверг\x02Пятница\x02Суббота\x02Воскресенье\x04\x00\x01" +
+	"\x0a;\x02**Отслеживаемые подразделения:**\x02Нет подразделений\x04\x02" +
+	"\x0a\x0a\x01\x0a3\x02**Отслеживаемые персонажи:**\x02Нет персонажей\x02" +
+	"Настройки были обновлены пользователем <@%[1]s>\x04\x01\x0a\x01 /\x02**" +
+	"Добавленные персонажи:**\x04\x01\x0a\x01 +\x02**Удаленные персонажи:**" +
+	"\x04\x01\x0a\x01 7\x02**Добавленные подразделения:**\x04\x01\x0a\x01 3" +
+	"\x02**Удаленные подразделения:**\x02Мы не смогли найти:\x04\x01\x0a\x00" +
+	"$\x02- Подразделения: %[1]s\x04\x01\x0a\x00\x1e\x02- Персонажей: %[1]s" +
+	"\x02Редактировать"
 
-	// Total table size 12089 bytes (11KiB); checksum: 7D3BA4A7
+	// Total table size 12870 bytes (12KiB); checksum: 420ACDC6
