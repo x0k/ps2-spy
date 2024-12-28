@@ -47,11 +47,11 @@ func renderTrackingSettingsUpdate(
 ) string {
 	b := strings.Builder{}
 	b.WriteString(p.Sprintf(
-		"Settings have been updated by <@%s>\n\n",
+		"Settings have been updated by <@%s>",
 		updater,
 	))
 	if len(diff.Characters.ToAdd) > 0 {
-		b.WriteString(p.Sprintf("**Added characters:**\n"))
+		b.WriteString(p.Sprintf("\n**Added characters:** "))
 		b.WriteString(diff.Characters.ToAdd[0])
 		for i := 1; i < len(diff.Characters.ToAdd); i++ {
 			b.WriteString(", ")
@@ -59,7 +59,7 @@ func renderTrackingSettingsUpdate(
 		}
 	}
 	if len(diff.Characters.ToDel) > 0 {
-		b.WriteString(p.Sprintf("\n\n**Removed characters:**\n"))
+		b.WriteString(p.Sprintf("\n**Removed characters:** "))
 		b.WriteString(diff.Characters.ToDel[0])
 		for i := 1; i < len(diff.Characters.ToDel); i++ {
 			b.WriteString(", ")
@@ -67,7 +67,7 @@ func renderTrackingSettingsUpdate(
 		}
 	}
 	if len(diff.Outfits.ToAdd) > 0 {
-		b.WriteString(p.Sprintf("\n\n**Added outfits:**\n"))
+		b.WriteString(p.Sprintf("\n**Added outfits:** "))
 		b.WriteString(diff.Outfits.ToAdd[0])
 		for i := 1; i < len(diff.Outfits.ToAdd); i++ {
 			b.WriteString(", ")
@@ -75,7 +75,7 @@ func renderTrackingSettingsUpdate(
 		}
 	}
 	if len(diff.Outfits.ToDel) > 0 {
-		b.WriteString(p.Sprintf("\n\n**Removed outfits:**\n"))
+		b.WriteString(p.Sprintf("\n**Removed outfits:** "))
 		b.WriteString(diff.Outfits.ToDel[0])
 		for i := 1; i < len(diff.Outfits.ToDel); i++ {
 			b.WriteString(", ")

@@ -3,6 +3,7 @@ package census_characters_repo
 import (
 	"context"
 
+	census2_adapters "github.com/x0k/ps2-spy/internal/adapters/census2"
 	"github.com/x0k/ps2-spy/internal/lib/census2"
 	ps2_collections "github.com/x0k/ps2-spy/internal/lib/census2/collections/ps2"
 	"github.com/x0k/ps2-spy/internal/ps2"
@@ -28,8 +29,9 @@ func (l *Repository) CharacterNamesByIds(
 		strCharIds[i] = census2.Str(string(charId))
 	}
 	url := l.characterNamesUrl(ps2_platforms.PlatformNamespace(platform), strCharIds)
-	chars, err := census2.ExecutePreparedAndDecode[ps2_collections.CharacterItem](
+	chars, err := census2_adapters.RetryableExecutePreparedAndDecode[ps2_collections.CharacterItem](
 		ctx,
+		l.log,
 		l.client,
 		ps2_collections.Character,
 		url,

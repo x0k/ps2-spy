@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	census2_adapters "github.com/x0k/ps2-spy/internal/adapters/census2"
 	"github.com/x0k/ps2-spy/internal/lib/census2"
 	ps2_collections "github.com/x0k/ps2-spy/internal/lib/census2/collections/ps2"
 	"github.com/x0k/ps2-spy/internal/ps2"
@@ -28,8 +29,9 @@ func (r *Repository) CharacterIdsByNames(ctx context.Context, platform ps2_platf
 		values[i] = census2.Str(strings.ToLower(name))
 	}
 	url := r.characterIdsUrl(ps2_platforms.PlatformNamespace(platform), values)
-	chars, err := census2.ExecutePreparedAndDecode[ps2_collections.CharacterItem](
+	chars, err := census2_adapters.RetryableExecutePreparedAndDecode[ps2_collections.CharacterItem](
 		ctx,
+		r.log,
 		r.client,
 		ps2_collections.Character,
 		url,

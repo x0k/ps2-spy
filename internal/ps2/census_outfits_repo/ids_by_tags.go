@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	census2_adapters "github.com/x0k/ps2-spy/internal/adapters/census2"
 	"github.com/x0k/ps2-spy/internal/lib/census2"
 	ps2_collections "github.com/x0k/ps2-spy/internal/lib/census2/collections/ps2"
 	"github.com/x0k/ps2-spy/internal/ps2"
@@ -28,8 +29,9 @@ func (l *Repository) OutfitIdsByTags(ctx context.Context, platform ps2_platforms
 		values[i] = census2.Str(strings.ToLower(tag))
 	}
 	url := l.outfitIdsUrl(ps2_platforms.PlatformNamespace(platform), values)
-	outfits, err := census2.ExecutePreparedAndDecode[ps2_collections.OutfitItem](
+	outfits, err := census2_adapters.RetryableExecutePreparedAndDecode[ps2_collections.OutfitItem](
 		ctx,
+		l.log,
 		l.client,
 		ps2_collections.Outfit,
 		url,

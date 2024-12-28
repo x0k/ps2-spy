@@ -5,9 +5,11 @@ import (
 
 	"github.com/x0k/ps2-spy/internal/lib/census2"
 	ps2_collections "github.com/x0k/ps2-spy/internal/lib/census2/collections/ps2"
+	"github.com/x0k/ps2-spy/internal/lib/logger"
 )
 
 type Repository struct {
+	log    *logger.Logger
 	client *census2.Client
 
 	characterIdsMu      sync.Mutex
@@ -19,10 +21,14 @@ type Repository struct {
 	characterNamesOperand *census2.Ptr[census2.List[census2.Str]]
 }
 
-func New(client *census2.Client) *Repository {
+func New(
+	log *logger.Logger,
+	client *census2.Client,
+) *Repository {
 	characterIdsOperand := census2.NewPtr(census2.StrList())
 	characterNamesOperand := census2.NewPtr(census2.StrList())
 	return &Repository{
+		log:    log,
 		client: client,
 
 		characterIdsOperand: &characterIdsOperand,

@@ -478,8 +478,14 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		}
 	})
 
-	censusCharactersRepo := census_characters_repo.New(censusClient)
-	censusOutfitsRepo := census_outfits_repo.New(censusClient)
+	censusCharactersRepo := census_characters_repo.New(
+		log.With(sl.Component("census_characters_repo")),
+		censusClient,
+	)
+	censusOutfitsRepo := census_outfits_repo.New(
+		log.With(sl.Component("census_outfits_repo")),
+		censusClient,
+	)
 
 	discordMessages := discord_messages.New(
 		shared.Timezones,
