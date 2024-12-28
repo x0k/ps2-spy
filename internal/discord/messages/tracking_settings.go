@@ -47,7 +47,7 @@ func renderTrackingSettingsUpdate(
 ) string {
 	b := strings.Builder{}
 	b.WriteString(p.Sprintf(
-		"Settings have been updated by <@%s>",
+		"Tracking settings have been updated by <@%s>\n",
 		updater,
 	))
 	if len(diff.Characters.ToAdd) > 0 {

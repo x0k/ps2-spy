@@ -144,42 +144,42 @@ var messageKeyToIndex = map[string]int{
 	"Schedule:": 106,
 	"Settings are saved, but failed to load character names %v (%s)": 55,
 	"Settings are saved, but failed to load outfit tags %v (%s)":     54,
-	"Settings have been updated by <@%s>":                            139,
-	"Something went wrong":                                           51,
-	"Source: %s":                                                     92,
-	"Stable":                                                         121,
-	"Starting hour: %d":                                              109,
-	"Starting minute: %d":                                            110,
-	"Stats tracker started":                                          37,
-	"Stats tracker task state not found":                             66,
-	"Stats tracker will be started soon":                             61,
-	"Stats tracker will be stopped soon":                             62,
-	"Submit":                                                         112,
-	"Sunday":                                                         134,
-	"TR":                                                             89,
-	"Territory Control":                                              97,
-	"There is no stats tracker to stop":                              59,
-	"Thursday":                                                       131,
-	"Title updates: off":                                             9,
-	"Title updates: on":                                              8,
-	"Too many characters, maximum is %d":                             52,
-	"Too many outfits, maximum is %d":                                53,
-	"Total population - %d":                                          94,
-	"Tracking Settings (PC)":                                         73,
-	"Tracking Settings (PS4 EU)":                                     74,
-	"Tracking Settings (PS4 US)":                                     75,
-	"Tracking settings have been successfully updated":               80,
-	"Tuesday":                                                        129,
-	"Unknown":                                                        16,
-	"Unlocked ":                                                      117,
-	"Unstable":                                                       122,
-	"Update of ":                                                     31,
-	"VS":                                                             91,
-	"We couldn't find the following:":                                144,
-	"Wednesday":                                                      130,
-	"Which characters do you want to track?":                         78,
-	"Which outfits do you want to track?":                            76,
-	"Yes":                                                            124,
+	"Something went wrong":               51,
+	"Source: %s":                         92,
+	"Stable":                             121,
+	"Starting hour: %d":                  109,
+	"Starting minute: %d":                110,
+	"Stats tracker started":              37,
+	"Stats tracker task state not found": 66,
+	"Stats tracker will be started soon": 61,
+	"Stats tracker will be stopped soon": 62,
+	"Submit":                             112,
+	"Sunday":                             134,
+	"TR":                                 89,
+	"Territory Control":                  97,
+	"There is no stats tracker to stop":  59,
+	"Thursday":                           131,
+	"Title updates: off":                 9,
+	"Title updates: on":                  8,
+	"Too many characters, maximum is %d": 52,
+	"Too many outfits, maximum is %d":    53,
+	"Total population - %d":              94,
+	"Tracking Settings (PC)":             73,
+	"Tracking Settings (PS4 EU)":         74,
+	"Tracking Settings (PS4 US)":         75,
+	"Tracking settings have been successfully updated": 80,
+	"Tracking settings have been updated by <@%s>\n":   139,
+	"Tuesday":                                129,
+	"Unknown":                                16,
+	"Unlocked ":                              117,
+	"Unstable":                               122,
+	"Update of ":                             31,
+	"VS":                                     91,
+	"We couldn't find the following:":        144,
+	"Wednesday":                              130,
+	"Which characters do you want to track?": 78,
+	"Which outfits do you want to track?":    76,
+	"Yes":                                    124,
 	"You must have `Manage Channels` permission to use this command":  84,
 	"Your task (%s, %s, %s) overlaps with existing task (%s, %s, %s)": 116,
 	"[%s] %s (%s) is now offline (%s)":                                27,
@@ -230,12 +230,12 @@ var enIndex = []uint32{ // 149 elements
 	0x00000e5c, 0x00000e63, 0x00000e6b, 0x00000e75,
 	0x00000e7e, 0x00000e85, 0x00000e8e, 0x00000e95,
 	0x00000eaf, 0x00000eba, 0x00000ed9, 0x00000ee7,
-	0x00000f0e, 0x00000f2a, 0x00000f48, 0x00000f61,
-	0x00000f7c, 0x00000f9c, 0x00000fb2, 0x00000fcb,
-	0x00000fd0,
+	0x00000f1c, 0x00000f38, 0x00000f56, 0x00000f6f,
+	0x00000f8a, 0x00000faa, 0x00000fc0, 0x00000fd9,
+	0x00000fde,
 } // Size: 620 bytes
 
-const enData string = "" + // Size: 4048 bytes
+const enData string = "" + // Size: 4062 bytes
 	"\x02Default timezone\x02Language\x02Language: english\x02Language: russi" +
 	"an\x02Character notifications: on\x02Character notifications: off\x02Out" +
 	"fit notifications: on\x02Outfit notifications: off\x02Title updates: on" +
@@ -298,12 +298,12 @@ const enData string = "" + // Size: 4048 bytes
 	"No\x02%[1]dm\x04\x00\x01 \x07\x02%[1]dh\x02Monday\x02Tuesday\x02Wednesda" +
 	"y\x02Thursday\x02Friday\x02Saturday\x02Sunday\x04\x00\x01\x0a\x15\x02**T" +
 	"racked outfits:**\x02No outfits\x04\x02\x0a\x0a\x01\x0a\x18\x02**Tracked" +
-	" characters:**\x02No characters\x02Settings have been updated by <@%[1]s" +
-	">\x04\x01\x0a\x01 \x16\x02**Added characters:**\x04\x01\x0a\x01 \x18\x02" +
-	"**Removed characters:**\x04\x01\x0a\x01 \x13\x02**Added outfits:**\x04" +
-	"\x01\x0a\x01 \x15\x02**Removed outfits:**\x02We couldn't find the follow" +
-	"ing:\x04\x01\x0a\x00\x11\x02- Outfits: %[1]s\x04\x01\x0a\x00\x14\x02- Ch" +
-	"aracters: %[1]s\x02Edit"
+	" characters:**\x02No characters\x04\x00\x01\x0a0\x02Tracking settings ha" +
+	"ve been updated by <@%[1]s>\x04\x01\x0a\x01 \x16\x02**Added characters:*" +
+	"*\x04\x01\x0a\x01 \x18\x02**Removed characters:**\x04\x01\x0a\x01 \x13" +
+	"\x02**Added outfits:**\x04\x01\x0a\x01 \x15\x02**Removed outfits:**\x02W" +
+	"e couldn't find the following:\x04\x01\x0a\x00\x11\x02- Outfits: %[1]s" +
+	"\x04\x01\x0a\x00\x14\x02- Characters: %[1]s\x02Edit"
 
 var ruIndex = []uint32{ // 149 elements
 	// Entry 0 - 1F
@@ -346,12 +346,12 @@ var ruIndex = []uint32{ // 149 elements
 	0x00001ab4, 0x00001acb, 0x00001ada, 0x00001ae5,
 	0x00001af4, 0x00001b03, 0x00001b12, 0x00001b29,
 	0x00001b69, 0x00001b8b, 0x00001bc5, 0x00001be3,
-	0x00001c36, 0x00001c6b, 0x00001c9c, 0x00001cd9,
-	0x00001d12, 0x00001d37, 0x00001d60, 0x00001d83,
-	0x00001d9e,
+	0x00001be3, 0x00001c18, 0x00001c49, 0x00001c86,
+	0x00001cbf, 0x00001ce4, 0x00001d0d, 0x00001d30,
+	0x00001d4b,
 } // Size: 620 bytes
 
-const ruData string = "" + // Size: 7582 bytes
+const ruData string = "" + // Size: 7499 bytes
 	"\x02Временная зона по умолчанию\x02Язык\x02Язык: английский\x02Язык: рус" +
 	"ский\x02Уведомления персонажей: вкл.\x02Уведомления персонажей: выкл." +
 	"\x02Уведомления подразделений: вкл.\x02Уведомления подразделений: выкл." +
@@ -420,12 +420,11 @@ const ruData string = "" + // Size: 7582 bytes
 	"\x02Нет\x02%[1]dм\x04\x00\x01 \x08\x02%[1]dч\x02Понедельник\x02Вторник" +
 	"\x02Среда\x02Четверг\x02Пятница\x02Суббота\x02Воскресенье\x04\x00\x01" +
 	"\x0a;\x02**Отслеживаемые подразделения:**\x02Нет подразделений\x04\x02" +
-	"\x0a\x0a\x01\x0a3\x02**Отслеживаемые персонажи:**\x02Нет персонажей\x02" +
-	"Настройки были обновлены пользователем <@%[1]s>\x04\x01\x0a\x01 /\x02**" +
-	"Добавленные персонажи:**\x04\x01\x0a\x01 +\x02**Удаленные персонажи:**" +
-	"\x04\x01\x0a\x01 7\x02**Добавленные подразделения:**\x04\x01\x0a\x01 3" +
-	"\x02**Удаленные подразделения:**\x02Мы не смогли найти:\x04\x01\x0a\x00" +
-	"$\x02- Подразделения: %[1]s\x04\x01\x0a\x00\x1e\x02- Персонажей: %[1]s" +
-	"\x02Редактировать"
+	"\x0a\x0a\x01\x0a3\x02**Отслеживаемые персонажи:**\x02Нет персонажей\x04" +
+	"\x01\x0a\x01 /\x02**Добавленные персонажи:**\x04\x01\x0a\x01 +\x02**Удал" +
+	"енные персонажи:**\x04\x01\x0a\x01 7\x02**Добавленные подразделения:**" +
+	"\x04\x01\x0a\x01 3\x02**Удаленные подразделения:**\x02Мы не смогли найт" +
+	"и:\x04\x01\x0a\x00$\x02- Подразделения: %[1]s\x04\x01\x0a\x00\x1e\x02- " +
+	"Персонажей: %[1]s\x02Редактировать"
 
-	// Total table size 12870 bytes (12KiB); checksum: 420ACDC6
+	// Total table size 12801 bytes (12KiB); checksum: FCE1439A

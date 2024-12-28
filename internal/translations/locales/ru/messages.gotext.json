@@ -1573,9 +1573,9 @@
             "translation": "Нет персонажей"
         },
         {
-            "id": "Settings have been updated by \u003c@{Updater}\u003e",
-            "message": "Settings have been updated by \u003c@{Updater}\u003e",
-            "translation": "Настройки были обновлены пользователем \u003c@{Updater}\u003e",
+            "id": "Tracking settings have been updated by \u003c@{Updater}\u003e",
+            "message": "Tracking settings have been updated by \u003c@{Updater}\u003e",
+            "translation": "Настроики отслеживания были обновлены \u003c@{Updater}\u003e",
             "placeholders": [
                 {
                     "id": "Updater",
