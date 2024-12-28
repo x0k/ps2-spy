@@ -66,10 +66,7 @@ func NewChannelSettings(
 ) *discord.Command {
 	return &discord.Command{
 		Cmd: &discordgo.ApplicationCommand{
-			Name: "channel-settings",
-			NameLocalizations: &map[discordgo.Locale]string{
-				discordgo.Russian: "установки-канала",
-			},
+			Name:        "channel-settings",
 			Description: "Change current channel settings",
 			DescriptionLocalizations: &map[discordgo.Locale]string{
 				discordgo.Russian: "Изменить текущие установки канала",

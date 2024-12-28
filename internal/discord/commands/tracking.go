@@ -87,10 +87,7 @@ func NewTracking(
 	})
 	return &discord.Command{
 		Cmd: &discordgo.ApplicationCommand{
-			Name: "tracking",
-			NameLocalizations: &map[discordgo.Locale]string{
-				discordgo.Russian: "отслеживание",
-			},
+			Name:        "tracking",
 			Description: "Manage tracking settings for this channel",
 			DescriptionLocalizations: &map[discordgo.Locale]string{
 				discordgo.Russian: "Управление отслеживанием в этом канале",

@@ -103,43 +103,31 @@ func NewStatsTracker(
 	}
 	return &discord.Command{
 		Cmd: &discordgo.ApplicationCommand{
-			Name: "stats-tracker",
-			NameLocalizations: &map[discordgo.Locale]string{
-				discordgo.Russian: "трекер-статистики",
-			},
+			Name:        "stats-tracker",
 			Description: "Stats tracker management",
 			DescriptionLocalizations: &map[discordgo.Locale]string{
 				discordgo.Russian: "Управление трекером статистики",
 			},
 			Options: []*discordgo.ApplicationCommandOption{
 				{
-					Type: discordgo.ApplicationCommandOptionSubCommand,
-					Name: "start",
-					NameLocalizations: map[discordgo.Locale]string{
-						discordgo.Russian: "запустить",
-					},
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "start",
 					Description: "Start stats tracker",
 					DescriptionLocalizations: map[discordgo.Locale]string{
 						discordgo.Russian: "Запустить трекер статистики",
 					},
 				},
 				{
-					Type: discordgo.ApplicationCommandOptionSubCommand,
-					Name: "stop",
-					NameLocalizations: map[discordgo.Locale]string{
-						discordgo.Russian: "остановить",
-					},
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "stop",
 					Description: "Stop stats tracker",
 					DescriptionLocalizations: map[discordgo.Locale]string{
 						discordgo.Russian: "Остановить трекер статистики",
 					},
 				},
 				{
-					Type: discordgo.ApplicationCommandOptionSubCommand,
-					Name: "schedule",
-					NameLocalizations: map[discordgo.Locale]string{
-						discordgo.Russian: "расписание",
-					},
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "schedule",
 					Description: "Schedule management",
 					DescriptionLocalizations: map[discordgo.Locale]string{
 						discordgo.Russian: "Управление расписанием",

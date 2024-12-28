@@ -25,32 +25,23 @@ func NewPopulation(
 ) *discord.Command {
 	return &discord.Command{
 		Cmd: &discordgo.ApplicationCommand{
-			Name: "population",
-			NameLocalizations: &map[discordgo.Locale]string{
-				discordgo.Russian: "популяция",
-			},
+			Name:        "population",
 			Description: "Returns the population.",
 			DescriptionLocalizations: &map[discordgo.Locale]string{
 				discordgo.Russian: "Возвращает популяцию.",
 			},
 			Options: []*discordgo.ApplicationCommandOption{
 				{
-					Type: discordgo.ApplicationCommandOptionSubCommand,
-					Name: "global",
-					NameLocalizations: map[discordgo.Locale]string{
-						discordgo.Russian: "глобальная",
-					},
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "global",
 					Description: "Returns the global population.",
 					DescriptionLocalizations: map[discordgo.Locale]string{
 						discordgo.Russian: "Возвращает глобальную популяцию.",
 					},
 					Options: []*discordgo.ApplicationCommandOption{
 						{
-							Type: discordgo.ApplicationCommandOptionString,
-							Name: "provider",
-							NameLocalizations: map[discordgo.Locale]string{
-								discordgo.Russian: "источник",
-							},
+							Type:        discordgo.ApplicationCommandOptionString,
+							Name:        "provider",
 							Description: "Provider name",
 							DescriptionLocalizations: map[discordgo.Locale]string{
 								discordgo.Russian: "Название провайдера",
@@ -60,22 +51,16 @@ func NewPopulation(
 					},
 				},
 				{
-					Type: discordgo.ApplicationCommandOptionSubCommand,
-					Name: "server",
-					NameLocalizations: map[discordgo.Locale]string{
-						discordgo.Russian: "сервер",
-					},
+					Type:        discordgo.ApplicationCommandOptionSubCommand,
+					Name:        "server",
 					Description: "Returns the server population.",
 					DescriptionLocalizations: map[discordgo.Locale]string{
 						discordgo.Russian: "Возвращает популяцию сервера.",
 					},
 					Options: []*discordgo.ApplicationCommandOption{
 						{
-							Type: discordgo.ApplicationCommandOptionString,
-							Name: "server",
-							NameLocalizations: map[discordgo.Locale]string{
-								discordgo.Russian: "сервер",
-							},
+							Type:        discordgo.ApplicationCommandOptionString,
+							Name:        "server",
 							Description: "Server name",
 							DescriptionLocalizations: map[discordgo.Locale]string{
 								discordgo.Russian: "Название сервера",
@@ -84,11 +69,8 @@ func NewPopulation(
 							Required: true,
 						},
 						{
-							Type: discordgo.ApplicationCommandOptionString,
-							Name: "provider",
-							NameLocalizations: map[discordgo.Locale]string{
-								discordgo.Russian: "источник",
-							},
+							Type:        discordgo.ApplicationCommandOptionString,
+							Name:        "provider",
 							Description: "Provider name",
 							DescriptionLocalizations: map[discordgo.Locale]string{
 								discordgo.Russian: "Название провайдера",

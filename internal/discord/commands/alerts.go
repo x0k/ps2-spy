@@ -23,21 +23,15 @@ func NewAlerts(
 ) *discord.Command {
 	return &discord.Command{
 		Cmd: &discordgo.ApplicationCommand{
-			Name: "alerts",
-			NameLocalizations: &map[discordgo.Locale]string{
-				discordgo.Russian: "тревоги",
-			},
+			Name:        "alerts",
 			Description: "Returns the alerts.",
 			DescriptionLocalizations: &map[discordgo.Locale]string{
 				discordgo.Russian: "Возвращает тревоги.",
 			},
 			Options: []*discordgo.ApplicationCommandOption{
 				{
-					Type: discordgo.ApplicationCommandOptionString,
-					Name: "server",
-					NameLocalizations: map[discordgo.Locale]string{
-						discordgo.Russian: "сервер",
-					},
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "server",
 					Description: "Server name",
 					DescriptionLocalizations: map[discordgo.Locale]string{
 						discordgo.Russian: "Название сервера",
@@ -45,11 +39,8 @@ func NewAlerts(
 					Choices: serverNames(),
 				},
 				{
-					Type: discordgo.ApplicationCommandOptionString,
-					Name: "provider",
-					NameLocalizations: map[discordgo.Locale]string{
-						discordgo.Russian: "источник",
-					},
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "provider",
 					Description: "Provider name",
 					DescriptionLocalizations: map[discordgo.Locale]string{
 						discordgo.Russian: "Название провайдера",

@@ -17,21 +17,15 @@ func NewTerritories(
 ) *discord.Command {
 	return &discord.Command{
 		Cmd: &discordgo.ApplicationCommand{
-			Name: "territories",
-			NameLocalizations: &map[discordgo.Locale]string{
-				discordgo.Russian: "территории",
-			},
+			Name:        "territories",
 			Description: "Returns the server territories control.",
 			DescriptionLocalizations: &map[discordgo.Locale]string{
 				discordgo.Russian: "Возвращает контролируемые территории сервера.",
 			},
 			Options: []*discordgo.ApplicationCommandOption{
 				{
-					Type: discordgo.ApplicationCommandOptionString,
-					Name: "server",
-					NameLocalizations: map[discordgo.Locale]string{
-						discordgo.Russian: "сервер",
-					},
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "server",
 					Description: "Server name",
 					DescriptionLocalizations: map[discordgo.Locale]string{
 						discordgo.Russian: "Название сервера",
