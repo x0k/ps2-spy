@@ -46,12 +46,15 @@ import (
 	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/ps2/census_characters_repo"
 	"github.com/x0k/ps2-spy/internal/ps2/census_outfits_repo"
+	"github.com/x0k/ps2-spy/internal/ps2/characters_tracker_characters_repo"
+	"github.com/x0k/ps2-spy/internal/ps2/characters_tracker_outfits_repo"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 	"github.com/x0k/ps2-spy/internal/shared"
 	"github.com/x0k/ps2-spy/internal/stats_tracker"
 	"github.com/x0k/ps2-spy/internal/storage"
 	sql_storage "github.com/x0k/ps2-spy/internal/storage/sql"
 	"github.com/x0k/ps2-spy/internal/tracking"
+	tracking_settings_data_loader "github.com/x0k/ps2-spy/internal/tracking/settings_data_loader"
 	tracking_settings_diff_view_loader "github.com/x0k/ps2-spy/internal/tracking/settings_diff_view_loader"
 	tracking_settings_repo "github.com/x0k/ps2-spy/internal/tracking/settings_repo"
 	tracking_settings_updater "github.com/x0k/ps2-spy/internal/tracking/settings_updater"
@@ -467,10 +470,13 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		log.With(sl.Component("census_characters_repo")),
 		censusClient,
 	)
+	charactersTrackerCharactersRepo := characters_tracker_characters_repo.New(charactersTrackers)
+
 	censusOutfitsRepo := census_outfits_repo.New(
 		log.With(sl.Component("census_outfits_repo")),
 		censusClient,
 	)
+	charactersTrackerOutfitsRepo := characters_tracker_outfits_repo.New(charactersTrackers)
 
 	discordMessages := discord_messages.New(
 		shared.Timezones,
@@ -498,15 +504,11 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		},
 		alertsLoaders,
 		[]string{"spy", "ps2alerts", "honu", "census", "voidwell"},
-		func(
-			ctx context.Context, channelId discord.ChannelId, platform ps2_platforms.Platform,
-		) (discord.TrackableEntities[map[ps2.OutfitId][]ps2.Character, []ps2.Character], error) {
-			settings, err := trackingSettingsRepo.Get(ctx, channelId, platform)
-			if err != nil {
-				return discord.TrackableEntities[map[ps2.OutfitId][]ps2.Character, []ps2.Character]{}, err
-			}
-			return charactersTrackers[platform].TrackableOnlineEntities(settings), nil
-		},
+		tracking_settings_data_loader.New(
+			trackingSettingsRepo,
+			charactersTrackerOutfitsRepo,
+			charactersTrackerCharactersRepo,
+		).Load,
 		func(
 			ctx context.Context, platform ps2_platforms.Platform, outfitIds []ps2.OutfitId,
 		) (map[ps2.OutfitId]ps2.Outfit, error) {
@@ -566,11 +568,12 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 					errs = append(errs, err)
 					continue
 				}
-				entities := charactersTrackers[platform].TrackableOnlineEntities(settings)
-				for _, outfit := range entities.Outfits {
+				outfits := charactersTrackers[platform].OutfitMembersOnline(settings.Outfits)
+				for _, outfit := range outfits {
 					count += len(outfit)
 				}
-				count += len(entities.Characters)
+				characters := charactersTrackers[platform].CharactersOnline(settings.Characters)
+				count += len(characters)
 			}
 			return count, errors.Join(errs...)
 		},

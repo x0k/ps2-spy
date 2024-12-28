@@ -38,7 +38,7 @@ func New(
 	worldTerritoryControlLoader loader.Keyed[ps2.WorldId, meta.Loaded[ps2.WorldTerritoryControl]],
 	alertsLoaders map[string]loader.Simple[meta.Loaded[ps2.Alerts]],
 	alertsLoadersPriority []string,
-	onlineTrackableEntitiesLoader OnlineTrackableEntitiesLoader,
+	trackingSettingsDataLoader TrackingSettingsDataLoader,
 	outfitsLoader OutfitsLoader,
 	trackingSettingsLoader TrackingSettingsLoader,
 	trackingSettingsUpdater TrackingSettingsUpdater,
@@ -112,7 +112,7 @@ func New(
 			),
 			NewOnline(
 				messages,
-				onlineTrackableEntitiesLoader,
+				trackingSettingsDataLoader,
 				outfitsLoader,
 			),
 			NewTracking(

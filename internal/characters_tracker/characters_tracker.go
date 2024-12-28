@@ -8,7 +8,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/x0k/ps2-spy/internal/discord"
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
 	"github.com/x0k/ps2-spy/internal/lib/containers"
 	"github.com/x0k/ps2-spy/internal/lib/loader"
@@ -19,7 +18,6 @@ import (
 	"github.com/x0k/ps2-spy/internal/ps2"
 	ps2_factions "github.com/x0k/ps2-spy/internal/ps2/factions"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
-	"github.com/x0k/ps2-spy/internal/tracking"
 )
 
 var ErrWorldPopulationTrackerNotFound = fmt.Errorf("world population tracker not found")
@@ -171,12 +169,20 @@ func (p *CharactersTracker) HandleWorldZoneAction(ctx context.Context, worldId, 
 	}
 }
 
-func (p *CharactersTracker) TrackableOnlineEntities(
-	settings tracking.Settings,
-) discord.TrackableEntities[map[ps2.OutfitId][]ps2.Character, []ps2.Character] {
+func (p *CharactersTracker) OutfitMembersOnline(
+	outfitIds []ps2.OutfitId,
+) map[ps2.OutfitId]map[ps2.CharacterId]ps2.Character {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
-	return p.onlineCharactersTracker.TrackableOnlineEntities(settings)
+	return p.onlineCharactersTracker.OutfitMembersOnline(outfitIds)
+}
+
+func (p *CharactersTracker) CharactersOnline(
+	characterIds []ps2.CharacterId,
+) map[ps2.CharacterId]ps2.Character {
+	p.mutex.RLock()
+	defer p.mutex.RUnlock()
+	return p.onlineCharactersTracker.CharactersOnline(characterIds)
 }
 
 func (p *CharactersTracker) WorldsPopulation() ps2.WorldsPopulation {

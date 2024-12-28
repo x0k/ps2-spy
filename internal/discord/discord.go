@@ -8,8 +8,6 @@ import (
 	"golang.org/x/text/language"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/x0k/ps2-spy/internal/lib/diff"
-	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/shared"
 )
 
@@ -31,25 +29,6 @@ const idsSeparator = "+"
 func NewChannelAndUserId(channelId ChannelId, userId UserId) ChannelAndUserIds {
 	return ChannelAndUserIds(string(channelId) + idsSeparator + string(userId))
 }
-
-type TrackableEntities[O any, C any] struct {
-	Outfits    O
-	Characters C
-}
-
-type TrackingSettings = TrackableEntities[[]ps2.OutfitId, []ps2.CharacterId]
-
-func CalculateTrackingSettingsDiff(
-	old TrackingSettings,
-	new TrackingSettings,
-) TrackableEntities[diff.Diff[ps2.OutfitId], diff.Diff[ps2.CharacterId]] {
-	return TrackableEntities[diff.Diff[ps2.OutfitId], diff.Diff[ps2.CharacterId]]{
-		Outfits:    diff.SlicesDiff(old.Outfits, new.Outfits),
-		Characters: diff.SlicesDiff(old.Characters, new.Characters),
-	}
-}
-
-type RichTrackingSettings = TrackableEntities[[]ps2.Outfit, []ps2.Character]
 
 var DEFAULT_LANG_TAG = language.English
 

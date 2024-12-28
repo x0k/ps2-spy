@@ -1,9 +1,9 @@
 package characters_tracker
 
 import (
-	"github.com/x0k/ps2-spy/internal/discord"
+	"maps"
+
 	"github.com/x0k/ps2-spy/internal/ps2"
-	"github.com/x0k/ps2-spy/internal/tracking"
 )
 
 type onlineCharactersTracker struct {
@@ -47,29 +47,28 @@ func (o *onlineCharactersTracker) HandleInactive(charId ps2.CharacterId) bool {
 	return false
 }
 
-func (o *onlineCharactersTracker) TrackableOnlineEntities(
-	settings tracking.Settings,
-) discord.TrackableEntities[map[ps2.OutfitId][]ps2.Character, []ps2.Character] {
-	outfits := make(map[ps2.OutfitId][]ps2.Character, len(settings.Outfits))
-	for _, outfitId := range settings.Outfits {
+func (o *onlineCharactersTracker) OutfitMembersOnline(
+	outfitIds []ps2.OutfitId,
+) map[ps2.OutfitId]map[ps2.CharacterId]ps2.Character {
+	outfits := make(map[ps2.OutfitId]map[ps2.CharacterId]ps2.Character, len(outfitIds))
+	for _, outfitId := range outfitIds {
 		if characters, ok := o.onlineCharactersByOutfit[outfitId]; ok {
-			chars := make([]ps2.Character, 0, len(characters))
-			for _, char := range characters {
-				chars = append(chars, char)
-			}
-			outfits[outfitId] = chars
+			outfits[outfitId] = maps.Clone(characters)
 		}
 	}
-	characters := make([]ps2.Character, 0, len(settings.Characters))
-	for _, charId := range settings.Characters {
+	return outfits
+}
+
+func (o *onlineCharactersTracker) CharactersOnline(
+	characterIds []ps2.CharacterId,
+) map[ps2.CharacterId]ps2.Character {
+	characters := make(map[ps2.CharacterId]ps2.Character, len(characterIds))
+	for _, charId := range characterIds {
 		if outfitId, ok := o.characterOutfitMap[charId]; ok {
-			characters = append(characters, o.onlineCharactersByOutfit[outfitId][charId])
+			characters[charId] = o.onlineCharactersByOutfit[outfitId][charId]
 		}
 	}
-	return discord.TrackableEntities[map[ps2.OutfitId][]ps2.Character, []ps2.Character]{
-		Outfits:    outfits,
-		Characters: characters,
-	}
+	return characters
 }
 
 func (o *onlineCharactersTracker) isOnline(charId ps2.CharacterId) bool {

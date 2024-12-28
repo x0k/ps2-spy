@@ -39,6 +39,11 @@ type Settings = settings[[]ps2.CharacterId, []ps2.OutfitId]
 
 type SettingsView = settings[[]string, []string]
 
+type SettingsData = settings[
+	[]ps2.Character,
+	map[ps2.OutfitId][]ps2.Character,
+]
+
 type settingsDiff[C any, O any] settings[diff.Diff[C], diff.Diff[O]]
 
 func (s settingsDiff[C, O]) IsEmpty() bool {

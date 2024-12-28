@@ -8,19 +8,20 @@ import (
 	discord_messages "github.com/x0k/ps2-spy/internal/discord/messages"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
+	"github.com/x0k/ps2-spy/internal/tracking"
 )
 
 type OutfitsLoader = func(
 	context.Context, ps2_platforms.Platform, []ps2.OutfitId,
 ) (map[ps2.OutfitId]ps2.Outfit, error)
 
-type OnlineTrackableEntitiesLoader = func(
+type TrackingSettingsDataLoader = func(
 	context.Context, discord.ChannelId, ps2_platforms.Platform,
-) (discord.TrackableEntities[map[ps2.OutfitId][]ps2.Character, []ps2.Character], error)
+) (tracking.SettingsData, error)
 
 func NewOnline(
 	messages *discord_messages.Messages,
-	onlineTrackableEntitiesLoader OnlineTrackableEntitiesLoader,
+	trackingSettingsDataLoader TrackingSettingsDataLoader,
 	outfitsLoader OutfitsLoader,
 ) *discord.Command {
 	return &discord.Command{
@@ -64,7 +65,7 @@ func NewOnline(
 		) discord.ResponseEdit {
 			platform := ps2_platforms.Platform(i.ApplicationCommandData().Options[0].Name)
 			channelId := discord.ChannelId(i.ChannelID)
-			onlineMembers, err := onlineTrackableEntitiesLoader(ctx, channelId, platform)
+			onlineMembers, err := trackingSettingsDataLoader(ctx, channelId, platform)
 			if err != nil {
 				return messages.OnlineMembersLoadError(channelId, platform, err)
 			}
