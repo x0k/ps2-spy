@@ -781,76 +781,42 @@
             "fuzzy": true
         },
         {
-            "id": "Failed to load outfits by tags {OutfitTags} ({Platform})",
-            "message": "Failed to load outfits by tags {OutfitTags} ({Platform})",
-            "translation": "Failed to load outfits by tags {OutfitTags} ({Platform})",
+            "id": "Something went wrong",
+            "message": "Something went wrong",
+            "translation": "Something went wrong",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Too many characters, maximum is {MaxTrackingCharacters}",
+            "message": "Too many characters, maximum is {MaxTrackingCharacters}",
+            "translation": "Too many characters, maximum is {MaxTrackingCharacters}",
             "translatorComment": "Copied from source.",
             "placeholders": [
                 {
-                    "id": "OutfitTags",
-                    "string": "%[1]v",
-                    "type": "[]string",
-                    "underlyingType": "[]string",
+                    "id": "MaxTrackingCharacters",
+                    "string": "%[1]d",
+                    "type": "int",
+                    "underlyingType": "int",
                     "argNum": 1,
-                    "expr": "outfitTags"
-                },
-                {
-                    "id": "Platform",
-                    "string": "%[2]s",
-                    "type": "github.com/x0k/ps2-spy/internal/ps2/platforms.Platform",
-                    "underlyingType": "string",
-                    "argNum": 2,
-                    "expr": "platform"
+                    "expr": "m.maxTrackingCharacters"
                 }
             ],
             "fuzzy": true
         },
         {
-            "id": "Failed to load characters {CharacterNames} ({Platform})",
-            "message": "Failed to load characters {CharacterNames} ({Platform})",
-            "translation": "Failed to load characters {CharacterNames} ({Platform})",
+            "id": "Too many outfits, maximum is {MaxTrackingOutfits}",
+            "message": "Too many outfits, maximum is {MaxTrackingOutfits}",
+            "translation": "Too many outfits, maximum is {MaxTrackingOutfits}",
             "translatorComment": "Copied from source.",
             "placeholders": [
                 {
-                    "id": "CharacterNames",
-                    "string": "%[1]v",
-                    "type": "[]string",
-                    "underlyingType": "[]string",
+                    "id": "MaxTrackingOutfits",
+                    "string": "%[1]d",
+                    "type": "int",
+                    "underlyingType": "int",
                     "argNum": 1,
-                    "expr": "characterNames"
-                },
-                {
-                    "id": "Platform",
-                    "string": "%[2]s",
-                    "type": "github.com/x0k/ps2-spy/internal/ps2/platforms.Platform",
-                    "underlyingType": "string",
-                    "argNum": 2,
-                    "expr": "platform"
-                }
-            ],
-            "fuzzy": true
-        },
-        {
-            "id": "Failed to save tracking settings for {ChannelId} channel ({Platform})",
-            "message": "Failed to save tracking settings for {ChannelId} channel ({Platform})",
-            "translation": "Failed to save tracking settings for {ChannelId} channel ({Platform})",
-            "translatorComment": "Copied from source.",
-            "placeholders": [
-                {
-                    "id": "ChannelId",
-                    "string": "%[1]s",
-                    "type": "github.com/x0k/ps2-spy/internal/discord.ChannelId",
-                    "underlyingType": "string",
-                    "argNum": 1,
-                    "expr": "channelId"
-                },
-                {
-                    "id": "Platform",
-                    "string": "%[2]s",
-                    "type": "github.com/x0k/ps2-spy/internal/ps2/platforms.Platform",
-                    "underlyingType": "string",
-                    "argNum": 2,
-                    "expr": "platform"
+                    "expr": "m.maxTrackingOutfits"
                 }
             ],
             "fuzzy": true
@@ -1137,10 +1103,20 @@
             "fuzzy": true
         },
         {
-            "id": "Enter the outfit tags separated by comma",
-            "message": "Enter the outfit tags separated by comma",
-            "translation": "Enter the outfit tags separated by comma",
+            "id": "Enter the outfit tags separated by comma, maximum {MaxTrackingOutfits}",
+            "message": "Enter the outfit tags separated by comma, maximum {MaxTrackingOutfits}",
+            "translation": "Enter the outfit tags separated by comma, maximum {MaxTrackingOutfits}",
             "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "MaxTrackingOutfits",
+                    "string": "%[1]d",
+                    "type": "int",
+                    "underlyingType": "int",
+                    "argNum": 1,
+                    "expr": "m.maxTrackingOutfits"
+                }
+            ],
             "fuzzy": true
         },
         {
@@ -1151,9 +1127,26 @@
             "fuzzy": true
         },
         {
-            "id": "Enter the character names separated by comma",
-            "message": "Enter the character names separated by comma",
-            "translation": "Enter the character names separated by comma",
+            "id": "Enter the character names separated by comma, maximum {MaxTrackingCharacters}",
+            "message": "Enter the character names separated by comma, maximum {MaxTrackingCharacters}",
+            "translation": "Enter the character names separated by comma, maximum {MaxTrackingCharacters}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "MaxTrackingCharacters",
+                    "string": "%[1]d",
+                    "type": "int",
+                    "underlyingType": "int",
+                    "argNum": 1,
+                    "expr": "m.maxTrackingCharacters"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "Tracking settings have been successfully updated",
+            "message": "Tracking settings have been successfully updated",
+            "translation": "Tracking settings have been successfully updated",
             "translatorComment": "Copied from source.",
             "fuzzy": true
         },
@@ -1684,41 +1677,6 @@
             "fuzzy": true
         },
         {
-            "id": "something went wrong",
-            "message": "something went wrong",
-            "translation": "something went wrong",
-            "translatorComment": "Copied from source.",
-            "fuzzy": true
-        },
-        {
-            "id": "Settings are updated.\n\n**Outfits:**",
-            "message": "Settings are updated.\n\n**Outfits:**",
-            "translation": "Settings are updated.\n\n**Outfits:**",
-            "translatorComment": "Copied from source.",
-            "fuzzy": true
-        },
-        {
-            "id": "No outfits",
-            "message": "No outfits",
-            "translation": "No outfits",
-            "translatorComment": "Copied from source.",
-            "fuzzy": true
-        },
-        {
-            "id": "**Characters:**",
-            "message": "**Characters:**",
-            "translation": "**Characters:**",
-            "translatorComment": "Copied from source.",
-            "fuzzy": true
-        },
-        {
-            "id": "No characters",
-            "message": "No characters",
-            "translation": "No characters",
-            "translatorComment": "Copied from source.",
-            "fuzzy": true
-        },
-        {
             "id": "Unlocked",
             "message": "Unlocked",
             "translation": "Unlocked",
@@ -1861,6 +1819,127 @@
             "id": "Sunday",
             "message": "Sunday",
             "translation": "Sunday",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "**Tracked outfits:**",
+            "message": "**Tracked outfits:**",
+            "translation": "**Tracked outfits:**",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "No outfits",
+            "message": "No outfits",
+            "translation": "No outfits",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "**Tracked characters:**",
+            "message": "**Tracked characters:**",
+            "translation": "**Tracked characters:**",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "No characters",
+            "message": "No characters",
+            "translation": "No characters",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Settings have been updated by \u003c@{Updater}\u003e",
+            "message": "Settings have been updated by \u003c@{Updater}\u003e",
+            "translation": "Settings have been updated by \u003c@{Updater}\u003e",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Updater",
+                    "string": "%[1]s",
+                    "type": "github.com/x0k/ps2-spy/internal/discord.UserId",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "updater"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "**Added characters:**",
+            "message": "**Added characters:**",
+            "translation": "**Added characters:**",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "**Removed characters:**",
+            "message": "**Removed characters:**",
+            "translation": "**Removed characters:**",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "**Added outfits:**",
+            "message": "**Added outfits:**",
+            "translation": "**Added outfits:**",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "**Removed outfits:**",
+            "message": "**Removed outfits:**",
+            "translation": "**Removed outfits:**",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "We couldn't find the following:",
+            "message": "We couldn't find the following:",
+            "translation": "We couldn't find the following:",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "- Outfits: {MissingOutfitTags0}",
+            "message": "- Outfits: {MissingOutfitTags0}",
+            "translation": "- Outfits: {MissingOutfitTags0}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "MissingOutfitTags0",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "missingOutfitTags[0]"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "- Characters: {MissingCharacterNames0}",
+            "message": "- Characters: {MissingCharacterNames0}",
+            "translation": "- Characters: {MissingCharacterNames0}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "MissingCharacterNames0",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "missingCharacterNames[0]"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "Edit",
+            "message": "Edit",
+            "translation": "Edit",
             "translatorComment": "Copied from source.",
             "fuzzy": true
         }

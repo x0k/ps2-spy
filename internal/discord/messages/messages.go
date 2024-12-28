@@ -1,6 +1,7 @@
 package discord_messages
 
 import (
+	"errors"
 	"strings"
 	"time"
 
@@ -12,22 +13,29 @@ import (
 	ps2_factions "github.com/x0k/ps2-spy/internal/ps2/factions"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 	"github.com/x0k/ps2-spy/internal/stats_tracker"
+	"github.com/x0k/ps2-spy/internal/tracking"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 )
 
 type Messages struct {
-	timezones           []string
-	maxTrackingDuration time.Duration
+	timezones             []string
+	maxTrackingDuration   time.Duration
+	maxTrackingCharacters int
+	maxTrackingOutfits    int
 }
 
 func New(
 	timezones []string,
 	maxTrackingDuration time.Duration,
+	maxTrackingCharacters int,
+	maxTrackingOutfits int,
 ) *Messages {
 	return &Messages{
-		timezones:           timezones,
-		maxTrackingDuration: maxTrackingDuration,
+		timezones:             timezones,
+		maxTrackingDuration:   maxTrackingDuration,
+		maxTrackingCharacters: maxTrackingCharacters,
+		maxTrackingOutfits:    maxTrackingOutfits,
 	}
 }
 
@@ -361,30 +369,39 @@ func (m *Messages) MembersOnline(
 	}
 }
 
-func (m *Messages) OutfitIdsLoadError(outfitTags []string, platform ps2_platforms.Platform, err error) discord.ResponseEdit {
+func (m *Messages) TrackingSettingsUpdateFailure(platform ps2_platforms.Platform, err error) discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
-		return nil, &discord.Error{
-			Msg: p.Sprintf("Failed to load outfits by tags %v (%s)", outfitTags, platform),
-			Err: err,
+		msg := p.Sprintf("Something went wrong")
+		var tooManyChars tracking.ErrTooManyCharacters
+		var tooManyOutfits tracking.ErrTooManyOutfits
+		var missingEntities tracking.ErrFailedToIdentifyEntities
+		var components []discordgo.MessageComponent
+		if errors.As(err, &tooManyChars) {
+			msg = p.Sprintf("Too many characters, maximum is %d", m.maxTrackingCharacters)
+			components = newTrackingEditButton(p, platform, tooManyChars.Outfits, tooManyChars.Characters)
+		} else if errors.As(err, &tooManyOutfits) {
+			msg = p.Sprintf("Too many outfits, maximum is %d", m.maxTrackingOutfits)
+			components = newTrackingEditButton(p, platform, tooManyOutfits.Outfits, tooManyOutfits.Characters)
+		} else if errors.As(err, &missingEntities) {
+			missingOutfits := make([]string, 0, len(missingEntities.OutfitTags)-len(missingEntities.FoundOutfitIds))
+			for _, o := range missingEntities.OutfitTags {
+				if _, ok := missingEntities.FoundOutfitIds[o]; !ok {
+					missingOutfits = append(missingOutfits, o)
+				}
+			}
+			missingCharacters := make([]string, 0, len(missingEntities.CharNames)-len(missingEntities.FoundCharIds))
+			for _, c := range missingEntities.CharNames {
+				if _, ok := missingEntities.FoundCharIds[c]; !ok {
+					missingCharacters = append(missingCharacters, c)
+				}
+			}
+			msg = renderTrackingMissingEntities(p, missingOutfits, missingCharacters)
+			components = newTrackingEditButton(p, platform, missingEntities.OutfitTags, missingEntities.CharNames)
 		}
-	}
-}
-
-func (m *Messages) CharacterIdsLoadError(characterNames []string, platform ps2_platforms.Platform, err error) discord.ResponseEdit {
-	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
-		return nil, &discord.Error{
-			Msg: p.Sprintf("Failed to load characters %v (%s)", characterNames, platform),
-			Err: err,
-		}
-	}
-}
-
-func (m *Messages) TrackingSettingsSaveError(channelId discord.ChannelId, platform ps2_platforms.Platform, err error) discord.ResponseEdit {
-	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
-		return nil, &discord.Error{
-			Msg: p.Sprintf("Failed to save tracking settings for %s channel (%s)", channelId, platform),
-			Err: err,
-		}
+		return &discordgo.WebhookEdit{
+			Content:    &msg,
+			Components: &components,
+		}, nil
 	}
 }
 
@@ -403,15 +420,6 @@ func (m *Messages) TrackingSettingsCharacterNamesLoadError(characterIds []ps2.Ch
 			Msg: p.Sprintf("Settings are saved, but failed to load character names %v (%s)", characterIds, platform),
 			Err: err,
 		}
-	}
-}
-
-func (m *Messages) TrackingSettingsUpdate(entities discord.TrackableEntities[[]string, []string]) discord.ResponseEdit {
-	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
-		content := renderSubscriptionsSettingsUpdate(p, entities)
-		return &discordgo.WebhookEdit{
-			Content: &content,
-		}, nil
 	}
 }
 
@@ -575,9 +583,12 @@ func (m *Messages) ChannelStatsTrackerTaskStateNotFound(err error) discord.Respo
 	}
 }
 
-func (m *Messages) TrackingSettingsLoadError(channelId discord.ChannelId, platform ps2_platforms.Platform, err error) discord.Response {
-	return func(p *message.Printer) (*discordgo.InteractionResponseData, *discord.Error) {
-		return nil, &discord.Error{
+func TrackingSettingsLoadError[R any](
+	channelId discord.ChannelId, platform ps2_platforms.Platform, err error,
+) func(*message.Printer) (R, *discord.Error) {
+	return func(p *message.Printer) (R, *discord.Error) {
+		var r R
+		return r, &discord.Error{
 			Msg: p.Sprintf("Failed to load tracking settings for %s channel (%s)", channelId, platform),
 			Err: err,
 		}
@@ -677,7 +688,7 @@ func (m *Messages) TrackingSettingsModal(
 						discordgo.TextInput{
 							CustomID:    "outfits",
 							Label:       p.Sprintf("Which outfits do you want to track?"),
-							Placeholder: p.Sprintf("Enter the outfit tags separated by comma"),
+							Placeholder: p.Sprintf("Enter the outfit tags separated by comma, maximum %d", m.maxTrackingOutfits),
 							Style:       discordgo.TextInputShort,
 							Value:       strings.Join(outfitTags, ", "),
 						},
@@ -688,7 +699,7 @@ func (m *Messages) TrackingSettingsModal(
 						discordgo.TextInput{
 							CustomID:    "characters",
 							Label:       p.Sprintf("Which characters do you want to track?"),
-							Placeholder: p.Sprintf("Enter the character names separated by comma"),
+							Placeholder: p.Sprintf("Enter the character names separated by comma, maximum %d", m.maxTrackingCharacters),
 							Style:       discordgo.TextInputParagraph,
 							Value:       strings.Join(characterNames, ", "),
 						},
@@ -696,6 +707,35 @@ func (m *Messages) TrackingSettingsModal(
 				},
 			},
 		}, nil
+	}
+}
+
+func (m *Messages) TrackingSettings(
+	settings tracking.SettingsView,
+) discord.ResponseEdit {
+	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
+		content := renderTrackingSettings(p, settings)
+		return &discordgo.WebhookEdit{
+			Content: &content,
+		}, nil
+	}
+}
+
+func (m *Messages) TrackingSettingsUpdate() discord.ResponseEdit {
+	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
+		content := p.Sprintf("Tracking settings have been successfully updated")
+		return &discordgo.WebhookEdit{
+			Content: &content,
+		}, nil
+	}
+}
+
+func (m *Messages) TrackingSettingsUpdated(
+	updater discord.UserId,
+	diff tracking.SettingsDiffView,
+) discord.Message {
+	return func(p *message.Printer) (string, *discord.Error) {
+		return renderTrackingSettingsUpdate(p, updater, diff), nil
 	}
 }
 

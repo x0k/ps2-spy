@@ -18,6 +18,13 @@ type ChannelId string
 
 type UserId string
 
+func MemberOrUserId(i *discordgo.InteractionCreate) UserId {
+	if i.Member != nil {
+		return UserId(i.Member.User.ID)
+	}
+	return UserId(i.User.ID)
+}
+
 type ChannelAndUserIds string
 
 const idsSeparator = "+"
@@ -43,6 +50,8 @@ func CalculateTrackingSettingsDiff(
 	}
 }
 
+type RichTrackingSettings = TrackableEntities[[]ps2.Outfit, []ps2.Character]
+
 type SettingsQuery struct {
 	ChannelId ChannelId
 	Platform  ps2_platforms.Platform
@@ -55,11 +64,18 @@ type PlatformQuery[T any] struct {
 
 var DEFAULT_LANG_TAG = language.English
 
-func LangTagFromInteraction(i *discordgo.InteractionCreate) language.Tag {
+func UserLocale(i *discordgo.InteractionCreate) language.Tag {
 	if t, err := language.Parse(string(i.Locale)); err == nil {
 		return t
 	}
 	return DEFAULT_LANG_TAG
+}
+
+func ChannelLocaleOrDefaultToUser(i *discordgo.InteractionCreate) language.Tag {
+	if t, err := language.Parse(string(*i.GuildLocale)); err == nil {
+		return t
+	}
+	return UserLocale(i)
 }
 
 type Channel struct {

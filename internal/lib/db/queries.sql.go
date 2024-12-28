@@ -11,41 +11,65 @@ import (
 	"time"
 )
 
-const deleteChannelCharacter = `-- name: DeleteChannelCharacter :exec
+const deleteChannelCharacters = `-- name: DeleteChannelCharacters :exec
 DELETE FROM channel_to_character
 WHERE
   channel_id = ?
   AND platform = ?
-  AND character_id = ?
+  AND character_id IN (/*SLICE:character_ids*/?)
 `
 
-type DeleteChannelCharacterParams struct {
-	ChannelID   string
-	Platform    string
-	CharacterID string
+type DeleteChannelCharactersParams struct {
+	ChannelID    string
+	Platform     string
+	CharacterIds []string
 }
 
-func (q *Queries) DeleteChannelCharacter(ctx context.Context, arg DeleteChannelCharacterParams) error {
-	_, err := q.exec(ctx, q.deleteChannelCharacterStmt, deleteChannelCharacter, arg.ChannelID, arg.Platform, arg.CharacterID)
+func (q *Queries) DeleteChannelCharacters(ctx context.Context, arg DeleteChannelCharactersParams) error {
+	query := deleteChannelCharacters
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.ChannelID)
+	queryParams = append(queryParams, arg.Platform)
+	if len(arg.CharacterIds) > 0 {
+		for _, v := range arg.CharacterIds {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:character_ids*/?", strings.Repeat(",?", len(arg.CharacterIds))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:character_ids*/?", "NULL", 1)
+	}
+	_, err := q.exec(ctx, nil, query, queryParams...)
 	return err
 }
 
-const deleteChannelOutfit = `-- name: DeleteChannelOutfit :exec
+const deleteChannelOutfits = `-- name: DeleteChannelOutfits :exec
 DELETE FROM channel_to_outfit
 WHERE
   channel_id = ?
   AND platform = ?
-  AND outfit_id = ?
+  AND outfit_id IN (/*SLICE:outfit_ids*/?)
 `
 
-type DeleteChannelOutfitParams struct {
+type DeleteChannelOutfitsParams struct {
 	ChannelID string
 	Platform  string
-	OutfitID  string
+	OutfitIds []string
 }
 
-func (q *Queries) DeleteChannelOutfit(ctx context.Context, arg DeleteChannelOutfitParams) error {
-	_, err := q.exec(ctx, q.deleteChannelOutfitStmt, deleteChannelOutfit, arg.ChannelID, arg.Platform, arg.OutfitID)
+func (q *Queries) DeleteChannelOutfits(ctx context.Context, arg DeleteChannelOutfitsParams) error {
+	query := deleteChannelOutfits
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.ChannelID)
+	queryParams = append(queryParams, arg.Platform)
+	if len(arg.OutfitIds) > 0 {
+		for _, v := range arg.OutfitIds {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:outfit_ids*/?", strings.Repeat(",?", len(arg.OutfitIds))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:outfit_ids*/?", "NULL", 1)
+	}
+	_, err := q.exec(ctx, nil, query, queryParams...)
 	return err
 }
 

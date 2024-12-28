@@ -679,71 +679,37 @@
             ]
         },
         {
-            "id": "Failed to load outfits by tags {OutfitTags} ({Platform})",
-            "message": "Failed to load outfits by tags {OutfitTags} ({Platform})",
-            "translation": "Ошибка загрузки подразделений по тегам {OutfitTags} ({Platform})",
+            "id": "Something went wrong",
+            "message": "Something went wrong",
+            "translation": "Что-то пошло не так"
+        },
+        {
+            "id": "Too many characters, maximum is {MaxTrackingCharacters}",
+            "message": "Too many characters, maximum is {MaxTrackingCharacters}",
+            "translation": "Слишком много персонажей, максимум {MaxTrackingCharacters}",
             "placeholders": [
                 {
-                    "id": "OutfitTags",
-                    "string": "%[1]v",
-                    "type": "[]string",
-                    "underlyingType": "[]string",
+                    "id": "MaxTrackingCharacters",
+                    "string": "%[1]d",
+                    "type": "int",
+                    "underlyingType": "int",
                     "argNum": 1,
-                    "expr": "outfitTags"
-                },
-                {
-                    "id": "Platform",
-                    "string": "%[2]s",
-                    "type": "github.com/x0k/ps2-spy/internal/ps2/platforms.Platform",
-                    "underlyingType": "string",
-                    "argNum": 2,
-                    "expr": "platform"
+                    "expr": "m.maxTrackingCharacters"
                 }
             ]
         },
         {
-            "id": "Failed to load characters {CharacterNames} ({Platform})",
-            "message": "Failed to load characters {CharacterNames} ({Platform})",
-            "translation": "Ошибка загрузки персонажей {CharacterNames} ({Platform})",
+            "id": "Too many outfits, maximum is {MaxTrackingOutfits}",
+            "message": "Too many outfits, maximum is {MaxTrackingOutfits}",
+            "translation": "Слишком много подразделений, максимум {MaxTrackingOutfits}",
             "placeholders": [
                 {
-                    "id": "CharacterNames",
-                    "string": "%[1]v",
-                    "type": "[]string",
-                    "underlyingType": "[]string",
+                    "id": "MaxTrackingOutfits",
+                    "string": "%[1]d",
+                    "type": "int",
+                    "underlyingType": "int",
                     "argNum": 1,
-                    "expr": "characterNames"
-                },
-                {
-                    "id": "Platform",
-                    "string": "%[2]s",
-                    "type": "github.com/x0k/ps2-spy/internal/ps2/platforms.Platform",
-                    "underlyingType": "string",
-                    "argNum": 2,
-                    "expr": "platform"
-                }
-            ]
-        },
-        {
-            "id": "Failed to save tracking settings for {ChannelId} channel ({Platform})",
-            "message": "Failed to save tracking settings for {ChannelId} channel ({Platform})",
-            "translation": "Ошибка сохранения настроек отслеживания для канала {ChannelId} ({Platform})",
-            "placeholders": [
-                {
-                    "id": "ChannelId",
-                    "string": "%[1]s",
-                    "type": "github.com/x0k/ps2-spy/internal/discord.ChannelId",
-                    "underlyingType": "string",
-                    "argNum": 1,
-                    "expr": "channelId"
-                },
-                {
-                    "id": "Platform",
-                    "string": "%[2]s",
-                    "type": "github.com/x0k/ps2-spy/internal/ps2/platforms.Platform",
-                    "underlyingType": "string",
-                    "argNum": 2,
-                    "expr": "platform"
+                    "expr": "m.maxTrackingOutfits"
                 }
             ]
         },
@@ -983,9 +949,19 @@
             "translation": "Какие подразделения хотите отслеживать?"
         },
         {
-            "id": "Enter the outfit tags separated by comma",
-            "message": "Enter the outfit tags separated by comma",
-            "translation": "Введите теги подразделений через запятую"
+            "id": "Enter the outfit tags separated by comma, maximum {MaxTrackingOutfits}",
+            "message": "Enter the outfit tags separated by comma, maximum {MaxTrackingOutfits}",
+            "translation": "Введите теги подразделений через запятую, максимум {MaxTrackingOutfits}",
+            "placeholders": [
+                {
+                    "id": "MaxTrackingOutfits",
+                    "string": "%[1]d",
+                    "type": "int",
+                    "underlyingType": "int",
+                    "argNum": 1,
+                    "expr": "m.maxTrackingOutfits"
+                }
+            ]
         },
         {
             "id": "Which characters do you want to track?",
@@ -993,9 +969,24 @@
             "translation": "Каких игроков хотите отслеживать?"
         },
         {
-            "id": "Enter the character names separated by comma",
-            "message": "Enter the character names separated by comma",
-            "translation": "Введите имена персонажей через запятую"
+            "id": "Enter the character names separated by comma, maximum {MaxTrackingCharacters}",
+            "message": "Enter the character names separated by comma, maximum {MaxTrackingCharacters}",
+            "translation": "Введите имена персонажей через запятую, максимум {MaxTrackingCharacters}",
+            "placeholders": [
+                {
+                    "id": "MaxTrackingCharacters",
+                    "string": "%[1]d",
+                    "type": "int",
+                    "underlyingType": "int",
+                    "argNum": 1,
+                    "expr": "m.maxTrackingCharacters"
+                }
+            ]
+        },
+        {
+            "id": "Tracking settings have been successfully updated",
+            "message": "Tracking settings have been successfully updated",
+            "translation": "Настройки отслеживания успешно обновлены"
         },
         {
             "id": "Failed to parse language {Lang}",
@@ -1452,31 +1443,6 @@
             ]
         },
         {
-            "id": "something went wrong",
-            "message": "something went wrong",
-            "translation": "что-то пошло не так"
-        },
-        {
-            "id": "Settings are updated.\n\n**Outfits:**",
-            "message": "Settings are updated.\n\n**Outfits:**",
-            "translation": "Настройки обновлены.\n\n**Аутфиты:**"
-        },
-        {
-            "id": "No outfits",
-            "message": "No outfits",
-            "translation": "Нет подразделений"
-        },
-        {
-            "id": "**Characters:**",
-            "message": "**Characters:**",
-            "translation": "**Персонажи:**"
-        },
-        {
-            "id": "No characters",
-            "message": "No characters",
-            "translation": "Нет персонажей"
-        },
-        {
             "id": "Unlocked",
             "message": "Unlocked",
             "translation": "Разблокирован"
@@ -1585,6 +1551,101 @@
             "id": "Sunday",
             "message": "Sunday",
             "translation": "Воскресенье"
+        },
+        {
+            "id": "**Tracked outfits:**",
+            "message": "**Tracked outfits:**",
+            "translation": "**Отслеживаемые подразделения:**"
+        },
+        {
+            "id": "No outfits",
+            "message": "No outfits",
+            "translation": "Нет подразделений"
+        },
+        {
+            "id": "**Tracked characters:**",
+            "message": "**Tracked characters:**",
+            "translation": "**Отслеживаемые персонажи:**"
+        },
+        {
+            "id": "No characters",
+            "message": "No characters",
+            "translation": "Нет персонажей"
+        },
+        {
+            "id": "Settings have been updated by \u003c@{Updater}\u003e",
+            "message": "Settings have been updated by \u003c@{Updater}\u003e",
+            "translation": "Настройки были обновлены пользователем \u003c@{Updater}\u003e",
+            "placeholders": [
+                {
+                    "id": "Updater",
+                    "string": "%[1]s",
+                    "type": "github.com/x0k/ps2-spy/internal/discord.UserId",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "updater"
+                }
+            ]
+        },
+        {
+            "id": "**Added characters:**",
+            "message": "**Added characters:**",
+            "translation": "**Добавленные персонажи:**"
+        },
+        {
+            "id": "**Removed characters:**",
+            "message": "**Removed characters:**",
+            "translation": "**Удаленные персонажи:**"
+        },
+        {
+            "id": "**Added outfits:**",
+            "message": "**Added outfits:**",
+            "translation": "**Добавленные подразделения:**"
+        },
+        {
+            "id": "**Removed outfits:**",
+            "message": "**Removed outfits:**",
+            "translation": "**Удаленные подразделения:**"
+        },
+        {
+            "id": "We couldn't find the following:",
+            "message": "We couldn't find the following:",
+            "translation": "Мы не смогли найти:"
+        },
+        {
+            "id": "- Outfits: {MissingOutfitTags0}",
+            "message": "- Outfits: {MissingOutfitTags0}",
+            "translation": "- Подразделения: {MissingOutfitTags0}",
+            "placeholders": [
+                {
+                    "id": "MissingOutfitTags0",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "missingOutfitTags[0]"
+                }
+            ]
+        },
+        {
+            "id": "- Characters: {MissingCharacterNames0}",
+            "message": "- Characters: {MissingCharacterNames0}",
+            "translation": "- Персонажей: {MissingCharacterNames0}",
+            "placeholders": [
+                {
+                    "id": "MissingCharacterNames0",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "missingCharacterNames[0]"
+                }
+            ]
+        },
+        {
+            "id": "Edit",
+            "message": "Edit",
+            "translation": "Редактировать"
         }
     ]
 }

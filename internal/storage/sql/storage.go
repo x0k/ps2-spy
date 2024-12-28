@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/url"
 	"time"
@@ -75,6 +76,31 @@ func (s *Storage) Close(_ context.Context) error {
 	)
 }
 
+func (s *Storage) Queries() *db.Queries {
+	return s.queries
+}
+
+func (s *Storage) Transaction(ctx context.Context, run func(s storage.Storage) error) error {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to start transaction %w", err)
+	}
+	defer func() {
+		if err := tx.Rollback(); err != nil && !errors.Is(err, sql.ErrTxDone) {
+			s.log.Error(ctx, "failed to rollback transaction", sl.Err(err))
+		}
+	}()
+	if err := run(&Storage{
+		queries: s.queries.WithTx(tx),
+	}); err != nil {
+		return fmt.Errorf("failed to run transaction: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+	return nil
+}
+
 func (s *Storage) Begin(
 	ctx context.Context,
 	expectedEventsCount int,
@@ -108,58 +134,6 @@ func (s *Storage) Begin(
 	}
 	bufferedPublisher.Flush()
 	return nil
-}
-
-func (s *Storage) SaveChannelOutfit(ctx context.Context, channelId discord.ChannelId, platform ps2_platforms.Platform, outfitId ps2.OutfitId) error {
-	err := s.queries.InsertChannelOutfit(ctx, db.InsertChannelOutfitParams{
-		ChannelID: string(channelId),
-		OutfitID:  string(outfitId),
-		Platform:  string(platform),
-	})
-	return s.publish(err, storage.ChannelOutfitSaved{
-		ChannelId: channelId,
-		Platform:  platform,
-		OutfitId:  outfitId,
-	})
-}
-
-func (s *Storage) DeleteChannelOutfit(ctx context.Context, channelId discord.ChannelId, platform ps2_platforms.Platform, outfitId ps2.OutfitId) error {
-	err := s.queries.DeleteChannelOutfit(ctx, db.DeleteChannelOutfitParams{
-		ChannelID: string(channelId),
-		OutfitID:  string(outfitId),
-		Platform:  string(platform),
-	})
-	return s.publish(err, storage.ChannelOutfitDeleted{
-		ChannelId: channelId,
-		Platform:  platform,
-		OutfitId:  outfitId,
-	})
-}
-
-func (s *Storage) SaveChannelCharacter(ctx context.Context, channelId discord.ChannelId, platform ps2_platforms.Platform, characterId ps2.CharacterId) error {
-	err := s.queries.InsertChannelCharacter(ctx, db.InsertChannelCharacterParams{
-		ChannelID:   string(channelId),
-		CharacterID: string(characterId),
-		Platform:    string(platform),
-	})
-	return s.publish(err, storage.ChannelCharacterSaved{
-		ChannelId:   channelId,
-		Platform:    platform,
-		CharacterId: characterId,
-	})
-}
-
-func (s *Storage) DeleteChannelCharacter(ctx context.Context, channelId discord.ChannelId, platform ps2_platforms.Platform, characterId ps2.CharacterId) error {
-	err := s.queries.DeleteChannelCharacter(ctx, db.DeleteChannelCharacterParams{
-		ChannelID:   string(channelId),
-		CharacterID: string(characterId),
-		Platform:    string(platform),
-	})
-	return s.publish(err, storage.ChannelCharacterDeleted{
-		ChannelId:   channelId,
-		Platform:    platform,
-		CharacterId: characterId,
-	})
 }
 
 func (s *Storage) SaveOutfitMember(ctx context.Context, platform ps2_platforms.Platform, outfitId ps2.OutfitId, characterId ps2.CharacterId) error {

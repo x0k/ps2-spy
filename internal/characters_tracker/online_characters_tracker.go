@@ -3,6 +3,7 @@ package characters_tracker
 import (
 	"github.com/x0k/ps2-spy/internal/discord"
 	"github.com/x0k/ps2-spy/internal/ps2"
+	"github.com/x0k/ps2-spy/internal/tracking"
 )
 
 type onlineCharactersTracker struct {
@@ -47,7 +48,7 @@ func (o *onlineCharactersTracker) HandleInactive(charId ps2.CharacterId) bool {
 }
 
 func (o *onlineCharactersTracker) TrackableOnlineEntities(
-	settings discord.TrackableEntities[[]ps2.OutfitId, []ps2.CharacterId],
+	settings tracking.Settings,
 ) discord.TrackableEntities[map[ps2.OutfitId][]ps2.Character, []ps2.Character] {
 	outfits := make(map[ps2.OutfitId][]ps2.Character, len(settings.Outfits))
 	for _, outfitId := range settings.Outfits {

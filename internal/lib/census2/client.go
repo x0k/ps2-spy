@@ -110,7 +110,7 @@ func ExecuteAndDecode[T any](ctx context.Context, c *Client, q *Query) ([]T, err
 func ExecutePreparedAndDecode[T any](ctx context.Context, c *Client, collection, url string) ([]T, error) {
 	data, err := c.ExecutePrepared(ctx, collection, url)
 	if err != nil {
-		return nil, fmt.Errorf("execute prepared: %w", err)
+		return nil, fmt.Errorf("failed to execute prepared: %w", err)
 	}
 	return DecodeCollection[T](data)
 }

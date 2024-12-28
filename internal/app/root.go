@@ -46,12 +46,18 @@ import (
 	events_module "github.com/x0k/ps2-spy/internal/modules/events"
 	"github.com/x0k/ps2-spy/internal/outfit_members_synchronizer"
 	"github.com/x0k/ps2-spy/internal/ps2"
+	"github.com/x0k/ps2-spy/internal/ps2/census_characters_repo"
+	"github.com/x0k/ps2-spy/internal/ps2/census_outfits_repo"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 	"github.com/x0k/ps2-spy/internal/shared"
 	"github.com/x0k/ps2-spy/internal/stats_tracker"
 	"github.com/x0k/ps2-spy/internal/storage"
 	sql_storage "github.com/x0k/ps2-spy/internal/storage/sql"
-	"github.com/x0k/ps2-spy/internal/tracking_manager"
+	"github.com/x0k/ps2-spy/internal/tracking"
+	tracking_settings_diff_view_loader "github.com/x0k/ps2-spy/internal/tracking/settings_diff_view_loader"
+	tracking_settings_repo "github.com/x0k/ps2-spy/internal/tracking/settings_repo"
+	tracking_settings_updater "github.com/x0k/ps2-spy/internal/tracking/settings_updater"
+	tracking_settings_view_loader "github.com/x0k/ps2-spy/internal/tracking/settings_view_loader"
 	"github.com/x0k/ps2-spy/internal/worlds_tracker"
 
 	// migration tools
@@ -79,16 +85,16 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	)
 	m.PreStartR("migrator", mig.Migrate)
 
-	storagePubSub := pubsub.New[storage.EventType]()
+	storePubSub := pubsub.New[storage.EventType]()
 
-	storage := sql_storage.New(
+	store := sql_storage.New(
 		log.With(sl.Component("storage")),
 		cfg.Storage.Path,
 		cfg.StatsTracker.MaxTrackingDuration,
-		storagePubSub,
+		storePubSub,
 	)
-	m.PreStartR("storage", storage.Open)
-	m.PostStopR("storage", storage.Close)
+	m.PreStartR("storage", store.Open)
+	m.PostStopR("storage", store.Close)
 
 	retryableHttpTransport := httpx.NewRetryRoundTripper(
 		log.Logger.With(sl.Component("http_client")),
@@ -112,9 +118,11 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		),
 	}
 
+	censusClient := census2.NewClient("https://census.daybreakgames.com", cfg.Census.ServiceId, httpClient)
+
 	censusDataProvider := census_data_provider.New(
 		log.With(sl.Component("census_data_provider")),
-		census2.NewClient("https://census.daybreakgames.com", cfg.Census.ServiceId, httpClient),
+		censusClient,
 	)
 	honuDataProvider := honu_data_provider.New(
 		honu.NewClient("https://wt.honu.pw", httpClient),
@@ -140,14 +148,14 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 
 	facilityCache := sql_facility_cache.New(
 		log.With(sl.Component("facility_cache")),
-		storage,
+		store,
 	)
 
 	characterTrackerSubsMangers := make(map[ps2_platforms.Platform]pubsub.SubscriptionsManager[characters_tracker.EventType], len(ps2_platforms.Platforms))
 	charactersTrackers := make(map[ps2_platforms.Platform]*characters_tracker.CharactersTracker, len(ps2_platforms.Platforms))
 	worldTrackerSubsMangers := make(map[ps2_platforms.Platform]pubsub.SubscriptionsManager[worlds_tracker.EventType], len(ps2_platforms.Platforms))
 	worldTrackers := make(map[ps2_platforms.Platform]*worlds_tracker.WorldsTracker, len(ps2_platforms.Platforms))
-	trackingManagers := make(map[ps2_platforms.Platform]*tracking_manager.TrackingManager, len(ps2_platforms.Platforms))
+	trackingManagers := make(map[ps2_platforms.Platform]*tracking.Manager, len(ps2_platforms.Platforms))
 	outfitMembersSynchronizers := make(map[ps2_platforms.Platform]*outfit_members_synchronizer.OutfitMembersSynchronizer, len(ps2_platforms.Platforms))
 	charactersLoaders := make(map[ps2_platforms.Platform]loader.Multi[ps2.CharacterId, ps2.Character], len(ps2_platforms.Platforms))
 	characterLoaders := make(map[ps2_platforms.Platform]loader.Keyed[ps2.CharacterId, ps2.Character], len(ps2_platforms.Platforms))
@@ -172,8 +180,8 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			}
 			return channelIds, nil
 		},
-		storage.ChannelTrackablePlatforms,
-		storage.ActiveStatsTrackerTasks,
+		store.ChannelTrackablePlatforms,
+		store.ActiveStatsTrackerTasks,
 		charactersLoaders,
 		cfg.StatsTracker.MaxTrackingDuration,
 	)
@@ -293,41 +301,41 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			statsTracker,
 		))
 
-		trackingManager := tracking_manager.New(
+		trackingManager := tracking.New(
 			pl.With(sl.Component("tracking_manager")),
 			cachedBatchedCharactersLoader,
 			func(ctx context.Context, c ps2.Character) ([]discord.Channel, error) {
-				return storage.TrackingChannelsForCharacter(ctx, platform, c.Id, c.OutfitId)
+				return store.TrackingChannelsForCharacter(ctx, platform, c.Id, c.OutfitId)
 			},
 			func(ctx context.Context) ([]ps2.CharacterId, error) {
-				return storage.AllTrackableCharacterIdsWithDuplicationsForPlatform(ctx, platform)
+				return store.AllTrackableCharacterIdsWithDuplicationsForPlatform(ctx, platform)
 			},
 			func(ctx context.Context, oi ps2.OutfitId) ([]ps2.CharacterId, error) {
-				return storage.OutfitMembers(ctx, platform, oi)
+				return store.OutfitMembers(ctx, platform, oi)
 			},
 			func(ctx context.Context, oi ps2.OutfitId) ([]discord.Channel, error) {
-				return storage.TrackingChannelsForOutfit(ctx, platform, oi)
+				return store.TrackingChannelsForOutfit(ctx, platform, oi)
 			},
 			func(ctx context.Context) ([]ps2.OutfitId, error) {
-				return storage.AllTrackableOutfitIdsWithDuplicationsForPlatform(ctx, platform)
+				return store.AllTrackableOutfitIdsWithDuplicationsForPlatform(ctx, platform)
 			},
 		)
-		m.AppendR(fmt.Sprintf("%s.tracking_manager", platform), trackingManager.Start)
+		m.AppendVR(fmt.Sprintf("%s.tracking_manager", platform), trackingManager.Start)
 		trackingManagers[platform] = trackingManager
 
 		outfitMembersSynchronizer := outfit_members_synchronizer.New(
 			pl.With(sl.Component("outfit_members_synchronizer")),
 			func(ctx context.Context) ([]ps2.OutfitId, error) {
-				return storage.AllUniqueTrackableOutfitIdsForPlatform(ctx, platform)
+				return store.AllUniqueTrackableOutfitIdsForPlatform(ctx, platform)
 			},
 			func(ctx context.Context, oi ps2.OutfitId) (time.Time, error) {
-				return storage.OutfitSynchronizedAt(ctx, platform, oi)
+				return store.OutfitSynchronizedAt(ctx, platform, oi)
 			},
 			func(ctx context.Context, oi ps2.OutfitId) ([]ps2.CharacterId, error) {
 				return censusDataProvider.OutfitMemberIds(ctx, ns, oi)
 			},
 			func(ctx context.Context, outfitId ps2.OutfitId, members []ps2.CharacterId) error {
-				return storage.SaveOutfitMembers(ctx, platform, outfitId, members)
+				return store.SaveOutfitMembers(ctx, platform, outfitId, members)
 			},
 			24*time.Hour,
 		)
@@ -347,7 +355,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			},
 			sql_outfits_cache.New(
 				log.With(sl.Component("outfits_cache")),
-				storage,
+				store,
 				platform,
 			),
 		)
@@ -370,13 +378,22 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		)
 	}
 
-	m.Append(newStorageEventsSubscriptionService(
-		log.With(sl.Component("storage_events_subscription_service")),
-		m,
-		trackingManagers,
-		outfitMembersSynchronizers,
-		storagePubSub,
-	))
+	outfitMemberSaved := storage.Subscribe[storage.OutfitMemberSaved](m, storePubSub)
+	outfitMemberDeleted := storage.Subscribe[storage.OutfitMemberDeleted](m, storePubSub)
+	m.AppendVR("storage_events_subscription", func(ctx context.Context) {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case e := <-outfitMemberSaved:
+				tm := trackingManagers[e.Platform]
+				tm.TrackOutfitMember(e.CharacterId, e.OutfitId)
+			case e := <-outfitMemberDeleted:
+				tm := trackingManagers[e.Platform]
+				tm.UntrackOutfitMember(e.CharacterId, e.OutfitId)
+			}
+		}
+	})
 
 	populationLoaders := map[string]loader.Simple[meta.Loaded[ps2.WorldsPopulation]]{
 		"spy": func(ctx context.Context) (meta.Loaded[ps2.WorldsPopulation], error) {
@@ -441,7 +458,41 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		"voidwell":  voidwellDataProvider.Alerts,
 	}
 
-	discordMessages := discord_messages.New(shared.Timezones, cfg.StatsTracker.MaxTrackingDuration)
+	trackingSettingsRepo := tracking_settings_repo.New(store)
+	trackingPubSub := pubsub.New[tracking.EventType]()
+
+	settingsUpdate := tracking.Subscribe[tracking.TrackingSettingsUpdated](m, trackingPubSub)
+	m.AppendVR("tracking_settings_events_subscription", func(ctx context.Context) {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case e := <-settingsUpdate:
+				tm := trackingManagers[e.Platform]
+				tm.HandleTrackingSettingsUpdate(ctx, e)
+				os := outfitMembersSynchronizers[e.Platform]
+				for _, oId := range e.Diff.Outfits.ToAdd {
+					os.SyncOutfit(ctx, oId)
+				}
+			}
+		}
+	})
+
+	censusCharactersRepo := census_characters_repo.New(
+		log.With(sl.Component("census_characters_repo")),
+		censusClient,
+	)
+	censusOutfitsRepo := census_outfits_repo.New(
+		log.With(sl.Component("census_outfits_repo")),
+		censusClient,
+	)
+
+	discordMessages := discord_messages.New(
+		shared.Timezones,
+		cfg.StatsTracker.MaxTrackingDuration,
+		cfg.Tracking.MaxNumberTrackedCharacters,
+		cfg.Tracking.MaxNumberTrackedOutfits,
+	)
 	discordCommands := discord_commands.New(
 		log.With(sl.Component("commands")),
 		discordMessages,
@@ -465,7 +516,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		func(
 			ctx context.Context, sq discord.SettingsQuery,
 		) (discord.TrackableEntities[map[ps2.OutfitId][]ps2.Character, []ps2.Character], error) {
-			settings, err := storage.TrackingSettings(ctx, sq)
+			settings, err := trackingSettingsRepo.Get(ctx, sq.ChannelId, sq.Platform)
 			if err != nil {
 				return discord.TrackableEntities[map[ps2.OutfitId][]ps2.Character, []ps2.Character]{}, err
 			}
@@ -476,32 +527,31 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		) (map[ps2.OutfitId]ps2.Outfit, error) {
 			return outfitsLoaders[pq.Platform](ctx, pq.Value)
 		},
-		storage.TrackingSettings,
-		func(ctx context.Context, pq discord.PlatformQuery[[]ps2.CharacterId]) ([]string, error) {
-			return censusDataProvider.CharacterNames(ctx, ps2_platforms.PlatformNamespace(pq.Platform), pq.Value)
-		},
-		func(ctx context.Context, pq discord.PlatformQuery[[]string]) ([]ps2.CharacterId, error) {
-			return censusDataProvider.CharacterIds(ctx, ps2_platforms.PlatformNamespace(pq.Platform), pq.Value)
-		},
-		func(ctx context.Context, pq discord.PlatformQuery[[]ps2.OutfitId]) ([]string, error) {
-			return censusDataProvider.OutfitTags(ctx, ps2_platforms.PlatformNamespace(pq.Platform), pq.Value)
-		},
-		func(ctx context.Context, pq discord.PlatformQuery[[]string]) ([]ps2.OutfitId, error) {
-			return censusDataProvider.OutfitIds(ctx, ps2_platforms.PlatformNamespace(pq.Platform), pq.Value)
-		},
-		storage.SaveTrackingSettings,
+		tracking_settings_view_loader.New(
+			trackingSettingsRepo,
+			censusOutfitsRepo,
+			censusCharactersRepo,
+		).Load,
+		tracking_settings_updater.New(
+			trackingSettingsRepo,
+			censusOutfitsRepo,
+			censusCharactersRepo,
+			cfg.Tracking.MaxNumberTrackedOutfits,
+			cfg.Tracking.MaxNumberTrackedCharacters,
+			trackingPubSub,
+		).Update,
 		statsTracker,
-		storage.Channel,
-		storage.SaveChannelLanguage,
-		storage.SaveChannelCharacterNotifications,
-		storage.SaveChannelOutfitNotifications,
-		storage.SaveChannelTitleUpdates,
-		storage.SaveChannelDefaultTimezone,
-		storage.ChannelStatsTrackerTasks,
-		storage.CreateStatsTrackerTask,
-		storage.RemoveStatsTrackerTask,
-		storage.StatsTrackerTask,
-		storage.UpdateStatsTrackerTask,
+		store.Channel,
+		store.SaveChannelLanguage,
+		store.SaveChannelCharacterNotifications,
+		store.SaveChannelOutfitNotifications,
+		store.SaveChannelTitleUpdates,
+		store.SaveChannelDefaultTimezone,
+		store.ChannelStatsTrackerTasks,
+		store.CreateStatsTrackerTask,
+		store.RemoveStatsTrackerTask,
+		store.StatsTrackerTask,
+		store.UpdateStatsTrackerTask,
 	)
 	m.AppendR("discord.commands", discordCommands.Start)
 
@@ -515,7 +565,8 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		discordCommands,
 		characterTrackerSubsMangers,
 		trackingManagers,
-		storagePubSub,
+		storePubSub,
+		trackingPubSub,
 		worldTrackerSubsMangers,
 		characterLoaders,
 		outfitLoaders,
@@ -525,10 +576,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			count := 0
 			errs := make([]error, 0, len(ps2_platforms.Platforms))
 			for _, platform := range ps2_platforms.Platforms {
-				settings, err := storage.TrackingSettings(ctx, discord.SettingsQuery{
-					ChannelId: channelId,
-					Platform:  platform,
-				})
+				settings, err := trackingSettingsRepo.Get(ctx, channelId, platform)
 				if err != nil {
 					errs = append(errs, err)
 					continue
@@ -542,7 +590,11 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			return count, errors.Join(errs...)
 		},
 		statsTrackerPubSub,
-		storage.Channel,
+		store.Channel,
+		tracking_settings_diff_view_loader.New(
+			censusOutfitsRepo,
+			censusCharactersRepo,
+		).Load,
 	)
 	if err != nil {
 		return nil, err

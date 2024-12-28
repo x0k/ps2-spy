@@ -16,10 +16,6 @@ type EventType string
 type Event = pubsub.Event[EventType]
 
 const (
-	ChannelOutfitSavedType                 EventType = "channel_outfit_saved"
-	ChannelOutfitDeletedType               EventType = "channel_outfit_deleted"
-	ChannelCharacterSavedType              EventType = "channel_character_saved"
-	ChannelCharacterDeletedType            EventType = "channel_character_deleted"
 	OutfitMembersInitType                  EventType = "outfit_members_init"
 	OutfitMembersUpdateType                EventType = "outfit_members_update"
 	OutfitMemberSavedType                  EventType = "outfit_member_saved"
@@ -31,46 +27,6 @@ const (
 	ChannelTitleUpdatesSavedType           EventType = "channel_title_updates_saved"
 	ChannelDefaultTimezoneSavedType        EventType = "channel_default_timezone_saved"
 )
-
-type ChannelOutfitSaved struct {
-	ChannelId discord.ChannelId
-	Platform  ps2_platforms.Platform
-	OutfitId  ps2.OutfitId
-}
-
-func (e ChannelOutfitSaved) Type() EventType {
-	return ChannelOutfitSavedType
-}
-
-type ChannelOutfitDeleted struct {
-	ChannelId discord.ChannelId
-	Platform  ps2_platforms.Platform
-	OutfitId  ps2.OutfitId
-}
-
-func (e ChannelOutfitDeleted) Type() EventType {
-	return ChannelOutfitDeletedType
-}
-
-type ChannelCharacterSaved struct {
-	ChannelId   discord.ChannelId
-	Platform    ps2_platforms.Platform
-	CharacterId ps2.CharacterId
-}
-
-func (e ChannelCharacterSaved) Type() EventType {
-	return ChannelCharacterSavedType
-}
-
-type ChannelCharacterDeleted struct {
-	ChannelId   discord.ChannelId
-	Platform    ps2_platforms.Platform
-	CharacterId ps2.CharacterId
-}
-
-func (e ChannelCharacterDeleted) Type() EventType {
-	return ChannelCharacterDeletedType
-}
 
 type OutfitMembersInit struct {
 	Platform ps2_platforms.Platform

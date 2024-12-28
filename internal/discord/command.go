@@ -30,6 +30,23 @@ var TRACKING_MODAL_CUSTOM_IDS = map[ps2_platforms.Platform]string{
 	ps2_platforms.PS4_EU: "tracking_setup_ps4_eu",
 	ps2_platforms.PS4_US: "tracking_setup_ps4_us",
 }
+var TRACKING_EDIT_BUTTON_CUSTOM_ID = "tracking_edit"
+
+func NewTrackingSettingsEditButtonCustomId(
+	platform ps2_platforms.Platform,
+	outfits []string,
+	characters []string,
+) string {
+	return TRACKING_EDIT_BUTTON_CUSTOM_ID +
+		customIdSeparator + string(platform) +
+		customIdSeparator + strings.Join(outfits, ",") +
+		customIdSeparator + strings.Join(characters, ",")
+}
+
+func CustomIdToPlatformAndOutfitsAndCharacters(customId string) (ps2_platforms.Platform, []string, []string) {
+	parts := strings.Split(customId, customIdSeparator)
+	return ps2_platforms.Platform(parts[1]), strings.Split(parts[2], ","), strings.Split(parts[3], ",")
+}
 
 var CHANNEL_LANGUAGE_COMPONENT_CUSTOM_ID = "channel_language"
 var CHANNEL_CHARACTER_NOTIFICATIONS_COMPONENT_CUSTOM_ID = "channel_character_notifications"

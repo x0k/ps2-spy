@@ -281,5 +281,5 @@ func renderTaskFormError(p *message.Printer, err error) string {
 			renderDuration(p, tDuration),
 		)
 	}
-	return p.Sprintf("something went wrong")
+	return p.Sprintf("Something went wrong")
 }

@@ -7,7 +7,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/x0k/ps2-spy/internal/discord"
-	"github.com/x0k/ps2-spy/internal/lib/slicesx"
+	"github.com/x0k/ps2-spy/internal/lib/iterx"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 )
@@ -25,7 +25,7 @@ func sendSimpleMessage(session *discordgo.Session, channels []discord.Channel, d
 	if len(channels) == 0 {
 		return nil
 	}
-	channelsByLocale := slicesx.GroupBy(
+	channelsByLocale := iterx.GroupBy(
 		slices.Values(channels),
 		func(c discord.Channel) language.Tag { return c.Locale },
 	)
