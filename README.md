@@ -33,9 +33,8 @@ By selecting outfits and/or specific players you will be able:
 
 ### Stats tracking
 
-You can run the stat tracker for tracked players and get detailed stats for the recorded period.
-
-You can also set up a weekly schedule to automatically run the stats tracker.
+- You can run the stat tracker for the tracked players and get a leaderboard for the recorded period.
+- You can also set up a weekly schedule to automatically run the stats tracker.
 
 ### Other
 
