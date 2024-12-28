@@ -2,6 +2,7 @@ package census2_adapters
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"time"
@@ -21,7 +22,7 @@ type request struct {
 
 var retryableExecutePrepared = retryable.NewWithArg(func(
 	ctx context.Context, r request,
-) ([]any, error) {
+) (json.RawMessage, error) {
 	return r.client.ExecutePrepared(ctx, r.collection, r.url)
 })
 

@@ -2,11 +2,11 @@ package census2
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
 
-	"github.com/mitchellh/mapstructure"
 	"github.com/x0k/ps2-spy/internal/lib/httpx"
 )
 
@@ -43,57 +43,28 @@ func (c *Client) ToURL(q *Query) string {
 	return builder.String()
 }
 
-func (c *Client) ExecutePrepared(ctx context.Context, collection, url string) ([]any, error) {
+func (c *Client) ExecutePrepared(ctx context.Context, collection, url string) (json.RawMessage, error) {
 	const op = "census2.Client.ExecutePrepared"
-	content, err := httpx.GetJson[map[string]any](ctx, c.httpClient, url)
+	content, err := httpx.GetJson[map[string]json.RawMessage](ctx, c.httpClient, url)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get content: %w", err)
 	}
-	data, ok := content[collection+"_list"].([]any)
+	data, ok := content[collection+"_list"]
 	if !ok {
 		return nil, fmt.Errorf("%s decoding %v: %w", op, content, ErrFailedToDecode)
 	}
 	return data, nil
 }
 
-func (c *Client) Execute(ctx context.Context, q *Query) ([]any, error) {
+func (c *Client) Execute(ctx context.Context, q *Query) (json.RawMessage, error) {
 	return c.ExecutePrepared(ctx, q.Collection(), c.ToURL(q))
 }
 
-type DecodeError[T any] struct {
-	Index int
-	Item  T
-	Err   error
-}
-
-func (e *DecodeError[T]) Error() string {
-	return fmt.Sprintf("item[%d] %v: %s", e.Index, e.Item, e.Err.Error())
-}
-
-type DecodeErrors[T any] []DecodeError[T]
-
-func (e DecodeErrors[T]) Error() string {
-	var builder strings.Builder
-	builder.WriteString("failed to decode:\n")
-	builder.WriteString(e[0].Error())
-	for i := 1; i < len(e); i++ {
-		builder.WriteByte('\n')
-		builder.WriteString(e[i].Error())
-	}
-	return builder.String()
-}
-
-func DecodeCollection[T any](items []any) ([]T, error) {
-	res := make([]T, len(items))
-	errs := make([]DecodeError[T], 0, len(items))
-	for i, item := range items {
-		err := mapstructure.Decode(item, &res[i])
-		if err != nil {
-			errs = append(errs, DecodeError[T]{Index: i, Item: res[i], Err: err})
-		}
-	}
-	if len(errs) > 0 {
-		return res, DecodeErrors[T](errs)
+func DecodeCollection[T any](items json.RawMessage) ([]T, error) {
+	var res []T
+	err := json.Unmarshal(items, &res)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode: %w", err)
 	}
 	return res, nil
 }
@@ -102,7 +73,7 @@ func DecodeCollection[T any](items []any) ([]T, error) {
 func ExecuteAndDecode[T any](ctx context.Context, c *Client, q *Query) ([]T, error) {
 	data, err := c.Execute(ctx, q)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to execute: %w", err)
 	}
 	return DecodeCollection[T](data)
 }
