@@ -1,4 +1,4 @@
-package census_characters_repo
+package census_ps2_characters_repo
 
 import (
 	"sync"

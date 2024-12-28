@@ -44,10 +44,10 @@ import (
 	events_module "github.com/x0k/ps2-spy/internal/modules/events"
 	"github.com/x0k/ps2-spy/internal/outfit_members_synchronizer"
 	"github.com/x0k/ps2-spy/internal/ps2"
-	"github.com/x0k/ps2-spy/internal/ps2/census_characters_repo"
-	"github.com/x0k/ps2-spy/internal/ps2/census_outfits_repo"
-	"github.com/x0k/ps2-spy/internal/ps2/characters_tracker_characters_repo"
-	"github.com/x0k/ps2-spy/internal/ps2/characters_tracker_outfits_repo"
+	census_ps2_characters_repo "github.com/x0k/ps2-spy/internal/ps2/census_characters_repo"
+	census_ps2_outfits_repo "github.com/x0k/ps2-spy/internal/ps2/census_outfits_repo"
+	characters_tracker_ps2_characters_repo "github.com/x0k/ps2-spy/internal/ps2/characters_tracker_characters_repo"
+	characters_tracker_ps2_outfits_repo "github.com/x0k/ps2-spy/internal/ps2/characters_tracker_outfits_repo"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 	"github.com/x0k/ps2-spy/internal/shared"
 	"github.com/x0k/ps2-spy/internal/stats_tracker"
@@ -56,9 +56,9 @@ import (
 	"github.com/x0k/ps2-spy/internal/tracking"
 	tracking_settings_data_loader "github.com/x0k/ps2-spy/internal/tracking/settings_data_loader"
 	tracking_settings_diff_view_loader "github.com/x0k/ps2-spy/internal/tracking/settings_diff_view_loader"
-	tracking_settings_repo "github.com/x0k/ps2-spy/internal/tracking/settings_repo"
 	tracking_settings_updater "github.com/x0k/ps2-spy/internal/tracking/settings_updater"
 	tracking_settings_view_loader "github.com/x0k/ps2-spy/internal/tracking/settings_view_loader"
+	storage_tracking_settings_repo "github.com/x0k/ps2-spy/internal/tracking/storage_settings_repo"
 	"github.com/x0k/ps2-spy/internal/worlds_tracker"
 
 	// migration tools
@@ -446,7 +446,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		"voidwell":  voidwellDataProvider.Alerts,
 	}
 
-	trackingSettingsRepo := tracking_settings_repo.New(store)
+	trackingSettingsRepo := storage_tracking_settings_repo.New(store)
 	trackingPubSub := pubsub.New[tracking.EventType]()
 
 	settingsUpdate := tracking.Subscribe[tracking.TrackingSettingsUpdated](m, trackingPubSub)
@@ -466,17 +466,17 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		}
 	})
 
-	censusCharactersRepo := census_characters_repo.New(
+	censusCharactersRepo := census_ps2_characters_repo.New(
 		log.With(sl.Component("census_characters_repo")),
 		censusClient,
 	)
-	charactersTrackerCharactersRepo := characters_tracker_characters_repo.New(charactersTrackers)
+	charactersTrackerCharactersRepo := characters_tracker_ps2_characters_repo.New(charactersTrackers)
 
-	censusOutfitsRepo := census_outfits_repo.New(
+	censusOutfitsRepo := census_ps2_outfits_repo.New(
 		log.With(sl.Component("census_outfits_repo")),
 		censusClient,
 	)
-	charactersTrackerOutfitsRepo := characters_tracker_outfits_repo.New(charactersTrackers)
+	charactersTrackerOutfitsRepo := characters_tracker_ps2_outfits_repo.New(charactersTrackers)
 
 	discordMessages := discord_messages.New(
 		shared.Timezones,
