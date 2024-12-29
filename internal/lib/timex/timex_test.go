@@ -1,9 +1,11 @@
-package shared
+package timex_test
 
 import (
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/x0k/ps2-spy/internal/lib/timex"
 )
 
 func TestShiftDate(t *testing.T) {
@@ -41,7 +43,7 @@ func TestShiftDate(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, got1 := NormalizeDate(tt.args.weekday, tt.args.t1+tt.args.offset)
+			got, got1 := timex.NormalizeDate(tt.args.weekday, tt.args.t1+tt.args.offset)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("ShiftDate() got = %v, want %v", got, tt.want)
 			}
