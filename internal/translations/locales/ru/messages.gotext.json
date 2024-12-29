@@ -1203,9 +1203,9 @@
             "translation": "Нет тревог"
         },
         {
-            "id": "Notes:\n- The time is specified in the time zone {String}. This can be changed in the channel settings;\n- The maximum amount of tasks per channel is {MAXAMOUNTOFTASKSPERCHANNEL};\n- You can edit a task by clicking on it;\n- The “Remove” button deletes immediately without confirmation.",
-            "message": "Notes:\n- The time is specified in the time zone {String}. This can be changed in the channel settings;\n- The maximum amount of tasks per channel is {MAXAMOUNTOFTASKSPERCHANNEL};\n- You can edit a task by clicking on it;\n- The “Remove” button deletes immediately without confirmation.",
-            "translation": "Примечание:\n- Время указано в {String} временной зоне. Это может быть изменено в настройках канала;\n- Максимальное количество задач для канала - {MAXAMOUNTOFTASKSPERCHANNEL};\n- Вы можете редактировать задачу, нажав на нее;\n- Кнопка “Удалить” удаляет немедленно без подтверждения.",
+            "id": "Notes:\n- The time is specified in the time zone {String}. This can be changed in the channel settings;\n- The maximum amount of tasks per channel is {MaxTrackingTasks};\n- You can edit a task by clicking on it;\n- The “Remove” button deletes immediately without confirmation.",
+            "message": "Notes:\n- The time is specified in the time zone {String}. This can be changed in the channel settings;\n- The maximum amount of tasks per channel is {MaxTrackingTasks};\n- You can edit a task by clicking on it;\n- The “Remove” button deletes immediately without confirmation.",
+            "translation": "Примечание:\n- Время указано в {String} временной зоне. Это может быть изменено в настройках канала;\n- Максимальное количество задач для канала - {MaxTrackingTasks};\n- Вы можете редактировать задачу, нажав на нее;\n- Кнопка “Удалить” удаляет немедленно без подтверждения.",
             "placeholders": [
                 {
                     "id": "String",
@@ -1350,17 +1350,25 @@
             "translation": "Отмена"
         },
         {
-            "id": "Max amount of tasks per channel is {MAXAMOUNTOFTASKSPERCHANNEL}",
-            "message": "Max amount of tasks per channel is {MAXAMOUNTOFTASKSPERCHANNEL}",
-            "translation": "Максимальное количество задач для канала - {MAXAMOUNTOFTASKSPERCHANNEL}",
+            "id": "Max amount of tasks per channel is {Max}, got {Got}",
+            "message": "Max amount of tasks per channel is {Max}, got {Got}",
+            "translation": "Максимальное количество задач в канале {Max}, получено {Got}",
             "placeholders": [
                 {
-                    "id": "MAXAMOUNTOFTASKSPERCHANNEL",
+                    "id": "Max",
                     "string": "%[1]d",
                     "type": "int",
                     "underlyingType": "int",
                     "argNum": 1,
-                    "expr": "discord.MAX_AMOUNT_OF_TASKS_PER_CHANNEL"
+                    "expr": "m.Max"
+                },
+                {
+                    "id": "Got",
+                    "string": "%[2]d",
+                    "type": "int",
+                    "underlyingType": "int",
+                    "argNum": 2,
+                    "expr": "m.Got"
                 }
             ]
         },
