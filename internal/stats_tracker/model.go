@@ -30,6 +30,7 @@ type CreateOrUpdateTask struct {
 }
 
 func NewCreateTask(
+	channelId discord.ChannelId,
 	timezone *time.Location,
 ) CreateOrUpdateTask {
 	localNow := time.Now().In(timezone)
@@ -37,6 +38,7 @@ func NewCreateTask(
 	localHour := int(localStartTime / time.Hour)
 	localMin := int((localStartTime % time.Hour) / time.Minute)
 	return CreateOrUpdateTask{
+		ChannelId:      channelId,
 		Timezone:       timezone,
 		LocalWeekdays:  []time.Weekday{localNow.Weekday()},
 		LocalStartHour: localHour,

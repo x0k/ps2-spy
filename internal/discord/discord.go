@@ -1,14 +1,11 @@
 package discord
 
 import (
-	"errors"
-	"fmt"
 	"time"
 
 	"golang.org/x/text/language"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/x0k/ps2-spy/internal/lib/timex"
 )
 
 type ChannelId string
@@ -77,108 +74,9 @@ func NewDefaultChannel(channelId ChannelId) Channel {
 	return NewChannel(channelId, DEFAULT_LANG_TAG, true, true, true, time.UTC)
 }
 
-type StatsTrackerTaskId int64
-
-type StatsTrackerTask struct {
-	Id              StatsTrackerTaskId
-	ChannelId       ChannelId
-	UtcStartWeekday time.Weekday
-	UtcStartTime    time.Duration
-	UtcEndWeekday   time.Weekday
-	UtcEndTime      time.Duration
-}
-
-const MAX_AMOUNT_OF_TASKS_PER_CHANNEL = 7
-
 type FormState[T any] struct {
 	SubmitButtonId string
 	Data           T
-}
-
-type StatsTrackerTaskState struct {
-	SubmitButtonId string
-	TaskId         StatsTrackerTaskId
-	Timezone       *time.Location
-	LocalWeekdays  []time.Weekday
-	LocalStartHour int
-	LocalStartMin  int
-	Duration       time.Duration
-}
-
-func NewCreateStatsTrackerTaskState(
-	timezone *time.Location,
-) StatsTrackerTaskState {
-	localNow := time.Now().In(timezone)
-	startTime := time.Duration(localNow.Hour())*time.Hour + time.Duration(localNow.Minute()/10)*10*time.Minute
-	hour := int(startTime / time.Hour)
-	min := int((startTime % time.Hour) / time.Minute)
-	return StatsTrackerTaskState{
-		SubmitButtonId: STATS_TRACKER_TASK_CREATE_SUBMIT_BUTTON_CUSTOM_ID,
-		Timezone:       timezone,
-		LocalWeekdays: []time.Weekday{
-			localNow.Weekday(),
-		},
-		LocalStartHour: hour,
-		LocalStartMin:  min,
-		Duration:       2 * time.Hour,
-	}
-}
-
-func NewUpdateStatsTrackerTaskState(
-	task StatsTrackerTask,
-	timezone *time.Location,
-) StatsTrackerTaskState {
-	_, offsetInSeconds := time.Now().In(timezone).Zone()
-	offset := (time.Duration(offsetInSeconds) * time.Second)
-	startWeekday, startTime := timex.NormalizeDate(task.UtcStartWeekday, task.UtcStartTime+offset)
-	endWeekday, endTime := timex.NormalizeDate(task.UtcEndWeekday, task.UtcEndTime+offset)
-	duration := endTime - startTime
-	if startWeekday != endWeekday {
-		duration += 24 * time.Hour
-	}
-	return StatsTrackerTaskState{
-		SubmitButtonId: STATS_TRACKER_TASK_UPDATE_SUBMIT_BUTTON_CUSTOM_ID,
-		TaskId:         task.Id,
-		Timezone:       timezone,
-		LocalWeekdays: []time.Weekday{
-			startWeekday,
-		},
-		LocalStartHour: int(startTime / time.Hour),
-		LocalStartMin:  int((startTime % time.Hour) / time.Minute),
-		Duration:       duration,
-	}
-}
-
-type ErrStatsTrackerTaskDurationTooLong struct {
-	MaxDuration time.Duration
-	GotDuration time.Duration
-}
-
-func (e ErrStatsTrackerTaskDurationTooLong) Error() string {
-	return fmt.Sprintf(
-		"stats tracker task duration too long: expected max %s, got %s",
-		e.MaxDuration,
-		e.GotDuration,
-	)
-}
-
-var ErrMaxAmountOfTasksExceeded = errors.New("max amount of tasks exceeded")
-
-type ErrOverlappingTasks struct {
-	Offset         time.Duration
-	LocalWeekday   time.Weekday
-	LocalStartTime time.Duration
-	Duration       time.Duration
-	Tasks          []StatsTrackerTask
-}
-
-func (e ErrOverlappingTasks) Error() string {
-	return fmt.Sprintf(
-		"stats tracker task with weekday %d and start time %s intersects with %d existing tasks",
-		e.LocalWeekday,
-		e.LocalStartTime,
-		len(e.Tasks),
-	)
 }
 
 func IsChannelsManagerOrDM(i *discordgo.InteractionCreate) bool {

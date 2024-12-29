@@ -199,11 +199,10 @@ func NewStatsTracker(
 				if err != nil {
 					return messages.StatsTrackerTaskLoadError(err)
 				}
-				formData := stats_tracker.NewUpdateTask(task, channel.DefaultTimezone)
 				stateId := newStateId(i)
 				state := discord.FormState[stats_tracker.CreateOrUpdateTask]{
 					SubmitButtonId: discord.STATS_TRACKER_TASK_UPDATE_SUBMIT_BUTTON_CUSTOM_ID,
-					Data:           formData,
+					Data:           stats_tracker.NewUpdateTask(task, channel.DefaultTimezone),
 				}
 				taskFormStateContainer.Store(stateId, state)
 				return messages.StatsTrackerTaskForm(state, nil)
@@ -243,10 +242,9 @@ func NewStatsTracker(
 						)
 					}
 					stateId := newStateId(i)
-					formData := stats_tracker.NewCreateTask(channel.DefaultTimezone)
 					state := discord.FormState[stats_tracker.CreateOrUpdateTask]{
 						SubmitButtonId: discord.STATS_TRACKER_TASK_CREATE_SUBMIT_BUTTON_CUSTOM_ID,
-						Data:           formData,
+						Data:           stats_tracker.NewCreateTask(channelId, channel.DefaultTimezone),
 					}
 					taskFormStateContainer.Store(stateId, state)
 					return messages.StatsTrackerTaskForm(state, nil)

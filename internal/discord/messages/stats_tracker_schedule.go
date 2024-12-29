@@ -16,7 +16,7 @@ import (
 	"golang.org/x/text/message"
 )
 
-func scheduleNotes(p *message.Printer, loc *time.Location) string {
+func (m *Messages) scheduleNotes(p *message.Printer, loc *time.Location) string {
 	return p.Sprintf(
 		`Notes:
 - The time is specified in the time zone %q. This can be changed in the channel settings;
@@ -25,7 +25,7 @@ func scheduleNotes(p *message.Printer, loc *time.Location) string {
 - The “Remove” button deletes immediately without confirmation.
 `,
 		loc.String(),
-		discord.MAX_AMOUNT_OF_TASKS_PER_CHANNEL,
+		m.maxTrackingTasks,
 	)
 }
 
@@ -294,13 +294,14 @@ func (m *Messages) statsTrackerCreateTaskForm(
 }
 
 func renderTaskFormError(p *message.Printer, err error) string {
-	if errors.Is(err, discord.ErrMaxAmountOfTasksExceeded) {
+	var m stats_tracker.ErrMaxTooManyTasksPerChannel
+	if errors.As(err, &m) {
 		return p.Sprintf(
-			"Max amount of tasks per channel is %d",
-			discord.MAX_AMOUNT_OF_TASKS_PER_CHANNEL,
+			"Max amount of tasks per channel is %d, got %d",
+			m.Max, m.Got,
 		)
 	}
-	var d discord.ErrStatsTrackerTaskDurationTooLong
+	var d stats_tracker.ErrTaskDurationTooLong
 	if errors.As(err, &d) {
 		return p.Sprintf(
 			"Duration too long: expected max %s got %s",
@@ -308,11 +309,13 @@ func renderTaskFormError(p *message.Printer, err error) string {
 			renderDuration(p, d.GotDuration),
 		)
 	}
-	var o discord.ErrOverlappingTasks
+	var o stats_tracker.ErrOverlappingTasks
 	if errors.As(err, &o) {
 		t := o.Tasks[0]
-		tStartWeekday, tStartTime := timex.NormalizeDate(t.UtcStartWeekday, t.UtcStartTime-o.Offset)
-		tEndWeekday, tEndTime := timex.NormalizeDate(t.UtcStartWeekday, t.UtcStartTime+o.Duration-o.Offset)
+		offset := timex.LocationToOffset(o.Timezone)
+		localTime := t.UtcStartTime + offset
+		tStartWeekday, tStartTime := timex.NormalizeDate(t.UtcStartWeekday, localTime)
+		tEndWeekday, tEndTime := timex.NormalizeDate(t.UtcStartWeekday, localTime+o.Duration)
 		tDuration := tEndTime - tStartTime
 		if tStartWeekday != tEndWeekday {
 			tDuration += 24 * time.Hour

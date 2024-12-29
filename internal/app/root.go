@@ -155,6 +155,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 
 	statsTrackerPubSub := pubsub.New[stats_tracker.EventType]()
 
+	storageStatsTrackerTasksRepo := storage_stats_tracker_tasks_repo.New(store)
 	statsTracker := stats_tracker.New(
 		log.With(sl.Component("stats_tracker")),
 		statsTrackerPubSub,
@@ -171,7 +172,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			return channelIds, nil
 		},
 		store.ChannelTrackablePlatforms,
-		store.ActiveStatsTrackerTasks,
+		storageStatsTrackerTasksRepo.ChannelIdsWithActiveTasks,
 		charactersLoaders,
 		cfg.StatsTracker.MaxTrackingDuration,
 	)
@@ -480,7 +481,6 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	)
 	charactersTrackerOutfitsRepo := characters_tracker_ps2_outfits_repo.New(charactersTrackers)
 
-	storageStatsTrackerTasksRepo := storage_stats_tracker_tasks_repo.New(store)
 	statsTrackerTasksCreator := stats_tracker_tasks_creator.New(
 		storageStatsTrackerTasksRepo,
 		cfg.StatsTracker.MaxTrackingDuration,
@@ -492,6 +492,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		cfg.StatsTracker.MaxTrackingDuration,
 		cfg.Tracking.MaxNumberTrackedCharacters,
 		cfg.Tracking.MaxNumberTrackedOutfits,
+		cfg.StatsTracker.MaxNumberOfTasksPerChannel,
 	)
 	discordCommands := discord_commands.New(
 		log.With(sl.Component("commands")),
