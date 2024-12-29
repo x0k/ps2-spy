@@ -1,4 +1,4 @@
-package census_data_provider
+package census_ps2_outfits_repo
 
 import (
 	"context"
@@ -8,19 +8,20 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/census2"
 	ps2_collections "github.com/x0k/ps2-spy/internal/lib/census2/collections/ps2"
 	"github.com/x0k/ps2-spy/internal/ps2"
+	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 	"github.com/x0k/ps2-spy/internal/shared"
 )
 
-func (l *DataProvider) outfitMemberIdsUrl(ns string, outfitId ps2.OutfitId) string {
+func (l *Repository) outfitMemberIdsUrl(platform ps2_platforms.Platform, outfitId ps2.OutfitId) string {
 	l.outfitMemberIdsMu.Lock()
 	defer l.outfitMemberIdsMu.Unlock()
 	l.outfitMemberIdsOperand.Set(census2.Str(outfitId))
-	l.outfitMemberIdsQuery.SetNamespace(ns)
+	l.outfitMemberIdsQuery.SetNamespace(ps2_platforms.PlatformNamespace(platform))
 	return l.client.ToURL(l.outfitMemberIdsQuery)
 }
 
-func (l *DataProvider) OutfitMemberIds(ctx context.Context, ns string, outfitId ps2.OutfitId) ([]ps2.CharacterId, error) {
-	url := l.outfitMemberIdsUrl(ns, outfitId)
+func (l *Repository) ActualMemberIds(ctx context.Context, platform ps2_platforms.Platform, outfitId ps2.OutfitId) ([]ps2.CharacterId, error) {
+	url := l.outfitMemberIdsUrl(platform, outfitId)
 	outfits, err := census2_adapters.RetryableExecutePreparedAndDecode[ps2_collections.OutfitItem](
 		ctx,
 		l.log,

@@ -42,13 +42,14 @@ import (
 	"github.com/x0k/ps2-spy/internal/metrics"
 	discord_module "github.com/x0k/ps2-spy/internal/modules/discord"
 	events_module "github.com/x0k/ps2-spy/internal/modules/events"
-	"github.com/x0k/ps2-spy/internal/outfit_members_synchronizer"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	census_ps2_characters_repo "github.com/x0k/ps2-spy/internal/ps2/census_characters_repo"
 	census_ps2_outfits_repo "github.com/x0k/ps2-spy/internal/ps2/census_outfits_repo"
 	characters_tracker_ps2_characters_repo "github.com/x0k/ps2-spy/internal/ps2/characters_tracker_characters_repo"
 	characters_tracker_ps2_outfits_repo "github.com/x0k/ps2-spy/internal/ps2/characters_tracker_outfits_repo"
+	ps2_outfit_members_synchronizer "github.com/x0k/ps2-spy/internal/ps2/outfit_members_synchronizer"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
+	storage_ps2_outfits_repo "github.com/x0k/ps2-spy/internal/ps2/storage_outfits_repo"
 	"github.com/x0k/ps2-spy/internal/shared"
 	"github.com/x0k/ps2-spy/internal/stats_tracker"
 	storage_stats_tracker_tasks_repo "github.com/x0k/ps2-spy/internal/stats_tracker/storage_tasks_repo"
@@ -146,15 +147,36 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	worldTrackerSubsMangers := make(map[ps2_platforms.Platform]pubsub.SubscriptionsManager[worlds_tracker.EventType], len(ps2_platforms.Platforms))
 	worldTrackers := make(map[ps2_platforms.Platform]*worlds_tracker.WorldsTracker, len(ps2_platforms.Platforms))
 	trackingManagers := make(map[ps2_platforms.Platform]*tracking.Manager, len(ps2_platforms.Platforms))
-	outfitMembersSynchronizers := make(map[ps2_platforms.Platform]*outfit_members_synchronizer.OutfitMembersSynchronizer, len(ps2_platforms.Platforms))
 	charactersLoaders := make(map[ps2_platforms.Platform]loader.Multi[ps2.CharacterId, ps2.Character], len(ps2_platforms.Platforms))
 	characterLoaders := make(map[ps2_platforms.Platform]loader.Keyed[ps2.CharacterId, ps2.Character], len(ps2_platforms.Platforms))
 	outfitsLoaders := make(map[ps2_platforms.Platform]loader.Multi[ps2.OutfitId, ps2.Outfit], len(ps2_platforms.Platforms))
 	outfitLoaders := make(map[ps2_platforms.Platform]loader.Keyed[ps2.OutfitId, ps2.Outfit], len(ps2_platforms.Platforms))
 	facilityLoaders := make(map[ps2_platforms.Platform]loader.Keyed[ps2.FacilityId, ps2.Facility], len(ps2_platforms.Platforms))
 
-	statsTrackerPubSub := pubsub.New[stats_tracker.EventType]()
+	censusCharactersRepo := census_ps2_characters_repo.New(
+		log.With(sl.Component("census_characters_repo")),
+		censusClient,
+	)
+	charactersTrackerCharactersRepo := characters_tracker_ps2_characters_repo.New(charactersTrackers)
 
+	censusOutfitsRepo := census_ps2_outfits_repo.New(
+		log.With(sl.Component("census_outfits_repo")),
+		censusClient,
+	)
+	charactersTrackerOutfitsRepo := characters_tracker_ps2_outfits_repo.New(charactersTrackers)
+
+	storageOutfitsRepo := storage_ps2_outfits_repo.New(store)
+	ps2PubSub := pubsub.New[ps2.EventType]()
+	ps2OutfitMembersSynchronizer := ps2_outfit_members_synchronizer.New(
+		log.With(sl.Component("outfit_members_synchronizer")),
+		storageOutfitsRepo,
+		censusOutfitsRepo,
+		cfg.Ps2.OutfitsSynchronizeInterval,
+		ps2PubSub,
+	)
+	m.AppendVR("outfit_members_synchronizer", ps2OutfitMembersSynchronizer.Start)
+
+	statsTrackerPubSub := pubsub.New[stats_tracker.EventType]()
 	storageStatsTrackerTasksRepo := storage_stats_tracker_tasks_repo.New(store)
 	statsTracker := stats_tracker.New(
 		log.With(sl.Component("stats_tracker")),
@@ -314,31 +336,6 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		m.AppendVR(fmt.Sprintf("%s.tracking_manager", platform), trackingManager.Start)
 		trackingManagers[platform] = trackingManager
 
-		outfitMembersSynchronizer := outfit_members_synchronizer.New(
-			pl.With(sl.Component("outfit_members_synchronizer")),
-			func(ctx context.Context) ([]ps2.OutfitId, error) {
-				return store.AllUniqueTrackableOutfitIdsForPlatform(ctx, platform)
-			},
-			func(ctx context.Context, oi ps2.OutfitId) (time.Time, error) {
-				return store.OutfitSynchronizedAt(ctx, platform, oi)
-			},
-			func(ctx context.Context, oi ps2.OutfitId) ([]ps2.CharacterId, error) {
-				return censusDataProvider.OutfitMemberIds(ctx, ns, oi)
-			},
-			func(ctx context.Context, outfitId ps2.OutfitId, members []ps2.CharacterId) error {
-				return store.SaveOutfitMembers(ctx, platform, outfitId, members)
-			},
-			24*time.Hour,
-		)
-		m.AppendR(
-			fmt.Sprintf("%s.outfit_members_synchronizer", platform),
-			func(ctx context.Context) error {
-				outfitMembersSynchronizer.Start(ctx)
-				return nil
-			},
-		)
-		outfitMembersSynchronizers[platform] = outfitMembersSynchronizer
-
 		outfitsLoader := loader.WithMultiCache(
 			log.Logger.With(sl.Component("outfits_loader_cache")),
 			func(ctx context.Context, k []ps2.OutfitId) (map[ps2.OutfitId]ps2.Outfit, error) {
@@ -369,8 +366,8 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		)
 	}
 
-	outfitMemberSaved := storage.Subscribe[storage.OutfitMemberSaved](m, storePubSub)
-	outfitMemberDeleted := storage.Subscribe[storage.OutfitMemberDeleted](m, storePubSub)
+	outfitMemberSaved := ps2.Subscribe[ps2.OutfitMembersAdded](m, ps2PubSub)
+	outfitMemberDeleted := ps2.Subscribe[ps2.OutfitMembersRemoved](m, ps2PubSub)
 	m.AppendVR("storage_events_subscription", func(ctx context.Context) {
 		for {
 			select {
@@ -378,10 +375,10 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 				return
 			case e := <-outfitMemberSaved:
 				tm := trackingManagers[e.Platform]
-				tm.TrackOutfitMember(e.CharacterId, e.OutfitId)
+				tm.TrackOutfitMembers(e.OutfitId, e.CharacterIds)
 			case e := <-outfitMemberDeleted:
 				tm := trackingManagers[e.Platform]
-				tm.UntrackOutfitMember(e.CharacterId, e.OutfitId)
+				tm.UntrackOutfitMembers(e.OutfitId, e.CharacterIds)
 			}
 		}
 	})
@@ -461,25 +458,12 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			case e := <-settingsUpdate:
 				tm := trackingManagers[e.Platform]
 				tm.HandleTrackingSettingsUpdate(ctx, e)
-				os := outfitMembersSynchronizers[e.Platform]
 				for _, oId := range e.Diff.Outfits.ToAdd {
-					os.SyncOutfit(ctx, oId)
+					ps2OutfitMembersSynchronizer.SyncOutfit(ctx, e.Platform, oId)
 				}
 			}
 		}
 	})
-
-	censusCharactersRepo := census_ps2_characters_repo.New(
-		log.With(sl.Component("census_characters_repo")),
-		censusClient,
-	)
-	charactersTrackerCharactersRepo := characters_tracker_ps2_characters_repo.New(charactersTrackers)
-
-	censusOutfitsRepo := census_ps2_outfits_repo.New(
-		log.With(sl.Component("census_outfits_repo")),
-		censusClient,
-	)
-	charactersTrackerOutfitsRepo := characters_tracker_ps2_outfits_repo.New(charactersTrackers)
 
 	statsTrackerTasksCreator := stats_tracker_tasks_creator.New(
 		storageStatsTrackerTasksRepo,
@@ -563,6 +547,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		characterTrackerSubsMangers,
 		trackingManagers,
 		storePubSub,
+		ps2PubSub,
 		trackingPubSub,
 		worldTrackerSubsMangers,
 		characterLoaders,

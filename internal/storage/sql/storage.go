@@ -136,45 +136,6 @@ func (s *Storage) Begin(
 	return nil
 }
 
-func (s *Storage) SaveOutfitMember(ctx context.Context, platform ps2_platforms.Platform, outfitId ps2.OutfitId, characterId ps2.CharacterId) error {
-	err := s.queries.InsertOutfitMember(ctx, db.InsertOutfitMemberParams{
-		OutfitID:    string(outfitId),
-		CharacterID: string(characterId),
-		Platform:    string(platform),
-	})
-	return s.publish(err, storage.OutfitMemberSaved{
-		Platform:    platform,
-		OutfitId:    outfitId,
-		CharacterId: characterId,
-	})
-}
-
-func (s *Storage) DeleteOutfitMember(ctx context.Context, platform ps2_platforms.Platform, outfitId ps2.OutfitId, characterId ps2.CharacterId) error {
-	err := s.queries.DeleteOutfitMember(ctx, db.DeleteOutfitMemberParams{
-		OutfitID:    string(outfitId),
-		CharacterID: string(characterId),
-		Platform:    string(platform),
-	})
-	return s.publish(err, storage.OutfitMemberDeleted{
-		Platform:    platform,
-		OutfitId:    outfitId,
-		CharacterId: characterId,
-	})
-}
-
-func (s *Storage) SaveOutfitSynchronizedAt(ctx context.Context, platform ps2_platforms.Platform, outfitId ps2.OutfitId, synchronizedAt time.Time) error {
-	err := s.queries.UpsertPlatformOutfitSynchronizedAt(ctx, db.UpsertPlatformOutfitSynchronizedAtParams{
-		Platform:       string(platform),
-		OutfitID:       string(outfitId),
-		SynchronizedAt: synchronizedAt,
-	})
-	return s.publish(err, storage.OutfitSynchronized{
-		Platform:       platform,
-		OutfitId:       outfitId,
-		SynchronizedAt: synchronizedAt,
-	})
-}
-
 func (s *Storage) OutfitSynchronizedAt(ctx context.Context, platform ps2_platforms.Platform, outfitId ps2.OutfitId) (time.Time, error) {
 	time, err := s.queries.GetPlatformOutfitSynchronizedAt(ctx, db.GetPlatformOutfitSynchronizedAtParams{
 		Platform: string(platform),

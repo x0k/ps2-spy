@@ -48,12 +48,12 @@ INSERT INTO
 VALUES
   (?, ?, ?);
 
--- name: DeleteOutfitMember :exec
+-- name: DeleteOutfitMembers :exec
 DELETE FROM outfit_to_character
 WHERE
   platform = ?
   AND outfit_id = ?
-  AND character_id = ?;
+  AND character_id IN (sqlc.slice (character_ids));
 
 -- name: UpsertPlatformOutfitSynchronizedAt :exec
 INSERT INTO

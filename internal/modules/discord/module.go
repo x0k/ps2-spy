@@ -36,6 +36,7 @@ func New(
 	charactersTrackerSubsManagers map[ps2_platforms.Platform]pubsub.SubscriptionsManager[characters_tracker.EventType],
 	trackingManagers map[ps2_platforms.Platform]*tracking.Manager,
 	storageSubs pubsub.SubscriptionsManager[storage.EventType],
+	ps2Subs pubsub.SubscriptionsManager[ps2.EventType],
 	trackingSubs pubsub.SubscriptionsManager[tracking.EventType],
 	worldTrackerSubsMangers map[ps2_platforms.Platform]pubsub.SubscriptionsManager[worlds_tracker.EventType],
 	characterLoaders map[ps2_platforms.Platform]loader.Keyed[ps2.CharacterId, ps2.Character],
@@ -154,7 +155,7 @@ func New(
 		playerLogout := characters_tracker.Subscribe[characters_tracker.PlayerLogout](m, charactersTrackerSubsManagers[platform])
 		facilityControl := worlds_tracker.Subscribe[worlds_tracker.FacilityControl](m, worldTrackerSubsMangers[platform])
 		facilityLoss := worlds_tracker.Subscribe[worlds_tracker.FacilityLoss](m, worldTrackerSubsMangers[platform])
-		outfitMembersUpdate := storage.Subscribe[storage.OutfitMembersUpdate](m, storageSubs)
+		outfitMembersUpdate := ps2.Subscribe[ps2.OutfitMembersUpdate](m, ps2Subs)
 		m.AppendVR(
 			fmt.Sprintf("discord.%s.events_subscription", platform),
 			func(ctx context.Context) {

@@ -73,22 +73,34 @@ func (q *Queries) DeleteChannelOutfits(ctx context.Context, arg DeleteChannelOut
 	return err
 }
 
-const deleteOutfitMember = `-- name: DeleteOutfitMember :exec
+const deleteOutfitMembers = `-- name: DeleteOutfitMembers :exec
 DELETE FROM outfit_to_character
 WHERE
   platform = ?
   AND outfit_id = ?
-  AND character_id = ?
+  AND character_id IN (/*SLICE:character_ids*/?)
 `
 
-type DeleteOutfitMemberParams struct {
-	Platform    string
-	OutfitID    string
-	CharacterID string
+type DeleteOutfitMembersParams struct {
+	Platform     string
+	OutfitID     string
+	CharacterIds []string
 }
 
-func (q *Queries) DeleteOutfitMember(ctx context.Context, arg DeleteOutfitMemberParams) error {
-	_, err := q.exec(ctx, q.deleteOutfitMemberStmt, deleteOutfitMember, arg.Platform, arg.OutfitID, arg.CharacterID)
+func (q *Queries) DeleteOutfitMembers(ctx context.Context, arg DeleteOutfitMembersParams) error {
+	query := deleteOutfitMembers
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.Platform)
+	queryParams = append(queryParams, arg.OutfitID)
+	if len(arg.CharacterIds) > 0 {
+		for _, v := range arg.CharacterIds {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:character_ids*/?", strings.Repeat(",?", len(arg.CharacterIds))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:character_ids*/?", "NULL", 1)
+	}
+	_, err := q.exec(ctx, nil, query, queryParams...)
 	return err
 }
 
