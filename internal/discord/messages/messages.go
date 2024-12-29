@@ -23,6 +23,7 @@ type Messages struct {
 	maxTrackingDuration   time.Duration
 	maxTrackingCharacters int
 	maxTrackingOutfits    int
+	maxTrackingTasks      int
 }
 
 func New(
@@ -30,12 +31,14 @@ func New(
 	maxTrackingDuration time.Duration,
 	maxTrackingCharacters int,
 	maxTrackingOutfits int,
+	maxTrackingTasks int,
 ) *Messages {
 	return &Messages{
 		timezones:             timezones,
 		maxTrackingDuration:   maxTrackingDuration,
 		maxTrackingCharacters: maxTrackingCharacters,
 		maxTrackingOutfits:    maxTrackingOutfits,
+		maxTrackingTasks:      maxTrackingTasks,
 	}
 }
 
@@ -500,7 +503,7 @@ func (m *Messages) StatsTrackerScheduleEditForm(
 	tasks []stats_tracker.Task,
 ) discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
-		content := scheduleNotes(p, channel.DefaultTimezone)
+		content := m.scheduleNotes(p, channel.DefaultTimezone)
 		localTasks := newLocalTasks(tasks, channel.DefaultTimezone)
 		components := statsTrackerScheduleEditForm(p, localTasks, 0)
 		return &discordgo.WebhookEdit{
@@ -529,7 +532,7 @@ func (m *Messages) StatsTrackerScheduleUpdated(
 	zeroIndexedPage int,
 ) discord.Response {
 	return func(p *message.Printer) (*discordgo.InteractionResponseData, *discord.Error) {
-		content := scheduleNotes(p, channel.DefaultTimezone)
+		content := m.scheduleNotes(p, channel.DefaultTimezone)
 		localTasks := newLocalTasks(tasks, channel.DefaultTimezone)
 		components := statsTrackerScheduleEditForm(p, localTasks, zeroIndexedPage)
 		return &discordgo.InteractionResponseData{
@@ -554,7 +557,7 @@ func (m *Messages) StatsTrackerTaskForm(
 ) discord.Response {
 	return func(p *message.Printer) (*discordgo.InteractionResponseData, *discord.Error) {
 		components := m.statsTrackerCreateTaskForm(p, state)
-		content := scheduleNotes(p, state.Data.Timezone)
+		content := m.scheduleNotes(p, state.Data.Timezone)
 		if err != nil {
 			content = renderTaskFormError(p, err)
 		}
