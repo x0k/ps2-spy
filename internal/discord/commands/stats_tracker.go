@@ -18,30 +18,22 @@ import (
 	"github.com/x0k/ps2-spy/internal/stats_tracker"
 )
 
-type ChannelStatsTrackerTasksLoader = loader.Keyed[discord.ChannelId, []discord.StatsTrackerTask]
+type ChannelStatsTrackerTasksLoader = loader.Keyed[discord.ChannelId, []stats_tracker.Task]
 type ChannelStatsTrackerTaskCreator = func(
-	context.Context, discord.ChannelId, discord.StatsTrackerTaskState,
+	context.Context, stats_tracker.CreateOrUpdateTask,
 ) error
 type ChannelStatsTrackerTaskRemover = func(
-	context.Context, discord.ChannelId, discord.StatsTrackerTaskId,
+	context.Context, discord.ChannelId, stats_tracker.TaskId,
 ) error
-type StatsTrackerTaskLoader = loader.Keyed[discord.StatsTrackerTaskId, discord.StatsTrackerTask]
+type StatsTrackerTaskLoader = loader.Keyed[stats_tracker.TaskId, stats_tracker.Task]
 type ChannelStatsTrackerTaskUpdater = func(
-	context.Context, discord.ChannelId, discord.StatsTrackerTaskState,
+	context.Context, stats_tracker.CreateOrUpdateTask,
 ) error
 
 func newStateId(i *discordgo.InteractionCreate) discord.ChannelAndUserIds {
-	var userId string
-	if i.Member != nil {
-		userId = i.Member.User.ID
-	} else if i.User != nil {
-		userId = i.User.ID
-	} else {
-		userId = i.AppID
-	}
 	return discord.NewChannelAndUserId(
 		discord.ChannelId(i.Interaction.ChannelID),
-		discord.UserId(userId),
+		discord.MemberOrUserId(i),
 	)
 }
 
@@ -51,9 +43,9 @@ func NewStatsTracker(
 	statsTracker *stats_tracker.StatsTracker,
 	channelStatsTrackerTasksLoader ChannelStatsTrackerTasksLoader,
 	channelLoader ChannelLoader,
-	taskStateContainer *containers.ExpirableState[
+	taskFormStateContainer *containers.ExpirableState[
 		discord.ChannelAndUserIds,
-		discord.StatsTrackerTaskState,
+		discord.FormState[stats_tracker.CreateOrUpdateTask],
 	],
 	statsTrackerTaskCreator ChannelStatsTrackerTaskCreator,
 	channelStatsTrackerTaskRemover ChannelStatsTrackerTaskRemover,
@@ -61,13 +53,15 @@ func NewStatsTracker(
 	channelStatsTrackerTaskUpdater ChannelStatsTrackerTaskUpdater,
 ) *discord.Command {
 	newCreateFormHandler := func(
-		stateUpdater func(*discordgo.InteractionCreate, discord.StatsTrackerTaskState) (discord.StatsTrackerTaskState, error),
+		stateUpdater func(*discordgo.InteractionCreate, discord.FormState[stats_tracker.CreateOrUpdateTask]) (
+			discord.FormState[stats_tracker.CreateOrUpdateTask], error,
+		),
 	) discord.InteractionHandler {
 		return discord.MessageUpdate(func(
 			ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate,
 		) discord.Response {
 			stateId := newStateId(i)
-			state, ok := taskStateContainer.Pop(stateId)
+			state, ok := taskFormStateContainer.Pop(stateId)
 			if !ok {
 				return messages.ChannelStatsTrackerTaskStateNotFound(
 					fmt.Errorf("failed to find state %q: %w", stateId, shared.ErrNotFound),
@@ -77,7 +71,7 @@ func NewStatsTracker(
 			if err != nil {
 				return messages.FieldValueExtractError(err)
 			}
-			taskStateContainer.Store(stateId, state)
+			taskFormStateContainer.Store(stateId, state)
 			return messages.StatsTrackerTaskForm(state, nil)
 		})
 	}
@@ -197,7 +191,7 @@ func NewStatsTracker(
 						err,
 					)
 				}
-				taskId, err := discord.CustomIdToTaskIdToEdit(i.MessageComponentData().CustomID)
+				taskId, err := discord_messages.CustomIdToTaskIdToEdit(i.MessageComponentData().CustomID)
 				if err != nil {
 					return messages.FieldValueExtractError(err)
 				}
@@ -205,16 +199,20 @@ func NewStatsTracker(
 				if err != nil {
 					return messages.StatsTrackerTaskLoadError(err)
 				}
-				state := discord.NewUpdateStatsTrackerTaskState(task, channel.DefaultTimezone)
+				formData := stats_tracker.NewUpdateTask(task, channel.DefaultTimezone)
 				stateId := newStateId(i)
-				taskStateContainer.Store(stateId, state)
+				state := discord.FormState[stats_tracker.CreateOrUpdateTask]{
+					SubmitButtonId: discord.STATS_TRACKER_TASK_UPDATE_SUBMIT_BUTTON_CUSTOM_ID,
+					Data:           formData,
+				}
+				taskFormStateContainer.Store(stateId, state)
 				return messages.StatsTrackerTaskForm(state, nil)
 			}),
 			discord.STATS_TRACKER_TASKS_REMOVE_BUTTON_CUSTOM_ID: discord.MessageUpdate(func(
 				ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate,
 			) discord.Response {
 				channelId := discord.ChannelId(i.ChannelID)
-				taskId, err := discord.CustomIdToTaskIdToRemove(i.MessageComponentData().CustomID)
+				taskId, err := discord_messages.CustomIdToTaskIdToRemove(i.MessageComponentData().CustomID)
 				if err != nil {
 					return messages.FieldValueExtractError(err)
 				}
@@ -226,7 +224,7 @@ func NewStatsTracker(
 			discord.STATS_TRACKER_TASKS_PAGE_BUTTON_CUSTOM_ID: discord.MessageUpdate(func(
 				ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate,
 			) discord.Response {
-				page, err := discord.CustomIdToPage(i.MessageComponentData().CustomID)
+				page, err := discord_messages.CustomIdToPage(i.MessageComponentData().CustomID)
 				if err != nil {
 					return messages.FieldValueExtractError(err)
 				}
@@ -244,14 +242,18 @@ func NewStatsTracker(
 							err,
 						)
 					}
-					state := discord.NewCreateStatsTrackerTaskState(channel.DefaultTimezone)
 					stateId := newStateId(i)
-					taskStateContainer.Store(stateId, state)
+					formData := stats_tracker.NewCreateTask(channel.DefaultTimezone)
+					state := discord.FormState[stats_tracker.CreateOrUpdateTask]{
+						SubmitButtonId: discord.STATS_TRACKER_TASK_CREATE_SUBMIT_BUTTON_CUSTOM_ID,
+						Data:           formData,
+					}
+					taskFormStateContainer.Store(stateId, state)
 					return messages.StatsTrackerTaskForm(state, nil)
 				},
 			),
 			discord.STATS_TRACKER_TASK_WEEKDAYS_SELECTOR_CUSTOM_ID: newCreateFormHandler(
-				func(i *discordgo.InteractionCreate, state discord.StatsTrackerTaskState) (discord.StatsTrackerTaskState, error) {
+				func(i *discordgo.InteractionCreate, state discord.FormState[stats_tracker.CreateOrUpdateTask]) (discord.FormState[stats_tracker.CreateOrUpdateTask], error) {
 					weekdays := make([]time.Weekday, 0, len(i.MessageComponentData().Values))
 					for _, v := range i.MessageComponentData().Values {
 						weekday, err := strconv.Atoi(v)
@@ -263,12 +265,12 @@ func NewStatsTracker(
 						}
 						weekdays = append(weekdays, time.Weekday(weekday))
 					}
-					state.LocalWeekdays = weekdays
+					state.Data.LocalWeekdays = weekdays
 					return state, nil
 				},
 			),
 			discord.STATS_TRACKER_TASK_START_HOUR_SELECTOR_CUSTOM_ID: newCreateFormHandler(
-				func(ic *discordgo.InteractionCreate, state discord.StatsTrackerTaskState) (discord.StatsTrackerTaskState, error) {
+				func(ic *discordgo.InteractionCreate, state discord.FormState[stats_tracker.CreateOrUpdateTask]) (discord.FormState[stats_tracker.CreateOrUpdateTask], error) {
 					h, err := strconv.Atoi(ic.MessageComponentData().Values[0])
 					if err != nil {
 						return state, err
@@ -276,12 +278,12 @@ func NewStatsTracker(
 					if h < 0 || h > 23 {
 						return state, fmt.Errorf("invalid hour: %d", h)
 					}
-					state.LocalStartHour = h
+					state.Data.LocalStartHour = h
 					return state, nil
 				},
 			),
 			discord.STATS_TRACKER_TASK_START_MINUTE_SELECTOR_CUSTOM_ID: newCreateFormHandler(
-				func(ic *discordgo.InteractionCreate, state discord.StatsTrackerTaskState) (discord.StatsTrackerTaskState, error) {
+				func(ic *discordgo.InteractionCreate, state discord.FormState[stats_tracker.CreateOrUpdateTask]) (discord.FormState[stats_tracker.CreateOrUpdateTask], error) {
 					m, err := strconv.Atoi(ic.MessageComponentData().Values[0])
 					if err != nil {
 						return state, err
@@ -289,40 +291,39 @@ func NewStatsTracker(
 					if m%10 != 0 || m > 59 {
 						return state, fmt.Errorf("invalid minute: %d", m)
 					}
-					state.LocalStartMin = m
+					state.Data.LocalStartMin = m
 					return state, nil
 				},
 			),
 			discord.STATS_TRACKER_TASK_DURATION_SELECTOR_CUSTOM_ID: newCreateFormHandler(
-				func(ic *discordgo.InteractionCreate, state discord.StatsTrackerTaskState) (discord.StatsTrackerTaskState, error) {
+				func(ic *discordgo.InteractionCreate, state discord.FormState[stats_tracker.CreateOrUpdateTask]) (discord.FormState[stats_tracker.CreateOrUpdateTask], error) {
 					d, err := time.ParseDuration(ic.MessageComponentData().Values[0])
 					if err != nil {
 						return state, err
 					}
-					state.Duration = d
+					state.Data.Duration = d
 					return state, nil
 				},
 			),
 			discord.STATS_TRACKER_TASK_CANCEL_BUTTON_CUSTOM_ID: discord.MessageUpdate(func(
 				ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate,
 			) discord.Response {
-				taskStateContainer.Remove(newStateId(i))
+				taskFormStateContainer.Remove(newStateId(i))
 				return updatedSchedule(ctx, i, 0)
 			}),
 			discord.STATS_TRACKER_TASK_CREATE_SUBMIT_BUTTON_CUSTOM_ID: discord.MessageUpdate(func(
 				ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate,
 			) discord.Response {
 				stateId := newStateId(i)
-				state, ok := taskStateContainer.Pop(stateId)
+				state, ok := taskFormStateContainer.Pop(stateId)
 				if !ok {
 					return messages.ChannelStatsTrackerTaskStateNotFound(
 						fmt.Errorf("failed to find state %q: %w", stateId, shared.ErrNotFound),
 					)
 				}
-				channelId := discord.ChannelId(i.Interaction.ChannelID)
-				err := statsTrackerTaskCreator(ctx, channelId, state)
+				err := statsTrackerTaskCreator(ctx, state.Data)
 				if err != nil {
-					taskStateContainer.Store(stateId, state)
+					taskFormStateContainer.Store(stateId, state)
 					log.Debug(ctx, "failed to create task", sl.Err(err))
 					return messages.StatsTrackerTaskForm(state, err)
 				}
@@ -332,16 +333,15 @@ func NewStatsTracker(
 				ctx context.Context, s *discordgo.Session, i *discordgo.InteractionCreate,
 			) discord.Response {
 				stateId := newStateId(i)
-				state, ok := taskStateContainer.Pop(stateId)
+				state, ok := taskFormStateContainer.Pop(stateId)
 				if !ok {
 					return messages.ChannelStatsTrackerTaskStateNotFound(
 						fmt.Errorf("failed to find state %q: %w", stateId, shared.ErrNotFound),
 					)
 				}
-				channelId := discord.ChannelId(i.Interaction.ChannelID)
-				err := channelStatsTrackerTaskUpdater(ctx, channelId, state)
+				err := channelStatsTrackerTaskUpdater(ctx, state.Data)
 				if err != nil {
-					taskStateContainer.Store(stateId, state)
+					taskFormStateContainer.Store(stateId, state)
 					log.Debug(ctx, "failed to update task", sl.Err(err))
 					return messages.StatsTrackerTaskForm(state, err)
 				}

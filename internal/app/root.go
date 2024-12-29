@@ -51,6 +51,8 @@ import (
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 	"github.com/x0k/ps2-spy/internal/shared"
 	"github.com/x0k/ps2-spy/internal/stats_tracker"
+	storage_stats_tracker_tasks_repo "github.com/x0k/ps2-spy/internal/stats_tracker/storage_tasks_repo"
+	stats_tracker_tasks_creator "github.com/x0k/ps2-spy/internal/stats_tracker/tasks_creator"
 	"github.com/x0k/ps2-spy/internal/storage"
 	sql_storage "github.com/x0k/ps2-spy/internal/storage/sql"
 	"github.com/x0k/ps2-spy/internal/tracking"
@@ -478,6 +480,13 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	)
 	charactersTrackerOutfitsRepo := characters_tracker_ps2_outfits_repo.New(charactersTrackers)
 
+	storageStatsTrackerTasksRepo := storage_stats_tracker_tasks_repo.New(store)
+	statsTrackerTasksCreator := stats_tracker_tasks_creator.New(
+		storageStatsTrackerTasksRepo,
+		cfg.StatsTracker.MaxTrackingDuration,
+		cfg.StatsTracker.MaxNumberOfTasksPerChannel,
+	)
+
 	discordMessages := discord_messages.New(
 		shared.Timezones,
 		cfg.StatsTracker.MaxTrackingDuration,
@@ -534,11 +543,11 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		store.SaveChannelOutfitNotifications,
 		store.SaveChannelTitleUpdates,
 		store.SaveChannelDefaultTimezone,
-		store.ChannelStatsTrackerTasks,
-		store.CreateStatsTrackerTask,
-		store.RemoveStatsTrackerTask,
-		store.StatsTrackerTask,
-		store.UpdateStatsTrackerTask,
+		storageStatsTrackerTasksRepo.ByChannelId,
+		statsTrackerTasksCreator.Create,
+		storageStatsTrackerTasksRepo.Delete,
+		storageStatsTrackerTasksRepo.ById,
+		statsTrackerTasksCreator.Update,
 	)
 	m.AppendR("discord.commands", discordCommands.Start)
 

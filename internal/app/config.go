@@ -40,7 +40,8 @@ type CensusConfig struct {
 }
 
 type StatsTrackerConfig struct {
-	MaxTrackingDuration time.Duration `yaml:"max_tracking_duration" env:"STATS_TRACKER_MAX_TRACKING_DURATION" env-default:"4h"`
+	MaxTrackingDuration        time.Duration `yaml:"max_tracking_duration" env:"STATS_TRACKER_MAX_TRACKING_DURATION" env-default:"4h"`
+	MaxNumberOfTasksPerChannel int           `yaml:"max_number_of_tasks_per_channel" env:"STATS_TRACKER_MAX_NUMBER_OF_TASKS_PER_CHANNEL" env-default:"7"`
 }
 
 type TrackingConfig struct {

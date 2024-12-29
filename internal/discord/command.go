@@ -1,7 +1,6 @@
 package discord
 
 import (
-	"strconv"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -15,10 +14,10 @@ type Command struct {
 	ComponentHandlers map[string]InteractionHandler
 }
 
-const customIdSeparator = "::"
+const CUSTOM_ID_SEPARATOR = "::"
 
 func HandlerId(customId string) string {
-	idx := strings.Index(customId, customIdSeparator)
+	idx := strings.Index(customId, CUSTOM_ID_SEPARATOR)
 	if idx == -1 {
 		return customId
 	}
@@ -38,13 +37,13 @@ func NewTrackingSettingsEditButtonCustomId(
 	characters []string,
 ) string {
 	return TRACKING_EDIT_BUTTON_CUSTOM_ID +
-		customIdSeparator + string(platform) +
-		customIdSeparator + strings.Join(outfits, ",") +
-		customIdSeparator + strings.Join(characters, ",")
+		CUSTOM_ID_SEPARATOR + string(platform) +
+		CUSTOM_ID_SEPARATOR + strings.Join(outfits, ",") +
+		CUSTOM_ID_SEPARATOR + strings.Join(characters, ",")
 }
 
 func CustomIdToPlatformAndOutfitsAndCharacters(customId string) (ps2_platforms.Platform, []string, []string) {
-	parts := strings.Split(customId, customIdSeparator)
+	parts := strings.Split(customId, CUSTOM_ID_SEPARATOR)
 	return ps2_platforms.Platform(parts[1]), strings.Split(parts[2], ","), strings.Split(parts[3], ",")
 }
 
@@ -67,48 +66,3 @@ var STATS_TRACKER_TASK_CANCEL_BUTTON_CUSTOM_ID = "stats_tracker_task_cancel"
 
 var STATS_TRACKER_TASK_CREATE_SUBMIT_BUTTON_CUSTOM_ID = "stats_tracker_task_create_submit"
 var STATS_TRACKER_TASK_UPDATE_SUBMIT_BUTTON_CUSTOM_ID = "stats_tracker_task_update_submit"
-
-func NewStatsTrackerTaskPageButtonCustomId(
-	page int,
-) string {
-	return STATS_TRACKER_TASKS_PAGE_BUTTON_CUSTOM_ID + customIdSeparator +
-		strconv.Itoa(page)
-}
-
-func CustomIdToPage(customId string) (int, error) {
-	return strconv.Atoi(
-		customId[len(STATS_TRACKER_TASKS_PAGE_BUTTON_CUSTOM_ID)+len(customIdSeparator):],
-	)
-}
-
-func NewStatsTrackerTaskEditButtonCustomId(
-	id StatsTrackerTaskId,
-) string {
-	return STATS_TRACKER_TASKS_EDIT_BUTTON_CUSTOM_ID + customIdSeparator +
-		strconv.FormatInt(int64(id), 10)
-}
-
-func CustomIdToTaskIdToEdit(customId string) (StatsTrackerTaskId, error) {
-	v, err := strconv.ParseInt(
-		customId[len(STATS_TRACKER_TASKS_EDIT_BUTTON_CUSTOM_ID)+len(customIdSeparator):],
-		10,
-		64,
-	)
-	return StatsTrackerTaskId(v), err
-}
-
-func NewStatsTrackerTaskRemoveButtonCustomId(
-	id StatsTrackerTaskId,
-) string {
-	return STATS_TRACKER_TASKS_REMOVE_BUTTON_CUSTOM_ID + customIdSeparator +
-		strconv.FormatInt(int64(id), 10)
-}
-
-func CustomIdToTaskIdToRemove(customId string) (StatsTrackerTaskId, error) {
-	v, err := strconv.ParseInt(
-		customId[len(STATS_TRACKER_TASKS_REMOVE_BUTTON_CUSTOM_ID)+len(customIdSeparator):],
-		10,
-		64,
-	)
-	return StatsTrackerTaskId(v), err
-}

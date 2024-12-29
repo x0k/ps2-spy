@@ -7,7 +7,7 @@ import (
 
 	"github.com/x0k/ps2-spy/internal/discord"
 	"github.com/x0k/ps2-spy/internal/lib/db"
-	"github.com/x0k/ps2-spy/internal/shared"
+	"github.com/x0k/ps2-spy/internal/lib/timex"
 )
 
 func (s *Storage) ActiveStatsTrackerTasks(ctx context.Context, now time.Time) ([]discord.ChannelId, error) {
@@ -118,8 +118,8 @@ func createStatsTrackerTask(
 	}
 	for _, localWeekday := range task.LocalWeekdays {
 		localStart := time.Duration(task.LocalStartHour)*time.Hour + time.Duration(task.LocalStartMin)*time.Minute
-		utcStartWeekday, utcStartTime := shared.NormalizeDate(localWeekday, localStart+offset)
-		utcEndWeekday, utcEndTime := shared.NormalizeDate(localWeekday, localStart+offset+task.Duration)
+		utcStartWeekday, utcStartTime := timex.NormalizeDate(localWeekday, localStart+offset)
+		utcEndWeekday, utcEndTime := timex.NormalizeDate(localWeekday, localStart+offset+task.Duration)
 		if rawTasks, err := s.queries.ListChannelIntersectingStatsTrackerTasks(ctx, db.ListChannelIntersectingStatsTrackerTasksParams{
 			ChannelID:    string(channelId),
 			StartWeekday: int64(utcStartWeekday),

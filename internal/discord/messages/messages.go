@@ -497,7 +497,7 @@ func ChannelStatsTrackerTasksLoadError[R any](err error) func(*message.Printer) 
 
 func (m *Messages) StatsTrackerScheduleEditForm(
 	channel discord.Channel,
-	tasks []discord.StatsTrackerTask,
+	tasks []stats_tracker.Task,
 ) discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
 		content := scheduleNotes(p, channel.DefaultTimezone)
@@ -512,7 +512,7 @@ func (m *Messages) StatsTrackerScheduleEditForm(
 
 func (m *Messages) StatsTrackerSchedule(
 	channel discord.Channel,
-	tasks []discord.StatsTrackerTask,
+	tasks []stats_tracker.Task,
 ) discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
 		localTasks := newLocalTasks(tasks, channel.DefaultTimezone)
@@ -525,7 +525,7 @@ func (m *Messages) StatsTrackerSchedule(
 
 func (m *Messages) StatsTrackerScheduleUpdated(
 	channel discord.Channel,
-	tasks []discord.StatsTrackerTask,
+	tasks []stats_tracker.Task,
 	zeroIndexedPage int,
 ) discord.Response {
 	return func(p *message.Printer) (*discordgo.InteractionResponseData, *discord.Error) {
@@ -549,12 +549,12 @@ func (m *Messages) StatsTrackerTaskLoadError(err error) discord.Response {
 }
 
 func (m *Messages) StatsTrackerTaskForm(
-	state discord.StatsTrackerTaskState,
+	state discord.FormState[stats_tracker.CreateOrUpdateTask],
 	err error,
 ) discord.Response {
 	return func(p *message.Printer) (*discordgo.InteractionResponseData, *discord.Error) {
 		components := m.statsTrackerCreateTaskForm(p, state)
-		content := scheduleNotes(p, state.Timezone)
+		content := scheduleNotes(p, state.Data.Timezone)
 		if err != nil {
 			content = renderTaskFormError(p, err)
 		}

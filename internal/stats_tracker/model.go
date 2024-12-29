@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/x0k/ps2-spy/internal/discord"
+	"github.com/x0k/ps2-spy/internal/lib/timex"
 )
 
 type TaskId int64
@@ -16,6 +17,54 @@ type Task struct {
 	UtcStartTime    time.Duration
 	UtcEndWeekday   time.Weekday
 	UtcEndTime      time.Duration
+}
+
+type CreateOrUpdateTask struct {
+	Id             TaskId
+	ChannelId      discord.ChannelId
+	Timezone       *time.Location
+	LocalWeekdays  []time.Weekday
+	LocalStartHour int
+	LocalStartMin  int
+	Duration       time.Duration
+}
+
+func NewCreateTask(
+	timezone *time.Location,
+) CreateOrUpdateTask {
+	localNow := time.Now().In(timezone)
+	localStartTime := time.Duration(localNow.Hour())*time.Hour + time.Duration(localNow.Minute()/10)*10*time.Minute
+	localHour := int(localStartTime / time.Hour)
+	localMin := int((localStartTime % time.Hour) / time.Minute)
+	return CreateOrUpdateTask{
+		Timezone:       timezone,
+		LocalWeekdays:  []time.Weekday{localNow.Weekday()},
+		LocalStartHour: localHour,
+		LocalStartMin:  localMin,
+		Duration:       2 * time.Hour,
+	}
+}
+
+func NewUpdateTask(
+	task Task,
+	timezone *time.Location,
+) CreateOrUpdateTask {
+	utcOffset := timex.LocationToOffset(timezone)
+	startWeekday, startTime := timex.NormalizeDate(task.UtcStartWeekday, task.UtcStartTime+utcOffset)
+	endWeekday, endTime := timex.NormalizeDate(task.UtcEndWeekday, task.UtcEndTime+utcOffset)
+	duration := endTime - startTime
+	if startWeekday != endWeekday {
+		duration += 24 * time.Hour
+	}
+	return CreateOrUpdateTask{
+		Id:             task.Id,
+		ChannelId:      task.ChannelId,
+		Timezone:       timezone,
+		LocalWeekdays:  []time.Weekday{startWeekday},
+		LocalStartHour: int(startTime / time.Hour),
+		LocalStartMin:  int((startTime % time.Hour) / time.Minute),
+		Duration:       duration,
+	}
 }
 
 type ErrTaskDurationTooLong struct {
@@ -31,14 +80,17 @@ func (e ErrTaskDurationTooLong) Error() string {
 	)
 }
 
-type ErrMaxAmountOfTasksExceeded int
+type ErrMaxTooManyTasksPerChannel struct {
+	Max int
+	Got int
+}
 
-func (e ErrMaxAmountOfTasksExceeded) Error() string {
-	return fmt.Sprintf("max amount of tasks exceeded: expected %d", e)
+func (e ErrMaxTooManyTasksPerChannel) Error() string {
+	return fmt.Sprintf("max amount of tasks per channel is %d, got %d", e.Max, e.Got)
 }
 
 type ErrOverlappingTasks struct {
-	Offset         time.Duration
+	Timezone       *time.Location
 	LocalWeekday   time.Weekday
 	LocalStartTime time.Duration
 	Duration       time.Duration

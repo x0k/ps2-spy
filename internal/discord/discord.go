@@ -8,7 +8,7 @@ import (
 	"golang.org/x/text/language"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/x0k/ps2-spy/internal/shared"
+	"github.com/x0k/ps2-spy/internal/lib/timex"
 )
 
 type ChannelId string
@@ -90,6 +90,11 @@ type StatsTrackerTask struct {
 
 const MAX_AMOUNT_OF_TASKS_PER_CHANNEL = 7
 
+type FormState[T any] struct {
+	SubmitButtonId string
+	Data           T
+}
+
 type StatsTrackerTaskState struct {
 	SubmitButtonId string
 	TaskId         StatsTrackerTaskId
@@ -125,8 +130,8 @@ func NewUpdateStatsTrackerTaskState(
 ) StatsTrackerTaskState {
 	_, offsetInSeconds := time.Now().In(timezone).Zone()
 	offset := (time.Duration(offsetInSeconds) * time.Second)
-	startWeekday, startTime := shared.NormalizeDate(task.UtcStartWeekday, task.UtcStartTime+offset)
-	endWeekday, endTime := shared.NormalizeDate(task.UtcEndWeekday, task.UtcEndTime+offset)
+	startWeekday, startTime := timex.NormalizeDate(task.UtcStartWeekday, task.UtcStartTime+offset)
+	endWeekday, endTime := timex.NormalizeDate(task.UtcEndWeekday, task.UtcEndTime+offset)
 	duration := endTime - startTime
 	if startWeekday != endWeekday {
 		duration += 24 * time.Hour

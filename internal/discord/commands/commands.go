@@ -18,13 +18,13 @@ import (
 )
 
 type Commands struct {
-	commands                 []*discord.Command
-	populationLoader         *populationLoader
-	worldPopulationLoader    *worldPopulationLoader
-	alertsLoader             *alertsLoader
-	createTaskStateContainer *containers.ExpirableState[
+	commands               []*discord.Command
+	populationLoader       *populationLoader
+	worldPopulationLoader  *worldPopulationLoader
+	alertsLoader           *alertsLoader
+	taskFormStateContainer *containers.ExpirableState[
 		discord.ChannelAndUserIds,
-		discord.StatsTrackerTaskState,
+		discord.FormState[stats_tracker.CreateOrUpdateTask],
 	]
 }
 
@@ -70,12 +70,15 @@ func New(
 		alertsLoaders,
 		alertsLoadersPriority,
 	)
-	createTaskStateContainer := containers.NewExpirableState[discord.ChannelAndUserIds, discord.StatsTrackerTaskState](10 * time.Minute)
+	taskFormStateContainer := containers.NewExpirableState[
+		discord.ChannelAndUserIds,
+		discord.FormState[stats_tracker.CreateOrUpdateTask],
+	](10 * time.Minute)
 	return &Commands{
-		populationLoader:         populationLoader,
-		worldPopulationLoader:    worldPopulationLoader,
-		alertsLoader:             alertsLoader,
-		createTaskStateContainer: createTaskStateContainer,
+		populationLoader:       populationLoader,
+		worldPopulationLoader:  worldPopulationLoader,
+		alertsLoader:           alertsLoader,
+		taskFormStateContainer: taskFormStateContainer,
 		commands: []*discord.Command{
 			NewAbout(messages),
 			NewPopulation(
@@ -135,7 +138,7 @@ func New(
 				statsTracker,
 				channelStatsTrackerTasksLoader,
 				channelLoader,
-				createTaskStateContainer,
+				taskFormStateContainer,
 				statsTrackerTaskCreator,
 				channelStatsTrackerTaskRemover,
 				statsTrackerTaskLoader,
@@ -154,7 +157,7 @@ func (c *Commands) Start(ctx context.Context) error {
 	wg.Add(4)
 	go func() {
 		defer wg.Done()
-		c.createTaskStateContainer.Start(ctx)
+		c.taskFormStateContainer.Start(ctx)
 	}()
 	go func() {
 		defer wg.Done()
