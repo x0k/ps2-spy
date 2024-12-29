@@ -1,4 +1,4 @@
-package storage_stats_tracker_tasks_repo
+package stats_tracker_storage_tasks_repo
 
 import (
 	"context"

@@ -1,4 +1,4 @@
-package census_ps2_outfits_repo
+package ps2_census_outfits_repo
 
 import (
 	"context"

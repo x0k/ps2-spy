@@ -43,16 +43,16 @@ import (
 	discord_module "github.com/x0k/ps2-spy/internal/modules/discord"
 	events_module "github.com/x0k/ps2-spy/internal/modules/events"
 	"github.com/x0k/ps2-spy/internal/ps2"
-	census_ps2_characters_repo "github.com/x0k/ps2-spy/internal/ps2/census_characters_repo"
-	census_ps2_outfits_repo "github.com/x0k/ps2-spy/internal/ps2/census_outfits_repo"
-	characters_tracker_ps2_characters_repo "github.com/x0k/ps2-spy/internal/ps2/characters_tracker_characters_repo"
-	characters_tracker_ps2_outfits_repo "github.com/x0k/ps2-spy/internal/ps2/characters_tracker_outfits_repo"
+	ps2_census_characters_repo "github.com/x0k/ps2-spy/internal/ps2/census_characters_repo"
+	ps2_census_outfits_repo "github.com/x0k/ps2-spy/internal/ps2/census_outfits_repo"
+	ps2_characters_tracker_characters_repo "github.com/x0k/ps2-spy/internal/ps2/characters_tracker_characters_repo"
+	ps2_characters_tracker_outfits_repo "github.com/x0k/ps2-spy/internal/ps2/characters_tracker_outfits_repo"
 	ps2_outfit_members_synchronizer "github.com/x0k/ps2-spy/internal/ps2/outfit_members_synchronizer"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
-	storage_ps2_outfits_repo "github.com/x0k/ps2-spy/internal/ps2/storage_outfits_repo"
+	ps2_storage_outfits_repo "github.com/x0k/ps2-spy/internal/ps2/storage_outfits_repo"
 	"github.com/x0k/ps2-spy/internal/shared"
 	"github.com/x0k/ps2-spy/internal/stats_tracker"
-	storage_stats_tracker_tasks_repo "github.com/x0k/ps2-spy/internal/stats_tracker/storage_tasks_repo"
+	stats_tracker_storage_tasks_repo "github.com/x0k/ps2-spy/internal/stats_tracker/storage_tasks_repo"
 	stats_tracker_tasks_creator "github.com/x0k/ps2-spy/internal/stats_tracker/tasks_creator"
 	"github.com/x0k/ps2-spy/internal/storage"
 	sql_storage "github.com/x0k/ps2-spy/internal/storage/sql"
@@ -61,7 +61,7 @@ import (
 	tracking_settings_diff_view_loader "github.com/x0k/ps2-spy/internal/tracking/settings_diff_view_loader"
 	tracking_settings_updater "github.com/x0k/ps2-spy/internal/tracking/settings_updater"
 	tracking_settings_view_loader "github.com/x0k/ps2-spy/internal/tracking/settings_view_loader"
-	storage_tracking_settings_repo "github.com/x0k/ps2-spy/internal/tracking/storage_settings_repo"
+	tracking_storage_settings_repo "github.com/x0k/ps2-spy/internal/tracking/storage_settings_repo"
 	"github.com/x0k/ps2-spy/internal/worlds_tracker"
 
 	// migration tools
@@ -153,31 +153,31 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	outfitLoaders := make(map[ps2_platforms.Platform]loader.Keyed[ps2.OutfitId, ps2.Outfit], len(ps2_platforms.Platforms))
 	facilityLoaders := make(map[ps2_platforms.Platform]loader.Keyed[ps2.FacilityId, ps2.Facility], len(ps2_platforms.Platforms))
 
-	censusCharactersRepo := census_ps2_characters_repo.New(
+	censusCharactersRepo := ps2_census_characters_repo.New(
 		log.With(sl.Component("census_characters_repo")),
 		censusClient,
 	)
-	charactersTrackerCharactersRepo := characters_tracker_ps2_characters_repo.New(charactersTrackers)
+	charactersTrackerCharactersRepo := ps2_characters_tracker_characters_repo.New(charactersTrackers)
 
-	censusOutfitsRepo := census_ps2_outfits_repo.New(
+	censusOutfitsRepo := ps2_census_outfits_repo.New(
 		log.With(sl.Component("census_outfits_repo")),
 		censusClient,
 	)
-	charactersTrackerOutfitsRepo := characters_tracker_ps2_outfits_repo.New(charactersTrackers)
+	charactersTrackerOutfitsRepo := ps2_characters_tracker_outfits_repo.New(charactersTrackers)
 
-	storageOutfitsRepo := storage_ps2_outfits_repo.New(store)
+	storageOutfitsRepo := ps2_storage_outfits_repo.New(store)
 	ps2PubSub := pubsub.New[ps2.EventType]()
-	ps2OutfitMembersSynchronizer := ps2_outfit_members_synchronizer.New(
+	outfitMembersSynchronizer := ps2_outfit_members_synchronizer.New(
 		log.With(sl.Component("outfit_members_synchronizer")),
 		storageOutfitsRepo,
 		censusOutfitsRepo,
 		cfg.Ps2.OutfitsSynchronizeInterval,
 		ps2PubSub,
 	)
-	m.AppendVR("outfit_members_synchronizer", ps2OutfitMembersSynchronizer.Start)
+	m.AppendVR("outfit_members_synchronizer", outfitMembersSynchronizer.Start)
 
 	statsTrackerPubSub := pubsub.New[stats_tracker.EventType]()
-	storageStatsTrackerTasksRepo := storage_stats_tracker_tasks_repo.New(store)
+	storageStatsTrackerTasksRepo := stats_tracker_storage_tasks_repo.New(store)
 	statsTracker := stats_tracker.New(
 		log.With(sl.Component("stats_tracker")),
 		statsTrackerPubSub,
@@ -446,7 +446,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		"voidwell":  voidwellDataProvider.Alerts,
 	}
 
-	trackingSettingsRepo := storage_tracking_settings_repo.New(store)
+	storageSettingsRepo := tracking_storage_settings_repo.New(store)
 	trackingPubSub := pubsub.New[tracking.EventType]()
 
 	settingsUpdate := tracking.Subscribe[tracking.TrackingSettingsUpdated](m, trackingPubSub)
@@ -459,7 +459,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 				tm := trackingManagers[e.Platform]
 				tm.HandleTrackingSettingsUpdate(ctx, e)
 				for _, oId := range e.Diff.Outfits.ToAdd {
-					ps2OutfitMembersSynchronizer.SyncOutfit(ctx, e.Platform, oId)
+					outfitMembersSynchronizer.SyncOutfit(ctx, e.Platform, oId)
 				}
 			}
 		}
@@ -499,7 +499,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		alertsLoaders,
 		[]string{"spy", "ps2alerts", "honu", "census", "voidwell"},
 		tracking_settings_data_loader.New(
-			trackingSettingsRepo,
+			storageSettingsRepo,
 			charactersTrackerOutfitsRepo,
 			charactersTrackerCharactersRepo,
 		).Load,
@@ -509,12 +509,12 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			return outfitsLoaders[platform](ctx, outfitIds)
 		},
 		tracking_settings_view_loader.New(
-			trackingSettingsRepo,
+			storageSettingsRepo,
 			censusOutfitsRepo,
 			censusCharactersRepo,
 		).Load,
 		tracking_settings_updater.New(
-			trackingSettingsRepo,
+			storageSettingsRepo,
 			censusOutfitsRepo,
 			censusCharactersRepo,
 			cfg.Tracking.MaxNumberTrackedOutfits,
@@ -558,7 +558,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			count := 0
 			errs := make([]error, 0, len(ps2_platforms.Platforms))
 			for _, platform := range ps2_platforms.Platforms {
-				settings, err := trackingSettingsRepo.Get(ctx, channelId, platform)
+				settings, err := storageSettingsRepo.Get(ctx, channelId, platform)
 				if err != nil {
 					errs = append(errs, err)
 					continue

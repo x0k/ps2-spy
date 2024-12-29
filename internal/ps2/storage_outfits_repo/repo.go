@@ -1,4 +1,4 @@
-package storage_ps2_outfits_repo
+package ps2_storage_outfits_repo
 
 import (
 	"context"
