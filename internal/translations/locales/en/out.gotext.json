@@ -1405,9 +1405,9 @@
             "fuzzy": true
         },
         {
-            "id": "Notes:\n- The time is specified in the time zone {String}. This can be changed in the channel settings;\n- The maximum amount of tasks per channel is {MAXAMOUNTOFTASKSPERCHANNEL};\n- You can edit a task by clicking on it;\n- The “Remove” button deletes immediately without confirmation.",
-            "message": "Notes:\n- The time is specified in the time zone {String}. This can be changed in the channel settings;\n- The maximum amount of tasks per channel is {MAXAMOUNTOFTASKSPERCHANNEL};\n- You can edit a task by clicking on it;\n- The “Remove” button deletes immediately without confirmation.",
-            "translation": "Notes:\n- The time is specified in the time zone {String}. This can be changed in the channel settings;\n- The maximum amount of tasks per channel is {MAXAMOUNTOFTASKSPERCHANNEL};\n- You can edit a task by clicking on it;\n- The “Remove” button deletes immediately without confirmation.",
+            "id": "Notes:\n- The time is specified in the time zone {String}. This can be changed in the channel settings;\n- The maximum amount of tasks per channel is {MaxTrackingTasks};\n- You can edit a task by clicking on it;\n- The “Remove” button deletes immediately without confirmation.",
+            "message": "Notes:\n- The time is specified in the time zone {String}. This can be changed in the channel settings;\n- The maximum amount of tasks per channel is {MaxTrackingTasks};\n- You can edit a task by clicking on it;\n- The “Remove” button deletes immediately without confirmation.",
+            "translation": "Notes:\n- The time is specified in the time zone {String}. This can be changed in the channel settings;\n- The maximum amount of tasks per channel is {MaxTrackingTasks};\n- You can edit a task by clicking on it;\n- The “Remove” button deletes immediately without confirmation.",
             "translatorComment": "Copied from source.",
             "placeholders": [
                 {
@@ -1419,12 +1419,12 @@
                     "expr": "loc.String()"
                 },
                 {
-                    "id": "MAXAMOUNTOFTASKSPERCHANNEL",
+                    "id": "MaxTrackingTasks",
                     "string": "%[2]d",
                     "type": "int",
                     "underlyingType": "int",
                     "argNum": 2,
-                    "expr": "discord.MAX_AMOUNT_OF_TASKS_PER_CHANNEL"
+                    "expr": "m.maxTrackingTasks"
                 }
             ],
             "fuzzy": true
@@ -1578,18 +1578,26 @@
             "fuzzy": true
         },
         {
-            "id": "Max amount of tasks per channel is {MAXAMOUNTOFTASKSPERCHANNEL}",
-            "message": "Max amount of tasks per channel is {MAXAMOUNTOFTASKSPERCHANNEL}",
-            "translation": "Max amount of tasks per channel is {MAXAMOUNTOFTASKSPERCHANNEL}",
+            "id": "Max amount of tasks per channel is {Max}, got {Got}",
+            "message": "Max amount of tasks per channel is {Max}, got {Got}",
+            "translation": "Max amount of tasks per channel is {Max}, got {Got}",
             "translatorComment": "Copied from source.",
             "placeholders": [
                 {
-                    "id": "MAXAMOUNTOFTASKSPERCHANNEL",
+                    "id": "Max",
                     "string": "%[1]d",
                     "type": "int",
                     "underlyingType": "int",
                     "argNum": 1,
-                    "expr": "discord.MAX_AMOUNT_OF_TASKS_PER_CHANNEL"
+                    "expr": "m.Max"
+                },
+                {
+                    "id": "Got",
+                    "string": "%[2]d",
+                    "type": "int",
+                    "underlyingType": "int",
+                    "argNum": 2,
+                    "expr": "m.Got"
                 }
             ],
             "fuzzy": true

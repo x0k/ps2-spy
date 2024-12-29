@@ -121,16 +121,16 @@ var messageKeyToIndex = map[string]int{
 	"Locked ":                                              118,
 	"MAX":                                                  15,
 	"MED":                                                  12,
-	"Max amount of tasks per channel is %d":                114,
-	"Monday":                                               128,
-	"NC":                                                   90,
-	"Next":                                                 105,
-	"No":                                                   125,
-	"No alerts":                                            100,
-	"No characters":                                        138,
-	"No characters online":                                 85,
-	"No data collected":                                    39,
-	"No outfits":                                           136,
+	"Max amount of tasks per channel is %d, got %d":        114,
+	"Monday":               128,
+	"NC":                   90,
+	"Next":                 105,
+	"No":                   125,
+	"No alerts":            100,
+	"No characters":        138,
+	"No characters online": 85,
+	"No data collected":    39,
+	"No outfits":           136,
 	"Notes:\n- The time is specified in the time zone %q. This can be changed in the channel settings;\n- The maximum amount of tasks per channel is %d;\n- You can edit a task by clicking on it;\n- The “Remove” button deletes immediately without confirmation.\n": 101,
 	"Nothing to track, please set tracking settings first": 56,
 	"Outfit":                    18,
@@ -222,20 +222,20 @@ var enIndex = []uint32{ // 149 elements
 	0x00000b80, 0x00000b8a, 0x00000c95, 0x00000c9c,
 	0x00000ca9, 0x00000cb2, 0x00000cb7, 0x00000cc1,
 	0x00000cdc, 0x00000d01, 0x00000d16, 0x00000d2d,
-	0x00000d3d, 0x00000d44, 0x00000d4b, 0x00000d74,
-	0x00000da4, 0x00000df6, 0x00000e04, 0x00000e10,
-	0x00000e17, 0x00000e26, 0x00000e2d, 0x00000e36,
-	0x00000e42, 0x00000e46, 0x00000e49, 0x00000e50,
+	0x00000d3d, 0x00000d44, 0x00000d4b, 0x00000d7f,
+	0x00000daf, 0x00000e01, 0x00000e0f, 0x00000e1b,
+	0x00000e22, 0x00000e31, 0x00000e38, 0x00000e41,
+	0x00000e4d, 0x00000e51, 0x00000e54, 0x00000e5b,
 	// Entry 80 - 9F
-	0x00000e5c, 0x00000e63, 0x00000e6b, 0x00000e75,
-	0x00000e7e, 0x00000e85, 0x00000e8e, 0x00000e95,
-	0x00000eaf, 0x00000eba, 0x00000ed9, 0x00000ee7,
-	0x00000f1c, 0x00000f38, 0x00000f56, 0x00000f6f,
-	0x00000f8a, 0x00000faa, 0x00000fc0, 0x00000fd9,
-	0x00000fde,
+	0x00000e67, 0x00000e6e, 0x00000e76, 0x00000e80,
+	0x00000e89, 0x00000e90, 0x00000e99, 0x00000ea0,
+	0x00000eba, 0x00000ec5, 0x00000ee4, 0x00000ef2,
+	0x00000f27, 0x00000f43, 0x00000f61, 0x00000f7a,
+	0x00000f95, 0x00000fb5, 0x00000fcb, 0x00000fe4,
+	0x00000fe9,
 } // Size: 620 bytes
 
-const enData string = "" + // Size: 4062 bytes
+const enData string = "" + // Size: 4073 bytes
 	"\x02Default timezone\x02Language\x02Language: english\x02Language: russi" +
 	"an\x02Character notifications: on\x02Character notifications: off\x02Out" +
 	"fit notifications: on\x02Outfit notifications: off\x02Title updates: on" +
@@ -290,20 +290,20 @@ const enData string = "" + // Size: 4062 bytes
 	"emove\x02Add new task\x02Previous\x02Next\x02Schedule:\x04\x01\x0a\x00" +
 	"\x16\x02- No tasks were found\x04\x01\x0a\x00 \x02- %[1]s, %02[2]d:%02[3" +
 	"]d, %[4]s\x02Starting hour: %[1]d\x02Starting minute: %[1]d\x02Duration:" +
-	" %[1]s\x02Submit\x02Cancel\x02Max amount of tasks per channel is %[1]d" +
-	"\x02Duration too long: expected max %[1]s got %[2]s\x02Your task (%[1]s," +
-	" %[2]s, %[3]s) overlaps with existing task (%[4]s, %[5]s, %[6]s)\x04\x00" +
-	"\x01 \x09\x02Unlocked\x04\x00\x01 \x07\x02Locked\x02) by `\x04\x01\x0a" +
-	"\x00\x0a\x02Status: _\x02Stable\x02Unstable\x02_\x0aAlerts: _\x02Yes\x02" +
-	"No\x02%[1]dm\x04\x00\x01 \x07\x02%[1]dh\x02Monday\x02Tuesday\x02Wednesda" +
-	"y\x02Thursday\x02Friday\x02Saturday\x02Sunday\x04\x00\x01\x0a\x15\x02**T" +
-	"racked outfits:**\x02No outfits\x04\x02\x0a\x0a\x01\x0a\x18\x02**Tracked" +
-	" characters:**\x02No characters\x04\x00\x01\x0a0\x02Tracking settings ha" +
-	"ve been updated by <@%[1]s>\x04\x01\x0a\x01 \x16\x02**Added characters:*" +
-	"*\x04\x01\x0a\x01 \x18\x02**Removed characters:**\x04\x01\x0a\x01 \x13" +
-	"\x02**Added outfits:**\x04\x01\x0a\x01 \x15\x02**Removed outfits:**\x02W" +
-	"e couldn't find the following:\x04\x01\x0a\x00\x11\x02- Outfits: %[1]s" +
-	"\x04\x01\x0a\x00\x14\x02- Characters: %[1]s\x02Edit"
+	" %[1]s\x02Submit\x02Cancel\x02Max amount of tasks per channel is %[1]d, " +
+	"got %[2]d\x02Duration too long: expected max %[1]s got %[2]s\x02Your tas" +
+	"k (%[1]s, %[2]s, %[3]s) overlaps with existing task (%[4]s, %[5]s, %[6]s" +
+	")\x04\x00\x01 \x09\x02Unlocked\x04\x00\x01 \x07\x02Locked\x02) by `\x04" +
+	"\x01\x0a\x00\x0a\x02Status: _\x02Stable\x02Unstable\x02_\x0aAlerts: _" +
+	"\x02Yes\x02No\x02%[1]dm\x04\x00\x01 \x07\x02%[1]dh\x02Monday\x02Tuesday" +
+	"\x02Wednesday\x02Thursday\x02Friday\x02Saturday\x02Sunday\x04\x00\x01" +
+	"\x0a\x15\x02**Tracked outfits:**\x02No outfits\x04\x02\x0a\x0a\x01\x0a" +
+	"\x18\x02**Tracked characters:**\x02No characters\x04\x00\x01\x0a0\x02Tra" +
+	"cking settings have been updated by <@%[1]s>\x04\x01\x0a\x01 \x16\x02**A" +
+	"dded characters:**\x04\x01\x0a\x01 \x18\x02**Removed characters:**\x04" +
+	"\x01\x0a\x01 \x13\x02**Added outfits:**\x04\x01\x0a\x01 \x15\x02**Remove" +
+	"d outfits:**\x02We couldn't find the following:\x04\x01\x0a\x00\x11\x02-" +
+	" Outfits: %[1]s\x04\x01\x0a\x00\x14\x02- Characters: %[1]s\x02Edit"
 
 var ruIndex = []uint32{ // 149 elements
 	// Entry 0 - 1F
@@ -338,20 +338,20 @@ var ruIndex = []uint32{ // 149 elements
 	0x00001592, 0x000015a6, 0x0000176e, 0x0000177d,
 	0x0000179b, 0x000017b0, 0x000017c3, 0x000017d9,
 	0x00001803, 0x00001828, 0x00001843, 0x00001864,
-	0x00001884, 0x0000189b, 0x000018a8, 0x000018fd,
-	0x0000195e, 0x000019e8, 0x00001a08, 0x00001a26,
-	0x00001a3b, 0x00001a50, 0x00001a65, 0x00001a7f,
-	0x00001a93, 0x00001a98, 0x00001a9f, 0x00001aa7,
+	0x00001884, 0x0000189b, 0x000018a8, 0x0000190f,
+	0x00001970, 0x000019fa, 0x00001a1a, 0x00001a38,
+	0x00001a4d, 0x00001a62, 0x00001a77, 0x00001a91,
+	0x00001aa5, 0x00001aaa, 0x00001ab1, 0x00001ab9,
 	// Entry 80 - 9F
-	0x00001ab4, 0x00001acb, 0x00001ada, 0x00001ae5,
-	0x00001af4, 0x00001b03, 0x00001b12, 0x00001b29,
-	0x00001b69, 0x00001b8b, 0x00001bc5, 0x00001be3,
-	0x00001c39, 0x00001c6e, 0x00001c9f, 0x00001cdc,
-	0x00001d15, 0x00001d3a, 0x00001d63, 0x00001d86,
-	0x00001da1,
+	0x00001ac6, 0x00001add, 0x00001aec, 0x00001af7,
+	0x00001b06, 0x00001b15, 0x00001b24, 0x00001b3b,
+	0x00001b7b, 0x00001b9d, 0x00001bd7, 0x00001bf5,
+	0x00001c4b, 0x00001c80, 0x00001cb1, 0x00001cee,
+	0x00001d27, 0x00001d4c, 0x00001d75, 0x00001d98,
+	0x00001db3,
 } // Size: 620 bytes
 
-const ruData string = "" + // Size: 7585 bytes
+const ruData string = "" + // Size: 7603 bytes
 	"\x02Временная зона по умолчанию\x02Язык\x02Язык: английский\x02Язык: рус" +
 	"ский\x02Уведомления персонажей: вкл.\x02Уведомления персонажей: выкл." +
 	"\x02Уведомления подразделений: вкл.\x02Уведомления подразделений: выкл." +
@@ -412,20 +412,20 @@ const ruData string = "" + // Size: 7585 bytes
 	"\x04\x01\x0a\x00%\x02- Задачи не найдены\x04\x01\x0a\x00 \x02- %[1]s, %" +
 	"02[2]d:%02[3]d, %[4]s\x02Час начала: %[1]d\x02Минута начала: %[1]d\x02Дл" +
 	"ительность: %[1]s\x02Подтвердить\x02Отмена\x02Максимальное количество з" +
-	"адач для канала - %[1]d\x02Превышена максимальная длительность задачи (" +
-	"%[1]s): %[2]s\x02Ваша задача (%[1]s, %[2]s, %[3]s) пересекается с сущест" +
-	"вующей задачей (%[4]s, %[5]s, %[6]s)\x04\x00\x01 \x1b\x02Разблокирова" +
-	"н\x04\x00\x01 \x19\x02Заблокирован\x02) фракцией `\x04\x01\x0a\x00\x10" +
-	"\x02Статус: _\x02Стабильный\x02Не стабильный\x02_\x0aТревоги: _\x02Да" +
-	"\x02Нет\x02%[1]dм\x04\x00\x01 \x08\x02%[1]dч\x02Понедельник\x02Вторник" +
-	"\x02Среда\x02Четверг\x02Пятница\x02Суббота\x02Воскресенье\x04\x00\x01" +
-	"\x0a;\x02**Отслеживаемые подразделения:**\x02Нет подразделений\x04\x02" +
-	"\x0a\x0a\x01\x0a3\x02**Отслеживаемые персонажи:**\x02Нет персонажей\x04" +
-	"\x00\x01\x0aQ\x02Настроики отслеживания были обновлены <@%[1]s>\x04\x01" +
-	"\x0a\x01 /\x02**Добавленные персонажи:**\x04\x01\x0a\x01 +\x02**Удаленны" +
-	"е персонажи:**\x04\x01\x0a\x01 7\x02**Добавленные подразделения:**\x04" +
-	"\x01\x0a\x01 3\x02**Удаленные подразделения:**\x02Мы не смогли найти:" +
-	"\x04\x01\x0a\x00$\x02- Подразделения: %[1]s\x04\x01\x0a\x00\x1e\x02- Пер" +
-	"сонажей: %[1]s\x02Редактировать"
+	"адач в канале %[1]d, получено %[2]d\x02Превышена максимальная длительно" +
+	"сть задачи (%[1]s): %[2]s\x02Ваша задача (%[1]s, %[2]s, %[3]s) пересека" +
+	"ется с существующей задачей (%[4]s, %[5]s, %[6]s)\x04\x00\x01 \x1b" +
+	"\x02Разблокирован\x04\x00\x01 \x19\x02Заблокирован\x02) фракцией `\x04" +
+	"\x01\x0a\x00\x10\x02Статус: _\x02Стабильный\x02Не стабильный\x02_\x0aТре" +
+	"воги: _\x02Да\x02Нет\x02%[1]dм\x04\x00\x01 \x08\x02%[1]dч\x02Понедельни" +
+	"к\x02Вторник\x02Среда\x02Четверг\x02Пятница\x02Суббота\x02Воскресенье" +
+	"\x04\x00\x01\x0a;\x02**Отслеживаемые подразделения:**\x02Нет подразделен" +
+	"ий\x04\x02\x0a\x0a\x01\x0a3\x02**Отслеживаемые персонажи:**\x02Нет перс" +
+	"онажей\x04\x00\x01\x0aQ\x02Настроики отслеживания были обновлены <@%[1" +
+	"]s>\x04\x01\x0a\x01 /\x02**Добавленные персонажи:**\x04\x01\x0a\x01 +" +
+	"\x02**Удаленные персонажи:**\x04\x01\x0a\x01 7\x02**Добавленные подразде" +
+	"ления:**\x04\x01\x0a\x01 3\x02**Удаленные подразделения:**\x02Мы не смо" +
+	"гли найти:\x04\x01\x0a\x00$\x02- Подразделения: %[1]s\x04\x01\x0a\x00" +
+	"\x1e\x02- Персонажей: %[1]s\x02Редактировать"
 
-	// Total table size 12887 bytes (12KiB); checksum: 434E5B98
+	// Total table size 12916 bytes (12KiB); checksum: 83A546CA
