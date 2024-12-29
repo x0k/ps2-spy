@@ -19,6 +19,10 @@ type Repository struct {
 	outfitTagsMu      sync.Mutex
 	outfitTagsQuery   *census2.Query
 	outfitTagsOperand *census2.Ptr[census2.List[census2.Str]]
+
+	outfitMemberIdsMu      sync.Mutex
+	outfitMemberIdsQuery   *census2.Query
+	outfitMemberIdsOperand *census2.Ptr[census2.Str]
 }
 
 func New(
@@ -27,6 +31,7 @@ func New(
 ) *Repository {
 	outfitIdsOperand := census2.NewPtr(census2.StrList())
 	outfitTagsOperand := census2.NewPtr(census2.StrList())
+	outfitMemberIdsOperand := census2.NewPtr(census2.Str(""))
 	return &Repository{
 		log:    log,
 		client: client,
@@ -38,5 +43,16 @@ func New(
 		outfitTagsOperand: &outfitTagsOperand,
 		outfitTagsQuery: census2.NewQuery(census2.GetQuery, census2.Ps2_v2_NS, ps2_collections.Outfit).
 			Where(census2.Cond("outfit_id").Equals(&outfitTagsOperand)).Show("outfit_id", "alias"),
+
+		outfitMemberIdsOperand: &outfitMemberIdsOperand,
+		outfitMemberIdsQuery: census2.NewQuery(census2.GetQuery, census2.Ps2_v2_NS, ps2_collections.Outfit).
+			Where(census2.Cond("outfit_id").Equals(&outfitMemberIdsOperand)).
+			Show("outfit_id").
+			WithJoin(
+				census2.Join(ps2_collections.OutfitMember).
+					Show("character_id").
+					InjectAt("outfit_members").
+					IsList(true),
+			),
 	}
 }

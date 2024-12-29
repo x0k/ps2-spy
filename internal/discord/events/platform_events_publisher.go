@@ -12,7 +12,6 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
 	"github.com/x0k/ps2-spy/internal/ps2"
-	"github.com/x0k/ps2-spy/internal/storage"
 	"github.com/x0k/ps2-spy/internal/worlds_tracker"
 )
 
@@ -71,7 +70,7 @@ func (p *PlatformEventsPublisher) PublishFacilityLoss(ctx context.Context, e wor
 	go publishOutfitEventTask(ctx, p, e.OldOutfitId, e)
 }
 
-func (p *PlatformEventsPublisher) PublishOutfitMembersUpdate(ctx context.Context, e storage.OutfitMembersUpdate) {
+func (p *PlatformEventsPublisher) PublishOutfitMembersUpdate(ctx context.Context, e ps2.OutfitMembersUpdate) {
 	p.wg.Add(1)
 	go publishOutfitEventTask(ctx, p, e.OutfitId, e)
 }

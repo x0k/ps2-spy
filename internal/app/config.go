@@ -49,6 +49,10 @@ type TrackingConfig struct {
 	MaxNumberTrackedCharacters int `yaml:"max_number_tracked_characters" env:"TRACKING_MAX_NUMBER_TRACKED_CHARACTERS" env-default:"12"`
 }
 
+type Ps2Config struct {
+	OutfitsSynchronizeInterval time.Duration `yaml:"outfits_synchronize_interval" env:"PS2_OUTFITS_SYNCHRONIZE_INTERVAL" env-default:"12h"`
+}
+
 type Config struct {
 	AppName string `yaml:"app_name" env:"APP_NAME" env-default:"PS 2 Spy"`
 
@@ -61,6 +65,7 @@ type Config struct {
 	Census       CensusConfig       `yaml:"census"`
 	StatsTracker StatsTrackerConfig `yaml:"stats_tracker"`
 	Tracking     TrackingConfig     `yaml:"tracking"`
+	Ps2          Ps2Config          `yaml:"ps2"`
 }
 
 func MustLoadConfig(configPath string) *Config {

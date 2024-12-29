@@ -25,10 +25,6 @@ type DataProvider struct {
 	facilityQuery   *census2.Query
 	facilityOperand *census2.Ptr[census2.Str]
 
-	outfitMemberIdsMu      sync.Mutex
-	outfitMemberIdsQuery   *census2.Query
-	outfitMemberIdsOperand *census2.Ptr[census2.Str]
-
 	outfitsMu      sync.Mutex
 	outfitsQuery   *census2.Query
 	outfitsOperand *census2.Ptr[census2.List[census2.Str]]
@@ -44,7 +40,6 @@ func New(
 ) *DataProvider {
 	charactersOperand := census2.NewPtr(census2.StrList())
 	facilityOperand := census2.NewPtr(census2.Str(""))
-	outfitMemberIdsOperand := census2.NewPtr(census2.Str(""))
 	outfitsOperand := census2.NewPtr(census2.StrList())
 	worldMapOperand := census2.NewPtr(census2.Str(""))
 	zoneIds := strings.Builder{}
@@ -86,17 +81,6 @@ func New(
 		facilityQuery: census2.NewQuery(census2.GetQuery, census2.Ps2_v2_NS, ps2_collections.MapRegion).
 			Where(census2.Cond("facility_id").Equals(&facilityOperand)).
 			Show("facility_id", "facility_name", "facility_type", "zone_id"),
-
-		outfitMemberIdsOperand: &outfitMemberIdsOperand,
-		outfitMemberIdsQuery: census2.NewQuery(census2.GetQuery, census2.Ps2_v2_NS, ps2_collections.Outfit).
-			Where(census2.Cond("outfit_id").Equals(&outfitMemberIdsOperand)).
-			Show("outfit_id").
-			WithJoin(
-				census2.Join(ps2_collections.OutfitMember).
-					Show("character_id").
-					InjectAt("outfit_members").
-					IsList(true),
-			),
 
 		outfitsOperand: &outfitsOperand,
 		outfitsQuery: census2.NewQuery(census2.GetQuery, census2.Ps2_v2_NS, ps2_collections.Outfit).

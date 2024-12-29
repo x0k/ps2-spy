@@ -97,14 +97,18 @@ func (tm *Manager) ChannelIdsForOutfit(ctx context.Context, outfitId ps2.OutfitI
 	return tm.outfitTrackingChannelsLoader(ctx, outfitId)
 }
 
-func (tm *Manager) TrackOutfitMember(charId ps2.CharacterId, outfitId ps2.OutfitId) {
+func (tm *Manager) TrackOutfitMembers(outfitId ps2.OutfitId, charIds []ps2.CharacterId) {
 	count := tm.outfitTrackersCount(outfitId)
-	tm.considerCharacter(charId, count)
+	for _, charId := range charIds {
+		tm.considerCharacter(charId, count)
+	}
 }
 
-func (tm *Manager) UntrackOutfitMember(charId ps2.CharacterId, outfitId ps2.OutfitId) {
+func (tm *Manager) UntrackOutfitMembers(outfitId ps2.OutfitId, charIds []ps2.CharacterId) {
 	count := tm.outfitTrackersCount(outfitId)
-	tm.considerCharacter(charId, -count)
+	for _, charId := range charIds {
+		tm.considerCharacter(charId, -count)
+	}
 }
 
 func (tm *Manager) HandleTrackingSettingsUpdate(ctx context.Context, update TrackingSettingsUpdated) {
