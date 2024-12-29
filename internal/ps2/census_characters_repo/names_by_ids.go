@@ -1,4 +1,4 @@
-package census_ps2_characters_repo
+package ps2_census_characters_repo
 
 import (
 	"context"
