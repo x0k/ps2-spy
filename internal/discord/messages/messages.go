@@ -151,10 +151,9 @@ func (m *Messages) ChannelTrackerStarted() discord.Message {
 }
 
 func (m *Messages) ChannelTrackerStopped(
-	platform ps2_platforms.Platform,
+	stats stats_tracker.PlatformStats,
 	startedAt time.Time,
 	stoppedAt time.Time,
-	stats stats_tracker.PlatformStats,
 ) discord.ChunkableMessage {
 	sb := strings.Builder{}
 	return discord.NewChunkableMessage(
@@ -164,7 +163,7 @@ func (m *Messages) ChannelTrackerStopped(
 			if start == 0 {
 				sb.WriteString(p.Sprintf(
 					"Platform: %s, started at: %s, stopped: %s, duration: %s\n```",
-					strings.ToUpper(string(platform)),
+					strings.ToUpper(string(stats.Platform)),
 					renderTime(startedAt),
 					renderRelativeTime(stoppedAt),
 					renderDuration(p, stoppedAt.Sub(startedAt)),

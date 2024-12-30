@@ -12,6 +12,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
 	"github.com/x0k/ps2-spy/internal/lib/containers"
 	"github.com/x0k/ps2-spy/internal/lib/diff"
+	"github.com/x0k/ps2-spy/internal/lib/loader"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
@@ -24,19 +25,11 @@ var ErrNothingToTrack = errors.New("nothing to track")
 var ErrNoChannelTrackerToStop = errors.New("no channel tracker to stop")
 var ErrChannelStatsTrackerIsAlreadyStarted = errors.New("channel stats tracker is already started")
 
-type TrackingRepo interface {
-	PlatformsByChannelId(context.Context, discord.ChannelId) ([]ps2_platforms.Platform, error)
-}
-
-type ChannelsRepo interface {
-	TrackingChannelsByCharacterId(
-		context.Context, ps2_platforms.Platform, ps2.CharacterId,
-	) ([]discord.ChannelId, error)
-}
-
-type TasksRepo interface {
-	ChannelsWithActiveTasks(context.Context, time.Time) ([]discord.ChannelId, error)
-}
+type ChannelTrackingPlatformsLoader = loader.Keyed[discord.ChannelId, []ps2_platforms.Platform]
+type ChannelsWithActiveTasksLoader = loader.Keyed[time.Time, []discord.ChannelId]
+type CharacterTrackingChannelsLoader = func(
+	context.Context, ps2_platforms.Platform, ps2.CharacterId,
+) ([]discord.ChannelId, error)
 
 type StatsTracker struct {
 	trackersMu          sync.RWMutex
@@ -45,11 +38,11 @@ type StatsTracker struct {
 	trackers            map[discord.ChannelId]channelTracker
 	publisher           pubsub.Publisher[Event]
 	maxTrackingDuration time.Duration
-	charactersLoaders   map[ps2_platforms.Platform]CharactersLoader
 
-	tasksRepo      TasksRepo
-	trackingRepo   TrackingRepo
-	charactersRepo ChannelsRepo
+	channelTrackingPlatformsLoader  ChannelTrackingPlatformsLoader
+	channelWithActiveTasksLoader    ChannelsWithActiveTasksLoader
+	characterTrackingChannelsLoader CharacterTrackingChannelsLoader
+	charactersLoader                CharactersLoader
 
 	scheduledTrackers []discord.ChannelId
 	forceMu           sync.RWMutex
@@ -60,25 +53,23 @@ type StatsTracker struct {
 func New(
 	log *logger.Logger,
 	publisher pubsub.Publisher[Event],
-	tasksRepo TasksRepo,
-	trackingRepo TrackingRepo,
-	charactersTrackingRepo ChannelsRepo,
-	charactersLoaders map[ps2_platforms.Platform]CharactersLoader,
+	channelTrackingPlatformsLoader ChannelTrackingPlatformsLoader,
+	channelWithActiveTasksLoader ChannelsWithActiveTasksLoader,
+	characterTrackingChannelsLoader CharacterTrackingChannelsLoader,
+	charactersLoader CharactersLoader,
 	maxTrackingDuration time.Duration,
 ) *StatsTracker {
 	return &StatsTracker{
-		log:                 log,
-		trackers:            make(map[discord.ChannelId]channelTracker),
-		publisher:           publisher,
-		charactersLoaders:   charactersLoaders,
-		maxTrackingDuration: maxTrackingDuration,
-
-		tasksRepo:      tasksRepo,
-		trackingRepo:   trackingRepo,
-		charactersRepo: charactersTrackingRepo,
-
-		forceStarted: containers.NewExpirationQueue[discord.ChannelId](),
-		forceStopped: containers.NewExpirationQueue[discord.ChannelId](),
+		log:                             log,
+		trackers:                        make(map[discord.ChannelId]channelTracker),
+		publisher:                       publisher,
+		maxTrackingDuration:             maxTrackingDuration,
+		channelTrackingPlatformsLoader:  channelTrackingPlatformsLoader,
+		channelWithActiveTasksLoader:    channelWithActiveTasksLoader,
+		characterTrackingChannelsLoader: characterTrackingChannelsLoader,
+		charactersLoader:                charactersLoader,
+		forceStarted:                    containers.NewExpirationQueue[discord.ChannelId](),
+		forceStopped:                    containers.NewExpirationQueue[discord.ChannelId](),
 	}
 }
 
@@ -136,7 +127,7 @@ func (s *StatsTracker) startChannelTracker(ctx context.Context, channelId discor
 	if s.isRunning(channelId) {
 		return ErrChannelStatsTrackerIsAlreadyStarted
 	}
-	trackablePlatforms, err := s.trackingRepo.PlatformsByChannelId(ctx, channelId)
+	trackablePlatforms, err := s.channelTrackingPlatformsLoader(ctx, channelId)
 	if err != nil {
 		return err
 	}
@@ -145,7 +136,7 @@ func (s *StatsTracker) startChannelTracker(ctx context.Context, channelId discor
 	}
 	trackers := make(map[ps2_platforms.Platform]*platformTracker, len(trackablePlatforms))
 	for _, platform := range trackablePlatforms {
-		trackers[platform] = newPlatformTracker(platform, s.charactersLoaders[platform])
+		trackers[platform] = newPlatformTracker(platform, s.charactersLoader)
 	}
 	now := time.Now()
 	s.trackersMu.Lock()
@@ -220,7 +211,7 @@ func (s *StatsTracker) handleTrackersOvertime(ctx context.Context) error {
 
 func (s *StatsTracker) handleGainExperienceEvent(ctx context.Context, platform ps2_platforms.Platform, event events.GainExperience) error {
 	charId := ps2.CharacterId(event.CharacterID)
-	if channels, err := s.charactersRepo.TrackingChannelsByCharacterId(ctx, platform, charId); err == nil {
+	if channels, err := s.characterTrackingChannelsLoader(ctx, platform, charId); err == nil {
 		s.handleCharacterEvent(
 			ctx,
 			channels,
@@ -246,7 +237,7 @@ func (s *StatsTracker) handleDeathEvent(ctx context.Context, platform ps2_platfo
 	} else if isDeathByRestrictedArea {
 		deathAdder = addDeathByRestrictedArea
 	}
-	if channels, err := s.charactersRepo.TrackingChannelsByCharacterId(ctx, platform, charId); err == nil {
+	if channels, err := s.characterTrackingChannelsLoader(ctx, platform, charId); err == nil {
 		s.handleCharacterEvent(
 			ctx,
 			channels,
@@ -268,7 +259,7 @@ func (s *StatsTracker) handleDeathEvent(ctx context.Context, platform ps2_platfo
 	} else if event.IsHeadshot == "1" {
 		killAdder = addHeadShotKill
 	}
-	if channels, err := s.charactersRepo.TrackingChannelsByCharacterId(ctx, platform, charId); err == nil {
+	if channels, err := s.characterTrackingChannelsLoader(ctx, platform, charId); err == nil {
 		s.handleCharacterEvent(
 			ctx,
 			channels,
@@ -311,7 +302,7 @@ func (s *StatsTracker) handleCharacterEvent(
 }
 
 func (s *StatsTracker) invalidateStatsTrackers(ctx context.Context, now time.Time) {
-	newTasks, err := s.tasksRepo.ChannelsWithActiveTasks(ctx, now)
+	newTasks, err := s.channelWithActiveTasksLoader(ctx, now)
 	if err != nil {
 		s.log.Error(ctx, "error loading tasks", sl.Err(err))
 		return

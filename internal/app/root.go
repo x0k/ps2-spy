@@ -180,12 +180,12 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	storageTrackingRepo := tracking_storage_tracking_repo.New(store)
 
 	statsTrackerPubSub := pubsub.New[stats_tracker.EventType]()
-	storageStatsTrackerTasksRepo := stats_tracker_storage_tasks_repo.New(store)
+	storageTasksRepo := stats_tracker_storage_tasks_repo.New(store)
 	statsTracker := stats_tracker.New(
 		log.With(sl.Component("stats_tracker")),
 		statsTrackerPubSub,
-		storageStatsTrackerTasksRepo,
-		storageTrackingRepo,
+		storageTrackingRepo.PlatformsByChannelId,
+		storageTasksRepo.ChannelsWithActiveTasks,
 		func(ctx context.Context, platform ps2_platforms.Platform, charId ps2.CharacterId) ([]discord.ChannelId, error) {
 			manager := trackingManagers[platform]
 			channels, err := manager.ChannelIdsForCharacter(ctx, charId)
@@ -198,7 +198,11 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			}
 			return channelIds, nil
 		},
-		charactersLoaders,
+		func(
+			ctx context.Context, platform ps2_platforms.Platform, characterIds []ps2.CharacterId,
+		) (map[ps2.CharacterId]ps2.Character, error) {
+			return charactersLoaders[platform](ctx, characterIds)
+		},
 		cfg.StatsTracker.MaxTrackingDuration,
 	)
 	m.AppendVR("stats_tracker", statsTracker.Start)
@@ -469,7 +473,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	})
 
 	statsTrackerTasksCreator := stats_tracker_tasks_creator.New(
-		storageStatsTrackerTasksRepo,
+		storageTasksRepo,
 		cfg.StatsTracker.MaxTrackingDuration,
 		cfg.StatsTracker.MaxNumberOfTasksPerChannel,
 	)
@@ -531,10 +535,10 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		store.SaveChannelOutfitNotifications,
 		store.SaveChannelTitleUpdates,
 		store.SaveChannelDefaultTimezone,
-		storageStatsTrackerTasksRepo.ByChannelId,
+		storageTasksRepo.ByChannelId,
 		statsTrackerTasksCreator.Create,
-		storageStatsTrackerTasksRepo.Delete,
-		storageStatsTrackerTasksRepo.ById,
+		storageTasksRepo.Delete,
+		storageTasksRepo.ById,
 		statsTrackerTasksCreator.Update,
 	)
 	m.AppendR("discord.commands", discordCommands.Start)
