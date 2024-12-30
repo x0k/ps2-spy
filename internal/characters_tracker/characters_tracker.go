@@ -1,4 +1,4 @@
-package ps2_platforms_characters_tracker
+package characters_tracker
 
 import (
 	"context"
@@ -15,16 +15,16 @@ import (
 
 type Tracker struct {
 	wg        sync.WaitGroup
-	platforms map[ps2_platforms.Platform]*charactersTracker
+	platforms map[ps2_platforms.Platform]*platformTracker
 }
 
 func New(
 	log *logger.Logger,
 	charactersLoader CharacterLoader,
-	publisher pubsub.Publisher[ps2.Event],
+	publisher pubsub.Publisher[Event],
 	mt *metrics.Metrics,
 ) *Tracker {
-	platforms := make(map[ps2_platforms.Platform]*charactersTracker, len(ps2_platforms.Platforms))
+	platforms := make(map[ps2_platforms.Platform]*platformTracker, len(ps2_platforms.Platforms))
 	for _, platform := range ps2_platforms.Platforms {
 		platforms[platform] = newCharactersTracker(
 			log.With(slog.String("platform", string(platform))),

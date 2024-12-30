@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/golang-lru/v2/expirable"
 	sql_facility_cache "github.com/x0k/ps2-spy/internal/cache/facility/sql"
 	sql_outfits_cache "github.com/x0k/ps2-spy/internal/cache/outfits/sql"
+	"github.com/x0k/ps2-spy/internal/characters_tracker"
 	census_data_provider "github.com/x0k/ps2-spy/internal/data_providers/census"
 	fisu_data_provider "github.com/x0k/ps2-spy/internal/data_providers/fisu"
 	honu_data_provider "github.com/x0k/ps2-spy/internal/data_providers/honu"
@@ -46,7 +47,6 @@ import (
 	ps2_census_outfits_repo "github.com/x0k/ps2-spy/internal/ps2/census_outfits_repo"
 	ps2_outfit_members_synchronizer "github.com/x0k/ps2-spy/internal/ps2/outfit_members_synchronizer"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
-	ps2_platforms_characters_tracker "github.com/x0k/ps2-spy/internal/ps2/platforms_characters_tracker"
 	ps2_storage_outfits_repo "github.com/x0k/ps2-spy/internal/ps2/storage_outfits_repo"
 	"github.com/x0k/ps2-spy/internal/shared"
 	"github.com/x0k/ps2-spy/internal/stats_tracker"
@@ -200,12 +200,13 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	)
 	m.AppendVR("stats_tracker", statsTracker.Start)
 
-	platformsCharactersTracker := ps2_platforms_characters_tracker.New(
+	charactersTrackerPubSub := pubsub.New[characters_tracker.EventType]()
+	charactersTracker := characters_tracker.New(
 		log.With(sl.Component("platforms_characters_tracker")),
 		func(ctx context.Context, platform ps2_platforms.Platform, characterId ps2.CharacterId) (ps2.Character, error) {
 			return characterLoaders[platform](ctx, characterId)
 		},
-		ps2PubSub,
+		charactersTrackerPubSub,
 		mt,
 	)
 
@@ -292,7 +293,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			platform,
 			m,
 			eventsPubSub,
-			platformsCharactersTracker,
+			charactersTracker,
 			worldsTracker,
 			statsTracker,
 		))
@@ -371,7 +372,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			total := 0
 			worlds := make([]ps2.WorldPopulation, 0)
 			for _, platform := range ps2_platforms.Platforms {
-				population := platformsCharactersTracker.WorldsPopulation(platform)
+				population := charactersTracker.WorldsPopulation(platform)
 				total += population.Total
 				worlds = append(worlds, population.Worlds...)
 			}
@@ -394,7 +395,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			if !ok {
 				return meta.Loaded[ps2.DetailedWorldPopulation]{}, fmt.Errorf("unknown world %q", worldId)
 			}
-			population, err := platformsCharactersTracker.DetailedWorldPopulation(platform, worldId)
+			population, err := charactersTracker.DetailedWorldPopulation(platform, worldId)
 			if err != nil {
 				return meta.Loaded[ps2.DetailedWorldPopulation]{}, fmt.Errorf("getting population: %w", err)
 			}
@@ -478,7 +479,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		[]string{"spy", "ps2alerts", "honu", "census", "voidwell"},
 		tracking_settings_data_loader.New(
 			storageSettingsRepo,
-			platformsCharactersTracker,
+			charactersTracker,
 		).Load,
 		func(
 			ctx context.Context, platform ps2_platforms.Platform, outfitIds []ps2.OutfitId,
@@ -525,6 +526,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		storePubSub,
 		ps2PubSub,
 		trackingPubSub,
+		charactersTrackerPubSub,
 		worldTrackerSubsMangers,
 		characterLoaders,
 		outfitLoaders,
@@ -539,7 +541,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 					errs = append(errs, err)
 					continue
 				}
-				outfits, err := platformsCharactersTracker.OnlineOutfitMembers(ctx, platform, settings.Outfits)
+				outfits, err := charactersTracker.OnlineOutfitMembers(ctx, platform, settings.Outfits)
 				if err != nil {
 					errs = append(errs, err)
 					continue
@@ -547,7 +549,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 				for _, outfit := range outfits {
 					count += len(outfit)
 				}
-				characters, err := platformsCharactersTracker.OnlineCharacters(ctx, platform, settings.Characters)
+				characters, err := charactersTracker.OnlineCharacters(ctx, platform, settings.Characters)
 				if err != nil {
 					errs = append(errs, err)
 					continue

@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"sync"
 
+	"github.com/x0k/ps2-spy/internal/characters_tracker"
 	"github.com/x0k/ps2-spy/internal/discord"
 	"github.com/x0k/ps2-spy/internal/lib/loader"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
@@ -44,17 +45,17 @@ func (p *PlatformEventsPublisher) Start(ctx context.Context) {
 	p.wg.Wait()
 }
 
-func (p *PlatformEventsPublisher) PublishPlayerLogin(ctx context.Context, e ps2.PlayerLogin) {
+func (p *PlatformEventsPublisher) PublishPlayerLogin(ctx context.Context, e characters_tracker.PlayerLogin) {
 	p.wg.Add(1)
 	go publishCharacterEventTask(ctx, p, e.Character.Id, e)
 }
 
-func (p *PlatformEventsPublisher) PublishPlayerFakeLogin(ctx context.Context, e ps2.PlayerFakeLogin) {
+func (p *PlatformEventsPublisher) PublishPlayerFakeLogin(ctx context.Context, e characters_tracker.PlayerFakeLogin) {
 	p.wg.Add(1)
 	go publishCharacterEventTask(ctx, p, e.Character.Id, e)
 }
 
-func (p *PlatformEventsPublisher) PublishPlayerLogout(ctx context.Context, e ps2.PlayerLogout) {
+func (p *PlatformEventsPublisher) PublishPlayerLogout(ctx context.Context, e characters_tracker.PlayerLogout) {
 	p.wg.Add(1)
 	go publishCharacterEventTask(ctx, p, e.CharacterId, e)
 }

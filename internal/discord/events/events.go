@@ -1,6 +1,7 @@
 package discord_events
 
 import (
+	"github.com/x0k/ps2-spy/internal/characters_tracker"
 	"github.com/x0k/ps2-spy/internal/discord"
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
 	"github.com/x0k/ps2-spy/internal/ps2"
@@ -15,8 +16,8 @@ type EventType string
 type Event = pubsub.Event[EventType]
 
 const (
-	PlayerLoginType                        = EventType(ps2.PlayerLoginType)
-	PlayerLogoutType                       = EventType(ps2.PlayerLogoutType)
+	PlayerLoginType                        = EventType(characters_tracker.PlayerLoginType)
+	PlayerLogoutType                       = EventType(characters_tracker.PlayerLogoutType)
 	OutfitMembersUpdateType                = EventType(ps2.OutfitMembersUpdateType)
 	FacilityControlType                    = EventType(worlds_tracker.FacilityControlType)
 	FacilityLossType                       = EventType(worlds_tracker.FacilityLossType)
@@ -54,9 +55,9 @@ type ChannelTrackerStarted = channelEvent[stats_tracker.EventType, stats_tracker
 type ChannelTrackerStopped = channelEvent[stats_tracker.EventType, stats_tracker.ChannelTrackerStopped]
 type ChannelTrackingSettingsUpdated = channelEvent[tracking.EventType, tracking.TrackingSettingsUpdated]
 
-type PlayerLogin = channelsEvent[ps2.EventType, ps2.PlayerLogin]
-type PlayerFakeLogin = channelsEvent[ps2.EventType, ps2.PlayerFakeLogin]
-type PlayerLogout = channelsEvent[ps2.EventType, ps2.PlayerLogout]
+type PlayerLogin = channelsEvent[characters_tracker.EventType, characters_tracker.PlayerLogin]
+type PlayerFakeLogin = channelsEvent[characters_tracker.EventType, characters_tracker.PlayerFakeLogin]
+type PlayerLogout = channelsEvent[characters_tracker.EventType, characters_tracker.PlayerLogout]
 type OutfitMembersUpdate = channelsEvent[ps2.EventType, ps2.OutfitMembersUpdate]
 type FacilityControl = channelsEvent[worlds_tracker.EventType, worlds_tracker.FacilityControl]
 type FacilityLoss = channelsEvent[worlds_tracker.EventType, worlds_tracker.FacilityLoss]

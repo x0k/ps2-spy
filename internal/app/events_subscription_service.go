@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/x0k/ps2-spy/internal/characters_tracker"
 	census_data_provider "github.com/x0k/ps2-spy/internal/data_providers/census"
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
@@ -11,7 +12,6 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/module"
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
-	ps2_platforms_characters_tracker "github.com/x0k/ps2-spy/internal/ps2/platforms_characters_tracker"
 	"github.com/x0k/ps2-spy/internal/stats_tracker"
 	"github.com/x0k/ps2-spy/internal/worlds_tracker"
 )
@@ -21,7 +21,7 @@ func newEventsSubscriptionService(
 	platform ps2_platforms.Platform,
 	ps module.PostStopper,
 	subs pubsub.SubscriptionsManager[events.EventType],
-	platformsCharactersTracker *ps2_platforms_characters_tracker.Tracker,
+	charactersTracker *characters_tracker.Tracker,
 	worldsTracker *worlds_tracker.WorldsTracker,
 	statsTracker *stats_tracker.StatsTracker,
 ) module.Runnable {
@@ -49,29 +49,29 @@ func newEventsSubscriptionService(
 				case <-ctx.Done():
 					return nil
 				case e := <-playerLogin:
-					platformsCharactersTracker.HandleLogin(ctx, platform, e)
+					charactersTracker.HandleLogin(ctx, platform, e)
 				case e := <-playerLogout:
-					platformsCharactersTracker.HandleLogout(ctx, platform, e)
+					charactersTracker.HandleLogout(ctx, platform, e)
 				case e := <-achievementEarned:
-					platformsCharactersTracker.HandleWorldZoneAction(ctx, platform, e.WorldID, e.ZoneID, e.CharacterID)
+					charactersTracker.HandleWorldZoneAction(ctx, platform, e.WorldID, e.ZoneID, e.CharacterID)
 				case e := <-battleRankUp:
-					platformsCharactersTracker.HandleWorldZoneAction(ctx, platform, e.WorldID, e.ZoneID, e.CharacterID)
+					charactersTracker.HandleWorldZoneAction(ctx, platform, e.WorldID, e.ZoneID, e.CharacterID)
 				case e := <-death:
-					platformsCharactersTracker.HandleWorldZoneAction(ctx, platform, e.WorldID, e.ZoneID, e.CharacterID)
+					charactersTracker.HandleWorldZoneAction(ctx, platform, e.WorldID, e.ZoneID, e.CharacterID)
 					statsTracker.HandleDeathEvent(ctx, platform, e)
 				case e := <-gainExperience:
-					platformsCharactersTracker.HandleWorldZoneAction(ctx, platform, e.WorldID, e.ZoneID, e.CharacterID)
+					charactersTracker.HandleWorldZoneAction(ctx, platform, e.WorldID, e.ZoneID, e.CharacterID)
 					statsTracker.HandleGainExperienceEvent(ctx, platform, e)
 				case e := <-itemAdded:
-					platformsCharactersTracker.HandleWorldZoneAction(ctx, platform, e.WorldID, e.ZoneID, e.CharacterID)
+					charactersTracker.HandleWorldZoneAction(ctx, platform, e.WorldID, e.ZoneID, e.CharacterID)
 				case e := <-playerFacilityCapture:
-					platformsCharactersTracker.HandleWorldZoneAction(ctx, platform, e.WorldID, e.ZoneID, e.CharacterID)
+					charactersTracker.HandleWorldZoneAction(ctx, platform, e.WorldID, e.ZoneID, e.CharacterID)
 				case e := <-playerFacilityDefend:
-					platformsCharactersTracker.HandleWorldZoneAction(ctx, platform, e.WorldID, e.ZoneID, e.CharacterID)
+					charactersTracker.HandleWorldZoneAction(ctx, platform, e.WorldID, e.ZoneID, e.CharacterID)
 				case e := <-skillAdded:
-					platformsCharactersTracker.HandleWorldZoneAction(ctx, platform, e.WorldID, e.ZoneID, e.CharacterID)
+					charactersTracker.HandleWorldZoneAction(ctx, platform, e.WorldID, e.ZoneID, e.CharacterID)
 				case e := <-vehicleDestroy:
-					platformsCharactersTracker.HandleWorldZoneAction(ctx, platform, e.WorldID, e.ZoneID, e.CharacterID)
+					charactersTracker.HandleWorldZoneAction(ctx, platform, e.WorldID, e.ZoneID, e.CharacterID)
 
 				case e := <-metagameEvent:
 					if err := worldsTracker.HandleMetagameEvent(ctx, e); err != nil {
