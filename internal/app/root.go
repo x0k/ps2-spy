@@ -46,6 +46,7 @@ import (
 	ps2_census_outfits_repo "github.com/x0k/ps2-spy/internal/ps2/census_outfits_repo"
 	ps2_outfit_members_synchronizer "github.com/x0k/ps2-spy/internal/ps2/outfit_members_synchronizer"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
+	ps2_platforms_characters_tracker "github.com/x0k/ps2-spy/internal/ps2/platforms_characters_tracker"
 	ps2_storage_outfits_repo "github.com/x0k/ps2-spy/internal/ps2/storage_outfits_repo"
 	"github.com/x0k/ps2-spy/internal/shared"
 	"github.com/x0k/ps2-spy/internal/stats_tracker"
@@ -199,6 +200,15 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	)
 	m.AppendVR("stats_tracker", statsTracker.Start)
 
+	platformsCharactersTracker := ps2_platforms_characters_tracker.New(
+		log.With(sl.Component("platforms_characters_tracker")),
+		func(ctx context.Context, platform ps2_platforms.Platform, characterId ps2.CharacterId) (ps2.Character, error) {
+			return characterLoaders[platform](ctx, characterId)
+		},
+		ps2PubSub,
+		mt,
+	)
+
 	for _, platform := range ps2_platforms.Platforms {
 		pl := log.With(slog.String("platform", string(platform)))
 		ns := ps2_platforms.PlatformNamespace(platform)
@@ -282,7 +292,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			platform,
 			m,
 			eventsPubSub,
-			charactersTracker,
+			platformsCharactersTracker,
 			worldsTracker,
 			statsTracker,
 		))
@@ -361,12 +371,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			total := 0
 			worlds := make([]ps2.WorldPopulation, 0)
 			for _, platform := range ps2_platforms.Platforms {
-				tracker, ok := charactersTrackers[platform]
-				if !ok {
-					log.Warn(ctx, "no population tracker for platform", slog.String("platform", string(platform)))
-					continue
-				}
-				population := tracker.WorldsPopulation()
+				population := platformsCharactersTracker.WorldsPopulation(platform)
 				total += population.Total
 				worlds = append(worlds, population.Worlds...)
 			}
@@ -389,7 +394,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			if !ok {
 				return meta.Loaded[ps2.DetailedWorldPopulation]{}, fmt.Errorf("unknown world %q", worldId)
 			}
-			population, err := charactersTrackers[platform].DetailedWorldPopulation(worldId)
+			population, err := platformsCharactersTracker.DetailedWorldPopulation(platform, worldId)
 			if err != nil {
 				return meta.Loaded[ps2.DetailedWorldPopulation]{}, fmt.Errorf("getting population: %w", err)
 			}
@@ -473,8 +478,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		[]string{"spy", "ps2alerts", "honu", "census", "voidwell"},
 		tracking_settings_data_loader.New(
 			storageSettingsRepo,
-			charactersTrackerOutfitsRepo,
-			charactersTrackerCharactersRepo,
+			platformsCharactersTracker,
 		).Load,
 		func(
 			ctx context.Context, platform ps2_platforms.Platform, outfitIds []ps2.OutfitId,
@@ -517,7 +521,6 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		cfg.Discord.RemoveCommands,
 		discordMessages,
 		discordCommands,
-		characterTrackerSubsMangers,
 		trackingManagers,
 		storePubSub,
 		ps2PubSub,
@@ -536,11 +539,19 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 					errs = append(errs, err)
 					continue
 				}
-				outfits := charactersTrackers[platform].OutfitMembersOnline(settings.Outfits)
+				outfits, err := platformsCharactersTracker.OnlineOutfitMembers(ctx, platform, settings.Outfits)
+				if err != nil {
+					errs = append(errs, err)
+					continue
+				}
 				for _, outfit := range outfits {
 					count += len(outfit)
 				}
-				characters := charactersTrackers[platform].CharactersOnline(settings.Characters)
+				characters, err := platformsCharactersTracker.OnlineCharacters(ctx, platform, settings.Characters)
+				if err != nil {
+					errs = append(errs, err)
+					continue
+				}
 				count += len(characters)
 			}
 			return count, errors.Join(errs...)
