@@ -49,29 +49,29 @@ func newEventsSubscriptionService(
 				case <-ctx.Done():
 					return nil
 				case e := <-playerLogin:
-					charactersTracker.HandleLogin(ctx, e)
+					platformsCharactersTracker.HandleLogin(ctx, platform, e)
 				case e := <-playerLogout:
-					charactersTracker.HandleLogout(ctx, e)
+					platformsCharactersTracker.HandleLogout(ctx, platform, e)
 				case e := <-achievementEarned:
-					charactersTracker.HandleWorldZoneAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
+					platformsCharactersTracker.HandleWorldZoneAction(ctx, platform, e.WorldID, e.ZoneID, e.CharacterID)
 				case e := <-battleRankUp:
-					charactersTracker.HandleWorldZoneAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
+					platformsCharactersTracker.HandleWorldZoneAction(ctx, platform, e.WorldID, e.ZoneID, e.CharacterID)
 				case e := <-death:
-					charactersTracker.HandleWorldZoneAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
+					platformsCharactersTracker.HandleWorldZoneAction(ctx, platform, e.WorldID, e.ZoneID, e.CharacterID)
 					statsTracker.HandleDeathEvent(ctx, platform, e)
 				case e := <-gainExperience:
-					charactersTracker.HandleWorldZoneAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
+					platformsCharactersTracker.HandleWorldZoneAction(ctx, platform, e.WorldID, e.ZoneID, e.CharacterID)
 					statsTracker.HandleGainExperienceEvent(ctx, platform, e)
 				case e := <-itemAdded:
-					charactersTracker.HandleWorldZoneAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
+					platformsCharactersTracker.HandleWorldZoneAction(ctx, platform, e.WorldID, e.ZoneID, e.CharacterID)
 				case e := <-playerFacilityCapture:
-					charactersTracker.HandleWorldZoneAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
+					platformsCharactersTracker.HandleWorldZoneAction(ctx, platform, e.WorldID, e.ZoneID, e.CharacterID)
 				case e := <-playerFacilityDefend:
-					charactersTracker.HandleWorldZoneAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
+					platformsCharactersTracker.HandleWorldZoneAction(ctx, platform, e.WorldID, e.ZoneID, e.CharacterID)
 				case e := <-skillAdded:
-					charactersTracker.HandleWorldZoneAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
+					platformsCharactersTracker.HandleWorldZoneAction(ctx, platform, e.WorldID, e.ZoneID, e.CharacterID)
 				case e := <-vehicleDestroy:
-					charactersTracker.HandleWorldZoneAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
+					platformsCharactersTracker.HandleWorldZoneAction(ctx, platform, e.WorldID, e.ZoneID, e.CharacterID)
 
 				case e := <-metagameEvent:
 					if err := worldsTracker.HandleMetagameEvent(ctx, e); err != nil {

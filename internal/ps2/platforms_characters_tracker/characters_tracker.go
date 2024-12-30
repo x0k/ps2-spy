@@ -10,7 +10,6 @@ import (
 
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
 	"github.com/x0k/ps2-spy/internal/lib/containers"
-	"github.com/x0k/ps2-spy/internal/lib/loader"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
@@ -27,7 +26,9 @@ type player struct {
 	worldId     ps2.WorldId
 }
 
-type CharacterLoader = loader.Keyed[ps2.CharacterId, ps2.Character]
+type CharacterLoader = func(
+	context.Context, ps2_platforms.Platform, ps2.CharacterId,
+) (ps2.Character, error)
 
 type charactersTracker struct {
 	wg                      sync.WaitGroup
@@ -48,7 +49,7 @@ func newCharactersTracker(
 	log *logger.Logger,
 	platform ps2_platforms.Platform,
 	worldIds []ps2.WorldId,
-	characterLoader loader.Keyed[ps2.CharacterId, ps2.Character],
+	characterLoader CharacterLoader,
 	publisher pubsub.Publisher[ps2.Event],
 	mt *metrics.Metrics,
 ) *charactersTracker {
@@ -260,7 +261,7 @@ func (p *charactersTracker) DetailedWorldPopulation(worldId ps2.WorldId) (ps2.De
 }
 
 func (p *charactersTracker) handleLogin(ctx context.Context, charId ps2.CharacterId) (ps2.Character, bool) {
-	char, err := p.characterLoader(ctx, charId)
+	char, err := p.characterLoader(ctx, p.platform, charId)
 	if err != nil {
 		p.log.Debug(
 			ctx,

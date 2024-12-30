@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/x0k/ps2-spy/internal/characters_tracker"
 	"github.com/x0k/ps2-spy/internal/discord"
 	discord_commands "github.com/x0k/ps2-spy/internal/discord/commands"
 	discord_events "github.com/x0k/ps2-spy/internal/discord/events"
@@ -33,7 +32,6 @@ func New(
 	removeCommands bool,
 	messages *discord_messages.Messages,
 	commands *discord_commands.Commands,
-	charactersTrackerSubsManagers map[ps2_platforms.Platform]pubsub.SubscriptionsManager[characters_tracker.EventType],
 	trackingManagers map[ps2_platforms.Platform]*tracking.Manager,
 	storageSubs pubsub.SubscriptionsManager[storage.EventType],
 	ps2Subs pubsub.SubscriptionsManager[ps2.EventType],
@@ -150,9 +148,9 @@ func New(
 			fmt.Sprintf("discord.%s.events_subscription", platform),
 			platformEventsPublisher.Start,
 		)
-		playerLogin := characters_tracker.Subscribe[characters_tracker.PlayerLogin](m, charactersTrackerSubsManagers[platform])
-		playerFakeLogin := characters_tracker.Subscribe[characters_tracker.PlayerFakeLogin](m, charactersTrackerSubsManagers[platform])
-		playerLogout := characters_tracker.Subscribe[characters_tracker.PlayerLogout](m, charactersTrackerSubsManagers[platform])
+		playerLogin := ps2.Subscribe[ps2.PlayerLogin](m, ps2Subs)
+		playerFakeLogin := ps2.Subscribe[ps2.PlayerFakeLogin](m, ps2Subs)
+		playerLogout := ps2.Subscribe[ps2.PlayerLogout](m, ps2Subs)
 		facilityControl := worlds_tracker.Subscribe[worlds_tracker.FacilityControl](m, worldTrackerSubsMangers[platform])
 		facilityLoss := worlds_tracker.Subscribe[worlds_tracker.FacilityLoss](m, worldTrackerSubsMangers[platform])
 		outfitMembersUpdate := ps2.Subscribe[ps2.OutfitMembersUpdate](m, ps2Subs)
@@ -164,11 +162,17 @@ func New(
 					case <-ctx.Done():
 						return
 					case e := <-playerLogin:
-						platformEventsPublisher.PublishPlayerLogin(ctx, e)
+						if e.Platform == platform {
+							platformEventsPublisher.PublishPlayerLogin(ctx, e)
+						}
 					case e := <-playerFakeLogin:
-						platformEventsPublisher.PublishPlayerFakeLogin(ctx, e)
+						if e.Platform == platform {
+							platformEventsPublisher.PublishPlayerFakeLogin(ctx, e)
+						}
 					case e := <-playerLogout:
-						platformEventsPublisher.PublishPlayerLogout(ctx, e)
+						if e.Platform == platform {
+							platformEventsPublisher.PublishPlayerLogout(ctx, e)
+						}
 					case e := <-facilityControl:
 						platformEventsPublisher.PublishFacilityControl(ctx, e)
 					case e := <-facilityLoss:

@@ -15,25 +15,20 @@ type SettingsRepo interface {
 	Get(context.Context, discord.ChannelId, ps2_platforms.Platform) (tracking.Settings, error)
 }
 
-type OutfitsRepo interface {
-	MembersOnline(context.Context, ps2_platforms.Platform, []ps2.OutfitId) (map[ps2.OutfitId]map[ps2.CharacterId]ps2.Character, error)
-}
-
-type CharactersRepo interface {
-	Online(context.Context, ps2_platforms.Platform, []ps2.CharacterId) (map[ps2.CharacterId]ps2.Character, error)
+type TrackingRepo interface {
+	OnlineOutfitMembers(context.Context, ps2_platforms.Platform, []ps2.OutfitId) (map[ps2.OutfitId]map[ps2.CharacterId]ps2.Character, error)
+	OnlineCharacters(context.Context, ps2_platforms.Platform, []ps2.CharacterId) (map[ps2.CharacterId]ps2.Character, error)
 }
 
 type DataLoader struct {
-	repo           SettingsRepo
-	outfitsRepo    OutfitsRepo
-	charactersRepo CharactersRepo
+	repo         SettingsRepo
+	trackingRepo TrackingRepo
 }
 
-func New(repo SettingsRepo, outfitsRepo OutfitsRepo, charactersRepo CharactersRepo) *DataLoader {
+func New(repo SettingsRepo, onlineRepo TrackingRepo) *DataLoader {
 	return &DataLoader{
-		repo:           repo,
-		outfitsRepo:    outfitsRepo,
-		charactersRepo: charactersRepo,
+		repo:         repo,
+		trackingRepo: onlineRepo,
 	}
 }
 
@@ -44,11 +39,11 @@ func (l *DataLoader) Load(
 	if err != nil {
 		return tracking.SettingsData{}, fmt.Errorf("failed to load settings: %w", err)
 	}
-	members, err := l.outfitsRepo.MembersOnline(ctx, platform, settings.Outfits)
+	members, err := l.trackingRepo.OnlineOutfitMembers(ctx, platform, settings.Outfits)
 	if err != nil {
 		return tracking.SettingsData{}, fmt.Errorf("failed to load outfit members: %w", err)
 	}
-	characters, err := l.charactersRepo.Online(ctx, platform, settings.Characters)
+	characters, err := l.trackingRepo.OnlineCharacters(ctx, platform, settings.Characters)
 	if err != nil {
 		return tracking.SettingsData{}, fmt.Errorf("failed to load characters: %w", err)
 	}
