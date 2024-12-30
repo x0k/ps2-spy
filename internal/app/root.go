@@ -11,7 +11,6 @@ import (
 	"github.com/hashicorp/golang-lru/v2/expirable"
 	sql_facility_cache "github.com/x0k/ps2-spy/internal/cache/facility/sql"
 	sql_outfits_cache "github.com/x0k/ps2-spy/internal/cache/outfits/sql"
-	"github.com/x0k/ps2-spy/internal/characters_tracker"
 	census_data_provider "github.com/x0k/ps2-spy/internal/data_providers/census"
 	fisu_data_provider "github.com/x0k/ps2-spy/internal/data_providers/fisu"
 	honu_data_provider "github.com/x0k/ps2-spy/internal/data_providers/honu"
@@ -45,8 +44,6 @@ import (
 	"github.com/x0k/ps2-spy/internal/ps2"
 	ps2_census_characters_repo "github.com/x0k/ps2-spy/internal/ps2/census_characters_repo"
 	ps2_census_outfits_repo "github.com/x0k/ps2-spy/internal/ps2/census_outfits_repo"
-	ps2_characters_tracker_characters_repo "github.com/x0k/ps2-spy/internal/ps2/characters_tracker_characters_repo"
-	ps2_characters_tracker_outfits_repo "github.com/x0k/ps2-spy/internal/ps2/characters_tracker_outfits_repo"
 	ps2_outfit_members_synchronizer "github.com/x0k/ps2-spy/internal/ps2/outfit_members_synchronizer"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 	ps2_storage_outfits_repo "github.com/x0k/ps2-spy/internal/ps2/storage_outfits_repo"
@@ -143,8 +140,6 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		store,
 	)
 
-	characterTrackerSubsMangers := make(map[ps2_platforms.Platform]pubsub.SubscriptionsManager[characters_tracker.EventType], len(ps2_platforms.Platforms))
-	charactersTrackers := make(map[ps2_platforms.Platform]*characters_tracker.CharactersTracker, len(ps2_platforms.Platforms))
 	worldTrackerSubsMangers := make(map[ps2_platforms.Platform]pubsub.SubscriptionsManager[worlds_tracker.EventType], len(ps2_platforms.Platforms))
 	worldTrackers := make(map[ps2_platforms.Platform]*worlds_tracker.WorldsTracker, len(ps2_platforms.Platforms))
 	trackingManagers := make(map[ps2_platforms.Platform]*tracking.Manager, len(ps2_platforms.Platforms))
@@ -158,13 +153,10 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		log.With(sl.Component("census_characters_repo")),
 		censusClient,
 	)
-	charactersTrackerCharactersRepo := ps2_characters_tracker_characters_repo.New(charactersTrackers)
-
 	censusOutfitsRepo := ps2_census_outfits_repo.New(
 		log.With(sl.Component("census_outfits_repo")),
 		censusClient,
 	)
-	charactersTrackerOutfitsRepo := ps2_characters_tracker_outfits_repo.New(charactersTrackers)
 
 	storageOutfitsRepo := ps2_storage_outfits_repo.New(store)
 	ps2PubSub := pubsub.New[ps2.EventType]()
@@ -262,32 +254,6 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			),
 		)
 		characterLoaders[platform] = cachedBatchedCharactersLoader
-
-		ps := pubsub.New[characters_tracker.EventType]()
-		charactersTrackerPublisher := metrics.InstrumentPlatformPublisher(
-			mt,
-			metrics.CharactersTrackerPlatformPublisher,
-			platform,
-			ps,
-		)
-		characterTrackerSubsMangers[platform] = ps
-
-		charactersTracker := characters_tracker.New(
-			pl.With(sl.Component("characters_tracker")),
-			platform,
-			ps2.PlatformWorldIds[platform],
-			cachedBatchedCharactersLoader,
-			charactersTrackerPublisher,
-			mt,
-		)
-		m.AppendR(
-			fmt.Sprintf("%s.characters_tracker", platform),
-			func(ctx context.Context) error {
-				charactersTracker.Start(ctx)
-				return nil
-			},
-		)
-		charactersTrackers[platform] = charactersTracker
 
 		worldsTrackerPubSub := pubsub.New[worlds_tracker.EventType]()
 

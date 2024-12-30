@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/x0k/ps2-spy/internal/characters_tracker"
 	census_data_provider "github.com/x0k/ps2-spy/internal/data_providers/census"
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
@@ -12,6 +11,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/module"
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
+	ps2_platforms_characters_tracker "github.com/x0k/ps2-spy/internal/ps2/platforms_characters_tracker"
 	"github.com/x0k/ps2-spy/internal/stats_tracker"
 	"github.com/x0k/ps2-spy/internal/worlds_tracker"
 )
@@ -21,7 +21,7 @@ func newEventsSubscriptionService(
 	platform ps2_platforms.Platform,
 	ps module.PostStopper,
 	subs pubsub.SubscriptionsManager[events.EventType],
-	charactersTracker *characters_tracker.CharactersTracker,
+	platformsCharactersTracker *ps2_platforms_characters_tracker.Tracker,
 	worldsTracker *worlds_tracker.WorldsTracker,
 	statsTracker *stats_tracker.StatsTracker,
 ) module.Runnable {
