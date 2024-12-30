@@ -8,6 +8,7 @@ import (
 )
 
 type characterTracker struct {
+	id ps2.CharacterId
 	// Kills
 	bodyKills      uint
 	headShotsKills uint
@@ -20,6 +21,12 @@ type characterTracker struct {
 	LoadoutsDistribution [ps2_loadout.LoadoutTypeCount]time.Duration
 	lastLoadoutType      ps2_loadout.LoadoutType
 	lastLoadoutUpdate    time.Time
+}
+
+func newCharacterTracker(id ps2.CharacterId) *characterTracker {
+	return &characterTracker{
+		id: id,
+	}
 }
 
 func (c *characterTracker) updateLoadout(loadout ps2_loadout.LoadoutType) {
@@ -37,12 +44,12 @@ func (c *characterTracker) updateLoadout(loadout ps2_loadout.LoadoutType) {
 	c.lastLoadoutType = loadout
 }
 
-func (c *characterTracker) toStats(stoppedAt time.Time, character ps2.Character) CharacterStats {
+func (c *characterTracker) toStats(char ps2.Character, stoppedAt time.Time) CharacterStats {
 	if !c.lastLoadoutUpdate.IsZero() {
 		c.LoadoutsDistribution[c.lastLoadoutType] += stoppedAt.Sub(c.lastLoadoutUpdate)
 	}
 	return CharacterStats{
-		Character:              character,
+		Character:              char,
 		BodyKills:              c.bodyKills,
 		HeadShotsKills:         c.headShotsKills,
 		TeamKills:              c.teamKills,

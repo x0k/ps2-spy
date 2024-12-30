@@ -8,14 +8,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/x0k/ps2-spy/internal/lib/loader"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	ps2_factions "github.com/x0k/ps2-spy/internal/ps2/factions"
 	ps2_loadout "github.com/x0k/ps2-spy/internal/ps2/loadout"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
 
-type CharactersLoader = loader.Multi[ps2.CharacterId, ps2.Character]
+type CharactersLoader = func(
+	context.Context, ps2_platforms.Platform, []ps2.CharacterId,
+) (map[ps2.CharacterId]ps2.Character, error)
 
 type platformTracker struct {
 	platform         ps2_platforms.Platform
@@ -38,7 +39,7 @@ func newPlatformTracker(
 func (c *platformTracker) characterTracker(characterId ps2.CharacterId) *characterTracker {
 	character, ok := c.characters[characterId]
 	if !ok {
-		character = &characterTracker{}
+		character = newCharacterTracker(characterId)
 		c.characters[characterId] = character
 	}
 	return character
@@ -60,11 +61,13 @@ func (c *platformTracker) toStats(
 	ctx context.Context,
 	stoppedAt time.Time,
 ) (PlatformStats, error) {
-	characters, err := c.charactersLoader(ctx, slices.Collect(maps.Keys(c.characters)))
+	characters, err := c.charactersLoader(
+		ctx, c.platform, slices.Collect(maps.Keys(c.characters)),
+	)
 	if len(characters) == 0 && err != nil {
 		return PlatformStats{}, fmt.Errorf("failed to get any character: %w", err)
 	}
-	chars := make([]CharacterStats, 0, len(c.characters))
+	stats := make([]CharacterStats, 0, len(c.characters))
 	for characterId, tracker := range c.characters {
 		char, ok := characters[characterId]
 		if !ok {
@@ -78,13 +81,14 @@ func (c *platformTracker) toStats(
 				Platform:  c.platform,
 			}
 		}
-		chars = append(chars, tracker.toStats(stoppedAt, char))
+		stats = append(stats, tracker.toStats(char, stoppedAt))
 	}
-	slices.SortFunc(chars, func(a, b CharacterStats) int {
+	slices.SortFunc(stats, func(a, b CharacterStats) int {
 		return int(b.BodyKills+b.HeadShotsKills) - int(a.BodyKills+a.HeadShotsKills)
 	})
 	return PlatformStats{
-		Characters: chars,
+		Platform:   c.platform,
+		Characters: stats,
 	}, nil
 }
 

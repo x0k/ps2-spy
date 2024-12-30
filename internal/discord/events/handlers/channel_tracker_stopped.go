@@ -26,15 +26,14 @@ func NewChannelTrackerStopped(
 		}
 		var errs []error
 		channels := []discord.Channel{e.Channel}
-		for platform, stats := range platforms {
+		for _, stats := range platforms {
 			if err := sendChunkableMessage(
 				session,
 				channels,
 				messages.ChannelTrackerStopped(
-					platform,
+					stats,
 					e.Event.StartedAt,
 					e.Event.StoppedAt,
-					stats,
 				),
 			); err != nil {
 				errs = append(errs, err)
