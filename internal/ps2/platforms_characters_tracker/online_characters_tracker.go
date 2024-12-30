@@ -1,4 +1,4 @@
-package characters_tracker
+package ps2_platforms_characters_tracker
 
 import (
 	"maps"

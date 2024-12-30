@@ -1,4 +1,4 @@
-package characters_tracker
+package ps2_platforms_characters_tracker
 
 import (
 	"github.com/x0k/ps2-spy/internal/ps2"
