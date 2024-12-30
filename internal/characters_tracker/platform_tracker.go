@@ -1,4 +1,4 @@
-package ps2_platforms_characters_tracker
+package characters_tracker
 
 import (
 	"context"
@@ -30,7 +30,7 @@ type CharacterLoader = func(
 	context.Context, ps2_platforms.Platform, ps2.CharacterId,
 ) (ps2.Character, error)
 
-type charactersTracker struct {
+type platformTracker struct {
 	wg                      sync.WaitGroup
 	log                     *logger.Logger
 	platform                ps2_platforms.Platform
@@ -41,7 +41,7 @@ type charactersTracker struct {
 	inactivityCheckInterval time.Duration
 	inactiveTimeout         time.Duration
 	characterLoader         CharacterLoader
-	publisher               pubsub.Publisher[ps2.Event]
+	publisher               pubsub.Publisher[Event]
 	mt                      *metrics.Metrics
 }
 
@@ -50,14 +50,14 @@ func newCharactersTracker(
 	platform ps2_platforms.Platform,
 	worldIds []ps2.WorldId,
 	characterLoader CharacterLoader,
-	publisher pubsub.Publisher[ps2.Event],
+	publisher pubsub.Publisher[Event],
 	mt *metrics.Metrics,
-) *charactersTracker {
+) *platformTracker {
 	trackers := make(map[ps2.WorldId]worldPopulationTracker, len(ps2.WorldNames))
 	for _, worldId := range worldIds {
 		trackers[worldId] = newWorldPopulationTracker()
 	}
-	return &charactersTracker{
+	return &platformTracker{
 		log:                     log,
 		platform:                platform,
 		worldPopulationTrackers: trackers,
@@ -71,7 +71,7 @@ func newCharactersTracker(
 	}
 }
 
-func (p *charactersTracker) handleInactive(ctx context.Context, now time.Time) []player {
+func (p *platformTracker) handleInactive(ctx context.Context, now time.Time) []player {
 	removedPlayers := make([]player, 0)
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
@@ -102,7 +102,7 @@ func (p *charactersTracker) handleInactive(ctx context.Context, now time.Time) [
 	return removedPlayers
 }
 
-func (p *charactersTracker) Start(ctx context.Context) {
+func (p *platformTracker) Start(ctx context.Context) {
 	ticker := time.NewTicker(p.inactivityCheckInterval)
 	defer ticker.Stop()
 	for {
@@ -119,7 +119,7 @@ func (p *charactersTracker) Start(ctx context.Context) {
 	}
 }
 
-func (p *charactersTracker) HandleLogin(ctx context.Context, event events.PlayerLogin) {
+func (p *platformTracker) HandleLogin(ctx context.Context, event events.PlayerLogin) {
 	p.wg.Add(1)
 	go func() {
 		defer p.wg.Done()
@@ -130,7 +130,7 @@ func (p *charactersTracker) HandleLogin(ctx context.Context, event events.Player
 	}()
 }
 
-func (p *charactersTracker) HandleLogout(ctx context.Context, event events.PlayerLogout) {
+func (p *platformTracker) HandleLogout(ctx context.Context, event events.PlayerLogout) {
 	worldId := ps2.WorldId(event.WorldID)
 	charId := ps2.CharacterId(event.CharacterID)
 	if p.handleLogout(ctx, charId, worldId) {
@@ -144,7 +144,7 @@ func (p *charactersTracker) HandleLogout(ctx context.Context, event events.Playe
 	}
 }
 
-func (p *charactersTracker) HandleWorldZoneAction(ctx context.Context, worldId, zoneId, charId string) {
+func (p *platformTracker) HandleWorldZoneAction(ctx context.Context, worldId, zoneId, charId string) {
 	cId := ps2.CharacterId(charId)
 	if cId == ps2.RestrictedAreaCharacterId {
 		return
@@ -170,7 +170,7 @@ func (p *charactersTracker) HandleWorldZoneAction(ctx context.Context, worldId, 
 	}
 }
 
-func (p *charactersTracker) OutfitMembersOnline(
+func (p *platformTracker) OutfitMembersOnline(
 	outfitIds []ps2.OutfitId,
 ) map[ps2.OutfitId]map[ps2.CharacterId]ps2.Character {
 	p.mutex.RLock()
@@ -178,7 +178,7 @@ func (p *charactersTracker) OutfitMembersOnline(
 	return p.onlineCharactersTracker.OutfitMembersOnline(outfitIds)
 }
 
-func (p *charactersTracker) CharactersOnline(
+func (p *platformTracker) CharactersOnline(
 	characterIds []ps2.CharacterId,
 ) map[ps2.CharacterId]ps2.Character {
 	p.mutex.RLock()
@@ -186,7 +186,7 @@ func (p *charactersTracker) CharactersOnline(
 	return p.onlineCharactersTracker.CharactersOnline(characterIds)
 }
 
-func (p *charactersTracker) WorldsPopulation() ps2.WorldsPopulation {
+func (p *platformTracker) WorldsPopulation() ps2.WorldsPopulation {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
 	total := 0
@@ -219,7 +219,7 @@ func (p *charactersTracker) WorldsPopulation() ps2.WorldsPopulation {
 	}
 }
 
-func (p *charactersTracker) DetailedWorldPopulation(worldId ps2.WorldId) (ps2.DetailedWorldPopulation, error) {
+func (p *platformTracker) DetailedWorldPopulation(worldId ps2.WorldId) (ps2.DetailedWorldPopulation, error) {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
 	tracker, ok := p.worldPopulationTrackers[worldId]
@@ -260,7 +260,7 @@ func (p *charactersTracker) DetailedWorldPopulation(worldId ps2.WorldId) (ps2.De
 	}, nil
 }
 
-func (p *charactersTracker) handleLogin(ctx context.Context, charId ps2.CharacterId) (ps2.Character, bool) {
+func (p *platformTracker) handleLogin(ctx context.Context, charId ps2.CharacterId) (ps2.Character, bool) {
 	char, err := p.characterLoader(ctx, p.platform, charId)
 	if err != nil {
 		p.log.Debug(
@@ -282,7 +282,7 @@ func (p *charactersTracker) handleLogin(ctx context.Context, charId ps2.Characte
 	return char, p.onlineCharactersTracker.HandleLogin(char)
 }
 
-func (p *charactersTracker) handleLogout(ctx context.Context, charId ps2.CharacterId, worldId ps2.WorldId) bool {
+func (p *platformTracker) handleLogout(ctx context.Context, charId ps2.CharacterId, worldId ps2.WorldId) bool {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 	p.activePlayers.Remove(player{charId, worldId})
@@ -294,7 +294,7 @@ func (p *charactersTracker) handleLogout(ctx context.Context, charId ps2.Charact
 	return p.onlineCharactersTracker.HandleInactive(charId)
 }
 
-func (p *charactersTracker) publishPlayerLogin(
+func (p *platformTracker) publishPlayerLogin(
 	event events.PlayerLogin,
 	char ps2.Character,
 ) {
@@ -305,24 +305,24 @@ func (p *charactersTracker) publishPlayerLogin(
 	} else {
 		t = time.Now()
 	}
-	p.publisher.Publish(ps2.PlayerLogin{
+	p.publisher.Publish(PlayerLogin{
 		Time:      t,
 		Platform:  p.platform,
 		Character: char,
 	})
 }
 
-func (p *charactersTracker) publishPlayerFakeLogin(char ps2.Character) {
+func (p *platformTracker) publishPlayerFakeLogin(char ps2.Character) {
 	now := time.Now()
-	p.publisher.Publish(ps2.PlayerFakeLogin{
+	p.publisher.Publish(PlayerFakeLogin{
 		Time:      now,
 		Platform:  p.platform,
 		Character: char,
 	})
 }
 
-func (p *charactersTracker) publishPlayerLogout(t time.Time, pl player) {
-	p.publisher.Publish(ps2.PlayerLogout{
+func (p *platformTracker) publishPlayerLogout(t time.Time, pl player) {
+	p.publisher.Publish(PlayerLogout{
 		Time:        t,
 		Platform:    p.platform,
 		CharacterId: pl.characterId,

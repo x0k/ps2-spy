@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/x0k/ps2-spy/internal/characters_tracker"
 	"github.com/x0k/ps2-spy/internal/discord"
 	discord_commands "github.com/x0k/ps2-spy/internal/discord/commands"
 	discord_events "github.com/x0k/ps2-spy/internal/discord/events"
@@ -36,6 +37,7 @@ func New(
 	storageSubs pubsub.SubscriptionsManager[storage.EventType],
 	ps2Subs pubsub.SubscriptionsManager[ps2.EventType],
 	trackingSubs pubsub.SubscriptionsManager[tracking.EventType],
+	charactersTrackerSubs pubsub.SubscriptionsManager[characters_tracker.EventType],
 	worldTrackerSubsMangers map[ps2_platforms.Platform]pubsub.SubscriptionsManager[worlds_tracker.EventType],
 	characterLoaders map[ps2_platforms.Platform]loader.Keyed[ps2.CharacterId, ps2.Character],
 	outfitLoaders map[ps2_platforms.Platform]loader.Keyed[ps2.OutfitId, ps2.Outfit],
@@ -148,9 +150,9 @@ func New(
 			fmt.Sprintf("discord.%s.events_subscription", platform),
 			platformEventsPublisher.Start,
 		)
-		playerLogin := ps2.Subscribe[ps2.PlayerLogin](m, ps2Subs)
-		playerFakeLogin := ps2.Subscribe[ps2.PlayerFakeLogin](m, ps2Subs)
-		playerLogout := ps2.Subscribe[ps2.PlayerLogout](m, ps2Subs)
+		playerLogin := characters_tracker.Subscribe[characters_tracker.PlayerLogin](m, charactersTrackerSubs)
+		playerFakeLogin := characters_tracker.Subscribe[characters_tracker.PlayerFakeLogin](m, charactersTrackerSubs)
+		playerLogout := characters_tracker.Subscribe[characters_tracker.PlayerLogout](m, charactersTrackerSubs)
 		facilityControl := worlds_tracker.Subscribe[worlds_tracker.FacilityControl](m, worldTrackerSubsMangers[platform])
 		facilityLoss := worlds_tracker.Subscribe[worlds_tracker.FacilityLoss](m, worldTrackerSubsMangers[platform])
 		outfitMembersUpdate := ps2.Subscribe[ps2.OutfitMembersUpdate](m, ps2Subs)
