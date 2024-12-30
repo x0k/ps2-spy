@@ -62,6 +62,7 @@ import (
 	tracking_settings_updater "github.com/x0k/ps2-spy/internal/tracking/settings_updater"
 	tracking_settings_view_loader "github.com/x0k/ps2-spy/internal/tracking/settings_view_loader"
 	tracking_storage_settings_repo "github.com/x0k/ps2-spy/internal/tracking/storage_settings_repo"
+	tracking_storage_tracking_repo "github.com/x0k/ps2-spy/internal/tracking/storage_tracking_repo"
 	"github.com/x0k/ps2-spy/internal/worlds_tracker"
 
 	// migration tools
@@ -176,11 +177,15 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	)
 	m.AppendVR("outfit_members_synchronizer", outfitMembersSynchronizer.Start)
 
+	storageTrackingRepo := tracking_storage_tracking_repo.New(store)
+
 	statsTrackerPubSub := pubsub.New[stats_tracker.EventType]()
 	storageStatsTrackerTasksRepo := stats_tracker_storage_tasks_repo.New(store)
 	statsTracker := stats_tracker.New(
 		log.With(sl.Component("stats_tracker")),
 		statsTrackerPubSub,
+		storageStatsTrackerTasksRepo,
+		storageTrackingRepo,
 		func(ctx context.Context, platform ps2_platforms.Platform, charId ps2.CharacterId) ([]discord.ChannelId, error) {
 			manager := trackingManagers[platform]
 			channels, err := manager.ChannelIdsForCharacter(ctx, charId)
@@ -193,8 +198,6 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			}
 			return channelIds, nil
 		},
-		store.ChannelTrackablePlatforms,
-		storageStatsTrackerTasksRepo.ChannelIdsWithActiveTasks,
 		charactersLoaders,
 		cfg.StatsTracker.MaxTrackingDuration,
 	)

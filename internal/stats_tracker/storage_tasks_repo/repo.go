@@ -45,7 +45,7 @@ func (r *Repository) ByChannelId(
 	return tasks, nil
 }
 
-func (r *Repository) ChannelIdsWithActiveTasks(ctx context.Context, now time.Time) ([]discord.ChannelId, error) {
+func (r *Repository) ChannelsWithActiveTasks(ctx context.Context, now time.Time) ([]discord.ChannelId, error) {
 	utc := now.UTC()
 	utcTime := utc.Hour()*int(time.Hour) + utc.Minute()*int(time.Minute)
 	data, err := r.storage.Queries().ListActiveStatsTrackerTasks(ctx, db.ListActiveStatsTrackerTasksParams{
