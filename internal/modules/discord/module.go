@@ -33,7 +33,7 @@ func New(
 	removeCommands bool,
 	messages *discord_messages.Messages,
 	commands *discord_commands.Commands,
-	trackingManagers map[ps2_platforms.Platform]*tracking.Manager,
+	trackingManager *tracking.Manager,
 	storageSubs pubsub.SubscriptionsManager[storage.EventType],
 	ps2Subs pubsub.SubscriptionsManager[ps2.EventType],
 	trackingSubs pubsub.SubscriptionsManager[tracking.EventType],
@@ -139,11 +139,11 @@ func New(
 		platformEventsPublisher := discord_events.NewPlatformEventsPublisher(
 			log.With(sl.Component("platform_events_publisher")),
 			platformEventsPubSub,
-			func(ctx context.Context, oi ps2.CharacterId) ([]discord.Channel, error) {
-				return trackingManagers[platform].ChannelIdsForCharacter(ctx, oi)
+			func(ctx context.Context, charId ps2.CharacterId) ([]discord.Channel, error) {
+				return trackingManager.CharacterChannels(ctx, platform, charId)
 			},
-			func(ctx context.Context, oi ps2.OutfitId) ([]discord.Channel, error) {
-				return trackingManagers[platform].ChannelIdsForOutfit(ctx, oi)
+			func(ctx context.Context, outfitId ps2.OutfitId) ([]discord.Channel, error) {
+				return trackingManager.OutfitChannels(ctx, platform, outfitId)
 			},
 		)
 		m.AppendVR(
