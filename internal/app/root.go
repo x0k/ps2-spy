@@ -143,7 +143,6 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 
 	worldTrackerSubsMangers := make(map[ps2_platforms.Platform]pubsub.SubscriptionsManager[worlds_tracker.EventType], len(ps2_platforms.Platforms))
 	worldTrackers := make(map[ps2_platforms.Platform]*worlds_tracker.WorldsTracker, len(ps2_platforms.Platforms))
-	trackingManagers := make(map[ps2_platforms.Platform]*tracking.Manager, len(ps2_platforms.Platforms))
 	charactersLoaders := make(map[ps2_platforms.Platform]loader.Multi[ps2.CharacterId, ps2.Character], len(ps2_platforms.Platforms))
 	characterLoaders := make(map[ps2_platforms.Platform]loader.Keyed[ps2.CharacterId, ps2.Character], len(ps2_platforms.Platforms))
 	outfitsLoaders := make(map[ps2_platforms.Platform]loader.Multi[ps2.OutfitId, ps2.Outfit], len(ps2_platforms.Platforms))
@@ -172,6 +171,21 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 
 	storageTrackingRepo := tracking_storage_tracking_repo.New(store)
 
+	trackingManager := tracking.New(
+		log.With(sl.Component("tracking_manager")),
+		func(ctx context.Context, platform ps2_platforms.Platform, characterId ps2.CharacterId) (ps2.Character, error) {
+			return characterLoaders[platform](ctx, characterId)
+		},
+		func(ctx context.Context, platform ps2_platforms.Platform, c ps2.Character) ([]discord.Channel, error) {
+			return store.TrackingChannelsForCharacter(ctx, platform, c.Id, c.OutfitId)
+		},
+		store.AllTrackableCharacterIdsWithDuplicationsForPlatform,
+		store.OutfitMembers,
+		store.TrackingChannelsForOutfit,
+		store.AllTrackableOutfitIdsWithDuplicationsForPlatform,
+	)
+	m.AppendVR("tracking_manager", trackingManager.Start)
+
 	statsTrackerPubSub := pubsub.New[stats_tracker.EventType]()
 	storageTasksRepo := stats_tracker_storage_tasks_repo.New(store)
 	statsTracker := stats_tracker.New(
@@ -180,8 +194,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		storageTrackingRepo.PlatformsByChannelId,
 		storageTasksRepo.ChannelsWithActiveTasks,
 		func(ctx context.Context, platform ps2_platforms.Platform, charId ps2.CharacterId) ([]discord.ChannelId, error) {
-			manager := trackingManagers[platform]
-			channels, err := manager.ChannelIdsForCharacter(ctx, charId)
+			channels, err := trackingManager.CharacterChannels(ctx, platform, charId)
 			if err != nil {
 				return nil, err
 			}
@@ -209,6 +222,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		charactersTrackerPubSub,
 		mt,
 	)
+	m.AppendVR("characters_tracker", charactersTracker.Start)
 
 	for _, platform := range ps2_platforms.Platforms {
 		pl := log.With(slog.String("platform", string(platform)))
@@ -298,28 +312,6 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			statsTracker,
 		))
 
-		trackingManager := tracking.New(
-			pl.With(sl.Component("tracking_manager")),
-			cachedBatchedCharactersLoader,
-			func(ctx context.Context, c ps2.Character) ([]discord.Channel, error) {
-				return store.TrackingChannelsForCharacter(ctx, platform, c.Id, c.OutfitId)
-			},
-			func(ctx context.Context) ([]ps2.CharacterId, error) {
-				return store.AllTrackableCharacterIdsWithDuplicationsForPlatform(ctx, platform)
-			},
-			func(ctx context.Context, oi ps2.OutfitId) ([]ps2.CharacterId, error) {
-				return store.OutfitMembers(ctx, platform, oi)
-			},
-			func(ctx context.Context, oi ps2.OutfitId) ([]discord.Channel, error) {
-				return store.TrackingChannelsForOutfit(ctx, platform, oi)
-			},
-			func(ctx context.Context) ([]ps2.OutfitId, error) {
-				return store.AllTrackableOutfitIdsWithDuplicationsForPlatform(ctx, platform)
-			},
-		)
-		m.AppendVR(fmt.Sprintf("%s.tracking_manager", platform), trackingManager.Start)
-		trackingManagers[platform] = trackingManager
-
 		outfitsLoader := loader.WithMultiCache(
 			log.Logger.With(sl.Component("outfits_loader_cache")),
 			func(ctx context.Context, k []ps2.OutfitId) (map[ps2.OutfitId]ps2.Outfit, error) {
@@ -358,11 +350,9 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			case <-ctx.Done():
 				return
 			case e := <-outfitMemberSaved:
-				tm := trackingManagers[e.Platform]
-				tm.TrackOutfitMembers(e.OutfitId, e.CharacterIds)
+				trackingManager.TrackOutfitMembers(e.OutfitId, e.Platform, e.CharacterIds)
 			case e := <-outfitMemberDeleted:
-				tm := trackingManagers[e.Platform]
-				tm.UntrackOutfitMembers(e.OutfitId, e.CharacterIds)
+				trackingManager.UntrackOutfitMembers(e.OutfitId, e.Platform, e.CharacterIds)
 			}
 		}
 	})
@@ -435,8 +425,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			case <-ctx.Done():
 				return
 			case e := <-settingsUpdate:
-				tm := trackingManagers[e.Platform]
-				tm.HandleTrackingSettingsUpdate(ctx, e)
+				trackingManager.HandleTrackingSettingsUpdate(ctx, e.Platform, e)
 				for _, oId := range e.Diff.Outfits.ToAdd {
 					outfitMembersSynchronizer.SyncOutfit(ctx, e.Platform, oId)
 				}
@@ -522,7 +511,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		cfg.Discord.RemoveCommands,
 		discordMessages,
 		discordCommands,
-		trackingManagers,
+		trackingManager,
 		storePubSub,
 		ps2PubSub,
 		trackingPubSub,
