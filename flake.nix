@@ -40,7 +40,7 @@
             pkgs.delve
           ];
           shellHook = ''
-            source <(COMPLETE=bash mk)
+            source <(COMPLETE=''${SHELL##*/} mk)
           '';
           # CGO_CFLAGS="-U_FORTIFY_SOURCE -Wno-error";
           # CGO_CPPFLAGS="-U_FORTIFY_SOURCE -Wno-error";
