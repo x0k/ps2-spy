@@ -1,4 +1,6 @@
-#!/bin/bash -e
+#!/usr/bin/env bash
+
+set -ex
 
 env:
   if [ -f .env.local ]
