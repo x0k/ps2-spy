@@ -49,6 +49,7 @@ func newStreamingClientService(
 			if err := client.Connect(ctx); err != nil {
 				return err
 			}
+			defer client.Close()
 			return client.Subscribe(ctx, subscriptionSettings)
 		})(
 			ctx,
