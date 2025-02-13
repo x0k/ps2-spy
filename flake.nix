@@ -1,20 +1,23 @@
 {
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-24.11";
+    nixpkgsUnstable.url = "github:nixos/nixpkgs?ref=nixos-unstable";
     mk.url = "github:x0k/mk";
   };
   outputs =
     {
       self,
       nixpkgs,
+      nixpkgsUnstable,
       mk,
     }:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs { inherit system; };
+      unstablePkgs = import nixpkgsUnstable { inherit system; };
       gotext = pkgs.buildGoModule rec {
         pname = "gotext";
-        version = "0.21.0";
+        version = "0.22.0";
         src = pkgs.fetchFromGitHub {
           owner = "golang";
           repo = "text";
@@ -30,7 +33,7 @@
         default = pkgs.mkShell {
           buildInputs = [
             mk.packages.${system}.default
-            pkgs.go
+            unstablePkgs.go_1_24
             pkgs.air
             pkgs.go-migrate
             pkgs.golangci-lint
