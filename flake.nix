@@ -1,30 +1,27 @@
 {
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-24.11";
-    nixpkgsUnstable.url = "github:nixos/nixpkgs?ref=nixos-unstable";
+    nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-25.11";
     mk.url = "github:x0k/mk";
   };
   outputs =
     {
       self,
       nixpkgs,
-      nixpkgsUnstable,
       mk,
     }:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs { inherit system; };
-      unstablePkgs = import nixpkgsUnstable { inherit system; };
-      gotext = pkgs.buildGoModule rec {
+      gotext = pkgs.buildGoModule.override { go = pkgs.go_1_26; } rec {
         pname = "gotext";
-        version = "0.22.0";
+        version = "0.36.0";
         src = pkgs.fetchFromGitHub {
           owner = "golang";
           repo = "text";
           rev = "v${version}";
-          sha256 = "sha256-m8LVnzj+VeclJflfgO7UcOSYSS052RvRgyjTXCgK8As=";
+          sha256 = "sha256-zY65aBv/kPQuznb9JiuMLCJqdtipcJirDB4UglhVE8I=";
         };
-        vendorHash = "sha256-e5DoFMRu3uWQeeWAVd18/nLXOEAfXBRmrH/laWf7C/Y=";
+        vendorHash = "sha256-EnDkL2V2p8Jdn8pQ8GBI5y3qq0maSTlmmBBdCOlhVOY=";
         subPackages = [ "cmd/gotext" ];
       };
     in
@@ -33,7 +30,7 @@
         default = pkgs.mkShell {
           buildInputs = [
             mk.packages.${system}.default
-            unstablePkgs.go_1_24
+            pkgs.go_1_26
             pkgs.air
             pkgs.go-migrate
             pkgs.golangci-lint

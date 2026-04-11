@@ -37,18 +37,18 @@ func renderCharactersStatsTable(
 	initialIndex int,
 ) {
 	t := tablewriter.NewWriter(sb)
-	t.SetHeader([]string{
+	t.Header(
 		"№",
 		p.Sprintf("Faction"),
 		p.Sprintf("Outfit"),
 		p.Sprintf("Character"),
 		p.Sprintf("Kills"),
-		p.Sprintf("HS") + "%",
+		p.Sprintf("HS")+"%",
 		p.Sprintf("KD"),
 		p.Sprintf("Loadout"),
 		p.Sprintf("Duration"),
-	})
-	t.SetBorder(false)
+	)
+	// t.SetBorder(false)
 	for i, char := range characters {
 		allKills := char.BodyKills + char.HeadShotsKills
 		headShotsRatio := float64(0)
