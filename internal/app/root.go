@@ -17,6 +17,7 @@ import (
 	honu_data_provider "github.com/x0k/ps2-spy/internal/data_providers/honu"
 	ps2alerts_data_provider "github.com/x0k/ps2-spy/internal/data_providers/ps2alerts"
 	ps2live_data_provider "github.com/x0k/ps2-spy/internal/data_providers/ps2live"
+	ps2spy_data_provider "github.com/x0k/ps2-spy/internal/data_providers/ps2spy"
 	saerro_data_provider "github.com/x0k/ps2-spy/internal/data_providers/saerro"
 	sanctuary_data_provider "github.com/x0k/ps2-spy/internal/data_providers/sanctuary"
 	voidwell_data_provider "github.com/x0k/ps2-spy/internal/data_providers/voidwell"
@@ -110,35 +111,6 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 
 	censusClient := census2.NewClient("https://census.daybreakgames.com", cfg.Census.ServiceId, httpClient)
 
-	censusDataProvider, err := census_data_provider.New(
-		log.With(sl.Component("census_data_provider")),
-		censusClient,
-	)
-	if err != nil {
-		return nil, err
-	}
-	honuDataProvider := honu_data_provider.New(
-		honu.NewClient("https://wt.honu.pw", httpClient),
-	)
-	ps2alertsDataProvider := ps2alerts_data_provider.New(
-		ps2alerts.NewClient("https://api.ps2alerts.com", httpClient),
-	)
-	voidwellDataProvider := voidwell_data_provider.New(
-		voidwell.NewClient("https://api.voidwell.com", httpClient),
-	)
-	fisuDataProvider := fisu_data_provider.New(
-		fisu.NewClient("https://ps2.fisu.pw", httpClient),
-	)
-	ps2LiveDataProvider := ps2live_data_provider.New(
-		population.NewClient("https://agg.ps2.live", httpClient),
-	)
-	sanctuaryDataProvider := sanctuary_data_provider.New(
-		census2.NewClient("https://census.lithafalcon.cc", cfg.Census.ServiceId, httpClient),
-	)
-	saerroDataProvider := saerro_data_provider.New(
-		saerro.NewClient("https://saerro.ps2.live", httpClient),
-	)
-
 	facilityCache := sql_facility_cache.New(
 		log.With(sl.Component("facility_cache")),
 		store,
@@ -226,6 +198,41 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		mt,
 	)
 	m.AppendVR("characters_tracker", charactersTracker.Start)
+
+	ps2SpyDataProvider := ps2spy_data_provider.New(
+		log,
+		cfg.AppName,
+		charactersTracker,
+		worldTrackers,
+	)
+	censusDataProvider, err := census_data_provider.New(
+		log.With(sl.Component("census_data_provider")),
+		censusClient,
+	)
+	if err != nil {
+		return nil, err
+	}
+	honuDataProvider := honu_data_provider.New(
+		honu.NewClient("https://wt.honu.pw", httpClient),
+	)
+	ps2alertsDataProvider := ps2alerts_data_provider.New(
+		ps2alerts.NewClient("https://api.ps2alerts.com", httpClient),
+	)
+	voidwellDataProvider := voidwell_data_provider.New(
+		voidwell.NewClient("https://api.voidwell.com", httpClient),
+	)
+	fisuDataProvider := fisu_data_provider.New(
+		fisu.NewClient("https://ps2.fisu.pw", httpClient),
+	)
+	ps2LiveDataProvider := ps2live_data_provider.New(
+		population.NewClient("https://agg.ps2.live", httpClient),
+	)
+	sanctuaryDataProvider := sanctuary_data_provider.New(
+		census2.NewClient("https://census.lithafalcon.cc", cfg.Census.ServiceId, httpClient),
+	)
+	saerroDataProvider := saerro_data_provider.New(
+		saerro.NewClient("https://saerro.ps2.live", httpClient),
+	)
 
 	for _, platform := range ps2_platforms.Platforms {
 		pl := log.With(slog.String("platform", string(platform)))
@@ -365,24 +372,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	})
 
 	populationLoaders := map[string]loader.Simple[meta.Loaded[ps2.WorldsPopulation]]{
-		"spy": func(ctx context.Context) (meta.Loaded[ps2.WorldsPopulation], error) {
-			total := 0
-			worlds := make([]ps2.WorldPopulation, 0)
-			errs := make([]error, 0, len(ps2_platforms.Platforms))
-			for _, platform := range ps2_platforms.Platforms {
-				population, err := charactersTracker.WorldsPopulation(platform)
-				if err != nil {
-					errs = append(errs, err)
-					continue
-				}
-				total += population.Total
-				worlds = append(worlds, population.Worlds...)
-			}
-			return meta.LoadedNow(cfg.AppName, ps2.WorldsPopulation{
-				Total:  total,
-				Worlds: worlds,
-			}), errors.Join(errs...)
-		},
+		"spy":       ps2SpyDataProvider.Population,
 		"honu":      honuDataProvider.Population,
 		"ps2live":   ps2LiveDataProvider.Population,
 		"saerro":    saerroDataProvider.Population,
@@ -392,35 +382,14 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	}
 
 	worldPopulationLoaders := map[string]loader.Keyed[ps2.WorldId, meta.Loaded[ps2.DetailedWorldPopulation]]{
-		"spy": func(ctx context.Context, worldId ps2.WorldId) (meta.Loaded[ps2.DetailedWorldPopulation], error) {
-			platform, ok := ps2.WorldPlatforms[worldId]
-			if !ok {
-				return meta.Loaded[ps2.DetailedWorldPopulation]{}, fmt.Errorf("unknown world %q", worldId)
-			}
-			population, err := charactersTracker.DetailedWorldPopulation(platform, worldId)
-			if err != nil {
-				return meta.Loaded[ps2.DetailedWorldPopulation]{}, fmt.Errorf("getting population: %w", err)
-			}
-			return meta.LoadedNow(cfg.AppName, population), nil
-		},
+		"spy":      ps2SpyDataProvider.WorldPopulation,
 		"honu":     honuDataProvider.WorldPopulation,
 		"saerro":   saerroDataProvider.WorldPopulation,
 		"voidwell": voidwellDataProvider.WorldPopulation,
 	}
 
 	alertsLoaders := map[string]loader.Simple[meta.Loaded[ps2.Alerts]]{
-		"spy": func(ctx context.Context) (meta.Loaded[ps2.Alerts], error) {
-			alerts := make(ps2.Alerts, 0)
-			for _, platform := range ps2_platforms.Platforms {
-				tracker, ok := worldTrackers[platform]
-				if !ok {
-					log.Warn(ctx, "no alerts tracker for platform", slog.String("platform", string(platform)))
-					continue
-				}
-				alerts = append(alerts, tracker.Alerts()...)
-			}
-			return meta.LoadedNow(cfg.AppName, alerts), nil
-		},
+		"spy":       ps2SpyDataProvider.Alerts,
 		"ps2alerts": ps2alertsDataProvider.Alerts,
 		"honu":      honuDataProvider.Alerts,
 		"census":    censusDataProvider.Alerts,
