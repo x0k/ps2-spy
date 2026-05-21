@@ -10,6 +10,8 @@ import (
 	"github.com/coder/websocket/wsjson"
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/commands"
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/core"
+	"github.com/x0k/ps2-spy/internal/lib/logger"
+	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
 )
 
@@ -27,6 +29,7 @@ var ErrConnectionFailed = fmt.Errorf("failed to connect")
 var ErrDisconnectedByServer = fmt.Errorf("disconnected by server")
 
 type Client struct {
+	log                      *logger.Logger
 	endpoint                 string
 	env                      string
 	serviceId                string
@@ -37,12 +40,14 @@ type Client struct {
 }
 
 func NewClient(
+	log *logger.Logger,
 	endpoint string,
 	env string,
 	serviceId string,
 	publisher pubsub.Publisher[json.RawMessage],
 ) *Client {
 	return &Client{
+		log:               log,
 		endpoint:          endpoint,
 		env:               env,
 		serviceId:         serviceId,
@@ -79,7 +84,9 @@ func (c *Client) Connect(ctx context.Context) error {
 		if c.conn != nil {
 			return
 		}
-		conn.Close(websocket.StatusNormalClosure, "connection failed")
+		if err := conn.Close(websocket.StatusNormalClosure, "connection failed"); err != nil {
+			c.log.Error(ctx, "failed to close websocket connection", sl.Err(err))
+		}
 	}()
 
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, c.connectionTimeout)

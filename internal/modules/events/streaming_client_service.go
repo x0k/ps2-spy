@@ -11,6 +11,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/commands"
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
+	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/lib/module"
 	"github.com/x0k/ps2-spy/internal/lib/retryable"
 	"github.com/x0k/ps2-spy/internal/lib/retryable/perform"
@@ -49,7 +50,11 @@ func newStreamingClientService(
 			if err := client.Connect(ctx); err != nil {
 				return err
 			}
-			defer client.Close()
+			defer func() {
+				if err := client.Close(); err != nil {
+					log.Error(ctx, "failed to close streaming client", sl.Err(err))
+				}
+			}()
 			return client.Subscribe(ctx, subscriptionSettings)
 		})(
 			ctx,

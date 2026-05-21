@@ -64,6 +64,7 @@ func New(
 	)
 
 	streamingClient := streaming.NewClient(
+		log,
 		streamingEndpoint,
 		ps2_platforms.PlatformEnvironment(platform),
 		censusServiceId,
