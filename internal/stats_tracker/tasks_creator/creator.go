@@ -73,7 +73,7 @@ func createTask[R TasksRepoApi](
 	}
 	finalCount := int(count) + len(task.LocalWeekdays)
 	if finalCount > c.maxNumberOfTasksPerChannel {
-		return stats_tracker.ErrMaxTooManyTasksPerChannel{
+		return stats_tracker.ErrTooManyTasksPerChannel{
 			Max: c.maxNumberOfTasksPerChannel,
 			Got: finalCount,
 		}

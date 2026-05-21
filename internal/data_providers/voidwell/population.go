@@ -64,7 +64,7 @@ func (p *DataProvider) WorldPopulation(ctx context.Context, worldId ps2.WorldId)
 					NS:  zoneState.Population.NS,
 				},
 			}
-			world.Total += world.Zones[i].StatPerFactions.All
+			world.Total += world.Zones[i].All
 		}
 		return meta.LoadedNow(p.client.Endpoint(), world), nil
 	}

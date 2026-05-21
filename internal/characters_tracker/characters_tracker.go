@@ -2,6 +2,7 @@ package characters_tracker
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"sync"
 
@@ -16,6 +17,14 @@ import (
 type Tracker struct {
 	wg        sync.WaitGroup
 	platforms map[ps2_platforms.Platform]*platformTracker
+}
+
+type ErrUnknownPlatform struct {
+	Platform ps2_platforms.Platform
+}
+
+func (e ErrUnknownPlatform) Error() string {
+	return fmt.Sprintf("unknown platform %q", e.Platform)
 }
 
 func New(
@@ -54,38 +63,74 @@ func (t *Tracker) Start(ctx context.Context) {
 
 func (t *Tracker) HandleLogin(
 	ctx context.Context, platform ps2_platforms.Platform, event events.PlayerLogin,
-) {
-	t.platforms[platform].HandleLogin(ctx, event)
+) error {
+	tracker, err := t.platformTracker(platform)
+	if err == nil {
+		tracker.HandleLogin(ctx, event)
+	}
+	return err
 }
 
 func (t *Tracker) HandleLogout(
 	ctx context.Context, platform ps2_platforms.Platform, event events.PlayerLogout,
-) {
-	t.platforms[platform].HandleLogout(ctx, event)
+) error {
+	tracker, err := t.platformTracker(platform)
+	if err == nil {
+		tracker.HandleLogout(ctx, event)
+	}
+	return err
 }
 
 func (t *Tracker) HandleWorldZoneAction(
 	ctx context.Context, platform ps2_platforms.Platform, worldId, zoneId, charId string,
-) {
-	t.platforms[platform].HandleWorldZoneAction(ctx, worldId, zoneId, charId)
+) error {
+	tracker, err := t.platformTracker(platform)
+	if err == nil {
+		tracker.HandleWorldZoneAction(ctx, worldId, zoneId, charId)
+	}
+	return err
 }
 
 func (t *Tracker) OnlineOutfitMembers(
 	ctx context.Context, platform ps2_platforms.Platform, outfitIds []ps2.OutfitId,
 ) (map[ps2.OutfitId]map[ps2.CharacterId]ps2.Character, error) {
-	return t.platforms[platform].OutfitMembersOnline(outfitIds), nil
+	tracker, err := t.platformTracker(platform)
+	if err != nil {
+		return nil, err
+	}
+	return tracker.OutfitMembersOnline(outfitIds), nil
 }
 
 func (t *Tracker) OnlineCharacters(
 	ctx context.Context, platform ps2_platforms.Platform, characterIds []ps2.CharacterId,
 ) (map[ps2.CharacterId]ps2.Character, error) {
-	return t.platforms[platform].CharactersOnline(characterIds), nil
+	tracker, err := t.platformTracker(platform)
+	if err != nil {
+		return nil, err
+	}
+	return tracker.CharactersOnline(characterIds), nil
 }
 
-func (t *Tracker) WorldsPopulation(platform ps2_platforms.Platform) ps2.WorldsPopulation {
-	return t.platforms[platform].WorldsPopulation()
+func (t *Tracker) WorldsPopulation(platform ps2_platforms.Platform) (ps2.WorldsPopulation, error) {
+	tracker, err := t.platformTracker(platform)
+	if err != nil {
+		return ps2.WorldsPopulation{}, err
+	}
+	return tracker.WorldsPopulation(), nil
 }
 
 func (t *Tracker) DetailedWorldPopulation(platform ps2_platforms.Platform, worldId ps2.WorldId) (ps2.DetailedWorldPopulation, error) {
-	return t.platforms[platform].DetailedWorldPopulation(worldId)
+	tracker, err := t.platformTracker(platform)
+	if err != nil {
+		return ps2.DetailedWorldPopulation{}, err
+	}
+	return tracker.DetailedWorldPopulation(worldId)
+}
+
+func (t *Tracker) platformTracker(platform ps2_platforms.Platform) (*platformTracker, error) {
+	tracker, ok := t.platforms[platform]
+	if !ok {
+		return nil, ErrUnknownPlatform{Platform: platform}
+	}
+	return tracker, nil
 }

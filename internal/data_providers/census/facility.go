@@ -10,7 +10,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/shared"
 )
 
-func (l *DataProvider) facilityUrl(ns string, facilityId ps2.FacilityId) string {
+func (l *DataProvider) facilityUrl(ns string, facilityId ps2.FacilityId) (string, error) {
 	l.facilityMu.Lock()
 	defer l.facilityMu.Unlock()
 	l.facilityOperand.Set(census2.Str(facilityId))
@@ -19,7 +19,10 @@ func (l *DataProvider) facilityUrl(ns string, facilityId ps2.FacilityId) string 
 }
 
 func (l *DataProvider) Facility(ctx context.Context, ns string, facilityId ps2.FacilityId) (ps2.Facility, error) {
-	url := l.facilityUrl(ns, facilityId)
+	url, err := l.facilityUrl(ns, facilityId)
+	if err != nil {
+		return ps2.Facility{}, err
+	}
 	regions, err := census2_adapters.RetryableExecutePreparedAndDecode[ps2_collections.MapRegionItem](
 		ctx,
 		l.log,

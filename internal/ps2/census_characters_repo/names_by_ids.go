@@ -10,7 +10,7 @@ import (
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
 
-func (l *Repository) characterNamesUrl(ns string, charIds []census2.Str) string {
+func (l *Repository) characterNamesUrl(ns string, charIds []census2.Str) (string, error) {
 	l.characterNamesMu.Lock()
 	defer l.characterNamesMu.Unlock()
 	l.characterNamesQuery.SetNamespace(ns)
@@ -28,7 +28,10 @@ func (l *Repository) CharacterNamesByIds(
 	for i, charId := range characterIds {
 		strCharIds[i] = census2.Str(string(charId))
 	}
-	url := l.characterNamesUrl(ps2_platforms.PlatformNamespace(platform), strCharIds)
+	url, err := l.characterNamesUrl(ps2_platforms.PlatformNamespace(platform), strCharIds)
+	if err != nil {
+		return nil, err
+	}
 	chars, err := census2_adapters.RetryableExecutePreparedAndDecode[ps2_collections.CharacterItem](
 		ctx,
 		l.log,

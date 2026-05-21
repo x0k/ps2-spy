@@ -175,7 +175,12 @@ func (m *Messages) ChannelTrackerStopped(
 			if len(chars) == 0 {
 				sb.WriteString(p.Sprintf("No data collected"))
 			} else {
-				renderCharactersStatsTable(p, &sb, chars, start)
+				if err := renderCharactersStatsTable(p, &sb, chars, start); err != nil {
+					return "", &discord.Error{
+						Msg: p.Sprintf("Failed to render characters stats table"),
+						Err: err,
+					}
+				}
 			}
 			sb.WriteString("```")
 			return sb.String(), nil

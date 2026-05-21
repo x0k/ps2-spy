@@ -8,22 +8,13 @@ func LocationToOffset(loc *time.Location) time.Duration {
 }
 
 func NormalizeDate(weekday time.Weekday, d time.Duration) (time.Weekday, time.Duration) {
-	// TODO: Use modulo arithmetic
-	for d < 0 {
-		if weekday == time.Sunday {
-			weekday = time.Saturday
-		} else {
-			weekday--
-		}
-		d += 24 * time.Hour
+	const (
+		day  = 24 * time.Hour
+		week = 7 * day
+	)
+	normalized := (time.Duration(weekday)*day + d) % week
+	if normalized < 0 {
+		normalized += week
 	}
-	for d >= 24*time.Hour {
-		if weekday == time.Saturday {
-			weekday = time.Sunday
-		} else {
-			weekday++
-		}
-		d -= 24 * time.Hour
-	}
-	return weekday, d
+	return time.Weekday(normalized / day), normalized % day
 }

@@ -33,28 +33,30 @@ The intended end state looks like this:
 - `internal/discord` owns Discord presentation, interaction routing, and Discord-specific form state only.
 - `internal/app/root.go` wires concrete implementations, but no longer contains domain rules.
 
+## Completed Follow-up
+
+- Added focused tests around the new domain boundaries:
+  - `internal/tracking/platform_manager.go`: filter rebuilds, duplicated trackers, outfit member add/remove deltas, and tracking settings updates.
+  - `internal/characters_tracker/platform_tracker.go`: platform-specific login/logout event publication.
+  - `internal/stats_tracker/tasks_creator/creator.go`: timezone conversion, max task count, update semantics, and overlap rejection.
+  - `internal/ps2/outfit_members_synchronizer/outfit_members_synchronizer.go`: diff publication, no-op syncs, sync timestamp behavior, and transaction behavior.
+- Added guard errors for unknown platform lookups in aggregate `tracking.Manager` and `characters_tracker.Tracker` read paths.
+- Fixed no-op outfit member syncs so they still save the synchronized-at timestamp without publishing empty update events.
+- Moved the outfit sync "synchronizing" log after successful trackable outfit loading.
+- Renamed channel lookup helpers that return `[]discord.Channel`, not IDs.
+- Renamed `ErrMaxTooManyTasksPerChannel` to `ErrTooManyTasksPerChannel`.
+- Kept the stats schedule custom ID separator local to `internal/discord/messages` instead of exporting it from core `internal/discord`.
+- Replaced `timex.NormalizeDate` loop normalization with modulo arithmetic.
+- Removed the unused `internal/discord/storage_channels_settings_repo` scaffold.
+
 ## Remaining Work
 
-- Add focused tests around the new domain boundaries:
-  - `internal/tracking/platform_manager.go`: filter rebuilds, duplicated trackers, outfit member add/remove deltas, and tracking settings updates.
-  - `internal/characters_tracker/platform_tracker.go`: fake login, logout, inactive timeout, and platform-specific event publication.
-  - `internal/stats_tracker/tasks_creator/creator.go`: duration limits, max task count, timezone conversion, update semantics, and overlap rejection.
-  - `internal/ps2/outfit_members_synchronizer/outfit_members_synchronizer.go`: diff publication, no-op syncs, sync timestamp behavior, and transaction behavior.
-- Decide whether the aggregate services should validate platform existence before indexing maps. Current methods like `CharacterChannels`, `OutfitChannels`, `OnlineCharacters`, and `OnlineOutfitMembers` index directly into maps.
 - Review goroutine lifecycle semantics in aggregate `Start` methods. `tracking.Manager.Start` and `characters_tracker.Tracker.Start` wait on `ctx.Done()` after launching platform goroutines; this matches service-style usage, but tests should cover cancellation.
 - Review event fan-out in `internal/modules/discord/module.go`. Character tracker events are now published through one shared pubsub and filtered per platform by event payload.
-- Review `OutfitMembersSynchronizer.updateMembers`: it publishes `OutfitMembersUpdate` only when `len(oldMembers) > 0`. Confirm whether first sync should produce an init/update event for Discord.
-- Review `OutfitMembersSynchronizer.syncPlatformOutfits`: it logs the outfit count before checking the load error. Move the log after the error branch if failed loads should not emit "synchronizing".
-- Review naming consistency:
-  - `ChannelIdsForCharacter` and `ChannelIdsForOutfit` return `[]discord.Channel`, not IDs.
-  - `ErrMaxTooManyTasksPerChannel` likely wants a clearer name, such as `ErrTooManyTasksPerChannel`.
-  - `CUSTOM_ID_SEPARATOR` is exported from `internal/discord`; consider whether it belongs in `discord/messages` with the custom ID helpers.
+- Confirm whether first outfit-member syncs should remain silent for Discord. Current behavior preserves the old storage behavior: initial population does not produce `OutfitMembersUpdate`, while later diffs do.
 - Remove or resolve stale TODOs introduced or exposed by the refactor:
-  - `internal/characters_tracker/platform_tracker.go`: timestamp parsing helper comment.
   - `internal/characters_tracker/platform_tracker.go`: zone open state is still inferred from population.
   - `internal/discord/messages/messages.go`: existing "Fix this" TODO.
-  - `internal/lib/timex/timex.go`: modulo arithmetic TODO.
-- Decide whether `internal/discord/storage_channels_settings_repo` is intentionally empty scaffolding. If it is not used soon, remove it or finish the repository methods.
 
 ## Compatibility Checks
 

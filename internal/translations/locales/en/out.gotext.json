@@ -444,18 +444,18 @@
             "fuzzy": true
         },
         {
-            "id": "Platform: {ToUpperstringplatform}, started at: {RenderTimestartedAt}, stopped: {RenderRelativeTimestoppedAt}, duration: {SubstartedAt}\n```",
-            "message": "Platform: {ToUpperstringplatform}, started at: {RenderTimestartedAt}, stopped: {RenderRelativeTimestoppedAt}, duration: {SubstartedAt}\n```",
-            "translation": "Platform: {ToUpperstringplatform}, started at: {RenderTimestartedAt}, stopped: {RenderRelativeTimestoppedAt}, duration: {SubstartedAt}\n```",
+            "id": "Platform: {Platform}, started at: {RenderTimestartedAt}, stopped: {RenderRelativeTimestoppedAt}, duration: {SubstartedAt}\n```",
+            "message": "Platform: {Platform}, started at: {RenderTimestartedAt}, stopped: {RenderRelativeTimestoppedAt}, duration: {SubstartedAt}\n```",
+            "translation": "Platform: {Platform}, started at: {RenderTimestartedAt}, stopped: {RenderRelativeTimestoppedAt}, duration: {SubstartedAt}\n```",
             "translatorComment": "Copied from source.",
             "placeholders": [
                 {
-                    "id": "ToUpperstringplatform",
+                    "id": "Platform",
                     "string": "%[1]s",
                     "type": "string",
                     "underlyingType": "string",
                     "argNum": 1,
-                    "expr": "strings.ToUpper(string(platform))"
+                    "expr": "strings.ToUpper(string(stats.Platform))"
                 },
                 {
                     "id": "RenderTimestartedAt",
@@ -488,6 +488,13 @@
             "id": "No data collected",
             "message": "No data collected",
             "translation": "No data collected",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Failed to render characters stats table",
+            "message": "Failed to render characters stats table",
+            "translation": "Failed to render characters stats table",
             "translatorComment": "Copied from source.",
             "fuzzy": true
         },
@@ -1294,7 +1301,7 @@
                     "type": "int",
                     "underlyingType": "int",
                     "argNum": 2,
-                    "expr": "worldPopulation.StatPerFactions.All"
+                    "expr": "worldPopulation.All"
                 }
             ],
             "fuzzy": true

@@ -32,7 +32,7 @@ type ChannelStatsTrackerTaskUpdater = func(
 
 func newStateId(i *discordgo.InteractionCreate) discord.ChannelAndUserIds {
 	return discord.NewChannelAndUserId(
-		discord.ChannelId(i.Interaction.ChannelID),
+		discord.ChannelId(i.ChannelID),
 		discord.MemberOrUserId(i),
 	)
 }
@@ -78,7 +78,7 @@ func NewStatsTracker(
 	updatedSchedule := func(
 		ctx context.Context, i *discordgo.InteractionCreate, zeroIndexedPage int,
 	) discord.Response {
-		channelId := discord.ChannelId(i.Interaction.ChannelID)
+		channelId := discord.ChannelId(i.ChannelID)
 		channel, err := channelLoader(ctx, channelId)
 		if err != nil {
 			return discord_messages.ChannelLoadError[discordgo.InteractionResponseData](

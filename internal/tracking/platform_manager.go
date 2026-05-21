@@ -92,7 +92,7 @@ func (tm *platformManager) Start(ctx context.Context) {
 	}
 }
 
-func (tm *platformManager) ChannelIdsForCharacter(ctx context.Context, characterId ps2.CharacterId) ([]discord.Channel, error) {
+func (tm *platformManager) ChannelsForCharacter(ctx context.Context, characterId ps2.CharacterId) ([]discord.Channel, error) {
 	const op = "tracking_manager.TrackingManager.channelIdsForCharacter"
 	trackersCount := tm.characterTrackersCount(characterId)
 	if trackersCount <= 0 {
@@ -108,7 +108,7 @@ func (tm *platformManager) ChannelIdsForCharacter(ctx context.Context, character
 	return tm.characterTrackingChannelsLoader(ctx, tm.platform, char)
 }
 
-func (tm *platformManager) ChannelIdsForOutfit(ctx context.Context, outfitId ps2.OutfitId) ([]discord.Channel, error) {
+func (tm *platformManager) ChannelsForOutfit(ctx context.Context, outfitId ps2.OutfitId) ([]discord.Channel, error) {
 	trackersCount := tm.outfitTrackersCount(outfitId)
 	if trackersCount <= 0 {
 		if trackersCount < 0 {

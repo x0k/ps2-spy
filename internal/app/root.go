@@ -110,10 +110,13 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 
 	censusClient := census2.NewClient("https://census.daybreakgames.com", cfg.Census.ServiceId, httpClient)
 
-	censusDataProvider := census_data_provider.New(
+	censusDataProvider, err := census_data_provider.New(
 		log.With(sl.Component("census_data_provider")),
 		censusClient,
 	)
+	if err != nil {
+		return nil, err
+	}
 	honuDataProvider := honu_data_provider.New(
 		honu.NewClient("https://wt.honu.pw", httpClient),
 	)
@@ -350,9 +353,13 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			case <-ctx.Done():
 				return
 			case e := <-outfitMemberSaved:
-				trackingManager.TrackOutfitMembers(e.OutfitId, e.Platform, e.CharacterIds)
+				if err := trackingManager.TrackOutfitMembers(e.OutfitId, e.Platform, e.CharacterIds); err != nil {
+					log.Error(ctx, "failed to track outfit members", sl.Err(err))
+				}
 			case e := <-outfitMemberDeleted:
-				trackingManager.UntrackOutfitMembers(e.OutfitId, e.Platform, e.CharacterIds)
+				if err := trackingManager.UntrackOutfitMembers(e.OutfitId, e.Platform, e.CharacterIds); err != nil {
+					log.Error(ctx, "failed to untrack outfit members", sl.Err(err))
+				}
 			}
 		}
 	})
@@ -361,15 +368,20 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		"spy": func(ctx context.Context) (meta.Loaded[ps2.WorldsPopulation], error) {
 			total := 0
 			worlds := make([]ps2.WorldPopulation, 0)
+			errs := make([]error, 0, len(ps2_platforms.Platforms))
 			for _, platform := range ps2_platforms.Platforms {
-				population := charactersTracker.WorldsPopulation(platform)
+				population, err := charactersTracker.WorldsPopulation(platform)
+				if err != nil {
+					errs = append(errs, err)
+					continue
+				}
 				total += population.Total
 				worlds = append(worlds, population.Worlds...)
 			}
 			return meta.LoadedNow(cfg.AppName, ps2.WorldsPopulation{
 				Total:  total,
 				Worlds: worlds,
-			}), nil
+			}), errors.Join(errs...)
 		},
 		"honu":      honuDataProvider.Population,
 		"ps2live":   ps2LiveDataProvider.Population,
@@ -425,7 +437,9 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			case <-ctx.Done():
 				return
 			case e := <-settingsUpdate:
-				trackingManager.HandleTrackingSettingsUpdate(ctx, e.Platform, e)
+				if err := trackingManager.HandleTrackingSettingsUpdate(ctx, e.Platform, e); err != nil {
+					log.Error(ctx, "failed to handle tracking settings update", sl.Err(err))
+				}
 				for _, oId := range e.Diff.Outfits.ToAdd {
 					outfitMembersSynchronizer.SyncOutfit(ctx, e.Platform, oId)
 				}

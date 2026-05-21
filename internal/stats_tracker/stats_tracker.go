@@ -100,23 +100,19 @@ func (s *StatsTracker) StopChannelTracker(ctx context.Context, channelId discord
 }
 
 func (s *StatsTracker) HandleDeathEvent(ctx context.Context, platform ps2_platforms.Platform, event events.Death) {
-	s.wg.Add(1)
-	go func() {
-		defer s.wg.Done()
+	s.wg.Go(func() {
 		if err := s.handleDeathEvent(ctx, platform, event); err != nil {
 			s.log.Error(ctx, "error during handleDeathEvent", sl.Err(err))
 		}
-	}()
+	})
 }
 
 func (s *StatsTracker) HandleGainExperienceEvent(ctx context.Context, platform ps2_platforms.Platform, event events.GainExperience) {
-	s.wg.Add(1)
-	go func() {
-		defer s.wg.Done()
+	s.wg.Go(func() {
 		if err := s.handleGainExperienceEvent(ctx, platform, event); err != nil {
 			s.log.Error(ctx, "error during handleGainExperienceEvent", sl.Err(err))
 		}
-	}()
+	})
 }
 
 func (s *StatsTracker) startChannelTracker(ctx context.Context, channelId discord.ChannelId, force bool) error {

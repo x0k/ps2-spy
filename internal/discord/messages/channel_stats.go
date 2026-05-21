@@ -35,7 +35,7 @@ func renderCharactersStatsTable(
 	sb *strings.Builder,
 	characters []stats_tracker.CharacterStats,
 	initialIndex int,
-) {
+) error {
 	t := tablewriter.NewWriter(sb)
 	t.Header(
 		"№",
@@ -70,7 +70,7 @@ func renderCharactersStatsTable(
 				mainLoadoutType = ps2_loadout.LoadoutType(i)
 			}
 		}
-		t.Append([]string{
+		if err := t.Append([]string{
 			strconv.FormatInt(int64(initialIndex+i+1), 10),
 			ps2_factions.FactionNameById(char.Character.FactionId),
 			char.Character.OutfitTag,
@@ -80,7 +80,9 @@ func renderCharactersStatsTable(
 			strconv.FormatFloat(killDeathRatio, 'f', 2, 64),
 			renderLoadoutType(p, mainLoadoutType),
 			renderDuration(p, totalDuration),
-		})
+		}); err != nil {
+			return err
+		}
 	}
-	t.Render()
+	return t.Render()
 }

@@ -12,7 +12,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/shared"
 )
 
-func (l *Repository) outfitMemberIdsUrl(platform ps2_platforms.Platform, outfitId ps2.OutfitId) string {
+func (l *Repository) outfitMemberIdsUrl(platform ps2_platforms.Platform, outfitId ps2.OutfitId) (string, error) {
 	l.outfitMemberIdsMu.Lock()
 	defer l.outfitMemberIdsMu.Unlock()
 	l.outfitMemberIdsOperand.Set(census2.Str(outfitId))
@@ -21,7 +21,10 @@ func (l *Repository) outfitMemberIdsUrl(platform ps2_platforms.Platform, outfitI
 }
 
 func (l *Repository) ActualMemberIds(ctx context.Context, platform ps2_platforms.Platform, outfitId ps2.OutfitId) ([]ps2.CharacterId, error) {
-	url := l.outfitMemberIdsUrl(platform, outfitId)
+	url, err := l.outfitMemberIdsUrl(platform, outfitId)
+	if err != nil {
+		return nil, err
+	}
 	outfits, err := census2_adapters.RetryableExecutePreparedAndDecode[ps2_collections.OutfitItem](
 		ctx,
 		l.log,

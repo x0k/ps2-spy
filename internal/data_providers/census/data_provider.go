@@ -37,7 +37,7 @@ type DataProvider struct {
 func New(
 	log *logger.Logger,
 	client *census2.Client,
-) *DataProvider {
+) (*DataProvider, error) {
 	charactersOperand := census2.NewPtr(census2.StrList())
 	facilityOperand := census2.NewPtr(census2.Str(""))
 	outfitsOperand := census2.NewPtr(census2.StrList())
@@ -49,22 +49,35 @@ func New(
 		zoneIds.WriteByte(',')
 		zoneIds.WriteString(string(zoneId))
 	}
-	return &DataProvider{
-		log:    log,
-		client: client,
-		pcUrl: client.ToURL(census2.NewQueryMustBeValid(census2.GetQuery, census2.Ps2_v2_NS, ps2_collections.WorldEvent).
-			Where(census2.Cond("type").Equals(census2.Str("METAGAME"))).
-			Where(census2.Cond("world_id").Equals(census2.Str("1,10,13,17,19,24,40"))).
-			SetLimit(210)),
-		ps4euUrl: client.ToURL(census2.NewQueryMustBeValid(census2.GetQuery, census2.Ps2ps4eu_v2_NS, ps2_collections.WorldEvent).
-			Where(census2.Cond("type").Equals(census2.Str("METAGAME"))).
-			Where(census2.Cond("world_id").Equals(census2.Str("2000"))).
-			SetLimit(30)),
-		ps4usUrl: client.ToURL(census2.NewQueryMustBeValid(census2.GetQuery, census2.Ps2ps4us_v2_NS, ps2_collections.WorldEvent).
-			Where(census2.Cond("type").Equals(census2.Str("METAGAME"))).
-			Where(census2.Cond("world_id").Equals(census2.Str("1000"))).
-			SetLimit(30)),
+	pcUrl, err := client.ToURL(census2.NewQueryMustBeValid(census2.GetQuery, census2.Ps2_v2_NS, ps2_collections.WorldEvent).
+		Where(census2.Cond("type").Equals(census2.Str("METAGAME"))).
+		Where(census2.Cond("world_id").Equals(census2.Str("1,10,13,17,19,24,40"))).
+		SetLimit(210))
+	if err != nil {
+		return nil, err
+	}
+	ps4euUrl, err := client.ToURL(census2.NewQueryMustBeValid(census2.GetQuery, census2.Ps2ps4eu_v2_NS, ps2_collections.WorldEvent).
+		Where(census2.Cond("type").Equals(census2.Str("METAGAME"))).
+		Where(census2.Cond("world_id").Equals(census2.Str("2000"))).
+		SetLimit(30))
 
+	if err != nil {
+		return nil, err
+	}
+	ps4usUrl, err := client.ToURL(census2.NewQueryMustBeValid(census2.GetQuery, census2.Ps2ps4us_v2_NS, ps2_collections.WorldEvent).
+		Where(census2.Cond("type").Equals(census2.Str("METAGAME"))).
+		Where(census2.Cond("world_id").Equals(census2.Str("1000"))).
+		SetLimit(30))
+
+	if err != nil {
+		return nil, err
+	}
+	return &DataProvider{
+		log:               log,
+		client:            client,
+		pcUrl:             pcUrl,
+		ps4euUrl:          ps4euUrl,
+		ps4usUrl:          ps4usUrl,
 		charactersOperand: &charactersOperand,
 		charactersQuery: census2.NewQuery(census2.GetQuery, census2.Ps2_v2_NS, ps2_collections.Character).
 			Where(census2.Cond("character_id").Equals(&charactersOperand)).
@@ -100,5 +113,5 @@ func New(
 					On("Regions.Row.RowData.RegionId").
 					To("map_region_id"),
 			),
-	}
+	}, nil
 }

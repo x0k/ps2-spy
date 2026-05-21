@@ -14,14 +14,14 @@ type Command struct {
 	ComponentHandlers map[string]InteractionHandler
 }
 
-const CUSTOM_ID_SEPARATOR = "::"
+const customIDSeparator = "::"
 
 func HandlerId(customId string) string {
-	idx := strings.Index(customId, CUSTOM_ID_SEPARATOR)
-	if idx == -1 {
+	before, _, ok := strings.Cut(customId, customIDSeparator)
+	if !ok {
 		return customId
 	}
-	return customId[:idx]
+	return before
 }
 
 var TRACKING_MODAL_CUSTOM_IDS = map[ps2_platforms.Platform]string{
@@ -37,13 +37,13 @@ func NewTrackingSettingsEditButtonCustomId(
 	characters []string,
 ) string {
 	return TRACKING_EDIT_BUTTON_CUSTOM_ID +
-		CUSTOM_ID_SEPARATOR + string(platform) +
-		CUSTOM_ID_SEPARATOR + strings.Join(outfits, ",") +
-		CUSTOM_ID_SEPARATOR + strings.Join(characters, ",")
+		customIDSeparator + string(platform) +
+		customIDSeparator + strings.Join(outfits, ",") +
+		customIDSeparator + strings.Join(characters, ",")
 }
 
 func CustomIdToPlatformAndOutfitsAndCharacters(customId string) (ps2_platforms.Platform, []string, []string) {
-	parts := strings.Split(customId, CUSTOM_ID_SEPARATOR)
+	parts := strings.Split(customId, customIDSeparator)
 	return ps2_platforms.Platform(parts[1]), strings.Split(parts[2], ","), strings.Split(parts[3], ",")
 }
 

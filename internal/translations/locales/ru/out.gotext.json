@@ -368,17 +368,17 @@
             "translation": "Трекер статистики запущен"
         },
         {
-            "id": "Platform: {ToUpperstringplatform}, started at: {RenderTimestartedAt}, stopped: {RenderRelativeTimestoppedAt}, duration: {SubstartedAt}\n```",
-            "message": "Platform: {ToUpperstringplatform}, started at: {RenderTimestartedAt}, stopped: {RenderRelativeTimestoppedAt}, duration: {SubstartedAt}\n```",
-            "translation": "Платформа: {ToUpperstringplatform}, запущен: {RenderTimestartedAt}, остановлен: {RenderRelativeTimestoppedAt}, продолжительность: {SubstartedAt}\n```",
+            "id": "Platform: {Platform}, started at: {RenderTimestartedAt}, stopped: {RenderRelativeTimestoppedAt}, duration: {SubstartedAt}\n```",
+            "message": "Platform: {Platform}, started at: {RenderTimestartedAt}, stopped: {RenderRelativeTimestoppedAt}, duration: {SubstartedAt}\n```",
+            "translation": "Платформа: {Platform}, запущен: {RenderTimestartedAt}, остановлен: {RenderRelativeTimestoppedAt}, продолжительность: {SubstartedAt}\n```",
             "placeholders": [
                 {
-                    "id": "ToUpperstringplatform",
+                    "id": "Platform",
                     "string": "%[1]s",
                     "type": "string",
                     "underlyingType": "string",
                     "argNum": 1,
-                    "expr": "strings.ToUpper(string(platform))"
+                    "expr": "strings.ToUpper(string(stats.Platform))"
                 },
                 {
                     "id": "RenderTimestartedAt",
@@ -410,6 +410,11 @@
             "id": "No data collected",
             "message": "No data collected",
             "translation": "Нет данных"
+        },
+        {
+            "id": "Failed to render characters stats table",
+            "message": "Failed to render characters stats table",
+            "translation": "Ошибка при создании таблицы статистики персонажей"
         },
         {
             "id": "{Name} [{Tag}] captured {Name_1} ({Type}) on {ZoneId} ({WorldNameByIdworldId})",
@@ -1107,7 +1112,7 @@
                     "type": "int",
                     "underlyingType": "int",
                     "argNum": 2,
-                    "expr": "worldPopulation.StatPerFactions.All"
+                    "expr": "worldPopulation.All"
                 }
             ]
         },

@@ -104,12 +104,12 @@ func (e ErrTaskDurationTooLong) Error() string {
 	)
 }
 
-type ErrMaxTooManyTasksPerChannel struct {
+type ErrTooManyTasksPerChannel struct {
 	Max int
 	Got int
 }
 
-func (e ErrMaxTooManyTasksPerChannel) Error() string {
+func (e ErrTooManyTasksPerChannel) Error() string {
 	return fmt.Sprintf("max amount of tasks per channel is %d, got %d", e.Max, e.Got)
 }
 

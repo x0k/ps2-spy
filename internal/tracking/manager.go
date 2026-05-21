@@ -2,6 +2,7 @@ package tracking
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"sync"
 
@@ -14,6 +15,14 @@ import (
 type Manager struct {
 	managers map[ps2_platforms.Platform]*platformManager
 	wg       sync.WaitGroup
+}
+
+type ErrUnknownPlatform struct {
+	Platform ps2_platforms.Platform
+}
+
+func (e ErrUnknownPlatform) Error() string {
+	return fmt.Sprintf("unknown platform %q", e.Platform)
 }
 
 func New(
@@ -58,29 +67,60 @@ func (m *Manager) Start(ctx context.Context) {
 func (m *Manager) CharacterChannels(
 	ctx context.Context, platform ps2_platforms.Platform, characterId ps2.CharacterId,
 ) ([]discord.Channel, error) {
-	return m.managers[platform].ChannelIdsForCharacter(ctx, characterId)
+	manager, err := m.platformManager(platform)
+	if err != nil {
+		return nil, err
+	}
+	return manager.ChannelsForCharacter(ctx, characterId)
 }
 
 func (m *Manager) OutfitChannels(
 	ctx context.Context, platform ps2_platforms.Platform, outfitId ps2.OutfitId,
 ) ([]discord.Channel, error) {
-	return m.managers[platform].ChannelIdsForOutfit(ctx, outfitId)
+	manager, err := m.platformManager(platform)
+	if err != nil {
+		return nil, err
+	}
+	return manager.ChannelsForOutfit(ctx, outfitId)
 }
 
 func (m *Manager) TrackOutfitMembers(
 	outfitId ps2.OutfitId, platform ps2_platforms.Platform, charIds []ps2.CharacterId,
-) {
-	m.managers[platform].TrackOutfitMembers(outfitId, charIds)
+) error {
+	manager, err := m.platformManager(platform)
+	if err != nil {
+		return err
+	}
+	manager.TrackOutfitMembers(outfitId, charIds)
+	return nil
 }
 
 func (m *Manager) UntrackOutfitMembers(
 	outfitId ps2.OutfitId, platform ps2_platforms.Platform, charIds []ps2.CharacterId,
-) {
-	m.managers[platform].UntrackOutfitMembers(outfitId, charIds)
+) error {
+	manager, err := m.platformManager(platform)
+	if err != nil {
+		return err
+	}
+	manager.UntrackOutfitMembers(outfitId, charIds)
+	return nil
 }
 
 func (m *Manager) HandleTrackingSettingsUpdate(
 	ctx context.Context, platform ps2_platforms.Platform, update TrackingSettingsUpdated,
-) {
-	m.managers[platform].HandleTrackingSettingsUpdate(ctx, update)
+) error {
+	manager, err := m.platformManager(platform)
+	if err != nil {
+		return err
+	}
+	manager.HandleTrackingSettingsUpdate(ctx, update)
+	return nil
+}
+
+func (m *Manager) platformManager(platform ps2_platforms.Platform) (*platformManager, error) {
+	manager, ok := m.managers[platform]
+	if !ok {
+		return nil, ErrUnknownPlatform{Platform: platform}
+	}
+	return manager, nil
 }

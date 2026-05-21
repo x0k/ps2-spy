@@ -82,11 +82,9 @@ func (s *OutfitMembersSynchronizer[R]) Start(ctx context.Context) {
 }
 
 func (s *OutfitMembersSynchronizer[R]) SyncOutfit(ctx context.Context, platform ps2_platforms.Platform, outfitId ps2.OutfitId) {
-	s.wg.Add(1)
-	go func() {
-		defer s.wg.Done()
+	s.wg.Go(func() {
 		s.syncOutfit(ctx, platform, outfitId, time.Now())
-	}()
+	})
 }
 
 func (s *OutfitMembersSynchronizer[R]) syncOutfits(ctx context.Context, now time.Time) {
@@ -104,11 +102,11 @@ func (s *OutfitMembersSynchronizer[R]) syncPlatformOutfits(
 	ctx context.Context, platform ps2_platforms.Platform, now time.Time,
 ) {
 	outfits, err := s.repo.TrackableOutfitIds(ctx, platform)
-	s.log.Info(ctx, "synchronizing", slog.Int("outfits", len(outfits)))
 	if err != nil {
 		s.log.Error(ctx, "failed to load trackable outfits", sl.Err(err))
 		return
 	}
+	s.log.Info(ctx, "synchronizing", slog.Int("outfits", len(outfits)))
 	for _, outfit := range outfits {
 		select {
 		case <-ctx.Done():
@@ -170,15 +168,14 @@ func (u *OutfitMembersSynchronizer[R]) updateMembers(
 			return fmt.Errorf("failed to list members: %w", err)
 		}
 		membersDiff = diff.SlicesDiff(oldMembers, newMembers)
-		if membersDiff.IsEmpty() {
-			return nil
-		}
-		if err := r.RemoveMembers(ctx, platform, outfitId, membersDiff.ToDel); err != nil {
-			return fmt.Errorf("failed to remove members: %w", err)
-		}
-		for _, member := range membersDiff.ToAdd {
-			if err := r.AddMember(ctx, platform, outfitId, member); err != nil {
-				return fmt.Errorf("failed to add member: %w", err)
+		if !membersDiff.IsEmpty() {
+			if err := r.RemoveMembers(ctx, platform, outfitId, membersDiff.ToDel); err != nil {
+				return fmt.Errorf("failed to remove members: %w", err)
+			}
+			for _, member := range membersDiff.ToAdd {
+				if err := r.AddMember(ctx, platform, outfitId, member); err != nil {
+					return fmt.Errorf("failed to add member: %w", err)
+				}
 			}
 		}
 		if err := r.SaveSynchronizedAt(ctx, platform, outfitId, now); err != nil {
@@ -202,7 +199,7 @@ func (u *OutfitMembersSynchronizer[R]) updateMembers(
 			CharacterIds: membersDiff.ToDel,
 		})
 	}
-	if len(oldMembers) > 0 {
+	if len(oldMembers) > 0 && !membersDiff.IsEmpty() {
 		u.publisher.Publish(ps2.OutfitMembersUpdate{
 			Platform: platform,
 			OutfitId: outfitId,

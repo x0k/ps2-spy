@@ -120,27 +120,19 @@ func (p *platformTracker) Start(ctx context.Context) {
 }
 
 func (p *platformTracker) HandleLogin(ctx context.Context, event events.PlayerLogin) {
-	p.wg.Add(1)
-	go func() {
-		defer p.wg.Done()
+	p.wg.Go(func() {
 		charId := ps2.CharacterId(event.CharacterID)
 		if char, ok := p.handleLogin(ctx, charId); ok {
 			p.publishPlayerLogin(event, char)
 		}
-	}()
+	})
 }
 
 func (p *platformTracker) HandleLogout(ctx context.Context, event events.PlayerLogout) {
 	worldId := ps2.WorldId(event.WorldID)
 	charId := ps2.CharacterId(event.CharacterID)
 	if p.handleLogout(ctx, charId, worldId) {
-		var t time.Time
-		if timestamp, err := strconv.ParseInt(event.Timestamp, 10, 64); err == nil {
-			t = time.Unix(timestamp, 0)
-		} else {
-			t = time.Now()
-		}
-		p.publishPlayerLogout(t, player{charId, worldId})
+		p.publishPlayerLogout(eventTime(event.Timestamp), player{charId, worldId})
 	}
 }
 
@@ -155,13 +147,11 @@ func (p *platformTracker) HandleWorldZoneAction(ctx context.Context, worldId, zo
 	if p.onlineCharactersTracker.isOnline(cId) {
 		p.activePlayers.Push(player{cId, wId})
 	} else {
-		p.wg.Add(1)
-		go func() {
-			defer p.wg.Done()
+		p.wg.Go(func() {
 			if char, ok := p.handleLogin(ctx, cId); ok {
 				p.publishPlayerFakeLogin(char)
 			}
-		}()
+		})
 	}
 	if w, ok := p.worldPopulationTrackers[wId]; ok {
 		w.HandleZoneAction(cId, zoneId)
@@ -298,15 +288,8 @@ func (p *platformTracker) publishPlayerLogin(
 	event events.PlayerLogin,
 	char ps2.Character,
 ) {
-	var t time.Time
-	// TODO: move this somewhere
-	if timestamp, err := strconv.ParseInt(event.Timestamp, 10, 64); err == nil {
-		t = time.Unix(timestamp, 0)
-	} else {
-		t = time.Now()
-	}
 	p.publisher.Publish(PlayerLogin{
-		Time:      t,
+		Time:      eventTime(event.Timestamp),
 		Platform:  p.platform,
 		Character: char,
 	})
@@ -328,4 +311,12 @@ func (p *platformTracker) publishPlayerLogout(t time.Time, pl player) {
 		CharacterId: pl.characterId,
 		WorldId:     pl.worldId,
 	})
+}
+
+func eventTime(timestamp string) time.Time {
+	unix, err := strconv.ParseInt(timestamp, 10, 64)
+	if err != nil {
+		return time.Now()
+	}
+	return time.Unix(unix, 0)
 }

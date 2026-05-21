@@ -31,29 +31,31 @@ func (m *Messages) scheduleNotes(p *message.Printer, loc *time.Location) string 
 
 const pageSize = 4
 
+const customIDSeparator = "::"
+
 func newStatsTrackerTaskPageButtonCustomId(
 	page int,
 ) string {
-	return discord.STATS_TRACKER_TASKS_PAGE_BUTTON_CUSTOM_ID + discord.CUSTOM_ID_SEPARATOR +
+	return discord.STATS_TRACKER_TASKS_PAGE_BUTTON_CUSTOM_ID + customIDSeparator +
 		strconv.Itoa(page)
 }
 
 func CustomIdToPage(customId string) (int, error) {
 	return strconv.Atoi(
-		customId[len(discord.STATS_TRACKER_TASKS_PAGE_BUTTON_CUSTOM_ID)+len(discord.CUSTOM_ID_SEPARATOR):],
+		customId[len(discord.STATS_TRACKER_TASKS_PAGE_BUTTON_CUSTOM_ID)+len(customIDSeparator):],
 	)
 }
 
 func newStatsTrackerTaskEditButtonCustomId(
 	id stats_tracker.TaskId,
 ) string {
-	return discord.STATS_TRACKER_TASKS_EDIT_BUTTON_CUSTOM_ID + discord.CUSTOM_ID_SEPARATOR +
+	return discord.STATS_TRACKER_TASKS_EDIT_BUTTON_CUSTOM_ID + customIDSeparator +
 		strconv.FormatInt(int64(id), 10)
 }
 
 func CustomIdToTaskIdToEdit(customId string) (stats_tracker.TaskId, error) {
 	v, err := strconv.ParseInt(
-		customId[len(discord.STATS_TRACKER_TASKS_EDIT_BUTTON_CUSTOM_ID)+len(discord.CUSTOM_ID_SEPARATOR):],
+		customId[len(discord.STATS_TRACKER_TASKS_EDIT_BUTTON_CUSTOM_ID)+len(customIDSeparator):],
 		10,
 		64,
 	)
@@ -63,13 +65,13 @@ func CustomIdToTaskIdToEdit(customId string) (stats_tracker.TaskId, error) {
 func newStatsTrackerTaskRemoveButtonCustomId(
 	id stats_tracker.TaskId,
 ) string {
-	return discord.STATS_TRACKER_TASKS_REMOVE_BUTTON_CUSTOM_ID + discord.CUSTOM_ID_SEPARATOR +
+	return discord.STATS_TRACKER_TASKS_REMOVE_BUTTON_CUSTOM_ID + customIDSeparator +
 		strconv.FormatInt(int64(id), 10)
 }
 
 func CustomIdToTaskIdToRemove(customId string) (stats_tracker.TaskId, error) {
 	v, err := strconv.ParseInt(
-		customId[len(discord.STATS_TRACKER_TASKS_REMOVE_BUTTON_CUSTOM_ID)+len(discord.CUSTOM_ID_SEPARATOR):],
+		customId[len(discord.STATS_TRACKER_TASKS_REMOVE_BUTTON_CUSTOM_ID)+len(customIDSeparator):],
 		10,
 		64,
 	)
@@ -184,7 +186,7 @@ func renderStatsTrackerSchedule(
 
 func hourPickerOptions(p *message.Printer, selectedHour int) []discordgo.SelectMenuOption {
 	options := make([]discordgo.SelectMenuOption, 0, 24)
-	for i := 0; i < 24; i++ {
+	for i := range 24 {
 		options = append(options, discordgo.SelectMenuOption{
 			Label:   p.Sprintf("Starting hour: %d", i),
 			Value:   strconv.Itoa(i),
@@ -294,23 +296,20 @@ func (m *Messages) statsTrackerCreateTaskForm(
 }
 
 func renderTaskFormError(p *message.Printer, err error) string {
-	var m stats_tracker.ErrMaxTooManyTasksPerChannel
-	if errors.As(err, &m) {
+	if m, ok := errors.AsType[stats_tracker.ErrTooManyTasksPerChannel](err); ok {
 		return p.Sprintf(
 			"Max amount of tasks per channel is %d, got %d",
 			m.Max, m.Got,
 		)
 	}
-	var d stats_tracker.ErrTaskDurationTooLong
-	if errors.As(err, &d) {
+	if d, ok := errors.AsType[stats_tracker.ErrTaskDurationTooLong](err); ok {
 		return p.Sprintf(
 			"Duration too long: expected max %s got %s",
 			renderDuration(p, d.MaxDuration),
 			renderDuration(p, d.GotDuration),
 		)
 	}
-	var o stats_tracker.ErrOverlappingTasks
-	if errors.As(err, &o) {
+	if o, ok := errors.AsType[stats_tracker.ErrOverlappingTasks](err); ok {
 		t := o.Tasks[0]
 		offset := timex.LocationToOffset(o.Timezone)
 		localTime := t.UtcStartTime + offset

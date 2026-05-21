@@ -33,7 +33,7 @@ func settingsFormFieldHandler[V any](
 		if err != nil {
 			return messages.FieldValueExtractError(err)
 		}
-		channelId := discord.ChannelId(i.Interaction.ChannelID)
+		channelId := discord.ChannelId(i.ChannelID)
 		if err := saver(ctx, channelId, value); err != nil {
 			return messages.FieldValueSaveError(
 				channelId,
@@ -80,7 +80,7 @@ func NewChannelSettings(
 			if !discord.IsChannelsManagerOrDM(i) {
 				return discord_messages.MissingPermissionError[discordgo.WebhookEdit]()
 			}
-			channelId := discord.ChannelId(i.Interaction.ChannelID)
+			channelId := discord.ChannelId(i.ChannelID)
 			channel, err := channelLoader(ctx, channelId)
 			if err != nil {
 				return discord_messages.ChannelLoadError[discordgo.WebhookEdit](
