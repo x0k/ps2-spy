@@ -91,7 +91,7 @@ Production build uses `go build -tags "migrate"` (required for migrate source/fi
 
 7. **Eliminate double-storing in shared LRU in characters loader chain** — `WithMultiCache.Add` + `WithQueriedCache.Add` both write to the same LRU; the second is always redundant. Documented as intentional: batch lookups use Multi cache, individual lookups use Queried cache for different access patterns.
 
-8. **Add context to `ErrNotFound` sentinel** — Single `errors.New("not found")` used for characters, outfits, facilities, sync timestamps, batch misses. Wrap: `fmt.Errorf("character %s: %w", id, shared.ErrNotFound)`.
+8. ~~**Add context to `ErrNotFound` sentinel** — Single `errors.New("not found")` used for characters, outfits, facilities, sync timestamps, batch misses. Wrap: `fmt.Errorf("character %s: %w", id, shared.ErrNotFound)`.~~ **DONE** — Wrap ErrNotFound with entity context using `fmt.Errorf("entity %s: %w", id, shared.ErrNotFound)` in storage/sql, ps2/storage_outfits_repo, and data_providers/census.
 
 9. **Collapse 7 identical `subscribe.go` files** — Each domain package has an identical 14-line wrapper. Move to single `SubscribeTo[E]()` in `pubsub` package.
 
