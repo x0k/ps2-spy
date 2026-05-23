@@ -432,10 +432,18 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	discordCommands := discord_commands.New(
 		log.With(sl.Component("commands")),
 		discordMessages,
-		populationLoaders,
-		[]string{"spy", "honu", "ps2live", "saerro", "fisu", "sanctuary", "voidwell"},
-		worldPopulationLoaders,
-		[]string{"spy", "honu", "saerro", "voidwell"},
+		discord_commands.PopulationProviders{
+			ProviderRegistry: discord_commands.ProviderRegistry[loader.Simple[meta.Loaded[ps2.WorldsPopulation]]]{
+				Loaders:  populationLoaders,
+				Priority: []string{"spy", "honu", "ps2live", "saerro", "fisu", "sanctuary", "voidwell"},
+			},
+		},
+		discord_commands.WorldPopulationProviders{
+			ProviderRegistry: discord_commands.ProviderRegistry[loader.Keyed[ps2.WorldId, meta.Loaded[ps2.DetailedWorldPopulation]]]{
+				Loaders:  worldPopulationLoaders,
+				Priority: []string{"spy", "honu", "saerro", "voidwell"},
+			},
+		},
 		func(ctx context.Context, worldId ps2.WorldId) (meta.Loaded[ps2.WorldTerritoryControl], error) {
 			platform, ok := ps2.WorldPlatforms[worldId]
 			if !ok {
@@ -447,8 +455,12 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			}
 			return meta.LoadedNow(cfg.AppName, control), nil
 		},
-		alertsLoaders,
-		[]string{"spy", "ps2alerts", "honu", "census", "voidwell"},
+		discord_commands.AlertsProviders{
+			ProviderRegistry: discord_commands.ProviderRegistry[loader.Simple[meta.Loaded[ps2.Alerts]]]{
+				Loaders:  alertsLoaders,
+				Priority: []string{"spy", "ps2alerts", "honu", "census", "voidwell"},
+			},
+		},
 		tracking_settings_data_loader.New(
 			storageSettingsRepo,
 			charactersTracker,
@@ -472,17 +484,21 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			trackingPubSub,
 		).Update,
 		statsTracker,
-		store.Channel,
-		store.SaveChannelLanguage,
-		store.SaveChannelCharacterNotifications,
-		store.SaveChannelOutfitNotifications,
-		store.SaveChannelTitleUpdates,
-		store.SaveChannelDefaultTimezone,
-		storageTasksRepo.ByChannelId,
-		statsTrackerTasksCreator.Create,
-		storageTasksRepo.Delete,
-		storageTasksRepo.ById,
-		statsTrackerTasksCreator.Update,
+		discord_commands.ChannelStore{
+			Loader:                      store.Channel,
+			LanguageSaver:               store.SaveChannelLanguage,
+			CharacterNotificationsSaver: store.SaveChannelCharacterNotifications,
+			OutfitNotificationsSaver:    store.SaveChannelOutfitNotifications,
+			TitleUpdatesSaver:           store.SaveChannelTitleUpdates,
+			DefaultTimezoneSaver:        store.SaveChannelDefaultTimezone,
+		},
+		discord_commands.StatsTaskStore{
+			Loader:  storageTasksRepo.ByChannelId,
+			Creator: statsTrackerTasksCreator.Create,
+			Remover: storageTasksRepo.Delete,
+			ById:    storageTasksRepo.ById,
+			Updater: statsTrackerTasksCreator.Update,
+		},
 	)
 	m.AppendR("discord.commands", discordCommands.Start)
 

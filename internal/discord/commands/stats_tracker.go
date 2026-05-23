@@ -41,16 +41,12 @@ func NewStatsTracker(
 	log *logger.Logger,
 	messages *discord_messages.Messages,
 	statsTracker *stats_tracker.StatsTracker,
-	channelStatsTrackerTasksLoader ChannelStatsTrackerTasksLoader,
+	statsTaskStore StatsTaskStore,
 	channelLoader ChannelLoader,
 	taskFormStateContainer *containers.ExpirableState[
 		discord.ChannelAndUserIds,
 		discord.FormState[stats_tracker.CreateOrUpdateTask],
 	],
-	statsTrackerTaskCreator ChannelStatsTrackerTaskCreator,
-	channelStatsTrackerTaskRemover ChannelStatsTrackerTaskRemover,
-	statsTrackerTaskLoader StatsTrackerTaskLoader,
-	channelStatsTrackerTaskUpdater ChannelStatsTrackerTaskUpdater,
 ) *discord.Command {
 	newCreateFormHandler := func(
 		stateUpdater func(*discordgo.InteractionCreate, discord.FormState[stats_tracker.CreateOrUpdateTask]) (
@@ -86,7 +82,7 @@ func NewStatsTracker(
 				err,
 			)
 		}
-		tasks, err := channelStatsTrackerTasksLoader(ctx, channelId)
+		tasks, err := statsTaskStore.Loader(ctx, channelId)
 		if err != nil {
 			return discord_messages.ChannelStatsTrackerTasksLoadError[discordgo.InteractionResponseData](
 				err,
@@ -163,7 +159,7 @@ func NewStatsTracker(
 						err,
 					)
 				}
-				tasks, err := channelStatsTrackerTasksLoader(ctx, channelId)
+				tasks, err := statsTaskStore.Loader(ctx, channelId)
 				if err != nil {
 					return discord_messages.ChannelStatsTrackerTasksLoadError[discordgo.WebhookEdit](
 						err,
@@ -195,7 +191,7 @@ func NewStatsTracker(
 				if err != nil {
 					return messages.FieldValueExtractError(err)
 				}
-				task, err := statsTrackerTaskLoader(ctx, taskId)
+				task, err := statsTaskStore.ById(ctx, taskId)
 				if err != nil {
 					return messages.StatsTrackerTaskLoadError(err)
 				}
@@ -215,7 +211,7 @@ func NewStatsTracker(
 				if err != nil {
 					return messages.FieldValueExtractError(err)
 				}
-				if err := channelStatsTrackerTaskRemover(ctx, channelId, taskId); err != nil {
+				if err := statsTaskStore.Remover(ctx, channelId, taskId); err != nil {
 					return messages.ChannelStatsTrackerTaskRemoveError(err)
 				}
 				return updatedSchedule(ctx, i, 0)
@@ -319,7 +315,7 @@ func NewStatsTracker(
 						fmt.Errorf("failed to find state %q: %w", stateId, shared.ErrNotFound),
 					)
 				}
-				err := statsTrackerTaskCreator(ctx, state.Data)
+				err := statsTaskStore.Creator(ctx, state.Data)
 				if err != nil {
 					taskFormStateContainer.Store(stateId, state)
 					log.Debug(ctx, "failed to create task", sl.Err(err))
@@ -337,7 +333,7 @@ func NewStatsTracker(
 						fmt.Errorf("failed to find state %q: %w", stateId, shared.ErrNotFound),
 					)
 				}
-				err := channelStatsTrackerTaskUpdater(ctx, state.Data)
+				err := statsTaskStore.Updater(ctx, state.Data)
 				if err != nil {
 					taskFormStateContainer.Store(stateId, state)
 					log.Debug(ctx, "failed to update task", sl.Err(err))

@@ -101,6 +101,16 @@ Production build uses `go build -tags "migrate"` (required for migrate source/fi
 
 12. **Add `SubscribeAll` helper** — `newEventsSubscriptionService` calls `Subscribe[E]` 14× per platform, each adding a separate PostStop hook. Reduce to 1 struct literal + 1 PostStop hook per platform.
 
+13. **Repo wrappers provide no business logic** — `storage_settings_repo`, `storage_tracking_repo`, `storage_tasks_repo`, `storage_outfits_repo` simply delegate to `Queries()` without adding value. They could be eliminated, with callers using `Queries()` directly or domain methods on `*sql_storage.Storage`.
+
+14. **Event publishing bypassed by repos** — Repo wrappers call `Queries()` directly, bypassing event publishing in convenience methods on `*sql_storage.Storage`. When `storage_settings_repo.Update()` modifies data, no events are published. This creates inconsistency: `store.SaveChannelLanguage()` publishes events, but repos bypass this.
+
+15. **`discord_module.New` has ~17 parameters** — Similar to `discord_commands.New`, takes many related params that could be grouped into `PlatformServices` (from #4) and `SubscriptionManagers` struct.
+
+16. **Inconsistent caching strategies** — Characters use Multi+Batching+Queried chain (3 layers), Outfits use Multi only, Facilities use Keyed only. Consider a unified strategy.
+
+17. **Verbose loader type conversions** — Code uses explicit type conversions like `loader.Keyed[ps2.CharacterId, ps2.Character](...)` where type inference could simplify.
+
 ## Transaction vs Begin
 
 `Transaction` delegates to `Begin`, eliminating code duplication:
