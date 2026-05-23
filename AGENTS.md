@@ -85,7 +85,7 @@ Production build uses `go build -tags "migrate"` (required for migrate source/fi
 
 4. **Extract platform loop into `newPlatformServices()`** — The 116-line loop in `root.go` (lines 237–353) mutates 7 outer-scope maps via closure side effects with temporal coupling. Extract to a function returning a `PlatformServices` struct to make inputs/outputs explicit.
 
-5. **Group related positional params into small typed structs** — Not a full deps struct (preserves compile-time completeness). Group: 5 channel-store savers → `ChannelStore`, 3 provider map+priority pairs → `ProviderRegistry`, 5 stats-tracker task CRUD funcs → `StatsTaskStore`. Cuts `discord_commands.New` from ~25 to ~10–12 args.
+5. ~~**Group related positional params into small typed structs** — Not a full deps struct (preserves compile-time completeness). Group: 5 channel-store savers → `ChannelStore`, 3 provider map+priority pairs → `ProviderRegistry`, 5 stats-tracker task CRUD funcs → `StatsTaskStore`. Cuts `discord_commands.New` from ~25 to ~10–12 args.~~ **DONE** — Created `ChannelStore`, `StatsTaskStore`, `ProviderRegistry[T]`, `PopulationProviders`, `WorldPopulationProviders`, `AlertsProviders` types. Reduced `discord_commands.New` from 25 to 14 params.
 
 6. **Extract repeated Fallback→Cache pattern into generic factory** — `population_loader.go`, `world_population_loader.go`, `alerts_loader.go` are near-identical (~170 lines). Single generic factory cuts ~140 lines.
 
