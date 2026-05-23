@@ -74,3 +74,29 @@ Production build uses `go build -tags "migrate"` (required for migrate source/fi
 
 - `tools/explorer/` — Census API query tool for debugging (outfit, character, world lookups)
 - `tools/decoder/` — Census event decoder
+
+## Architecture Improvement Plan (Prioritized)
+
+1. **Fix `Transaction()` vs `Begin()` event-publishing inconsistency** — `Begin()` buffers events until commit; `Transaction()` publishes immediately even if the transaction rolls back. Latent bug in `internal/storage/sql/`.
+
+2. **Consolidate 6 tracking sub-packages into `tracking/settings`** — `settings_data_loader`, `settings_view_loader`, `settings_diff_view_loader`, `settings_updater`, `storage_settings_repo`, `storage_tracking_repo` each re-declare duplicate interfaces. Merge into one `SettingsService` with `Load`/`LoadView`/`LoadDiffView`/`Update`.
+
+3. **Break up `*sql_storage.Storage` god object** — 25+ methods across 4 domains (outfits, tracking, channel settings, facilities). Split into `OutfitStore`, `TrackingStore`, `ChannelStore`, `FacilityStore`. Eliminates 6 duplicated query methods that exist on both `*Storage` and repo wrappers.
+
+4. **Extract platform loop into `newPlatformServices()`** — The 116-line loop in `root.go` (lines 237–353) mutates 7 outer-scope maps via closure side effects with temporal coupling. Extract to a function returning a `PlatformServices` struct to make inputs/outputs explicit.
+
+5. **Group related positional params into small typed structs** — Not a full deps struct (preserves compile-time completeness). Group: 5 channel-store savers → `ChannelStore`, 3 provider map+priority pairs → `ProviderRegistry`, 5 stats-tracker task CRUD funcs → `StatsTaskStore`. Cuts `discord_commands.New` from ~25 to ~10–12 args.
+
+6. **Extract repeated Fallback→Cache pattern into generic factory** — `population_loader.go`, `world_population_loader.go`, `alerts_loader.go` are near-identical (~170 lines). Single generic factory cuts ~140 lines.
+
+7. **Eliminate double-storing in shared LRU in characters loader chain** — `WithMultiCache.Add` + `WithQueriedCache.Add` both write to the same LRU; the second is always redundant. Make QueriedCache layer read-only or document as intentional.
+
+8. **Add context to `ErrNotFound` sentinel** — Single `errors.New("not found")` used for characters, outfits, facilities, sync timestamps, batch misses. Wrap: `fmt.Errorf("character %s: %w", id, shared.ErrNotFound)`.
+
+9. **Collapse 7 identical `subscribe.go` files** — Each domain package has an identical 14-line wrapper. Move to single `SubscribeTo[E]()` in `pubsub` package.
+
+10. **Unify `ErrUnknownPlatform` + fix `platfroms.go` typo** — Same struct duplicated in `characters_tracker` and `tracking`. Move to `ps2/platforms/`. Delete unused `PlatformItems[T]` or repurpose for #4.
+
+11. **Deduplicate Discord event handler boilerplate** — `FacilityControl`/`FacilityLoss`, `PlayerLogin`/`PlayerFakeLogin`/`PlayerLogout`, `ChannelLanguageSaved`/`ChannelTitleUpdatesSaved` are near-identical pairs. Extract shared factory functions.
+
+12. **Add `SubscribeAll` helper** — `newEventsSubscriptionService` calls `Subscribe[E]` 14× per platform, each adding a separate PostStop hook. Reduce to 1 struct literal + 1 PostStop hook per platform.
