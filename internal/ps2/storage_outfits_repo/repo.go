@@ -38,7 +38,7 @@ func (r *Repository) SynchronizedAt(
 		OutfitID: string(outfitId),
 	})
 	if errors.Is(err, sql.ErrNoRows) {
-		return time, shared.ErrNotFound
+		return time, fmt.Errorf("outfit %s synchronized at: %w", outfitId, shared.ErrNotFound)
 	} else if err != nil {
 		return time, fmt.Errorf("failed to get outfit sync time: %w", err)
 	}

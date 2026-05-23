@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/url"
 	"time"
@@ -126,7 +127,7 @@ func (s *Storage) OutfitSynchronizedAt(ctx context.Context, platform ps2_platfor
 		OutfitID: string(outfitId),
 	})
 	if errors.Is(err, sql.ErrNoRows) {
-		return time, shared.ErrNotFound
+		return time, fmt.Errorf("outfit %s synchronized at: %w", outfitId, shared.ErrNotFound)
 	}
 	return time, err
 }
@@ -271,7 +272,7 @@ func (s *Storage) Outfit(ctx context.Context, platform ps2_platforms.Platform, o
 	})
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return ps2.Outfit{}, shared.ErrNotFound
+			return ps2.Outfit{}, fmt.Errorf("outfit %s: %w", outfitId, shared.ErrNotFound)
 		}
 		return ps2.Outfit{}, err
 	}
@@ -320,7 +321,7 @@ func (s *Storage) Facility(ctx context.Context, facilityId ps2.FacilityId) (ps2.
 	facility, err := s.queries.GetFacility(ctx, string(facilityId))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return ps2.Facility{}, shared.ErrNotFound
+			return ps2.Facility{}, fmt.Errorf("facility %s: %w", facilityId, shared.ErrNotFound)
 		}
 		return ps2.Facility{}, err
 	}

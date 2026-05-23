@@ -2,6 +2,7 @@ package census_data_provider
 
 import (
 	"context"
+	"fmt"
 
 	census2_adapters "github.com/x0k/ps2-spy/internal/adapters/census2"
 	"github.com/x0k/ps2-spy/internal/lib/census2"
@@ -34,7 +35,7 @@ func (l *DataProvider) Facility(ctx context.Context, ns string, facilityId ps2.F
 		return ps2.Facility{}, err
 	}
 	if len(regions) == 0 {
-		return ps2.Facility{}, shared.ErrNotFound
+		return ps2.Facility{}, fmt.Errorf("facility %s: %w", facilityId, shared.ErrNotFound)
 	}
 	return ps2.Facility{
 		Id:     ps2.FacilityId(regions[0].FacilityId),
