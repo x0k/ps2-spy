@@ -2,7 +2,6 @@ package tracking
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"sync"
 
@@ -15,14 +14,6 @@ import (
 type Manager struct {
 	managers map[ps2_platforms.Platform]*platformManager
 	wg       sync.WaitGroup
-}
-
-type ErrUnknownPlatform struct {
-	Platform ps2_platforms.Platform
-}
-
-func (e ErrUnknownPlatform) Error() string {
-	return fmt.Sprintf("unknown platform %q", e.Platform)
 }
 
 func New(
@@ -120,7 +111,7 @@ func (m *Manager) HandleTrackingSettingsUpdate(
 func (m *Manager) platformManager(platform ps2_platforms.Platform) (*platformManager, error) {
 	manager, ok := m.managers[platform]
 	if !ok {
-		return nil, ErrUnknownPlatform{Platform: platform}
+		return nil, ps2_platforms.ErrUnknownPlatform{Platform: platform}
 	}
 	return manager, nil
 }

@@ -2,7 +2,6 @@ package characters_tracker
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"sync"
 
@@ -17,14 +16,6 @@ import (
 type Tracker struct {
 	wg        sync.WaitGroup
 	platforms map[ps2_platforms.Platform]*platformTracker
-}
-
-type ErrUnknownPlatform struct {
-	Platform ps2_platforms.Platform
-}
-
-func (e ErrUnknownPlatform) Error() string {
-	return fmt.Sprintf("unknown platform %q", e.Platform)
 }
 
 func New(
@@ -130,7 +121,7 @@ func (t *Tracker) DetailedWorldPopulation(platform ps2_platforms.Platform, world
 func (t *Tracker) platformTracker(platform ps2_platforms.Platform) (*platformTracker, error) {
 	tracker, ok := t.platforms[platform]
 	if !ok {
-		return nil, ErrUnknownPlatform{Platform: platform}
+		return nil, ps2_platforms.ErrUnknownPlatform{Platform: platform}
 	}
 	return tracker, nil
 }

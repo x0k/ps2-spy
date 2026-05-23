@@ -77,7 +77,7 @@ Production build uses `go build -tags "migrate"` (required for migrate source/fi
 
 ## Architecture Improvement Plan (Prioritized)
 
-1. **Fix `Transaction()` vs `Begin()` event-publishing inconsistency** — `Begin()` buffers events until commit; `Transaction()` publishes immediately even if the transaction rolls back. Latent bug in `internal/storage/sql/`.
+1. ~~**Fix `Transaction()` vs `Begin()` event-publishing inconsistency** — `Begin()` buffers events until commit; `Transaction()` publishes immediately even if the transaction rolls back. Latent bug in `internal/storage/sql/`.~~ **DONE** — Both now use `BufferedPublisher` to only flush events after commit.
 
 2. **Consolidate 6 tracking sub-packages into `tracking/settings`** — `settings_data_loader`, `settings_view_loader`, `settings_diff_view_loader`, `settings_updater`, `storage_settings_repo`, `storage_tracking_repo` each re-declare duplicate interfaces. Merge into one `SettingsService` with `Load`/`LoadView`/`LoadDiffView`/`Update`.
 
@@ -89,14 +89,31 @@ Production build uses `go build -tags "migrate"` (required for migrate source/fi
 
 6. **Extract repeated Fallback→Cache pattern into generic factory** — `population_loader.go`, `world_population_loader.go`, `alerts_loader.go` are near-identical (~170 lines). Single generic factory cuts ~140 lines.
 
-7. **Eliminate double-storing in shared LRU in characters loader chain** — `WithMultiCache.Add` + `WithQueriedCache.Add` both write to the same LRU; the second is always redundant. Make QueriedCache layer read-only or document as intentional.
+7. **Eliminate double-storing in shared LRU in characters loader chain** — `WithMultiCache.Add` + `WithQueriedCache.Add` both write to the same LRU; the second is always redundant. Documented as intentional: batch lookups use Multi cache, individual lookups use Queried cache for different access patterns.
 
 8. **Add context to `ErrNotFound` sentinel** — Single `errors.New("not found")` used for characters, outfits, facilities, sync timestamps, batch misses. Wrap: `fmt.Errorf("character %s: %w", id, shared.ErrNotFound)`.
 
 9. **Collapse 7 identical `subscribe.go` files** — Each domain package has an identical 14-line wrapper. Move to single `SubscribeTo[E]()` in `pubsub` package.
 
-10. **Unify `ErrUnknownPlatform` + fix `platfroms.go` typo** — Same struct duplicated in `characters_tracker` and `tracking`. Move to `ps2/platforms/`. Delete unused `PlatformItems[T]` or repurpose for #4.
+10. ~~**Unify `ErrUnknownPlatform` + fix `platfroms.go` typo** — Same struct duplicated in `characters_tracker` and `tracking`. Move to `ps2/platforms/`. Delete unused `PlatformItems[T]` or repurpose for #4.~~ **DONE** — Fixed typo, moved `ErrUnknownPlatform` to `ps2/platforms/`, deleted duplicates.
 
 11. **Deduplicate Discord event handler boilerplate** — `FacilityControl`/`FacilityLoss`, `PlayerLogin`/`PlayerFakeLogin`/`PlayerLogout`, `ChannelLanguageSaved`/`ChannelTitleUpdatesSaved` are near-identical pairs. Extract shared factory functions.
 
 12. **Add `SubscribeAll` helper** — `newEventsSubscriptionService` calls `Subscribe[E]` 14× per platform, each adding a separate PostStop hook. Reduce to 1 struct literal + 1 PostStop hook per platform.
+
+## Transaction vs Begin
+
+`Transaction` delegates to `Begin`, eliminating code duplication:
+
+```go
+func (s *Storage) Transaction(ctx context.Context, run func(s storage.Storage) error) error {
+    return s.Begin(ctx, 10, func(tx *Storage) error {
+        return run(tx)
+    })
+}
+```
+
+- **`Transaction(ctx, run func(Storage) error)`** — Defined on `storage.Storage` interface; callers receive only query access. Hardcoded buffer size of 10.
+- **`Begin(ctx, expectedEventsCount int, run func(*Storage) error)`** — Method on `*sql_storage.Storage`; callback receives full Storage with all methods. Allows tuning buffer size.
+
+The distinction is by design: external packages use the minimal `Storage` interface; internal code uses `*Storage` directly for full access.

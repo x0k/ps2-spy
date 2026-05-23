@@ -1,6 +1,8 @@
 package ps2_platforms
 
 import (
+	"fmt"
+
 	"github.com/x0k/ps2-spy/internal/lib/census2"
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming"
 )
@@ -12,12 +14,6 @@ const (
 	PS4_EU Platform = "ps4eu"
 	PS4_US Platform = "ps4us"
 )
-
-type PlatformItems[T any] struct {
-	Pc    T
-	Ps4eu T
-	Ps4us T
-}
 
 var Platforms = []Platform{PC, PS4_EU, PS4_US}
 
@@ -39,4 +35,12 @@ var PlatformEnvironments = map[Platform]string{
 
 func PlatformEnvironment(platform Platform) string {
 	return PlatformEnvironments[platform]
+}
+
+type ErrUnknownPlatform struct {
+	Platform Platform
+}
+
+func (e ErrUnknownPlatform) Error() string {
+	return fmt.Sprintf("unknown platform %q", e.Platform)
 }
