@@ -4,13 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 	"net/http"
-	"time"
 
-	"github.com/hashicorp/golang-lru/v2/expirable"
 	sql_facility_cache "github.com/x0k/ps2-spy/internal/cache/facility/sql"
-	sql_outfits_cache "github.com/x0k/ps2-spy/internal/cache/outfits/sql"
 	"github.com/x0k/ps2-spy/internal/characters_tracker"
 	census_data_provider "github.com/x0k/ps2-spy/internal/data_providers/census"
 	fisu_data_provider "github.com/x0k/ps2-spy/internal/data_providers/fisu"
@@ -24,9 +20,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/discord"
 	discord_commands "github.com/x0k/ps2-spy/internal/discord/commands"
 	discord_messages "github.com/x0k/ps2-spy/internal/discord/messages"
-	"github.com/x0k/ps2-spy/internal/lib/cache/memory"
 	"github.com/x0k/ps2-spy/internal/lib/census2"
-	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
 	"github.com/x0k/ps2-spy/internal/lib/fisu"
 	"github.com/x0k/ps2-spy/internal/lib/honu"
 	"github.com/x0k/ps2-spy/internal/lib/loader"
@@ -42,7 +36,6 @@ import (
 	"github.com/x0k/ps2-spy/internal/meta"
 	"github.com/x0k/ps2-spy/internal/metrics"
 	discord_module "github.com/x0k/ps2-spy/internal/modules/discord"
-	events_module "github.com/x0k/ps2-spy/internal/modules/events"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	ps2_census_characters_repo "github.com/x0k/ps2-spy/internal/ps2/census_characters_repo"
 	ps2_census_outfits_repo "github.com/x0k/ps2-spy/internal/ps2/census_outfits_repo"
@@ -116,7 +109,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		store,
 	)
 
-	worldTrackerSubsMangers := make(map[ps2_platforms.Platform]pubsub.SubscriptionsManager[worlds_tracker.EventType], len(ps2_platforms.Platforms))
+	worldTrackerSubsManagers := make(map[ps2_platforms.Platform]pubsub.SubscriptionsManager[worlds_tracker.EventType], len(ps2_platforms.Platforms))
 	worldTrackers := make(map[ps2_platforms.Platform]*worlds_tracker.WorldsTracker, len(ps2_platforms.Platforms))
 	charactersLoaders := make(map[ps2_platforms.Platform]loader.Multi[ps2.CharacterId, ps2.Character], len(ps2_platforms.Platforms))
 	characterLoaders := make(map[ps2_platforms.Platform]loader.Keyed[ps2.CharacterId, ps2.Character], len(ps2_platforms.Platforms))
@@ -234,122 +227,26 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		saerro.NewClient("https://saerro.ps2.live", httpClient),
 	)
 
-	for _, platform := range ps2_platforms.Platforms {
-		pl := log.With(slog.String("platform", string(platform)))
-		ns := ps2_platforms.PlatformNamespace(platform)
-
-		eventsPubSub := pubsub.New[events.EventType]()
-
-		eventsModule, err := events_module.New(
-			pl.With(sl.Module("events")),
-			platform,
-			cfg.Census.StreamingEndpoint,
-			cfg.Census.ServiceId,
-			eventsPubSub,
-			mt,
-		)
-		if err != nil {
-			return nil, err
-		}
-		m.Append(eventsModule)
-
-		charactersLoader := metrics.InstrumentMultiKeyedLoaderWithSubjectsCounter(
-			metrics.PlatformLoaderSubjectsCounterMetric(mt, metrics.CharactersPlatformLoaderName, platform),
-			func(ctx context.Context, k []ps2.CharacterId) (map[ps2.CharacterId]ps2.Character, error) {
-				return censusDataProvider.Characters(ctx, platform, k)
-			},
-		)
-
-		charactersCache := expirable.NewLRU[ps2.CharacterId, ps2.Character](0, nil, 24*time.Hour)
-		cachedCharactersLoader := loader.WithMultiCache(
-			pl.Logger.With(sl.Component("characters_loader_cache")),
-			charactersLoader,
-			memory.NewMultiExpirableCache(charactersCache),
-		)
-		charactersLoaders[platform] = cachedCharactersLoader
-
-		batchedCharactersLoader := loader.WithBatching(
-			cachedCharactersLoader,
-			10*time.Second,
-			shared.ErrNotFound,
-		)
-		m.AppendVR(
-			fmt.Sprintf("%s.batched_characters_loader", platform),
-			batchedCharactersLoader.Start,
-		)
-
-		cachedBatchedCharactersLoader := loader.Keyed[ps2.CharacterId, ps2.Character](
-			loader.WithQueriedCache(
-				pl.Logger.With(sl.Component("cached_batched_characters_loader")),
-				metrics.InstrumentQueriedLoaderWithCounterMetric(
-					metrics.PlatformLoadsCounterMetric(mt, metrics.CharacterPlatformLoaderName, platform),
-					batchedCharactersLoader.Load,
-				),
-				memory.NewKeyedExpirableCache(charactersCache),
-			),
-		)
-		characterLoaders[platform] = cachedBatchedCharactersLoader
-
-		worldsTrackerPubSub := pubsub.New[worlds_tracker.EventType]()
-
-		worldsTackerPublisher := metrics.InstrumentPlatformPublisher(
-			mt,
-			metrics.WorldsTrackerPlatformPublisher,
-			platform,
-			worldsTrackerPubSub,
-		)
-		worldTrackerSubsMangers[platform] = worldsTrackerPubSub
-
-		worldsTracker := worlds_tracker.New(
-			pl.With(sl.Component("worlds_tracker")),
-			platform,
-			5*time.Minute,
-			worldsTackerPublisher,
-			func(ctx context.Context, wi ps2.WorldId) (ps2.WorldMap, error) {
-				return censusDataProvider.WorldMap(ctx, ns, wi)
-			},
-		)
-		m.AppendR(fmt.Sprintf("%s.worlds_tracker", platform), worldsTracker.Start)
-		worldTrackers[platform] = worldsTracker
-
-		m.Append(newEventsSubscriptionService(
-			pl.With(sl.Component("events_subscription_service")),
-			platform,
-			m,
-			eventsPubSub,
-			charactersTracker,
-			worldsTracker,
-			statsTracker,
-		))
-
-		outfitsLoader := loader.WithMultiCache(
-			log.Logger.With(sl.Component("outfits_loader_cache")),
-			func(ctx context.Context, k []ps2.OutfitId) (map[ps2.OutfitId]ps2.Outfit, error) {
-				return censusDataProvider.Outfits(ctx, platform, k)
-			},
-			sql_outfits_cache.New(
-				log.With(sl.Component("outfits_cache")),
-				store,
-				platform,
-			),
-		)
-		outfitsLoaders[platform] = outfitsLoader
-		// We don't need batching here right now
-		outfitLoaders[platform] = func(ctx context.Context, oi ps2.OutfitId) (ps2.Outfit, error) {
-			outfit, err := outfitsLoader(ctx, []ps2.OutfitId{oi})
-			if err != nil {
-				return ps2.Outfit{}, err
-			}
-			return outfit[oi], nil
-		}
-
-		facilityLoaders[platform] = loader.WithKeyedCache(
-			log.Logger.With(sl.Component("facilities_loader_cache")),
-			func(ctx context.Context, id ps2.FacilityId) (ps2.Facility, error) {
-				return censusDataProvider.Facility(ctx, ns, id)
-			},
-			facilityCache,
-		)
+	platformServices, err := newPlatformServices(
+		log,
+		cfg,
+		m,
+		mt,
+		censusDataProvider,
+		store,
+		facilityCache,
+		charactersTracker,
+		statsTracker,
+		worldTrackerSubsManagers,
+		worldTrackers,
+		charactersLoaders,
+		characterLoaders,
+		outfitsLoaders,
+		outfitLoaders,
+		facilityLoaders,
+	)
+	if err != nil {
+		return nil, err
 	}
 
 	outfitMemberSaved := ps2.Subscribe[ps2.OutfitMembersAdded](m, ps2PubSub)
@@ -449,7 +346,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			if !ok {
 				return meta.Loaded[ps2.WorldTerritoryControl]{}, fmt.Errorf("unknown world %q", worldId)
 			}
-			control, err := worldTrackers[platform].WorldTerritoryControl(ctx, worldId)
+			control, err := platformServices.WorldTrackers[platform].WorldTerritoryControl(ctx, worldId)
 			if err != nil {
 				return meta.Loaded[ps2.WorldTerritoryControl]{}, err
 			}
@@ -468,7 +365,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		func(
 			ctx context.Context, platform ps2_platforms.Platform, outfitIds []ps2.OutfitId,
 		) (map[ps2.OutfitId]ps2.Outfit, error) {
-			return outfitsLoaders[platform](ctx, outfitIds)
+			return platformServices.OutfitsLoaders[platform](ctx, outfitIds)
 		},
 		tracking_settings_view_loader.New(
 			storageSettingsRepo,
@@ -515,7 +412,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		ps2PubSub,
 		trackingPubSub,
 		charactersTrackerPubSub,
-		worldTrackerSubsMangers,
+		worldTrackerSubsManagers,
 		characterLoaders,
 		outfitLoaders,
 		charactersLoaders,
