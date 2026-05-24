@@ -79,7 +79,7 @@ Production build uses `go build -tags "migrate"` (required for migrate source/fi
 
 1. ~~**Fix `Transaction()` vs `Begin()` event-publishing inconsistency** — `Begin()` buffers events until commit; `Transaction()` publishes immediately even if the transaction rolls back. Latent bug in `internal/storage/sql/`.~~ **DONE** — Both now use `BufferedPublisher` to only flush events after commit.
 
-2. **Consolidate 6 tracking sub-packages into `tracking/settings`** — `settings_data_loader`, `settings_view_loader`, `settings_diff_view_loader`, `settings_updater`, `storage_settings_repo`, `storage_tracking_repo` each re-declare duplicate interfaces. Merge into one `SettingsService` with `Load`/`LoadView`/`LoadDiffView`/`Update`.
+2. ~~**Consolidate 6 tracking sub-packages into `tracking/settings`** — `settings_data_loader`, `settings_view_loader`, `settings_diff_view_loader`, `settings_updater`, `storage_settings_repo`, `storage_tracking_repo` each re-declare duplicate interfaces. Merge into one `SettingsService` with `Load`/`LoadView`/`LoadDiffView`/`Update`.~~ **DONE** — Merged into `internal/tracking/settings/` with 3 files (`interfaces.go`, `service.go`, `storage_repo.go`). Unifies 5 interfaces (`SettingsRepo`, `ChannelPlatformsRepo`, `OutfitsRepo`, `CharactersRepo`, `TrackingRepo`) and a `Service` with `Load`/`LoadView`/`LoadDiffView`/`Update` methods. See commit `7262729`.
 
 3. **Break up `*sql_storage.Storage` god object** — 25+ methods across 4 domains (outfits, tracking, channel settings, facilities). Split into `OutfitStore`, `TrackingStore`, `ChannelStore`, `FacilityStore`. Eliminates 6 duplicated query methods that exist on both `*Storage` and repo wrappers.
 
