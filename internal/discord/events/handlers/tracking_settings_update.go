@@ -12,7 +12,7 @@ import (
 )
 
 type TrackingSettingsDiffViewLoader = func(
-	context.Context, discord.ChannelId, ps2_platforms.Platform, tracking.SettingsDiff,
+	context.Context, ps2_platforms.Platform, tracking.SettingsDiff,
 ) (tracking.SettingsDiffView, error)
 
 func NewTrackingSettingsUpdateHandler(
@@ -25,7 +25,7 @@ func NewTrackingSettingsUpdateHandler(
 	) error {
 		return sendSimpleMessage(
 			s, []discord.Channel{e.Channel}, func() discord.Message {
-				diffView, err := trackingSettingsDiffViewLoader(ctx, e.Channel.Id, e.Event.Platform, e.Event.Diff)
+				diffView, err := trackingSettingsDiffViewLoader(ctx, e.Event.Platform, e.Event.Diff)
 				if err != nil {
 					return discord_messages.TrackingSettingsLoadError[string](
 						e.Channel.Id,

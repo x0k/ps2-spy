@@ -1,4 +1,4 @@
-package tracking_storage_settings_repo
+package settings
 
 import (
 	"context"
@@ -13,6 +13,55 @@ import (
 	"github.com/x0k/ps2-spy/internal/storage"
 	"github.com/x0k/ps2-spy/internal/tracking"
 )
+
+type Repository struct {
+	storage storage.Storage
+}
+
+func NewRepository(storage storage.Storage) *Repository {
+	return &Repository{
+		storage: storage,
+	}
+}
+
+func (r *Repository) Get(ctx context.Context, channelId discord.ChannelId, platform ps2_platforms.Platform) (tracking.Settings, error) {
+	channelIdStr := string(channelId)
+	platformStr := string(platform)
+	characterIds, err := r.storage.Queries().ListChannelCharacterIdsForPlatform(ctx, db.ListChannelCharacterIdsForPlatformParams{
+		ChannelID: channelIdStr,
+		Platform:  platformStr,
+	})
+	if err != nil {
+		return tracking.Settings{}, fmt.Errorf("failed to list characters: %w", err)
+	}
+	outfitIds, err := r.storage.Queries().ListChannelOutfitIdsForPlatform(ctx, db.ListChannelOutfitIdsForPlatformParams{
+		ChannelID: channelIdStr,
+		Platform:  platformStr,
+	})
+	if err != nil {
+		return tracking.Settings{}, fmt.Errorf("failed to list outfits: %w", err)
+	}
+	return tracking.Settings{
+		Characters: slicesx.Map(characterIds, ps2.CharacterIdFromString),
+		Outfits:    slicesx.Map(outfitIds, ps2.OutfitIdFromString),
+	}, nil
+}
+
+func (r *Repository) PlatformsByChannelId(
+	ctx context.Context, channelId discord.ChannelId,
+) ([]ps2_platforms.Platform, error) {
+	data, err := r.storage.Queries().ListChannelTrackablePlatforms(
+		ctx, string(channelId),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list channel %q trackable platforms: %w", channelId, err)
+	}
+	platforms := make([]ps2_platforms.Platform, 0, len(data))
+	for _, p := range data {
+		platforms = append(platforms, ps2_platforms.Platform(p))
+	}
+	return platforms, nil
+}
 
 func (r *Repository) Update(
 	ctx context.Context,

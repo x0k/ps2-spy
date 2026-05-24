@@ -49,12 +49,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/storage"
 	sql_storage "github.com/x0k/ps2-spy/internal/storage/sql"
 	"github.com/x0k/ps2-spy/internal/tracking"
-	tracking_settings_data_loader "github.com/x0k/ps2-spy/internal/tracking/settings_data_loader"
-	tracking_settings_diff_view_loader "github.com/x0k/ps2-spy/internal/tracking/settings_diff_view_loader"
-	tracking_settings_updater "github.com/x0k/ps2-spy/internal/tracking/settings_updater"
-	tracking_settings_view_loader "github.com/x0k/ps2-spy/internal/tracking/settings_view_loader"
-	tracking_storage_settings_repo "github.com/x0k/ps2-spy/internal/tracking/storage_settings_repo"
-	tracking_storage_tracking_repo "github.com/x0k/ps2-spy/internal/tracking/storage_tracking_repo"
+	tracking_settings "github.com/x0k/ps2-spy/internal/tracking/settings"
 
 	// migration tools
 	_ "github.com/golang-migrate/migrate/v4/database/sqlite"
@@ -130,8 +125,6 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	)
 	m.AppendVR("outfit_members_synchronizer", outfitMembersSynchronizer.Start)
 
-	storageTrackingRepo := tracking_storage_tracking_repo.New(store)
-
 	trackingManager := tracking.New(
 		log.With(sl.Component("tracking_manager")),
 		func(ctx context.Context, platform ps2_platforms.Platform, characterId ps2.CharacterId) (ps2.Character, error) {
@@ -147,12 +140,14 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	)
 	m.AppendVR("tracking_manager", trackingManager.Start)
 
+	settingsRepo := tracking_settings.NewRepository(store)
+
 	statsTrackerPubSub := pubsub.New[stats_tracker.EventType]()
 	storageTasksRepo := stats_tracker_storage_tasks_repo.New(store)
 	statsTracker := stats_tracker.New(
 		log.With(sl.Component("stats_tracker")),
 		statsTrackerPubSub,
-		storageTrackingRepo.PlatformsByChannelId,
+		settingsRepo.PlatformsByChannelId,
 		storageTasksRepo.ChannelsWithActiveTasks,
 		func(ctx context.Context, platform ps2_platforms.Platform, charId ps2.CharacterId) ([]discord.ChannelId, error) {
 			channels, err := trackingManager.CharacterChannels(ctx, platform, charId)
@@ -278,8 +273,17 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		"voidwell":  voidwellDataProvider.Alerts,
 	}
 
-	storageSettingsRepo := tracking_storage_settings_repo.New(store)
 	trackingPubSub := pubsub.New[tracking.EventType]()
+
+	settingsService := tracking_settings.New(tracking_settings.Opts{
+		SettingsRepo:         settingsRepo,
+		OutfitsRepo:          censusOutfitsRepo,
+		CharactersRepo:       censusCharactersRepo,
+		TrackingRepo:         charactersTracker,
+		MaxTrackedOutfits:    cfg.Tracking.MaxNumberTrackedOutfits,
+		MaxTrackedCharacters: cfg.Tracking.MaxNumberTrackedCharacters,
+		Publisher:            trackingPubSub,
+	})
 
 	settingsUpdate := tracking.Subscribe[tracking.TrackingSettingsUpdated](m, trackingPubSub)
 	m.AppendVR("tracking_settings_events_subscription", func(ctx context.Context) {
@@ -343,28 +347,14 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 				Priority: []string{"spy", "ps2alerts", "honu", "census", "voidwell"},
 			},
 		},
-		tracking_settings_data_loader.New(
-			storageSettingsRepo,
-			charactersTracker,
-		).Load,
+		settingsService.Load,
 		func(
 			ctx context.Context, platform ps2_platforms.Platform, outfitIds []ps2.OutfitId,
 		) (map[ps2.OutfitId]ps2.Outfit, error) {
 			return platformServices.OutfitsLoader(platform)(ctx, outfitIds)
 		},
-		tracking_settings_view_loader.New(
-			storageSettingsRepo,
-			censusOutfitsRepo,
-			censusCharactersRepo,
-		).Load,
-		tracking_settings_updater.New(
-			storageSettingsRepo,
-			censusOutfitsRepo,
-			censusCharactersRepo,
-			cfg.Tracking.MaxNumberTrackedOutfits,
-			cfg.Tracking.MaxNumberTrackedCharacters,
-			trackingPubSub,
-		).Update,
+		settingsService.LoadView,
+		settingsService.Update,
 		statsTracker,
 		discord_commands.ChannelStore{
 			Loader:                      store.Channel,
@@ -402,7 +392,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			count := 0
 			errs := make([]error, 0, len(ps2_platforms.Platforms))
 			for _, platform := range ps2_platforms.Platforms {
-				settings, err := storageSettingsRepo.Get(ctx, channelId, platform)
+				settings, err := settingsRepo.Get(ctx, channelId, platform)
 				if err != nil {
 					errs = append(errs, err)
 					continue
@@ -426,10 +416,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		},
 		statsTrackerPubSub,
 		store.Channel,
-		tracking_settings_diff_view_loader.New(
-			censusOutfitsRepo,
-			censusCharactersRepo,
-		).Load,
+		settingsService.LoadDiffView,
 	)
 	if err != nil {
 		return nil, err
