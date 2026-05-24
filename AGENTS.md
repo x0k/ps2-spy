@@ -83,7 +83,7 @@ Production build uses `go build -tags "migrate"` (required for migrate source/fi
 
 3. **Break up `*sql_storage.Storage` god object** — 25+ methods across 4 domains (outfits, tracking, channel settings, facilities). Split into `OutfitStore`, `TrackingStore`, `ChannelStore`, `FacilityStore`. Eliminates 6 duplicated query methods that exist on both `*Storage` and repo wrappers.
 
-4. **Extract platform loop into `newPlatformServices()`** — The 116-line loop in `root.go` (lines 237–353) mutates 7 outer-scope maps via closure side effects with temporal coupling. Extract to a function returning a `PlatformServices` struct to make inputs/outputs explicit.
+4. ~~**Extract platform loop into `newPlatformServices()`** — The 116-line loop in `root.go` (lines 237–353) mutates 7 outer-scope maps via closure side effects with temporal coupling. Extract to a function returning a `PlatformServices` struct to make inputs/outputs explicit.~~ **DONE** — Extracted into `PlatformServices` struct with private maps, two-phase init (constructor + `Init()`), and accessor methods. Import cycle with `discord_module` resolved by defining `PlatformServicesProvider` interface in consuming package.
 
 5. ~~**Group related positional params into small typed structs** — Not a full deps struct (preserves compile-time completeness). Group: 5 channel-store savers → `ChannelStore`, 3 provider map+priority pairs → `ProviderRegistry`, 5 stats-tracker task CRUD funcs → `StatsTaskStore`. Cuts `discord_commands.New` from ~25 to ~10–12 args.~~ **DONE** — Created `ChannelStore`, `StatsTaskStore`, `ProviderRegistry[T]`, `PopulationProviders`, `WorldPopulationProviders`, `AlertsProviders` types. Reduced `discord_commands.New` from 25 to 14 params.
 
@@ -101,11 +101,11 @@ Production build uses `go build -tags "migrate"` (required for migrate source/fi
 
 12. **Add `SubscribeAll` helper** — `newEventsSubscriptionService` calls `Subscribe[E]` 14× per platform, each adding a separate PostStop hook. Reduce to 1 struct literal + 1 PostStop hook per platform.
 
-13. **Repo wrappers provide no business logic** — `storage_settings_repo`, `storage_tracking_repo`, `storage_tasks_repo`, `storage_outfits_repo` simply delegate to `Queries()` without adding value. They could be eliminated, with callers using `Queries()` directly or domain methods on `*sql_storage.Storage`.
+13. **Evaluate repo wrapper value** — `storage_tracking_repo` is pure delegation (type conversion only). `storage_settings_repo` has actual business logic (`Update()` with diff computation). `storage_tasks_repo` has meaningful DTO conversions and time math. `storage_outfits_repo` has error wrapping and transaction wrapper. Evaluate whether to eliminate `storage_tracking_repo` and keep the rest as lightweight interface adapters.
 
 14. **Event publishing bypassed by repos** — Repo wrappers call `Queries()` directly, bypassing event publishing in convenience methods on `*sql_storage.Storage`. When `storage_settings_repo.Update()` modifies data, no events are published. This creates inconsistency: `store.SaveChannelLanguage()` publishes events, but repos bypass this.
 
-15. **`discord_module.New` has ~17 parameters** — Similar to `discord_commands.New`, takes many related params that could be grouped into `PlatformServices` (from #4) and `SubscriptionManagers` struct.
+15. ~~**`discord_module.New` has ~17 parameters** — Similar to `discord_commands.New`, takes many related params that could be grouped into `PlatformServices` (from #4) and `SubscriptionManagers` struct.~~ **DONE** — Replaced 5 individual map params with single `PlatformServicesProvider` interface defined in `discord_module` package to avoid import cycle.
 
 16. **Inconsistent caching strategies** — Characters use Multi+Batching+Queried chain (3 layers), Outfits use Multi only, Facilities use Keyed only. Consider a unified strategy.
 
