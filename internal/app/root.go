@@ -55,7 +55,6 @@ import (
 	tracking_settings_view_loader "github.com/x0k/ps2-spy/internal/tracking/settings_view_loader"
 	tracking_storage_settings_repo "github.com/x0k/ps2-spy/internal/tracking/storage_settings_repo"
 	tracking_storage_tracking_repo "github.com/x0k/ps2-spy/internal/tracking/storage_tracking_repo"
-	"github.com/x0k/ps2-spy/internal/worlds_tracker"
 
 	// migration tools
 	_ "github.com/golang-migrate/migrate/v4/database/sqlite"
@@ -109,13 +108,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		store,
 	)
 
-	worldTrackerSubsManagers := make(map[ps2_platforms.Platform]pubsub.SubscriptionsManager[worlds_tracker.EventType], len(ps2_platforms.Platforms))
-	worldTrackers := make(map[ps2_platforms.Platform]*worlds_tracker.WorldsTracker, len(ps2_platforms.Platforms))
-	charactersLoaders := make(map[ps2_platforms.Platform]loader.Multi[ps2.CharacterId, ps2.Character], len(ps2_platforms.Platforms))
-	characterLoaders := make(map[ps2_platforms.Platform]loader.Keyed[ps2.CharacterId, ps2.Character], len(ps2_platforms.Platforms))
-	outfitsLoaders := make(map[ps2_platforms.Platform]loader.Multi[ps2.OutfitId, ps2.Outfit], len(ps2_platforms.Platforms))
-	outfitLoaders := make(map[ps2_platforms.Platform]loader.Keyed[ps2.OutfitId, ps2.Outfit], len(ps2_platforms.Platforms))
-	facilityLoaders := make(map[ps2_platforms.Platform]loader.Keyed[ps2.FacilityId, ps2.Facility], len(ps2_platforms.Platforms))
+	platformServices := newPlatformServices()
 
 	censusCharactersRepo := ps2_census_characters_repo.New(
 		log.With(sl.Component("census_characters_repo")),
@@ -142,7 +135,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	trackingManager := tracking.New(
 		log.With(sl.Component("tracking_manager")),
 		func(ctx context.Context, platform ps2_platforms.Platform, characterId ps2.CharacterId) (ps2.Character, error) {
-			return characterLoaders[platform](ctx, characterId)
+			return platformServices.CharacterLoader(platform)(ctx, characterId)
 		},
 		func(ctx context.Context, platform ps2_platforms.Platform, c ps2.Character) ([]discord.Channel, error) {
 			return store.TrackingChannelsForCharacter(ctx, platform, c.Id, c.OutfitId)
@@ -175,7 +168,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		func(
 			ctx context.Context, platform ps2_platforms.Platform, characterIds []ps2.CharacterId,
 		) (map[ps2.CharacterId]ps2.Character, error) {
-			return charactersLoaders[platform](ctx, characterIds)
+			return platformServices.CharactersLoader(platform)(ctx, characterIds)
 		},
 		cfg.StatsTracker.MaxTrackingDuration,
 	)
@@ -185,7 +178,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	charactersTracker := characters_tracker.New(
 		log.With(sl.Component("platforms_characters_tracker")),
 		func(ctx context.Context, platform ps2_platforms.Platform, characterId ps2.CharacterId) (ps2.Character, error) {
-			return characterLoaders[platform](ctx, characterId)
+			return platformServices.CharacterLoader(platform)(ctx, characterId)
 		},
 		charactersTrackerPubSub,
 		mt,
@@ -196,7 +189,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		log,
 		cfg.AppName,
 		charactersTracker,
-		worldTrackers,
+		platformServices,
 	)
 	censusDataProvider, err := census_data_provider.New(
 		log.With(sl.Component("census_data_provider")),
@@ -227,7 +220,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		saerro.NewClient("https://saerro.ps2.live", httpClient),
 	)
 
-	platformServices, err := newPlatformServices(
+	if err := platformServices.Init(
 		log,
 		cfg,
 		m,
@@ -237,15 +230,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		facilityCache,
 		charactersTracker,
 		statsTracker,
-		worldTrackerSubsManagers,
-		worldTrackers,
-		charactersLoaders,
-		characterLoaders,
-		outfitsLoaders,
-		outfitLoaders,
-		facilityLoaders,
-	)
-	if err != nil {
+	); err != nil {
 		return nil, err
 	}
 
@@ -346,7 +331,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			if !ok {
 				return meta.Loaded[ps2.WorldTerritoryControl]{}, fmt.Errorf("unknown world %q", worldId)
 			}
-			control, err := platformServices.WorldTrackers[platform].WorldTerritoryControl(ctx, worldId)
+			control, err := platformServices.WorldTracker(platform).WorldTerritoryControl(ctx, worldId)
 			if err != nil {
 				return meta.Loaded[ps2.WorldTerritoryControl]{}, err
 			}
@@ -365,7 +350,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		func(
 			ctx context.Context, platform ps2_platforms.Platform, outfitIds []ps2.OutfitId,
 		) (map[ps2.OutfitId]ps2.Outfit, error) {
-			return platformServices.OutfitsLoaders[platform](ctx, outfitIds)
+			return platformServices.OutfitsLoader(platform)(ctx, outfitIds)
 		},
 		tracking_settings_view_loader.New(
 			storageSettingsRepo,
@@ -412,11 +397,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		ps2PubSub,
 		trackingPubSub,
 		charactersTrackerPubSub,
-		worldTrackerSubsManagers,
-		characterLoaders,
-		outfitLoaders,
-		charactersLoaders,
-		facilityLoaders,
+		platformServices,
 		func(ctx context.Context, channelId discord.ChannelId) (int, error) {
 			count := 0
 			errs := make([]error, 0, len(ps2_platforms.Platforms))

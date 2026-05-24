@@ -29,16 +29,56 @@ import (
 )
 
 type PlatformServices struct {
-	WorldTrackerSubsManagers map[ps2_platforms.Platform]pubsub.SubscriptionsManager[worlds_tracker.EventType]
-	WorldTrackers            map[ps2_platforms.Platform]*worlds_tracker.WorldsTracker
-	CharactersLoaders        map[ps2_platforms.Platform]loader.Multi[ps2.CharacterId, ps2.Character]
-	CharacterLoaders         map[ps2_platforms.Platform]loader.Keyed[ps2.CharacterId, ps2.Character]
-	OutfitsLoaders           map[ps2_platforms.Platform]loader.Multi[ps2.OutfitId, ps2.Outfit]
-	OutfitLoaders            map[ps2_platforms.Platform]loader.Keyed[ps2.OutfitId, ps2.Outfit]
-	FacilityLoaders          map[ps2_platforms.Platform]loader.Keyed[ps2.FacilityId, ps2.Facility]
+	worldTrackerSubsManagers map[ps2_platforms.Platform]pubsub.SubscriptionsManager[worlds_tracker.EventType]
+	worldTrackers            map[ps2_platforms.Platform]*worlds_tracker.WorldsTracker
+	charactersLoaders        map[ps2_platforms.Platform]loader.Multi[ps2.CharacterId, ps2.Character]
+	characterLoaders         map[ps2_platforms.Platform]loader.Keyed[ps2.CharacterId, ps2.Character]
+	outfitsLoaders           map[ps2_platforms.Platform]loader.Multi[ps2.OutfitId, ps2.Outfit]
+	outfitLoaders            map[ps2_platforms.Platform]loader.Keyed[ps2.OutfitId, ps2.Outfit]
+	facilityLoaders          map[ps2_platforms.Platform]loader.Keyed[ps2.FacilityId, ps2.Facility]
 }
 
-func newPlatformServices(
+func newPlatformServices() *PlatformServices {
+	return &PlatformServices{
+		worldTrackerSubsManagers: make(map[ps2_platforms.Platform]pubsub.SubscriptionsManager[worlds_tracker.EventType], len(ps2_platforms.Platforms)),
+		worldTrackers:            make(map[ps2_platforms.Platform]*worlds_tracker.WorldsTracker, len(ps2_platforms.Platforms)),
+		charactersLoaders:        make(map[ps2_platforms.Platform]loader.Multi[ps2.CharacterId, ps2.Character], len(ps2_platforms.Platforms)),
+		characterLoaders:         make(map[ps2_platforms.Platform]loader.Keyed[ps2.CharacterId, ps2.Character], len(ps2_platforms.Platforms)),
+		outfitsLoaders:           make(map[ps2_platforms.Platform]loader.Multi[ps2.OutfitId, ps2.Outfit], len(ps2_platforms.Platforms)),
+		outfitLoaders:            make(map[ps2_platforms.Platform]loader.Keyed[ps2.OutfitId, ps2.Outfit], len(ps2_platforms.Platforms)),
+		facilityLoaders:          make(map[ps2_platforms.Platform]loader.Keyed[ps2.FacilityId, ps2.Facility], len(ps2_platforms.Platforms)),
+	}
+}
+
+func (p *PlatformServices) WorldTracker(platform ps2_platforms.Platform) *worlds_tracker.WorldsTracker {
+	return p.worldTrackers[platform]
+}
+
+func (p *PlatformServices) CharacterLoader(platform ps2_platforms.Platform) loader.Keyed[ps2.CharacterId, ps2.Character] {
+	return p.characterLoaders[platform]
+}
+
+func (p *PlatformServices) CharactersLoader(platform ps2_platforms.Platform) loader.Multi[ps2.CharacterId, ps2.Character] {
+	return p.charactersLoaders[platform]
+}
+
+func (p *PlatformServices) OutfitLoader(platform ps2_platforms.Platform) loader.Keyed[ps2.OutfitId, ps2.Outfit] {
+	return p.outfitLoaders[platform]
+}
+
+func (p *PlatformServices) OutfitsLoader(platform ps2_platforms.Platform) loader.Multi[ps2.OutfitId, ps2.Outfit] {
+	return p.outfitsLoaders[platform]
+}
+
+func (p *PlatformServices) FacilityLoader(platform ps2_platforms.Platform) loader.Keyed[ps2.FacilityId, ps2.Facility] {
+	return p.facilityLoaders[platform]
+}
+
+func (p *PlatformServices) WorldTrackerSubsManager(platform ps2_platforms.Platform) pubsub.SubscriptionsManager[worlds_tracker.EventType] {
+	return p.worldTrackerSubsManagers[platform]
+}
+
+func (p *PlatformServices) Init(
 	log *logger.Logger,
 	cfg *Config,
 	m *module.Root,
@@ -48,14 +88,7 @@ func newPlatformServices(
 	facilityCache *sql_facility_cache.Cache,
 	charactersTracker *characters_tracker.Tracker,
 	statsTracker *stats_tracker.StatsTracker,
-	worldTrackerSubsManagers map[ps2_platforms.Platform]pubsub.SubscriptionsManager[worlds_tracker.EventType],
-	worldTrackers map[ps2_platforms.Platform]*worlds_tracker.WorldsTracker,
-	charactersLoaders map[ps2_platforms.Platform]loader.Multi[ps2.CharacterId, ps2.Character],
-	characterLoaders map[ps2_platforms.Platform]loader.Keyed[ps2.CharacterId, ps2.Character],
-	outfitsLoaders map[ps2_platforms.Platform]loader.Multi[ps2.OutfitId, ps2.Outfit],
-	outfitLoaders map[ps2_platforms.Platform]loader.Keyed[ps2.OutfitId, ps2.Outfit],
-	facilityLoaders map[ps2_platforms.Platform]loader.Keyed[ps2.FacilityId, ps2.Facility],
-) (*PlatformServices, error) {
+) error {
 	for _, platform := range ps2_platforms.Platforms {
 		pl := log.With(slog.String("platform", string(platform)))
 		ns := ps2_platforms.PlatformNamespace(platform)
@@ -71,7 +104,7 @@ func newPlatformServices(
 			mt,
 		)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		m.Append(eventsModule)
 
@@ -88,7 +121,7 @@ func newPlatformServices(
 			charactersLoader,
 			memory.NewMultiExpirableCache(charactersCache),
 		)
-		charactersLoaders[platform] = cachedCharactersLoader
+		p.charactersLoaders[platform] = cachedCharactersLoader
 
 		batchedCharactersLoader := loader.WithBatching(
 			cachedCharactersLoader,
@@ -110,7 +143,7 @@ func newPlatformServices(
 				memory.NewKeyedExpirableCache(charactersCache),
 			),
 		)
-		characterLoaders[platform] = cachedBatchedCharactersLoader
+		p.characterLoaders[platform] = cachedBatchedCharactersLoader
 
 		worldsTrackerPubSub := pubsub.New[worlds_tracker.EventType]()
 
@@ -120,7 +153,7 @@ func newPlatformServices(
 			platform,
 			worldsTrackerPubSub,
 		)
-		worldTrackerSubsManagers[platform] = worldsTrackerPubSub
+		p.worldTrackerSubsManagers[platform] = worldsTrackerPubSub
 
 		worldsTracker := worlds_tracker.New(
 			pl.With(sl.Component("worlds_tracker")),
@@ -132,7 +165,7 @@ func newPlatformServices(
 			},
 		)
 		m.AppendR(fmt.Sprintf("%s.worlds_tracker", platform), worldsTracker.Start)
-		worldTrackers[platform] = worldsTracker
+		p.worldTrackers[platform] = worldsTracker
 
 		m.Append(newEventsSubscriptionService(
 			pl.With(sl.Component("events_subscription_service")),
@@ -155,8 +188,8 @@ func newPlatformServices(
 				platform,
 			),
 		)
-		outfitsLoaders[platform] = outfitsLoader
-		outfitLoaders[platform] = func(ctx context.Context, oi ps2.OutfitId) (ps2.Outfit, error) {
+		p.outfitsLoaders[platform] = outfitsLoader
+		p.outfitLoaders[platform] = func(ctx context.Context, oi ps2.OutfitId) (ps2.Outfit, error) {
 			outfit, err := outfitsLoader(ctx, []ps2.OutfitId{oi})
 			if err != nil {
 				return ps2.Outfit{}, err
@@ -164,7 +197,7 @@ func newPlatformServices(
 			return outfit[oi], nil
 		}
 
-		facilityLoaders[platform] = loader.WithKeyedCache(
+		p.facilityLoaders[platform] = loader.WithKeyedCache(
 			log.Logger.With(sl.Component("facilities_loader_cache")),
 			func(ctx context.Context, id ps2.FacilityId) (ps2.Facility, error) {
 				return censusDataProvider.Facility(ctx, ns, id)
@@ -173,13 +206,5 @@ func newPlatformServices(
 		)
 	}
 
-	return &PlatformServices{
-		WorldTrackerSubsManagers: worldTrackerSubsManagers,
-		WorldTrackers:            worldTrackers,
-		CharactersLoaders:        charactersLoaders,
-		CharacterLoaders:         characterLoaders,
-		OutfitsLoaders:           outfitsLoaders,
-		OutfitLoaders:            outfitLoaders,
-		FacilityLoaders:          facilityLoaders,
-	}, nil
+	return nil
 }

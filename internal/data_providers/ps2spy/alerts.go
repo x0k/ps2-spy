@@ -12,8 +12,8 @@ import (
 func (p *DataProvider) Alerts(ctx context.Context) (meta.Loaded[ps2.Alerts], error) {
 	alerts := make(ps2.Alerts, 0)
 	for _, platform := range ps2_platforms.Platforms {
-		tracker, ok := p.worldTrackers[platform]
-		if !ok {
+		tracker := p.worldTracker.WorldTracker(platform)
+		if tracker == nil {
 			p.log.Warn(ctx, "no alerts tracker for platform", slog.String("platform", string(platform)))
 			continue
 		}

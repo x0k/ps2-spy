@@ -7,23 +7,27 @@ import (
 	"github.com/x0k/ps2-spy/internal/worlds_tracker"
 )
 
+type WorldTrackerProvider interface {
+	WorldTracker(platform ps2_platforms.Platform) *worlds_tracker.WorldsTracker
+}
+
 type DataProvider struct {
 	appName           string
 	log               *logger.Logger
 	charactersTracker *characters_tracker.Tracker
-	worldTrackers     map[ps2_platforms.Platform]*worlds_tracker.WorldsTracker
+	worldTracker      WorldTrackerProvider
 }
 
 func New(
 	log *logger.Logger,
 	appName string,
 	charactersTracker *characters_tracker.Tracker,
-	worldTrackers map[ps2_platforms.Platform]*worlds_tracker.WorldsTracker,
+	worldTracker WorldTrackerProvider,
 ) *DataProvider {
 	return &DataProvider{
 		log:               log,
 		appName:           appName,
 		charactersTracker: charactersTracker,
-		worldTrackers:     worldTrackers,
+		worldTracker:      worldTracker,
 	}
 }

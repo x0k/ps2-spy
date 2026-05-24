@@ -25,6 +25,15 @@ import (
 	"github.com/x0k/ps2-spy/internal/worlds_tracker"
 )
 
+type PlatformServicesProvider interface {
+	WorldTrackerSubsManager(platform ps2_platforms.Platform) pubsub.SubscriptionsManager[worlds_tracker.EventType]
+	CharacterLoader(platform ps2_platforms.Platform) loader.Keyed[ps2.CharacterId, ps2.Character]
+	CharactersLoader(platform ps2_platforms.Platform) loader.Multi[ps2.CharacterId, ps2.Character]
+	OutfitLoader(platform ps2_platforms.Platform) loader.Keyed[ps2.OutfitId, ps2.Outfit]
+	OutfitsLoader(platform ps2_platforms.Platform) loader.Multi[ps2.OutfitId, ps2.Outfit]
+	FacilityLoader(platform ps2_platforms.Platform) loader.Keyed[ps2.FacilityId, ps2.Facility]
+}
+
 func New(
 	log *logger.Logger,
 	token string,
@@ -38,11 +47,7 @@ func New(
 	ps2Subs pubsub.SubscriptionsManager[ps2.EventType],
 	trackingSubs pubsub.SubscriptionsManager[tracking.EventType],
 	charactersTrackerSubs pubsub.SubscriptionsManager[characters_tracker.EventType],
-	worldTrackerSubsMangers map[ps2_platforms.Platform]pubsub.SubscriptionsManager[worlds_tracker.EventType],
-	characterLoaders map[ps2_platforms.Platform]loader.Keyed[ps2.CharacterId, ps2.Character],
-	outfitLoaders map[ps2_platforms.Platform]loader.Keyed[ps2.OutfitId, ps2.Outfit],
-	charactersLoaders map[ps2_platforms.Platform]loader.Multi[ps2.CharacterId, ps2.Character],
-	facilityLoaders map[ps2_platforms.Platform]loader.Keyed[ps2.FacilityId, ps2.Facility],
+	platformServicesProvider PlatformServicesProvider,
 	onlineTrackableEntitiesCountLoader loader.Keyed[discord.ChannelId, int],
 	statsTrackerSubs pubsub.SubscriptionsManager[stats_tracker.EventType],
 	channelLoader discord_events.ChannelLoader,
@@ -127,10 +132,10 @@ func New(
 			handlersManager,
 			messages,
 			platform,
-			outfitLoaders[platform],
-			facilityLoaders[platform],
-			charactersLoaders[platform],
-			characterLoaders[platform],
+			platformServicesProvider.OutfitLoader(platform),
+			platformServicesProvider.FacilityLoader(platform),
+			platformServicesProvider.CharactersLoader(platform),
+			platformServicesProvider.CharacterLoader(platform),
 			onlineTrackableEntitiesCountLoader,
 			handlersChannelTitleUpdater,
 		) {
@@ -150,11 +155,12 @@ func New(
 			fmt.Sprintf("discord.%s.events_subscription", platform),
 			platformEventsPublisher.Start,
 		)
+		worldTrackerSubsManager := platformServicesProvider.WorldTrackerSubsManager(platform)
 		playerLogin := characters_tracker.Subscribe[characters_tracker.PlayerLogin](m, charactersTrackerSubs)
 		playerFakeLogin := characters_tracker.Subscribe[characters_tracker.PlayerFakeLogin](m, charactersTrackerSubs)
 		playerLogout := characters_tracker.Subscribe[characters_tracker.PlayerLogout](m, charactersTrackerSubs)
-		facilityControl := worlds_tracker.Subscribe[worlds_tracker.FacilityControl](m, worldTrackerSubsMangers[platform])
-		facilityLoss := worlds_tracker.Subscribe[worlds_tracker.FacilityLoss](m, worldTrackerSubsMangers[platform])
+		facilityControl := worlds_tracker.Subscribe[worlds_tracker.FacilityControl](m, worldTrackerSubsManager)
+		facilityLoss := worlds_tracker.Subscribe[worlds_tracker.FacilityLoss](m, worldTrackerSubsManager)
 		outfitMembersUpdate := ps2.Subscribe[ps2.OutfitMembersUpdate](m, ps2Subs)
 		m.AppendVR(
 			fmt.Sprintf("discord.%s.events_subscription", platform),
