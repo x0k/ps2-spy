@@ -52,7 +52,6 @@ import (
 	sql_storage "github.com/x0k/ps2-spy/internal/storage/sql"
 	"github.com/x0k/ps2-spy/internal/tracking"
 	tracking_settings "github.com/x0k/ps2-spy/internal/tracking/settings"
-	tracking_storage_tracking_repo "github.com/x0k/ps2-spy/internal/tracking/storage_tracking_repo"
 
 	// migration tools
 	_ "github.com/golang-migrate/migrate/v4/database/sqlite"
@@ -119,7 +118,6 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	)
 
 	storageOutfitsRepo := ps2_storage_outfits_repo.New(store)
-	storageTrackingRepo := tracking_storage_tracking_repo.New(store, log.With(sl.Component("storage_tracking_repo")).Logger)
 
 	ps2PubSub := pubsub.New[ps2.EventType]()
 	outfitMembersSynchronizer := ps2_outfit_members_synchronizer.New(
@@ -131,22 +129,22 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	)
 	m.AppendVR("outfit_members_synchronizer", outfitMembersSynchronizer.Start)
 
+	settingsRepo := tracking_settings.NewRepository(store, log.With(sl.Component("tracking_repo")))
+
 	trackingManager := tracking.New(
 		log.With(sl.Component("tracking_manager")),
 		func(ctx context.Context, platform ps2_platforms.Platform, characterId ps2.CharacterId) (ps2.Character, error) {
 			return platformServices.CharacterLoader(platform)(ctx, characterId)
 		},
 		func(ctx context.Context, platform ps2_platforms.Platform, c ps2.Character) ([]discord.Channel, error) {
-			return storageTrackingRepo.TrackingChannelsForCharacter(ctx, platform, c.Id, c.OutfitId)
+			return settingsRepo.TrackingChannelsForCharacter(ctx, platform, c.Id, c.OutfitId)
 		},
-		storageTrackingRepo.AllTrackableCharacterIdsWithDuplicationsForPlatform,
+		settingsRepo.AllTrackableCharacterIdsWithDuplicationsForPlatform,
 		storageOutfitsRepo.MemberIds,
-		storageTrackingRepo.TrackingChannelsForOutfit,
-		storageTrackingRepo.AllTrackableOutfitIdsWithDuplicationsForPlatform,
+		settingsRepo.TrackingChannelsForOutfit,
+		settingsRepo.AllTrackableOutfitIdsWithDuplicationsForPlatform,
 	)
 	m.AppendVR("tracking_manager", trackingManager.Start)
-
-	settingsRepo := tracking_settings.NewRepository(store)
 
 	statsTrackerPubSub := pubsub.New[stats_tracker.EventType]()
 	storageTasksRepo := stats_tracker_storage_tasks_repo.New(store)
