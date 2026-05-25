@@ -16,18 +16,16 @@ type EventType string
 type Event = pubsub.Event[EventType]
 
 const (
-	PlayerLoginType                        = EventType(characters_tracker.PlayerLoginType)
-	PlayerLogoutType                       = EventType(characters_tracker.PlayerLogoutType)
-	OutfitMembersUpdateType                = EventType(ps2.OutfitMembersUpdateType)
-	FacilityControlType                    = EventType(worlds_tracker.FacilityControlType)
-	FacilityLossType                       = EventType(worlds_tracker.FacilityLossType)
-	ChannelLanguageUpdatedType             = EventType(storage.ChannelLanguageSavedType)
-	ChannelCharacterNotificationsSavedType = EventType(storage.ChannelCharacterNotificationsSavedType)
-	ChannelOutfitNotificationsSavedType    = EventType(storage.ChannelOutfitNotificationsSavedType)
-	ChannelTitleUpdatesSavedType           = EventType(storage.ChannelTitleUpdatesSavedType)
-	ChannelTrackerStartedType              = EventType(stats_tracker.ChannelTrackerStartedType)
-	ChannelTrackerStoppedType              = EventType(stats_tracker.ChannelTrackerStoppedType)
-	ChannelTrackingSettingsUpdatedType     = EventType(tracking.TrackingSettingsUpdatedType)
+	PlayerLoginType                    = EventType(characters_tracker.PlayerLoginType)
+	PlayerLogoutType                   = EventType(characters_tracker.PlayerLogoutType)
+	OutfitMembersUpdateType            = EventType(ps2.OutfitMembersUpdateType)
+	FacilityControlType                = EventType(worlds_tracker.FacilityControlType)
+	FacilityLossType                   = EventType(worlds_tracker.FacilityLossType)
+	ChannelLanguageUpdatedType         = EventType(storage.ChannelLanguageSavedType)
+	ChannelTitleUpdatesSavedType       = EventType(storage.ChannelTitleUpdatesSavedType)
+	ChannelTrackerStartedType          = EventType(stats_tracker.ChannelTrackerStartedType)
+	ChannelTrackerStoppedType          = EventType(stats_tracker.ChannelTrackerStoppedType)
+	ChannelTrackingSettingsUpdatedType = EventType(tracking.TrackingSettingsUpdatedType)
 )
 
 type channelsEvent[T pubsub.EventType, E pubsub.Event[T]] struct {

@@ -147,13 +147,9 @@ func (s *Storage) SaveChannelCharacterNotifications(
 	channelId discord.ChannelId,
 	enabled bool,
 ) error {
-	err := s.queries.UpsertChannelCharacterNotifications(ctx, db.UpsertChannelCharacterNotificationsParams{
+	return s.queries.UpsertChannelCharacterNotifications(ctx, db.UpsertChannelCharacterNotificationsParams{
 		ChannelID:              string(channelId),
 		CharacterNotifications: enabled,
-	})
-	return s.publish(err, storage.ChannelCharacterNotificationsSaved{
-		ChannelId: channelId,
-		Enabled:   enabled,
 	})
 }
 
@@ -162,13 +158,9 @@ func (s *Storage) SaveChannelOutfitNotifications(
 	channelId discord.ChannelId,
 	enabled bool,
 ) error {
-	err := s.queries.UpsertChannelOutfitNotifications(ctx, db.UpsertChannelOutfitNotificationsParams{
+	return s.queries.UpsertChannelOutfitNotifications(ctx, db.UpsertChannelOutfitNotificationsParams{
 		ChannelID:           string(channelId),
 		OutfitNotifications: enabled,
-	})
-	return s.publish(err, storage.ChannelOutfitNotificationsSaved{
-		ChannelId: channelId,
-		Enabled:   enabled,
 	})
 }
 
@@ -192,13 +184,9 @@ func (s *Storage) SaveChannelDefaultTimezone(
 	channelId discord.ChannelId,
 	loc *time.Location,
 ) error {
-	err := s.queries.UpsertChannelDefaultTimezone(ctx, db.UpsertChannelDefaultTimezoneParams{
+	return s.queries.UpsertChannelDefaultTimezone(ctx, db.UpsertChannelDefaultTimezoneParams{
 		ChannelID:       string(channelId),
 		DefaultTimezone: loc.String(),
-	})
-	return s.publish(err, storage.ChannelDefaultTimezoneSaved{
-		ChannelId: channelId,
-		Location:  loc,
 	})
 }
 

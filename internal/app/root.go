@@ -287,6 +287,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		MaxTrackedOutfits:    cfg.Tracking.MaxNumberTrackedOutfits,
 		MaxTrackedCharacters: cfg.Tracking.MaxNumberTrackedCharacters,
 		Publisher:            trackingPubSub,
+		StoragePublisher:     storePubSub,
 	})
 
 	settingsUpdate := pubsub_adapters.SubscribeTo[tracking.EventType, tracking.TrackingSettingsUpdated](m, trackingPubSub)

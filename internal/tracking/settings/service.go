@@ -10,6 +10,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
+	"github.com/x0k/ps2-spy/internal/storage"
 	"github.com/x0k/ps2-spy/internal/tracking"
 )
 
@@ -21,6 +22,7 @@ type Opts struct {
 	MaxTrackedOutfits    int
 	MaxTrackedCharacters int
 	Publisher            pubsub.Publisher[tracking.Event]
+	StoragePublisher     pubsub.Publisher[storage.Event]
 }
 
 type Service struct {
@@ -31,6 +33,7 @@ type Service struct {
 	maxTrackedOutfits    int
 	maxTrackedCharacters int
 	publisher            pubsub.Publisher[tracking.Event]
+	storagePublisher     pubsub.Publisher[storage.Event]
 }
 
 func New(opts Opts) *Service {
@@ -42,6 +45,7 @@ func New(opts Opts) *Service {
 		maxTrackedOutfits:    opts.MaxTrackedOutfits,
 		maxTrackedCharacters: opts.MaxTrackedCharacters,
 		publisher:            opts.Publisher,
+		storagePublisher:     opts.StoragePublisher,
 	}
 }
 
@@ -183,6 +187,11 @@ func (s *Service) Update(
 	}
 
 	if !settingsDiff.IsEmpty() {
+		s.storagePublisher.Publish(storage.ChannelTrackingSettingsSaved{
+			ChannelId: channelId,
+			Platform:  platform,
+			Updater:   updater,
+		})
 		s.publisher.Publish(tracking.TrackingSettingsUpdated{
 			ChannelId: channelId,
 			Platform:  platform,
