@@ -109,7 +109,7 @@ Production build uses `go build -tags "migrate"` (required for migrate source/fi
 
 16. ~~**Inconsistent caching strategies** — Characters use Multi+Batching+Queried chain (3 layers), Outfits use Multi only, Facilities use Keyed only. Consider a unified strategy.~~ **DONE** — Bounded character LRU (50000 entries), replaced outfit single-key closure with proper `WithQueriedCache` + in-memory LRU (5000 entries, 5min TTL), added Prometheus metrics (subjects counter + success/error counter) to outfit and facility loaders.
 
-17. **Verbose loader type conversions** — Code uses explicit type conversions like `loader.Keyed[ps2.CharacterId, ps2.Character](...)` where type inference could simplify.
+17. ~~**Verbose loader type conversions** — Code uses explicit type conversions like `loader.Keyed[ps2.CharacterId, ps2.Character](...)` where type inference could simplify.~~ **DONE** — Changed `Keyed` from named type to type alias (`type Keyed[K, T] = Queried[K, T]`), eliminating 3 explicit type conversions in `platform_services.go`.
 
 ## Transaction vs Begin
 

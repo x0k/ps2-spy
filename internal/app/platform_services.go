@@ -133,15 +133,13 @@ func (p *PlatformServices) Init(
 			batchedCharactersLoader.Start,
 		)
 
-		cachedBatchedCharactersLoader := loader.Keyed[ps2.CharacterId, ps2.Character](
-			loader.WithQueriedCache(
-				pl.Logger.With(sl.Component("cached_batched_characters_loader")),
-				metrics.InstrumentQueriedLoaderWithCounterMetric(
-					metrics.PlatformLoadsCounterMetric(mt, metrics.CharacterPlatformLoaderName, platform),
-					batchedCharactersLoader.Load,
-				),
-				memory.NewKeyedExpirableCache(charactersCache),
+		cachedBatchedCharactersLoader := loader.WithQueriedCache(
+			pl.Logger.With(sl.Component("cached_batched_characters_loader")),
+			metrics.InstrumentQueriedLoaderWithCounterMetric(
+				metrics.PlatformLoadsCounterMetric(mt, metrics.CharacterPlatformLoaderName, platform),
+				batchedCharactersLoader.Load,
 			),
+			memory.NewKeyedExpirableCache(charactersCache),
 		)
 		p.characterLoaders[platform] = cachedBatchedCharactersLoader
 
@@ -194,32 +192,28 @@ func (p *PlatformServices) Init(
 		p.outfitsLoaders[platform] = outfitsLoader
 
 		outfitCache := expirable.NewLRU[ps2.OutfitId, ps2.Outfit](5000, nil, 5*time.Minute)
-		p.outfitLoaders[platform] = loader.Keyed[ps2.OutfitId, ps2.Outfit](
-			loader.WithQueriedCache(
-				log.Logger.With(sl.Component("outfit_loader_cache")),
-				metrics.InstrumentQueriedLoaderWithCounterMetric(
-					metrics.PlatformLoadsCounterMetric(mt, metrics.OutfitPlatformLoaderName, platform),
-					func(ctx context.Context, oi ps2.OutfitId) (ps2.Outfit, error) {
-						outfits, err := outfitsLoader(ctx, []ps2.OutfitId{oi})
-						if err != nil {
-							return ps2.Outfit{}, err
-						}
-						return outfits[oi], nil
-					},
-				),
-				memory.NewKeyedExpirableCache(outfitCache),
+		p.outfitLoaders[platform] = loader.WithQueriedCache(
+			log.Logger.With(sl.Component("outfit_loader_cache")),
+			metrics.InstrumentQueriedLoaderWithCounterMetric(
+				metrics.PlatformLoadsCounterMetric(mt, metrics.OutfitPlatformLoaderName, platform),
+				func(ctx context.Context, oi ps2.OutfitId) (ps2.Outfit, error) {
+					outfits, err := outfitsLoader(ctx, []ps2.OutfitId{oi})
+					if err != nil {
+						return ps2.Outfit{}, err
+					}
+					return outfits[oi], nil
+				},
 			),
+			memory.NewKeyedExpirableCache(outfitCache),
 		)
 
 		p.facilityLoaders[platform] = loader.WithKeyedCache(
 			log.Logger.With(sl.Component("facilities_loader_cache")),
-			loader.Keyed[ps2.FacilityId, ps2.Facility](
-				metrics.InstrumentQueriedLoaderWithCounterMetric(
-					metrics.PlatformLoadsCounterMetric(mt, metrics.FacilitiesPlatformLoaderName, platform),
-					func(ctx context.Context, id ps2.FacilityId) (ps2.Facility, error) {
-						return censusDataProvider.Facility(ctx, ns, id)
-					},
-				),
+			metrics.InstrumentQueriedLoaderWithCounterMetric(
+				metrics.PlatformLoadsCounterMetric(mt, metrics.FacilitiesPlatformLoaderName, platform),
+				func(ctx context.Context, id ps2.FacilityId) (ps2.Facility, error) {
+					return censusDataProvider.Facility(ctx, ns, id)
+				},
 			),
 			facilityCache,
 		)
