@@ -3,6 +3,7 @@ package events_module
 import (
 	"fmt"
 
+	"github.com/x0k/ps2-spy/internal/adapters/websocket"
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming"
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
@@ -69,6 +70,7 @@ func New(
 		ps2_platforms.PlatformEnvironment(platform),
 		censusServiceId,
 		streamingPublisher,
+		websocket_adapters.NewCoderDialer(),
 	)
 	m.Append(newStreamingClientService(log, platform, streamingClient))
 
