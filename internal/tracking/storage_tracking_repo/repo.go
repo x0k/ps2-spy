@@ -2,6 +2,7 @@ package tracking_storage_tracking_repo
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 
 	"github.com/x0k/ps2-spy/internal/discord"
@@ -12,14 +13,14 @@ import (
 )
 
 type Repository struct {
-	s   storage.Storage
-	log *slog.Logger
+	storage storage.Storage
+	log     *slog.Logger
 }
 
-func New(s storage.Storage, log *slog.Logger) *Repository {
+func New(storage storage.Storage, log *slog.Logger) *Repository {
 	return &Repository{
-		s:   s,
-		log: log,
+		storage: storage,
+		log:     log,
 	}
 }
 
@@ -29,13 +30,13 @@ func (r *Repository) TrackingChannelsForCharacter(
 	characterId ps2.CharacterId,
 	outfitId ps2.OutfitId,
 ) ([]discord.Channel, error) {
-	rows, err := r.s.Queries().ListPlatformTrackingChannelsForCharacter(ctx, db.ListPlatformTrackingChannelsForCharacterParams{
+	rows, err := r.storage.Queries().ListPlatformTrackingChannelsForCharacter(ctx, db.ListPlatformTrackingChannelsForCharacterParams{
 		Platform:    string(platform),
 		CharacterID: string(characterId),
 		OutfitID:    string(outfitId),
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("tracking channels for character %s: %w", characterId, err)
 	}
 	channels := make([]discord.Channel, 0, len(rows))
 	for _, row := range rows {
@@ -49,12 +50,12 @@ func (r *Repository) TrackingChannelsForOutfit(
 	platform ps2_platforms.Platform,
 	outfitId ps2.OutfitId,
 ) ([]discord.Channel, error) {
-	rows, err := r.s.Queries().ListPlatformTrackingChannelsForOutfit(ctx, db.ListPlatformTrackingChannelsForOutfitParams{
+	rows, err := r.storage.Queries().ListPlatformTrackingChannelsForOutfit(ctx, db.ListPlatformTrackingChannelsForOutfitParams{
 		Platform: string(platform),
 		OutfitID: string(outfitId),
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("tracking channels for outfit %s: %w", outfitId, err)
 	}
 	channels := make([]discord.Channel, 0, len(rows))
 	for _, row := range rows {
@@ -66,9 +67,9 @@ func (r *Repository) TrackingChannelsForOutfit(
 func (r *Repository) AllTrackableCharacterIdsWithDuplicationsForPlatform(
 	ctx context.Context, platform ps2_platforms.Platform,
 ) ([]ps2.CharacterId, error) {
-	list, err := r.s.Queries().ListTrackableCharacterIdsWithDuplicationForPlatform(ctx, string(platform))
+	list, err := r.storage.Queries().ListTrackableCharacterIdsWithDuplicationForPlatform(ctx, string(platform))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("trackable character ids for platform %s: %w", platform, err)
 	}
 	ids := make([]ps2.CharacterId, 0, len(list))
 	for _, id := range list {
@@ -80,9 +81,9 @@ func (r *Repository) AllTrackableCharacterIdsWithDuplicationsForPlatform(
 func (r *Repository) AllTrackableOutfitIdsWithDuplicationsForPlatform(
 	ctx context.Context, platform ps2_platforms.Platform,
 ) ([]ps2.OutfitId, error) {
-	list, err := r.s.Queries().ListTrackableOutfitIdsWithDuplicationForPlatform(ctx, string(platform))
+	list, err := r.storage.Queries().ListTrackableOutfitIdsWithDuplicationForPlatform(ctx, string(platform))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("trackable outfit ids for platform %s: %w", platform, err)
 	}
 	ids := make([]ps2.OutfitId, 0, len(list))
 	for _, id := range list {
