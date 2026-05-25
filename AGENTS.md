@@ -93,7 +93,7 @@ Production build uses `go build -tags "migrate"` (required for migrate source/fi
 
 8. ~~**Add context to `ErrNotFound` sentinel** — Single `errors.New("not found")` used for characters, outfits, facilities, sync timestamps, batch misses. Wrap: `fmt.Errorf("character %s: %w", id, shared.ErrNotFound)`.~~ **DONE** — Wrap ErrNotFound with entity context using `fmt.Errorf("entity %s: %w", id, shared.ErrNotFound)` in storage/sql, ps2/storage_outfits_repo, and data_providers/census.
 
-9. ~~**Collapse 7 identical `subscribe.go` files** — Each domain package has an identical 14-line wrapper. Move to single `SubscribeTo[E]()` in `pubsub` package.~~ **DONE** — Deleted 7 domain `subscribe.go` files; renamed `pubsub_adapters.Subscribe` → `SubscribeTo`. Callers now use `pubsub_adapters.SubscribeTo[T, E](ps, subs)` with explicit `T`/`E` type params (Go's type inference cannot infer `E` from return type alone). See commit `...`.
+9. ~~**Collapse 7 identical `subscribe.go` files** — Each domain package has an identical 14-line wrapper. Move to single `SubscribeTo[E]()` in `pubsub` package.~~ **DONE** — Deleted 7 domain `subscribe.go` files; renamed `pubsub_adapters.Subscribe` → `SubscribeTo`. Callers now use `pubsub_adapters.SubscribeTo[T, E](ps, subs)` with explicit `T`/`E` type params (Go's type inference cannot infer `E` from return type alone). See commit `7627710`.
 
 10. ~~**Unify `ErrUnknownPlatform` + fix `platfroms.go` typo** — Same struct duplicated in `characters_tracker` and `tracking`. Move to `ps2/platforms/`. Delete unused `PlatformItems[T]` or repurpose for #4.~~ **DONE** — Fixed typo, moved `ErrUnknownPlatform` to `ps2/platforms/`, deleted duplicates.
 
