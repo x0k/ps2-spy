@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	pubsub_adapters "github.com/x0k/ps2-spy/internal/adapters/pubsub"
 	"github.com/x0k/ps2-spy/internal/characters_tracker"
 	"github.com/x0k/ps2-spy/internal/discord"
 	discord_commands "github.com/x0k/ps2-spy/internal/discord/commands"
@@ -100,11 +101,11 @@ func New(
 		channelLoader,
 	)
 	m.AppendVR("discord.events_publisher", eventsPublisher.Start)
-	channelLanguageUpdate := storage.Subscribe[storage.ChannelLanguageSaved](m, storageSubs)
-	channelTitleUpdates := storage.Subscribe[storage.ChannelTitleUpdatesSaved](m, storageSubs)
-	channelTrackerStarted := stats_tracker.Subscribe[stats_tracker.ChannelTrackerStarted](m, statsTrackerSubs)
-	channelTrackerStopped := stats_tracker.Subscribe[stats_tracker.ChannelTrackerStopped](m, statsTrackerSubs)
-	trackingSettingsUpdated := tracking.Subscribe[tracking.TrackingSettingsUpdated](m, trackingSubs)
+	channelLanguageUpdate := pubsub_adapters.SubscribeTo[storage.EventType, storage.ChannelLanguageSaved](m, storageSubs)
+	channelTitleUpdates := pubsub_adapters.SubscribeTo[storage.EventType, storage.ChannelTitleUpdatesSaved](m, storageSubs)
+	channelTrackerStarted := pubsub_adapters.SubscribeTo[stats_tracker.EventType, stats_tracker.ChannelTrackerStarted](m, statsTrackerSubs)
+	channelTrackerStopped := pubsub_adapters.SubscribeTo[stats_tracker.EventType, stats_tracker.ChannelTrackerStopped](m, statsTrackerSubs)
+	trackingSettingsUpdated := pubsub_adapters.SubscribeTo[tracking.EventType, tracking.TrackingSettingsUpdated](m, trackingSubs)
 	m.AppendVR("discord.events_subscription", func(ctx context.Context) {
 		for {
 			select {
@@ -156,12 +157,12 @@ func New(
 			platformEventsPublisher.Start,
 		)
 		worldTrackerSubsManager := platformServicesProvider.WorldTrackerSubsManager(platform)
-		playerLogin := characters_tracker.Subscribe[characters_tracker.PlayerLogin](m, charactersTrackerSubs)
-		playerFakeLogin := characters_tracker.Subscribe[characters_tracker.PlayerFakeLogin](m, charactersTrackerSubs)
-		playerLogout := characters_tracker.Subscribe[characters_tracker.PlayerLogout](m, charactersTrackerSubs)
-		facilityControl := worlds_tracker.Subscribe[worlds_tracker.FacilityControl](m, worldTrackerSubsManager)
-		facilityLoss := worlds_tracker.Subscribe[worlds_tracker.FacilityLoss](m, worldTrackerSubsManager)
-		outfitMembersUpdate := ps2.Subscribe[ps2.OutfitMembersUpdate](m, ps2Subs)
+		playerLogin := pubsub_adapters.SubscribeTo[characters_tracker.EventType, characters_tracker.PlayerLogin](m, charactersTrackerSubs)
+		playerFakeLogin := pubsub_adapters.SubscribeTo[characters_tracker.EventType, characters_tracker.PlayerFakeLogin](m, charactersTrackerSubs)
+		playerLogout := pubsub_adapters.SubscribeTo[characters_tracker.EventType, characters_tracker.PlayerLogout](m, charactersTrackerSubs)
+		facilityControl := pubsub_adapters.SubscribeTo[worlds_tracker.EventType, worlds_tracker.FacilityControl](m, worldTrackerSubsManager)
+		facilityLoss := pubsub_adapters.SubscribeTo[worlds_tracker.EventType, worlds_tracker.FacilityLoss](m, worldTrackerSubsManager)
+		outfitMembersUpdate := pubsub_adapters.SubscribeTo[ps2.EventType, ps2.OutfitMembersUpdate](m, ps2Subs)
 		m.AppendVR(
 			fmt.Sprintf("discord.%s.events_subscription", platform),
 			func(ctx context.Context) {

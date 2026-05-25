@@ -19,7 +19,7 @@ func (h handler[T, E]) Handle(event pubsub.Event[T]) {
 	h <- event.(E)
 }
 
-func Subscribe[T pubsub.EventType, E pubsub.Event[T]](
+func SubscribeTo[T pubsub.EventType, E pubsub.Event[T]](
 	postStopper module.PostStopper,
 	subs pubsub.SubscriptionsManager[T],
 ) <-chan E {

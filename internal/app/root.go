@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
+	pubsub_adapters "github.com/x0k/ps2-spy/internal/adapters/pubsub"
 	sql_facility_cache "github.com/x0k/ps2-spy/internal/cache/facility/sql"
 	"github.com/x0k/ps2-spy/internal/characters_tracker"
 	census_data_provider "github.com/x0k/ps2-spy/internal/data_providers/census"
@@ -234,8 +235,8 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		return nil, err
 	}
 
-	outfitMemberSaved := ps2.Subscribe[ps2.OutfitMembersAdded](m, ps2PubSub)
-	outfitMemberDeleted := ps2.Subscribe[ps2.OutfitMembersRemoved](m, ps2PubSub)
+	outfitMemberSaved := pubsub_adapters.SubscribeTo[ps2.EventType, ps2.OutfitMembersAdded](m, ps2PubSub)
+	outfitMemberDeleted := pubsub_adapters.SubscribeTo[ps2.EventType, ps2.OutfitMembersRemoved](m, ps2PubSub)
 	m.AppendVR("storage_events_subscription", func(ctx context.Context) {
 		for {
 			select {
@@ -290,7 +291,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		Publisher:            trackingPubSub,
 	})
 
-	settingsUpdate := tracking.Subscribe[tracking.TrackingSettingsUpdated](m, trackingPubSub)
+	settingsUpdate := pubsub_adapters.SubscribeTo[tracking.EventType, tracking.TrackingSettingsUpdated](m, trackingPubSub)
 	m.AppendVR("tracking_settings_events_subscription", func(ctx context.Context) {
 		for {
 			select {

@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	pubsub_adapters "github.com/x0k/ps2-spy/internal/adapters/pubsub"
 	"github.com/x0k/ps2-spy/internal/characters_tracker"
-	census_data_provider "github.com/x0k/ps2-spy/internal/data_providers/census"
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
@@ -25,21 +25,21 @@ func newEventsSubscriptionService(
 	worldsTracker *worlds_tracker.WorldsTracker,
 	statsTracker *stats_tracker.StatsTracker,
 ) module.Runnable {
-	playerLogin := census_data_provider.Subscribe[events.PlayerLogin](ps, subs)
-	playerLogout := census_data_provider.Subscribe[events.PlayerLogout](ps, subs)
-	achievementEarned := census_data_provider.Subscribe[events.AchievementEarned](ps, subs)
-	battleRankUp := census_data_provider.Subscribe[events.BattleRankUp](ps, subs)
-	death := census_data_provider.Subscribe[events.Death](ps, subs)
-	gainExperience := census_data_provider.Subscribe[events.GainExperience](ps, subs)
-	itemAdded := census_data_provider.Subscribe[events.ItemAdded](ps, subs)
-	playerFacilityCapture := census_data_provider.Subscribe[events.PlayerFacilityCapture](ps, subs)
-	playerFacilityDefend := census_data_provider.Subscribe[events.PlayerFacilityDefend](ps, subs)
-	skillAdded := census_data_provider.Subscribe[events.SkillAdded](ps, subs)
-	vehicleDestroy := census_data_provider.Subscribe[events.VehicleDestroy](ps, subs)
+	playerLogin := pubsub_adapters.SubscribeTo[events.EventType, events.PlayerLogin](ps, subs)
+	playerLogout := pubsub_adapters.SubscribeTo[events.EventType, events.PlayerLogout](ps, subs)
+	achievementEarned := pubsub_adapters.SubscribeTo[events.EventType, events.AchievementEarned](ps, subs)
+	battleRankUp := pubsub_adapters.SubscribeTo[events.EventType, events.BattleRankUp](ps, subs)
+	death := pubsub_adapters.SubscribeTo[events.EventType, events.Death](ps, subs)
+	gainExperience := pubsub_adapters.SubscribeTo[events.EventType, events.GainExperience](ps, subs)
+	itemAdded := pubsub_adapters.SubscribeTo[events.EventType, events.ItemAdded](ps, subs)
+	playerFacilityCapture := pubsub_adapters.SubscribeTo[events.EventType, events.PlayerFacilityCapture](ps, subs)
+	playerFacilityDefend := pubsub_adapters.SubscribeTo[events.EventType, events.PlayerFacilityDefend](ps, subs)
+	skillAdded := pubsub_adapters.SubscribeTo[events.EventType, events.SkillAdded](ps, subs)
+	vehicleDestroy := pubsub_adapters.SubscribeTo[events.EventType, events.VehicleDestroy](ps, subs)
 
-	metagameEvent := census_data_provider.Subscribe[events.MetagameEvent](ps, subs)
-	facilityControl := census_data_provider.Subscribe[events.FacilityControl](ps, subs)
-	continentLock := census_data_provider.Subscribe[events.ContinentLock](ps, subs)
+	metagameEvent := pubsub_adapters.SubscribeTo[events.EventType, events.MetagameEvent](ps, subs)
+	facilityControl := pubsub_adapters.SubscribeTo[events.EventType, events.FacilityControl](ps, subs)
+	continentLock := pubsub_adapters.SubscribeTo[events.EventType, events.ContinentLock](ps, subs)
 
 	return module.NewRun(
 		fmt.Sprintf("ps2.%s.events_subscription", platform),
