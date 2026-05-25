@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/x0k/ps2-spy/internal/characters_tracker"
-	census_data_provider "github.com/x0k/ps2-spy/internal/data_providers/census"
 	"github.com/x0k/ps2-spy/internal/discord"
 	discord_commands "github.com/x0k/ps2-spy/internal/discord/commands"
 	discord_messages "github.com/x0k/ps2-spy/internal/discord/messages"
@@ -39,10 +38,8 @@ func newDiscordModule(
 	charactersTrackerPubSub pubsub.SubscriptionsManager[characters_tracker.EventType],
 	statsTrackerPubSub pubsub.SubscriptionsManager[stats_tracker.EventType],
 	trackers *trackerDeps,
-	providers *providerDeps,
 	loaders *loaderDeps,
 	infra *infrastructureDeps,
-	censusDataProvider *census_data_provider.DataProvider,
 	settingsService *tracking_settings.Service,
 ) error {
 	statsTrackerTasksCreator := stats_tracker_tasks_creator.New(
@@ -58,9 +55,6 @@ func newDiscordModule(
 		cfg.Tracking.MaxNumberTrackedOutfits,
 		cfg.StatsTracker.MaxNumberOfTasksPerChannel,
 	)
-
-	alertsLoaders := loaders.alerts
-	alertsLoaders["census"] = censusDataProvider.Alerts
 
 	discordCommands := discord_commands.New(
 		log.With(sl.Component("commands")),
@@ -90,7 +84,7 @@ func newDiscordModule(
 		},
 		discord_commands.AlertsProviders{
 			ProviderRegistry: discord_commands.ProviderRegistry[loader.Simple[meta.Loaded[ps2.Alerts]]]{
-				Loaders:  alertsLoaders,
+				Loaders:  loaders.alerts,
 				Priority: []string{"spy", "ps2alerts", "honu", "census", "voidwell"},
 			},
 		},

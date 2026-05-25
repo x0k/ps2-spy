@@ -25,17 +25,6 @@ import (
 	"github.com/x0k/ps2-spy/internal/ps2"
 )
 
-type providerDeps struct {
-	ps2spy    *ps2spy_data_provider.DataProvider
-	honu      *honu_data_provider.DataProvider
-	ps2alerts *ps2alerts_data_provider.DataProvider
-	voidwell  *voidwell_data_provider.DataProvider
-	fisu      *fisu_data_provider.DataProvider
-	ps2live   *ps2live_data_provider.DataProvider
-	sanctuary *sanctuary_data_provider.DataProvider
-	saerro    *saerro_data_provider.DataProvider
-}
-
 type loaderDeps struct {
 	population      map[string]loader.Simple[meta.Loaded[ps2.WorldsPopulation]]
 	worldPopulation map[string]loader.Keyed[ps2.WorldId, meta.Loaded[ps2.DetailedWorldPopulation]]
@@ -46,15 +35,14 @@ func newProviders(
 	log *logger.Logger,
 	cfg *Config,
 	httpClient *http.Client,
-	censusClient *census2.Client,
+	infra *infrastructureDeps,
 	charactersTracker *characters_tracker.Tracker,
-	platformServices *PlatformServices,
-) (*providerDeps, *loaderDeps) {
+) *loaderDeps {
 	ps2spy := ps2spy_data_provider.New(
 		log,
 		cfg.AppName,
 		charactersTracker,
-		platformServices,
+		infra.platformServices,
 	)
 
 	honu := honu_data_provider.New(
@@ -79,17 +67,6 @@ func newProviders(
 		saerro.NewClient("https://saerro.ps2.live", httpClient),
 	)
 
-	providers := &providerDeps{
-		ps2spy:    ps2spy,
-		honu:      honu,
-		ps2alerts: ps2alertsProvider,
-		voidwell:  voidwell,
-		fisu:      fisu,
-		ps2live:   ps2live,
-		sanctuary: sanctuary,
-		saerro:    saerro,
-	}
-
 	loaders := &loaderDeps{
 		population: map[string]loader.Simple[meta.Loaded[ps2.WorldsPopulation]]{
 			"spy":       ps2spy.Population,
@@ -107,12 +84,13 @@ func newProviders(
 			"voidwell": voidwell.WorldPopulation,
 		},
 		alerts: map[string]loader.Simple[meta.Loaded[ps2.Alerts]]{
-			"spy":      ps2spy.Alerts,
-			"honu":     honu.Alerts,
-			"census":   nil, // filled after creation
-			"voidwell": voidwell.Alerts,
+			"spy":       ps2spy.Alerts,
+			"honu":      honu.Alerts,
+			"ps2alerts": ps2alertsProvider.Alerts,
+			"census":    infra.censusDataProvider.Alerts,
+			"voidwell":  voidwell.Alerts,
 		},
 	}
 
-	return providers, loaders
+	return loaders
 }

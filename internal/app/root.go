@@ -78,16 +78,16 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Module, error) {
 
 	newTrackingSettingsSubscription(log, m, trackingPubSub, trackers, outfitSync)
 
-	providers, loaders := newProviders(
-		log, cfg, httpClient, infra.censusClient,
-		trackers.charactersTracker, infra.platformServices,
+	loaders := newProviders(
+		log, cfg, httpClient, infra,
+		trackers.charactersTracker,
 	)
 
 	if err := newDiscordModule(
 		log, cfg, m, store, storePubSub,
 		ps2PubSub, trackingPubSub, charactersTrackerPubSub,
-		statsTrackerPubSub, trackers, providers, loaders,
-		infra, infra.censusDataProvider, settingsService,
+		statsTrackerPubSub, trackers, loaders,
+		infra, settingsService,
 	); err != nil {
 		return nil, err
 	}
