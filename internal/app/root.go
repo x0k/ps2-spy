@@ -22,14 +22,14 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Module, error) {
 	m := module.New(log.Logger, "root", module.WithSignalHandling())
 
 	if cfg.Profiler.Enabled {
-		srv := newProfilerService(cfg.Profiler.Address, m)
+		srv := newProfilerService(cfg.Profiler.Address, log.Logger)
 		m.Go(module.NewRun(srv.Name(), srv.Run))
 	}
 
 	var mt *metrics.Metrics
 	if cfg.Metrics.Enabled {
 		mt = metrics.New("ps2spy")
-		srv := newMetricsService(mt, cfg.Metrics.Address, m)
+		srv := newMetricsService(mt, cfg.Metrics.Address, log.Logger)
 		m.Go(module.NewRun(srv.Name(), srv.Run))
 	}
 
@@ -83,16 +83,14 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Module, error) {
 		trackers.charactersTracker, infra.platformServices,
 	)
 
-	discordModule, err := newDiscordModule(
+	if err := newDiscordModule(
 		log, cfg, m, store, storePubSub,
 		ps2PubSub, trackingPubSub, charactersTrackerPubSub,
 		statsTrackerPubSub, trackers, providers, loaders,
 		infra, infra.censusDataProvider, settingsService,
-	)
-	if err != nil {
+	); err != nil {
 		return nil, err
 	}
-	m.Go(discordModule)
 
 	return m, nil
 }

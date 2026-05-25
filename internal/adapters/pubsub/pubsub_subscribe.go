@@ -36,3 +36,22 @@ func SubscribeTo[T pubsub.EventType, E pubsub.Event[T]](
 	))
 	return channel
 }
+
+func Listen[T pubsub.EventType, E pubsub.Event[T]](
+	stopper module.Stopper,
+	subs pubsub.SubscriptionsManager[T],
+	name string,
+	handler func(context.Context, E),
+) module.Runnable {
+	ch := SubscribeTo[T, E](stopper, subs)
+	return module.NewRun(name, func(ctx context.Context) error {
+		for {
+			select {
+			case <-ctx.Done():
+				return nil
+			case e := <-ch:
+				handler(ctx, e)
+			}
+		}
+	})
+}

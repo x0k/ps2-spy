@@ -159,22 +159,14 @@ func newStorageEventsSubscription(
 	ps2PubSub pubsub.SubscriptionsManager[ps2.EventType],
 	trackers *trackerDeps,
 ) {
-	outfitMemberSaved := pubsub_adapters.SubscribeTo[ps2.EventType, ps2.OutfitMembersAdded](m, ps2PubSub)
-	outfitMemberDeleted := pubsub_adapters.SubscribeTo[ps2.EventType, ps2.OutfitMembersRemoved](m, ps2PubSub)
-	m.Go(module.NewRun("storage_events_subscription", func(ctx context.Context) error {
-		for {
-			select {
-			case <-ctx.Done():
-				return nil
-			case e := <-outfitMemberSaved:
-				if err := trackers.trackingManager.TrackOutfitMembers(e.OutfitId, e.Platform, e.CharacterIds); err != nil {
-					log.Error(ctx, "failed to track outfit members", sl.Err(err))
-				}
-			case e := <-outfitMemberDeleted:
-				if err := trackers.trackingManager.UntrackOutfitMembers(e.OutfitId, e.Platform, e.CharacterIds); err != nil {
-					log.Error(ctx, "failed to untrack outfit members", sl.Err(err))
-				}
-			}
+	m.Go(pubsub_adapters.Listen(m, ps2PubSub, "storage.outfit_members_added", func(ctx context.Context, e ps2.OutfitMembersAdded) {
+		if err := trackers.trackingManager.TrackOutfitMembers(e.OutfitId, e.Platform, e.CharacterIds); err != nil {
+			log.Error(ctx, "failed to track outfit members", sl.Err(err))
+		}
+	}))
+	m.Go(pubsub_adapters.Listen(m, ps2PubSub, "storage.outfit_members_removed", func(ctx context.Context, e ps2.OutfitMembersRemoved) {
+		if err := trackers.trackingManager.UntrackOutfitMembers(e.OutfitId, e.Platform, e.CharacterIds); err != nil {
+			log.Error(ctx, "failed to untrack outfit members", sl.Err(err))
 		}
 	}))
 }
@@ -186,20 +178,12 @@ func newTrackingSettingsSubscription(
 	trackers *trackerDeps,
 	outfitSync *ps2_outfit_members_synchronizer.OutfitMembersSynchronizer[*ps2_storage_outfits_repo.Repository],
 ) {
-	settingsUpdate := pubsub_adapters.SubscribeTo[tracking.EventType, tracking.TrackingSettingsUpdated](m, trackingPubSub)
-	m.Go(module.NewRun("tracking_settings_events_subscription", func(ctx context.Context) error {
-		for {
-			select {
-			case <-ctx.Done():
-				return nil
-			case e := <-settingsUpdate:
-				if err := trackers.trackingManager.HandleTrackingSettingsUpdate(ctx, e.Platform, e); err != nil {
-					log.Error(ctx, "failed to handle tracking settings update", sl.Err(err))
-				}
-				for _, oId := range e.Diff.Outfits.ToAdd {
-					outfitSync.SyncOutfit(ctx, e.Platform, oId)
-				}
-			}
+	m.Go(pubsub_adapters.Listen(m, trackingPubSub, "tracking.settings_updated", func(ctx context.Context, e tracking.TrackingSettingsUpdated) {
+		if err := trackers.trackingManager.HandleTrackingSettingsUpdate(ctx, e.Platform, e); err != nil {
+			log.Error(ctx, "failed to handle tracking settings update", sl.Err(err))
+		}
+		for _, oId := range e.Diff.Outfits.ToAdd {
+			outfitSync.SyncOutfit(ctx, e.Platform, oId)
 		}
 	}))
 }

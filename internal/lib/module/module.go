@@ -5,7 +5,6 @@ import (
 	"os"
 	"os/signal"
 	"sync"
-	"sync/atomic"
 	"syscall"
 
 	"log/slog"
@@ -18,8 +17,6 @@ type Module struct {
 	services []Runnable
 	onStart  []Runnable
 	onStop   []Runnable
-	fatal    chan error
-	stopped  atomic.Bool
 	signal   bool
 }
 
@@ -33,9 +30,8 @@ func WithSignalHandling() Option {
 
 func New(log *slog.Logger, name string, opts ...Option) *Module {
 	m := &Module{
-		log:   log,
-		name:  name,
-		fatal: make(chan error, 1),
+		log:  log,
+		name: name,
 	}
 	for _, opt := range opts {
 		opt(m)
@@ -57,25 +53,17 @@ func (m *Module) awaiter(ctx context.Context) error {
 		case s := <-stop:
 			m.log.LogAttrs(ctx, slog.LevelInfo, "received signal", slog.String("signal", s.String()))
 			return nil
-		case err := <-m.fatal:
-			return err
+		case <-ctx.Done():
+			return nil
 		}
 	}
-	select {
-	case <-ctx.Done():
-		return nil
-	case err := <-m.fatal:
-		return err
-	}
+	<-ctx.Done()
+	return nil
 }
 
 func (m *Module) run(ctx context.Context) error {
 	if len(m.services) == 0 {
 		return nil
-	}
-
-	if m.stopped.Load() {
-		return <-m.fatal
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
@@ -92,7 +80,7 @@ func (m *Module) run(ctx context.Context) error {
 		m.wg.Go(func() {
 			m.log.LogAttrs(ctx, slog.LevelInfo, "starting", slog.String("service", service.Name()))
 			if err := service.Run(ctx); err != nil {
-				m.Fatal(ctx, err)
+				m.log.LogAttrs(ctx, slog.LevelError, "service failed", slog.String("service", service.Name()), slog.String("error", err.Error()))
 			}
 			m.log.LogAttrs(ctx, slog.LevelInfo, "stopped", slog.String("service", service.Name()))
 		})
@@ -101,13 +89,12 @@ func (m *Module) run(ctx context.Context) error {
 	err := m.awaiter(ctx)
 
 	m.log.LogAttrs(ctx, slog.LevelInfo, "stopping")
-	m.stopped.Store(true)
 	cancel()
 
 	for _, hook := range m.onStop {
 		m.log.LogAttrs(ctx, slog.LevelInfo, "run on stop", slog.String("hook", hook.Name()))
 		if err := hook.Run(ctx); err != nil {
-			m.Fatal(ctx, err)
+			m.log.LogAttrs(ctx, slog.LevelError, "on stop hook failed", slog.String("hook", hook.Name()), slog.String("error", err.Error()))
 		}
 	}
 

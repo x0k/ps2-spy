@@ -95,7 +95,7 @@ func (p *PlatformServices) Init(
 
 		eventsPubSub := pubsub.New[events.EventType]()
 
-		eventsModule, err := events_module.New(
+		eventsRunnables, err := events_module.New(
 			pl.With(sl.Module("events")),
 			platform,
 			cfg.Census.StreamingEndpoint,
@@ -106,7 +106,9 @@ func (p *PlatformServices) Init(
 		if err != nil {
 			return err
 		}
-		m.Go(eventsModule)
+		for _, r := range eventsRunnables {
+			m.Go(r)
+		}
 
 		charactersLoader := metrics.InstrumentMultiKeyedLoaderWithSubjectsCounter(
 			metrics.PlatformLoaderSubjectsCounterMetric(mt, metrics.CharactersPlatformLoaderName, platform),

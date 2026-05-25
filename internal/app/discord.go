@@ -44,7 +44,7 @@ func newDiscordModule(
 	infra *infrastructureDeps,
 	censusDataProvider *census_data_provider.DataProvider,
 	settingsService *tracking_settings.Service,
-) (*module.Module, error) {
+) error {
 	statsTrackerTasksCreator := stats_tracker_tasks_creator.New(
 		trackers.storageTasksRepo,
 		cfg.StatsTracker.MaxTrackingDuration,
@@ -121,7 +121,8 @@ func newDiscordModule(
 	)
 	m.Go(module.NewRun("discord.commands", discordCommands.Start))
 
-	return discord_module.New(
+	discordRunnables, err := discord_module.New(
+		m,
 		log.With(sl.Module("discord")),
 		cfg.Discord.Token,
 		cfg.Discord.CommandHandlerTimeout,
@@ -165,4 +166,11 @@ func newDiscordModule(
 		store.Channel,
 		settingsService.LoadDiffView,
 	)
+	if err != nil {
+		return err
+	}
+	for _, r := range discordRunnables {
+		m.Go(r)
+	}
+	return nil
 }

@@ -36,6 +36,7 @@ type PlatformServicesProvider interface {
 }
 
 func New(
+	stopper module.Stopper,
 	log *logger.Logger,
 	token string,
 	commandHandlerTimeout time.Duration,
@@ -53,8 +54,7 @@ func New(
 	statsTrackerSubs pubsub.SubscriptionsManager[stats_tracker.EventType],
 	channelLoader discord_events.ChannelLoader,
 	trackingSettingsDiffViewLoader discord_event_handlers.TrackingSettingsDiffViewLoader,
-) (*module.Module, error) {
-	m := module.New(log.Logger, "discord")
+) ([]module.Runnable, error) {
 	session, err := discordgo.New("Bot " + token)
 	if err != nil {
 		return nil, err
@@ -64,7 +64,9 @@ func New(
 		log.With(sl.Component("channel_title_updater")),
 		session,
 	)
-	m.Go(module.NewRun("discord.channel_title_updater", func(ctx context.Context) error {
+
+	var runnables []module.Runnable
+	runnables = append(runnables, module.NewRun("discord.channel_title_updater", func(ctx context.Context) error {
 		channelTitleUpdater.Start(ctx)
 		return nil
 	}))
@@ -73,7 +75,7 @@ func New(
 		return nil
 	}
 
-	m.Go(module.NewRun("discord.session", sessionStart(
+	runnables = append(runnables, module.NewRun("discord.session", sessionStart(
 		log.With(sl.Component("session")),
 		session,
 		commands.Commands(),
@@ -86,7 +88,7 @@ func New(
 		session,
 		eventHandlerTimeout,
 	)
-	m.Go(module.NewRun("discord.handlers_manager", func(ctx context.Context) error {
+	runnables = append(runnables, module.NewRun("discord.handlers_manager", func(ctx context.Context) error {
 		handlersManager.Start(ctx)
 		return nil
 	}))
@@ -106,32 +108,24 @@ func New(
 		eventsPubSub,
 		channelLoader,
 	)
-	m.Go(module.NewRun("discord.events_publisher", func(ctx context.Context) error {
+	runnables = append(runnables, module.NewRun("discord.events_publisher", func(ctx context.Context) error {
 		eventsPublisher.Start(ctx)
 		return nil
 	}))
-	channelLanguageUpdate := pubsub_adapters.SubscribeTo[storage.EventType, storage.ChannelLanguageSaved](m, storageSubs)
-	channelTitleUpdates := pubsub_adapters.SubscribeTo[storage.EventType, storage.ChannelTitleUpdatesSaved](m, storageSubs)
-	channelTrackerStarted := pubsub_adapters.SubscribeTo[stats_tracker.EventType, stats_tracker.ChannelTrackerStarted](m, statsTrackerSubs)
-	channelTrackerStopped := pubsub_adapters.SubscribeTo[stats_tracker.EventType, stats_tracker.ChannelTrackerStopped](m, statsTrackerSubs)
-	trackingSettingsUpdated := pubsub_adapters.SubscribeTo[tracking.EventType, tracking.TrackingSettingsUpdated](m, trackingSubs)
-	m.Go(module.NewRun("discord.events_subscription", func(ctx context.Context) error {
-		for {
-			select {
-			case <-ctx.Done():
-				return nil
-			case e := <-channelLanguageUpdate:
-				eventsPublisher.PublishChannelLanguageUpdated(ctx, e)
-			case e := <-channelTitleUpdates:
-				eventsPublisher.PublishChannelTitleUpdates(ctx, e)
-			case e := <-channelTrackerStarted:
-				eventsPublisher.PublishChannelTrackerStarted(ctx, e)
-			case e := <-channelTrackerStopped:
-				eventsPublisher.PublishChannelTrackerStopped(ctx, e)
-			case e := <-trackingSettingsUpdated:
-				eventsPublisher.PublishChannelTrackingSettingsUpdated(ctx, e)
-			}
-		}
+	runnables = append(runnables, pubsub_adapters.Listen(stopper, storageSubs, "discord.channel_language_update", func(ctx context.Context, e storage.ChannelLanguageSaved) {
+		eventsPublisher.PublishChannelLanguageUpdated(ctx, e)
+	}))
+	runnables = append(runnables, pubsub_adapters.Listen(stopper, storageSubs, "discord.channel_title_updates", func(ctx context.Context, e storage.ChannelTitleUpdatesSaved) {
+		eventsPublisher.PublishChannelTitleUpdates(ctx, e)
+	}))
+	runnables = append(runnables, pubsub_adapters.Listen(stopper, statsTrackerSubs, "discord.channel_tracker_started", func(ctx context.Context, e stats_tracker.ChannelTrackerStarted) {
+		eventsPublisher.PublishChannelTrackerStarted(ctx, e)
+	}))
+	runnables = append(runnables, pubsub_adapters.Listen(stopper, statsTrackerSubs, "discord.channel_tracker_stopped", func(ctx context.Context, e stats_tracker.ChannelTrackerStopped) {
+		eventsPublisher.PublishChannelTrackerStopped(ctx, e)
+	}))
+	runnables = append(runnables, pubsub_adapters.Listen(stopper, trackingSubs, "discord.tracking_settings_updated", func(ctx context.Context, e tracking.TrackingSettingsUpdated) {
+		eventsPublisher.PublishChannelTrackingSettingsUpdated(ctx, e)
 	}))
 
 	for _, platform := range ps2_platforms.Platforms {
@@ -161,7 +155,7 @@ func New(
 				return trackingManager.OutfitChannels(ctx, platform, outfitId)
 			},
 		)
-		m.Go(module.NewRun(
+		runnables = append(runnables, module.NewRun(
 			fmt.Sprintf("discord.%s.events_subscription", platform),
 			func(ctx context.Context) error {
 				platformEventsPublisher.Start(ctx)
@@ -169,44 +163,33 @@ func New(
 			},
 		))
 		worldTrackerSubsManager := platformServicesProvider.WorldTrackerSubsManager(platform)
-		playerLogin := pubsub_adapters.SubscribeTo[characters_tracker.EventType, characters_tracker.PlayerLogin](m, charactersTrackerSubs)
-		playerFakeLogin := pubsub_adapters.SubscribeTo[characters_tracker.EventType, characters_tracker.PlayerFakeLogin](m, charactersTrackerSubs)
-		playerLogout := pubsub_adapters.SubscribeTo[characters_tracker.EventType, characters_tracker.PlayerLogout](m, charactersTrackerSubs)
-		facilityControl := pubsub_adapters.SubscribeTo[worlds_tracker.EventType, worlds_tracker.FacilityControl](m, worldTrackerSubsManager)
-		facilityLoss := pubsub_adapters.SubscribeTo[worlds_tracker.EventType, worlds_tracker.FacilityLoss](m, worldTrackerSubsManager)
-		outfitMembersUpdate := pubsub_adapters.SubscribeTo[ps2.EventType, ps2.OutfitMembersUpdate](m, ps2Subs)
-		m.Go(module.NewRun(
-			fmt.Sprintf("discord.%s.events_subscription", platform),
-			func(ctx context.Context) error {
-				for {
-					select {
-					case <-ctx.Done():
-						return nil
-					case e := <-playerLogin:
-						if e.Platform == platform {
-							platformEventsPublisher.PublishPlayerLogin(ctx, e)
-						}
-					case e := <-playerFakeLogin:
-						if e.Platform == platform {
-							platformEventsPublisher.PublishPlayerFakeLogin(ctx, e)
-						}
-					case e := <-playerLogout:
-						if e.Platform == platform {
-							platformEventsPublisher.PublishPlayerLogout(ctx, e)
-						}
-					case e := <-facilityControl:
-						platformEventsPublisher.PublishFacilityControl(ctx, e)
-					case e := <-facilityLoss:
-						platformEventsPublisher.PublishFacilityLoss(ctx, e)
-					case e := <-outfitMembersUpdate:
-						if e.Platform == platform {
-							platformEventsPublisher.PublishOutfitMembersUpdate(ctx, e)
-						}
-					}
-				}
-			},
-		))
+		runnables = append(runnables, pubsub_adapters.Listen(stopper, charactersTrackerSubs, fmt.Sprintf("discord.%s.player_login", platform), func(ctx context.Context, e characters_tracker.PlayerLogin) {
+			if e.Platform == platform {
+				platformEventsPublisher.PublishPlayerLogin(ctx, e)
+			}
+		}))
+		runnables = append(runnables, pubsub_adapters.Listen(stopper, charactersTrackerSubs, fmt.Sprintf("discord.%s.player_fake_login", platform), func(ctx context.Context, e characters_tracker.PlayerFakeLogin) {
+			if e.Platform == platform {
+				platformEventsPublisher.PublishPlayerFakeLogin(ctx, e)
+			}
+		}))
+		runnables = append(runnables, pubsub_adapters.Listen(stopper, charactersTrackerSubs, fmt.Sprintf("discord.%s.player_logout", platform), func(ctx context.Context, e characters_tracker.PlayerLogout) {
+			if e.Platform == platform {
+				platformEventsPublisher.PublishPlayerLogout(ctx, e)
+			}
+		}))
+		runnables = append(runnables, pubsub_adapters.Listen(stopper, worldTrackerSubsManager, fmt.Sprintf("discord.%s.facility_control", platform), func(ctx context.Context, e worlds_tracker.FacilityControl) {
+			platformEventsPublisher.PublishFacilityControl(ctx, e)
+		}))
+		runnables = append(runnables, pubsub_adapters.Listen(stopper, worldTrackerSubsManager, fmt.Sprintf("discord.%s.facility_loss", platform), func(ctx context.Context, e worlds_tracker.FacilityLoss) {
+			platformEventsPublisher.PublishFacilityLoss(ctx, e)
+		}))
+		runnables = append(runnables, pubsub_adapters.Listen(stopper, ps2Subs, fmt.Sprintf("discord.%s.outfit_members_update", platform), func(ctx context.Context, e ps2.OutfitMembersUpdate) {
+			if e.Platform == platform {
+				platformEventsPublisher.PublishOutfitMembersUpdate(ctx, e)
+			}
+		}))
 	}
 
-	return m, nil
+	return runnables, nil
 }
