@@ -19,9 +19,9 @@ import (
 
 type Commands struct {
 	commands               []*discord.Command
-	populationLoader       *populationLoader
-	worldPopulationLoader  *worldPopulationLoader
-	alertsLoader           *alertsLoader
+	populationLoader       *loader.SimpleFallbackCache[meta.Loaded[ps2.WorldsPopulation]]
+	worldPopulationLoader  *loader.KeyedFallbackCache[ps2.WorldId, meta.Loaded[ps2.DetailedWorldPopulation]]
+	alertsLoader           *loader.SimpleFallbackCache[meta.Loaded[ps2.Alerts]]
 	taskFormStateContainer *containers.ExpirableState[
 		discord.ChannelAndUserIds,
 		discord.FormState[stats_tracker.CreateOrUpdateTask],
@@ -43,20 +43,23 @@ func New(
 	channelStore ChannelStore,
 	statsTaskStore StatsTaskStore,
 ) *Commands {
-	populationLoader := newPopulationLoader(
-		log.With(sl.Component("population_loader")),
+	populationLoader := loader.NewSimpleFallbackCache(
+		log.Logger.With(sl.Component("population_loader")),
 		populationProviders.Loaders,
 		populationProviders.Priority,
+		len(populationProviders.Loaders)+1,
 	)
-	worldPopulationLoader := newWorldPopulationLoader(
-		log.With(sl.Component("world_population_loader")),
+	worldPopulationLoader := loader.NewKeyedFallbackCache(
+		log.Logger.With(sl.Component("world_population_loader")),
 		worldPopulationProviders.Loaders,
 		worldPopulationProviders.Priority,
+		(len(worldPopulationProviders.Loaders)+1)*len(ps2.ZoneNames),
 	)
-	alertsLoader := newAlertsLoader(
-		log.With(sl.Component("alerts_loader")),
+	alertsLoader := loader.NewSimpleFallbackCache(
+		log.Logger.With(sl.Component("alerts_loader")),
 		alertsProviders.Loaders,
 		alertsProviders.Priority,
+		len(alertsProviders.Loaders)+1,
 	)
 	taskFormStateContainer := containers.NewExpirableState[
 		discord.ChannelAndUserIds,
@@ -72,9 +75,9 @@ func New(
 			NewPopulation(
 				log.With(sl.Component("population_command")),
 				messages,
-				populationLoader.load,
+				populationLoader.Load,
 				slices.Values(populationProviders.Priority),
-				worldPopulationLoader.load,
+				worldPopulationLoader.Load,
 				slices.Values(worldPopulationProviders.Priority),
 			),
 			NewTerritories(
@@ -85,9 +88,9 @@ func New(
 				log.With(sl.Component("alerts_command")),
 				messages,
 				slices.Values(alertsProviders.Priority),
-				alertsLoader.load,
-				func(ctx context.Context, q query[ps2.WorldId]) (meta.Loaded[ps2.Alerts], error) {
-					loaded, err := alertsLoader.load(ctx, q.Provider)
+				alertsLoader.Load,
+				func(ctx context.Context, q loader.Query[ps2.WorldId]) (meta.Loaded[ps2.Alerts], error) {
+					loaded, err := alertsLoader.Load(ctx, q.Provider)
 					if err != nil {
 						return meta.Loaded[ps2.Alerts]{}, err
 					}
@@ -140,11 +143,11 @@ func (c *Commands) Start(ctx context.Context) error {
 	}()
 	go func() {
 		defer wg.Done()
-		c.worldPopulationLoader.Start(ctx)
+		c.populationLoader.Start(ctx)
 	}()
 	go func() {
 		defer wg.Done()
-		c.populationLoader.Start(ctx)
+		c.worldPopulationLoader.Start(ctx)
 	}()
 	go func() {
 		defer wg.Done()

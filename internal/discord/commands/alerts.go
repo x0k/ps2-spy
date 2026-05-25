@@ -19,7 +19,7 @@ func NewAlerts(
 	messages *discord_messages.Messages,
 	alertsProviders iter.Seq[string],
 	alertsLoader loader.Keyed[string, meta.Loaded[ps2.Alerts]],
-	worldAlertsLoader loader.Queried[query[ps2.WorldId], meta.Loaded[ps2.Alerts]],
+	worldAlertsLoader loader.Queried[loader.Query[ps2.WorldId], meta.Loaded[ps2.Alerts]],
 ) *discord.Command {
 	return &discord.Command{
 		Cmd: &discordgo.ApplicationCommand{
@@ -68,7 +68,7 @@ func NewAlerts(
 			log.Debug(ctx, "parsed options", slog.String("world_id", string(worldId)), slog.String("provider", provider))
 			if worldId != "" {
 				log.Debug(ctx, "getting world alerts")
-				alerts, err := worldAlertsLoader(ctx, newQuery(provider, worldId))
+				alerts, err := worldAlertsLoader(ctx, loader.NewQuery(provider, worldId))
 				if err != nil {
 					return messages.WorldAlertsLoadError(provider, worldId, err)
 				}
