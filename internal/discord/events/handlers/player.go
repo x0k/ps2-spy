@@ -2,33 +2,34 @@ package discord_event_handlers
 
 import (
 	"context"
-	"log/slog"
 
 	"github.com/bwmarrin/discordgo"
-	discord_events "github.com/x0k/ps2-spy/internal/discord/events"
+	"github.com/x0k/ps2-spy/internal/discord"
 	discord_messages "github.com/x0k/ps2-spy/internal/discord/messages"
+	"github.com/x0k/ps2-spy/internal/lib/logger"
 )
 
-func NewChannelTitleUpdatesSaved(
-	m *HandlersManager,
+func updateTitleForChannels(
+	ctx context.Context,
+	log *logger.Logger,
+	session *discordgo.Session,
 	messages *discord_messages.Messages,
+	channels []discord.Channel,
 	onlineTrackableEntitiesCountLoader OnlineTrackableEntitiesCountLoader,
 	channelTitleUpdater ChannelTitleUpdater,
-) Handler {
-	return newHandler(m, func(
-		ctx context.Context,
-		session *discordgo.Session,
-		e discord_events.ChannelTitleUpdatesSaved,
-	) error {
+) {
+	for _, channel := range channels {
+		if !channel.TitleUpdates {
+			continue
+		}
 		updateOnlineCountInTitle(
 			ctx,
-			m.log.With(slog.String("channel_id", string(e.Channel.Id))),
+			log,
 			session,
 			messages,
-			e.Channel,
+			channel,
 			onlineTrackableEntitiesCountLoader,
 			channelTitleUpdater,
 		)
-		return nil
-	})
+	}
 }

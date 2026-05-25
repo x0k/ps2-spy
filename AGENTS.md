@@ -97,7 +97,7 @@ Production build uses `go build -tags "migrate"` (required for migrate source/fi
 
 10. ~~**Unify `ErrUnknownPlatform` + fix `platfroms.go` typo** — Same struct duplicated in `characters_tracker` and `tracking`. Move to `ps2/platforms/`. Delete unused `PlatformItems[T]` or repurpose for #4.~~ **DONE** — Fixed typo, moved `ErrUnknownPlatform` to `ps2/platforms/`, deleted duplicates.
 
-11. **Deduplicate Discord event handler boilerplate** — `FacilityControl`/`FacilityLoss`, `PlayerLogin`/`PlayerFakeLogin`/`PlayerLogout`, `ChannelLanguageSaved`/`ChannelTitleUpdatesSaved` are near-identical pairs. Extract shared factory functions.
+11. ~~**Deduplicate Discord event handler boilerplate** — `FacilityControl`/`FacilityLoss`, `PlayerLogin`/`PlayerFakeLogin`/`PlayerLogout`, `ChannelLanguageSaved`/`ChannelTitleUpdatesSaved` are near-identical pairs. Extract shared factory functions.~~ **DONE** — `FacilityControl`/`FacilityLoss` merged into `facility.go` with shared `facilityControlHandlerBody` + 2 differing closures (outfit-id extraction + message function). `ChannelLanguageSaved`/`ChannelTitleUpdatesSaved` merged into `channel_saved.go` with shared `channelSavedHandlerBody`. Title-update loop extracted to `updateTitleForChannels` in `player.go`, consumed by all 3 player handlers. See commit `...`.
 
 12. **Add `SubscribeAll` helper** — `newEventsSubscriptionService` calls `Subscribe[E]` 14× per platform, each adding a separate PostStop hook. Reduce to 1 struct literal + 1 PostStop hook per platform.
 
