@@ -41,7 +41,7 @@ func New(
 			log.Logger.Error("failed to publish relogin event", sl.Err(err))
 		},
 	)
-	m.AppendR(fmt.Sprintf("%s.relogin_omitter", platform), reLoginOmitter.Start)
+	m.Go(module.NewRun(fmt.Sprintf("%s.relogin_omitter", platform), reLoginOmitter.Start))
 
 	rawEventsPublisher := events.NewPublisher(
 		reLoginOmitter,
@@ -72,7 +72,8 @@ func New(
 		streamingPublisher,
 		websocket_adapters.NewCoderDialer(),
 	)
-	m.Append(newStreamingClientService(log, platform, streamingClient))
+	srv := newStreamingClientService(log, platform, streamingClient)
+	m.Go(module.NewRun(srv.Name(), srv.Run))
 
 	return m, nil
 }

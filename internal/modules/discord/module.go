@@ -64,26 +64,32 @@ func New(
 		log.With(sl.Component("channel_title_updater")),
 		session,
 	)
-	m.AppendVR("discord.channel_title_updater", channelTitleUpdater.Start)
+	m.Go(module.NewRun("discord.channel_title_updater", func(ctx context.Context) error {
+		channelTitleUpdater.Start(ctx)
+		return nil
+	}))
 	handlersChannelTitleUpdater := func(ctx context.Context, channelId discord.ChannelId, title string) error {
 		channelTitleUpdater.UpdateTitle(channelId, title)
 		return nil
 	}
 
-	m.AppendR("discord.session", sessionStart(
+	m.Go(module.NewRun("discord.session", sessionStart(
 		log.With(sl.Component("session")),
 		session,
 		commands.Commands(),
 		commandHandlerTimeout,
 		removeCommands,
-	))
+	)))
 
 	handlersManager := discord_event_handlers.NewHandlersManager(
 		log.With(sl.Component("handlers_manager")),
 		session,
 		eventHandlerTimeout,
 	)
-	m.AppendVR("discord.handlers_manager", handlersManager.Start)
+	m.Go(module.NewRun("discord.handlers_manager", func(ctx context.Context) error {
+		handlersManager.Start(ctx)
+		return nil
+	}))
 
 	eventsPubSub := pubsub.New[discord_events.EventType]()
 	for _, handler := range discord_event_handlers.New(
@@ -100,17 +106,20 @@ func New(
 		eventsPubSub,
 		channelLoader,
 	)
-	m.AppendVR("discord.events_publisher", eventsPublisher.Start)
+	m.Go(module.NewRun("discord.events_publisher", func(ctx context.Context) error {
+		eventsPublisher.Start(ctx)
+		return nil
+	}))
 	channelLanguageUpdate := pubsub_adapters.SubscribeTo[storage.EventType, storage.ChannelLanguageSaved](m, storageSubs)
 	channelTitleUpdates := pubsub_adapters.SubscribeTo[storage.EventType, storage.ChannelTitleUpdatesSaved](m, storageSubs)
 	channelTrackerStarted := pubsub_adapters.SubscribeTo[stats_tracker.EventType, stats_tracker.ChannelTrackerStarted](m, statsTrackerSubs)
 	channelTrackerStopped := pubsub_adapters.SubscribeTo[stats_tracker.EventType, stats_tracker.ChannelTrackerStopped](m, statsTrackerSubs)
 	trackingSettingsUpdated := pubsub_adapters.SubscribeTo[tracking.EventType, tracking.TrackingSettingsUpdated](m, trackingSubs)
-	m.AppendVR("discord.events_subscription", func(ctx context.Context) {
+	m.Go(module.NewRun("discord.events_subscription", func(ctx context.Context) error {
 		for {
 			select {
 			case <-ctx.Done():
-				return
+				return nil
 			case e := <-channelLanguageUpdate:
 				eventsPublisher.PublishChannelLanguageUpdated(ctx, e)
 			case e := <-channelTitleUpdates:
@@ -123,7 +132,7 @@ func New(
 				eventsPublisher.PublishChannelTrackingSettingsUpdated(ctx, e)
 			}
 		}
-	})
+	}))
 
 	for _, platform := range ps2_platforms.Platforms {
 
@@ -152,10 +161,13 @@ func New(
 				return trackingManager.OutfitChannels(ctx, platform, outfitId)
 			},
 		)
-		m.AppendVR(
+		m.Go(module.NewRun(
 			fmt.Sprintf("discord.%s.events_subscription", platform),
-			platformEventsPublisher.Start,
-		)
+			func(ctx context.Context) error {
+				platformEventsPublisher.Start(ctx)
+				return nil
+			},
+		))
 		worldTrackerSubsManager := platformServicesProvider.WorldTrackerSubsManager(platform)
 		playerLogin := pubsub_adapters.SubscribeTo[characters_tracker.EventType, characters_tracker.PlayerLogin](m, charactersTrackerSubs)
 		playerFakeLogin := pubsub_adapters.SubscribeTo[characters_tracker.EventType, characters_tracker.PlayerFakeLogin](m, charactersTrackerSubs)
@@ -163,13 +175,13 @@ func New(
 		facilityControl := pubsub_adapters.SubscribeTo[worlds_tracker.EventType, worlds_tracker.FacilityControl](m, worldTrackerSubsManager)
 		facilityLoss := pubsub_adapters.SubscribeTo[worlds_tracker.EventType, worlds_tracker.FacilityLoss](m, worldTrackerSubsManager)
 		outfitMembersUpdate := pubsub_adapters.SubscribeTo[ps2.EventType, ps2.OutfitMembersUpdate](m, ps2Subs)
-		m.AppendVR(
+		m.Go(module.NewRun(
 			fmt.Sprintf("discord.%s.events_subscription", platform),
-			func(ctx context.Context) {
+			func(ctx context.Context) error {
 				for {
 					select {
 					case <-ctx.Done():
-						return
+						return nil
 					case e := <-playerLogin:
 						if e.Platform == platform {
 							platformEventsPublisher.PublishPlayerLogin(ctx, e)
@@ -193,7 +205,7 @@ func New(
 					}
 				}
 			},
-		)
+		))
 	}
 
 	return m, nil

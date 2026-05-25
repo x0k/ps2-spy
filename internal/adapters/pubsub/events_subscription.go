@@ -42,7 +42,7 @@ func subscribeEvent[E events.Event](
 }
 
 func SubscribeToEvents(
-	postStopper module.PostStopper,
+	postStopper module.Stopper,
 	subs pubsub.SubscriptionsManager[events.EventType],
 ) EventsSubscriptionChannels {
 	playerLogin := make(chan events.PlayerLogin)
@@ -77,7 +77,7 @@ func SubscribeToEvents(
 		subscribeEvent(subs, continentLock),
 	}
 
-	postStopper.PostStop(module.NewRun(
+	postStopper.OnStop(module.NewRun(
 		"events_subscription",
 		func(_ context.Context) error {
 			for _, s := range subsList {

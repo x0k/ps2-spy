@@ -20,13 +20,13 @@ func (h handler[T, E]) Handle(event pubsub.Event[T]) {
 }
 
 func SubscribeTo[T pubsub.EventType, E pubsub.Event[T]](
-	postStopper module.PostStopper,
+	postStopper module.Stopper,
 	subs pubsub.SubscriptionsManager[T],
 ) <-chan E {
 	channel := make(chan E)
 	h := handler[T, E](channel)
 	unSubscribe := subs.AddHandler(h)
-	postStopper.PostStop(module.NewRun(
+	postStopper.OnStop(module.NewRun(
 		fmt.Sprintf("event_handler_%v", h.Type()),
 		func(_ context.Context) error {
 			unSubscribe()

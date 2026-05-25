@@ -81,7 +81,7 @@ func (p *PlatformServices) WorldTrackerSubsManager(platform ps2_platforms.Platfo
 func (p *PlatformServices) Init(
 	log *logger.Logger,
 	cfg *Config,
-	m *module.Root,
+	m *module.Module,
 	mt *metrics.Metrics,
 	censusDataProvider *census_data_provider.DataProvider,
 	outfitsRepo *ps2_storage_outfits_repo.Repository,
@@ -106,7 +106,7 @@ func (p *PlatformServices) Init(
 		if err != nil {
 			return err
 		}
-		m.Append(eventsModule)
+		m.Go(eventsModule)
 
 		charactersLoader := metrics.InstrumentMultiKeyedLoaderWithSubjectsCounter(
 			metrics.PlatformLoaderSubjectsCounterMetric(mt, metrics.CharactersPlatformLoaderName, platform),
@@ -128,10 +128,13 @@ func (p *PlatformServices) Init(
 			10*time.Second,
 			shared.ErrNotFound,
 		)
-		m.AppendVR(
+		m.Go(module.NewRun(
 			fmt.Sprintf("%s.batched_characters_loader", platform),
-			batchedCharactersLoader.Start,
-		)
+			func(ctx context.Context) error {
+				batchedCharactersLoader.Start(ctx)
+				return nil
+			},
+		))
 
 		cachedBatchedCharactersLoader := loader.WithQueriedCache(
 			pl.Logger.With(sl.Component("cached_batched_characters_loader")),
@@ -162,10 +165,10 @@ func (p *PlatformServices) Init(
 				return censusDataProvider.WorldMap(ctx, ns, wi)
 			},
 		)
-		m.AppendR(fmt.Sprintf("%s.worlds_tracker", platform), worldsTracker.Start)
+		m.Go(module.NewRun(fmt.Sprintf("%s.worlds_tracker", platform), worldsTracker.Start))
 		p.worldTrackers[platform] = worldsTracker
 
-		m.Append(newEventsSubscriptionService(
+		srv := newEventsSubscriptionService(
 			pl.With(sl.Component("events_subscription_service")),
 			platform,
 			m,
@@ -173,7 +176,8 @@ func (p *PlatformServices) Init(
 			charactersTracker,
 			worldsTracker,
 			statsTracker,
-		))
+		)
+		m.Go(module.NewRun(srv.Name(), srv.Run))
 
 		outfitsLoader := loader.WithMultiCache(
 			log.Logger.With(sl.Component("outfits_loader_cache")),
