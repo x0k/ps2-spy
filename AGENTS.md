@@ -107,7 +107,7 @@ Production build uses `go build -tags "migrate"` (required for migrate source/fi
 
 15. ~~**`discord_module.New` has ~17 parameters** — Similar to `discord_commands.New`, takes many related params that could be grouped into `PlatformServices` (from #4) and `SubscriptionManagers` struct.~~ **DONE** — Replaced 5 individual map params with single `PlatformServicesProvider` interface defined in `discord_module` package to avoid import cycle.
 
-16. **Inconsistent caching strategies** — Characters use Multi+Batching+Queried chain (3 layers), Outfits use Multi only, Facilities use Keyed only. Consider a unified strategy.
+16. ~~**Inconsistent caching strategies** — Characters use Multi+Batching+Queried chain (3 layers), Outfits use Multi only, Facilities use Keyed only. Consider a unified strategy.~~ **DONE** — Bounded character LRU (50000 entries), replaced outfit single-key closure with proper `WithQueriedCache` + in-memory LRU (5000 entries, 5min TTL), added Prometheus metrics (subjects counter + success/error counter) to outfit and facility loaders.
 
 17. **Verbose loader type conversions** — Code uses explicit type conversions like `loader.Keyed[ps2.CharacterId, ps2.Character](...)` where type inference could simplify.
 
