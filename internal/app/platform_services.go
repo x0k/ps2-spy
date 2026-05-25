@@ -70,6 +70,24 @@ func (p *PlatformServices) OutfitsLoader(platform ps2_platforms.Platform) loader
 	return p.outfitsLoaders[platform]
 }
 
+func (p *PlatformServices) LoadOutfits(
+	ctx context.Context, platform ps2_platforms.Platform, outfitIds []ps2.OutfitId,
+) (map[ps2.OutfitId]ps2.Outfit, error) {
+	return p.outfitsLoaders[platform](ctx, outfitIds)
+}
+
+func (p *PlatformServices) LoadCharacter(
+	ctx context.Context, platform ps2_platforms.Platform, characterId ps2.CharacterId,
+) (ps2.Character, error) {
+	return p.characterLoaders[platform](ctx, characterId)
+}
+
+func (p *PlatformServices) LoadCharacters(
+	ctx context.Context, platform ps2_platforms.Platform, characterIds []ps2.CharacterId,
+) (map[ps2.CharacterId]ps2.Character, error) {
+	return p.charactersLoaders[platform](ctx, characterIds)
+}
+
 func (p *PlatformServices) FacilityLoader(platform ps2_platforms.Platform) loader.Keyed[ps2.FacilityId, ps2.Facility] {
 	return p.facilityLoaders[platform]
 }

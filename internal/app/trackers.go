@@ -45,9 +45,7 @@ func newTrackers(
 
 	trackingManager := tracking.New(
 		log.With(sl.Component("tracking_manager")),
-		func(ctx context.Context, platform ps2_platforms.Platform, characterId ps2.CharacterId) (ps2.Character, error) {
-			return infra.platformServices.CharacterLoader(platform)(ctx, characterId)
-		},
+		infra.platformServices.LoadCharacter,
 		func(ctx context.Context, platform ps2_platforms.Platform, c ps2.Character) ([]discord.Channel, error) {
 			return settingsRepo.TrackingChannelsForCharacter(ctx, platform, c.Id, c.OutfitId)
 		},
@@ -78,11 +76,7 @@ func newTrackers(
 			}
 			return channelIds, nil
 		},
-		func(
-			ctx context.Context, platform ps2_platforms.Platform, characterIds []ps2.CharacterId,
-		) (map[ps2.CharacterId]ps2.Character, error) {
-			return infra.platformServices.CharactersLoader(platform)(ctx, characterIds)
-		},
+		infra.platformServices.LoadCharacters,
 		cfg.StatsTracker.MaxTrackingDuration,
 	)
 	m.Go(module.NewRun("stats_tracker", func(ctx context.Context) error {
@@ -92,9 +86,7 @@ func newTrackers(
 
 	charactersTracker := characters_tracker.New(
 		log.With(sl.Component("platforms_characters_tracker")),
-		func(ctx context.Context, platform ps2_platforms.Platform, characterId ps2.CharacterId) (ps2.Character, error) {
-			return infra.platformServices.CharacterLoader(platform)(ctx, characterId)
-		},
+		infra.platformServices.LoadCharacter,
 		charactersTrackerPubSub,
 		mt,
 	)

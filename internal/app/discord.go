@@ -89,11 +89,7 @@ func newDiscordModule(
 			},
 		},
 		settingsService.Load,
-		func(
-			ctx context.Context, platform ps2_platforms.Platform, outfitIds []ps2.OutfitId,
-		) (map[ps2.OutfitId]ps2.Outfit, error) {
-			return infra.platformServices.OutfitsLoader(platform)(ctx, outfitIds)
-		},
+		infra.platformServices.LoadOutfits,
 		settingsService.LoadView,
 		settingsService.Update,
 		trackers.statsTracker,
