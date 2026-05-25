@@ -41,6 +41,7 @@ import (
 	ps2_census_outfits_repo "github.com/x0k/ps2-spy/internal/ps2/census_outfits_repo"
 	ps2_outfit_members_synchronizer "github.com/x0k/ps2-spy/internal/ps2/outfit_members_synchronizer"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
+	ps2_storage_facility_repo "github.com/x0k/ps2-spy/internal/ps2/storage_facility_repo"
 	ps2_storage_outfits_repo "github.com/x0k/ps2-spy/internal/ps2/storage_outfits_repo"
 	"github.com/x0k/ps2-spy/internal/shared"
 	"github.com/x0k/ps2-spy/internal/stats_tracker"
@@ -50,6 +51,7 @@ import (
 	sql_storage "github.com/x0k/ps2-spy/internal/storage/sql"
 	"github.com/x0k/ps2-spy/internal/tracking"
 	tracking_settings "github.com/x0k/ps2-spy/internal/tracking/settings"
+	tracking_storage_tracking_repo "github.com/x0k/ps2-spy/internal/tracking/storage_tracking_repo"
 
 	// migration tools
 	_ "github.com/golang-migrate/migrate/v4/database/sqlite"
@@ -81,7 +83,6 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	store := sql_storage.New(
 		log.With(sl.Component("storage")),
 		cfg.Storage.Path,
-		cfg.StatsTracker.MaxTrackingDuration,
 		storePubSub,
 	)
 	m.PreStartR("storage", store.Open)
@@ -98,9 +99,11 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 
 	censusClient := census2.NewClient("https://census.daybreakgames.com", cfg.Census.ServiceId, httpClient)
 
+	storageFacilityRepo := ps2_storage_facility_repo.New(store)
+
 	facilityCache := sql_facility_cache.New(
 		log.With(sl.Component("facility_cache")),
-		store,
+		storageFacilityRepo,
 	)
 
 	platformServices := newPlatformServices()
@@ -115,6 +118,8 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 	)
 
 	storageOutfitsRepo := ps2_storage_outfits_repo.New(store)
+	storageTrackingRepo := tracking_storage_tracking_repo.New(store, log.With(sl.Component("storage_tracking_repo")).Logger)
+
 	ps2PubSub := pubsub.New[ps2.EventType]()
 	outfitMembersSynchronizer := ps2_outfit_members_synchronizer.New(
 		log.With(sl.Component("outfit_members_synchronizer")),
@@ -131,12 +136,12 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 			return platformServices.CharacterLoader(platform)(ctx, characterId)
 		},
 		func(ctx context.Context, platform ps2_platforms.Platform, c ps2.Character) ([]discord.Channel, error) {
-			return store.TrackingChannelsForCharacter(ctx, platform, c.Id, c.OutfitId)
+			return storageTrackingRepo.TrackingChannelsForCharacter(ctx, platform, c.Id, c.OutfitId)
 		},
-		store.AllTrackableCharacterIdsWithDuplicationsForPlatform,
-		store.OutfitMembers,
-		store.TrackingChannelsForOutfit,
-		store.AllTrackableOutfitIdsWithDuplicationsForPlatform,
+		storageTrackingRepo.AllTrackableCharacterIdsWithDuplicationsForPlatform,
+		storageOutfitsRepo.MemberIds,
+		storageTrackingRepo.TrackingChannelsForOutfit,
+		storageTrackingRepo.AllTrackableOutfitIdsWithDuplicationsForPlatform,
 	)
 	m.AppendVR("tracking_manager", trackingManager.Start)
 
@@ -221,7 +226,7 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Root, error) {
 		m,
 		mt,
 		censusDataProvider,
-		store,
+		storageOutfitsRepo,
 		facilityCache,
 		charactersTracker,
 		statsTracker,

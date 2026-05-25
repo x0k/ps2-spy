@@ -22,9 +22,9 @@ import (
 	events_module "github.com/x0k/ps2-spy/internal/modules/events"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
+	ps2_storage_outfits_repo "github.com/x0k/ps2-spy/internal/ps2/storage_outfits_repo"
 	"github.com/x0k/ps2-spy/internal/shared"
 	"github.com/x0k/ps2-spy/internal/stats_tracker"
-	storage_sql "github.com/x0k/ps2-spy/internal/storage/sql"
 	"github.com/x0k/ps2-spy/internal/worlds_tracker"
 )
 
@@ -84,7 +84,7 @@ func (p *PlatformServices) Init(
 	m *module.Root,
 	mt *metrics.Metrics,
 	censusDataProvider *census_data_provider.DataProvider,
-	store *storage_sql.Storage,
+	outfitsRepo *ps2_storage_outfits_repo.Repository,
 	facilityCache *sql_facility_cache.Cache,
 	charactersTracker *characters_tracker.Tracker,
 	statsTracker *stats_tracker.StatsTracker,
@@ -184,7 +184,7 @@ func (p *PlatformServices) Init(
 			},
 			sql_outfits_cache.New(
 				log.With(sl.Component("outfits_cache")),
-				store,
+				outfitsRepo,
 				platform,
 			),
 		)

@@ -115,3 +115,59 @@ func (r *Repository) RemoveMembers(
 		Platform:     string(platform),
 	})
 }
+
+func (r *Repository) Outfit(
+	ctx context.Context, platform ps2_platforms.Platform, outfitId ps2.OutfitId,
+) (ps2.Outfit, error) {
+	outfit, err := r.storage.Queries().GetPlatformOutfit(ctx, db.GetPlatformOutfitParams{
+		Platform: string(platform),
+		OutfitID: string(outfitId),
+	})
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ps2.Outfit{}, fmt.Errorf("outfit %s: %w", outfitId, shared.ErrNotFound)
+		}
+		return ps2.Outfit{}, err
+	}
+	return ps2.Outfit{
+		Id:       ps2.OutfitId(outfit.OutfitID),
+		Name:     outfit.OutfitName,
+		Tag:      outfit.OutfitTag,
+		Platform: platform,
+	}, nil
+}
+
+func (r *Repository) SaveOutfit(ctx context.Context, outfit ps2.Outfit) error {
+	return r.storage.Queries().InsertOutfit(ctx, db.InsertOutfitParams{
+		Platform:   string(outfit.Platform),
+		OutfitID:   string(outfit.Id),
+		OutfitName: outfit.Name,
+		OutfitTag:  outfit.Tag,
+	})
+}
+
+func (r *Repository) Outfits(
+	ctx context.Context, platform ps2_platforms.Platform, outfitIds []ps2.OutfitId,
+) ([]ps2.Outfit, error) {
+	ids := make([]string, 0, len(outfitIds))
+	for _, id := range outfitIds {
+		ids = append(ids, string(id))
+	}
+	list, err := r.storage.Queries().ListPlatformOutfits(ctx, db.ListPlatformOutfitsParams{
+		Platform:  string(platform),
+		OutfitIds: ids,
+	})
+	if err != nil {
+		return nil, err
+	}
+	outfits := make([]ps2.Outfit, 0, len(list))
+	for _, outfit := range list {
+		outfits = append(outfits, ps2.Outfit{
+			Id:       ps2.OutfitId(outfit.OutfitID),
+			Name:     outfit.OutfitName,
+			Tag:      outfit.OutfitTag,
+			Platform: platform,
+		})
+	}
+	return outfits, nil
+}
