@@ -84,6 +84,9 @@ func (r *Repository) Update(
 	var outfitsDiff diff.Diff[string]
 
 	err := r.storage.Transaction(ctx, func(s storage.Storage) error {
+		if err := s.Queries().EnsureChannelExists(ctx, channelIdStr); err != nil {
+			return fmt.Errorf("failed to ensure channel exists: %w", err)
+		}
 		oldCharacters, err := s.Queries().ListChannelCharacterIdsForPlatform(ctx, db.ListChannelCharacterIdsForPlatformParams{
 			ChannelID: channelIdStr,
 			Platform:  platformStr,

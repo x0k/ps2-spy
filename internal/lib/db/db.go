@@ -33,6 +33,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.deleteOutfitMembersStmt, err = db.PrepareContext(ctx, deleteOutfitMembers); err != nil {
 		return nil, fmt.Errorf("error preparing query DeleteOutfitMembers: %w", err)
 	}
+	if q.ensureChannelExistsStmt, err = db.PrepareContext(ctx, ensureChannelExists); err != nil {
+		return nil, fmt.Errorf("error preparing query EnsureChannelExists: %w", err)
+	}
 	if q.getChannelStmt, err = db.PrepareContext(ctx, getChannel); err != nil {
 		return nil, fmt.Errorf("error preparing query GetChannel: %w", err)
 	}
@@ -147,6 +150,11 @@ func (q *Queries) Close() error {
 	if q.deleteOutfitMembersStmt != nil {
 		if cerr := q.deleteOutfitMembersStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing deleteOutfitMembersStmt: %w", cerr)
+		}
+	}
+	if q.ensureChannelExistsStmt != nil {
+		if cerr := q.ensureChannelExistsStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing ensureChannelExistsStmt: %w", cerr)
 		}
 	}
 	if q.getChannelStmt != nil {
@@ -351,6 +359,7 @@ type Queries struct {
 	deleteChannelCharactersStmt                             *sql.Stmt
 	deleteChannelOutfitsStmt                                *sql.Stmt
 	deleteOutfitMembersStmt                                 *sql.Stmt
+	ensureChannelExistsStmt                                 *sql.Stmt
 	getChannelStmt                                          *sql.Stmt
 	getCountChannelStatsTrackerTasksStmt                    *sql.Stmt
 	getFacilityStmt                                         *sql.Stmt
@@ -392,6 +401,7 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		deleteChannelCharactersStmt:                             q.deleteChannelCharactersStmt,
 		deleteChannelOutfitsStmt:                                q.deleteChannelOutfitsStmt,
 		deleteOutfitMembersStmt:                                 q.deleteOutfitMembersStmt,
+		ensureChannelExistsStmt:                                 q.ensureChannelExistsStmt,
 		getChannelStmt:                                          q.getChannelStmt,
 		getCountChannelStatsTrackerTasksStmt:                    q.getCountChannelStatsTrackerTasksStmt,
 		getFacilityStmt:                                         q.getFacilityStmt,

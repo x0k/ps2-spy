@@ -36,6 +36,7 @@
             pkgs.go_1_26
             pkgs.air
             pkgs.go-migrate
+            pkgs.go-mockery
             unstablePkgs.golangci-lint
             pkgs.sqlc
             gotext

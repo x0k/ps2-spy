@@ -104,6 +104,15 @@ func (q *Queries) DeleteOutfitMembers(ctx context.Context, arg DeleteOutfitMembe
 	return err
 }
 
+const ensureChannelExists = `-- name: EnsureChannelExists :exec
+INSERT INTO channel (channel_id) VALUES (?) ON CONFLICT (channel_id) DO NOTHING
+`
+
+func (q *Queries) EnsureChannelExists(ctx context.Context, channelID string) error {
+	_, err := q.exec(ctx, q.ensureChannelExistsStmt, ensureChannelExists, channelID)
+	return err
+}
+
 const getChannel = `-- name: GetChannel :one
 SELECT
   channel_id, locale, character_notifications, outfit_notifications, title_updates, default_timezone

@@ -207,6 +207,9 @@ UPDATE
 SET
   locale = EXCLUDED.locale;
 
+-- name: EnsureChannelExists :exec
+INSERT INTO channel (channel_id) VALUES (?) ON CONFLICT (channel_id) DO NOTHING;
+
 -- name: UpsertChannelCharacterNotifications :exec
 INSERT INTO
   channel (channel_id, character_notifications)
