@@ -18,73 +18,67 @@ import (
 )
 
 type Commands struct {
-	commands                 []*discord.Command
-	populationLoader         *populationLoader
-	worldPopulationLoader    *worldPopulationLoader
-	alertsLoader             *alertsLoader
-	createTaskStateContainer *containers.ExpirableState[
+	commands               []*discord.Command
+	populationLoader       *loader.SimpleFallbackCache[meta.Loaded[ps2.WorldsPopulation]]
+	worldPopulationLoader  *loader.KeyedFallbackCache[ps2.WorldId, meta.Loaded[ps2.DetailedWorldPopulation]]
+	alertsLoader           *loader.SimpleFallbackCache[meta.Loaded[ps2.Alerts]]
+	taskFormStateContainer *containers.ExpirableState[
 		discord.ChannelAndUserIds,
-		discord.StatsTrackerTaskState,
+		discord.FormState[stats_tracker.CreateOrUpdateTask],
 	]
 }
 
 func New(
 	log *logger.Logger,
 	messages *discord_messages.Messages,
-	populationLoaders map[string]loader.Simple[meta.Loaded[ps2.WorldsPopulation]],
-	populationLoadersPriority []string,
-	worldPopulationLoaders map[string]loader.Keyed[ps2.WorldId, meta.Loaded[ps2.DetailedWorldPopulation]],
-	worldPopulationLoadersPriority []string,
+	populationProviders PopulationProviders,
+	worldPopulationProviders WorldPopulationProviders,
 	worldTerritoryControlLoader loader.Keyed[ps2.WorldId, meta.Loaded[ps2.WorldTerritoryControl]],
-	alertsLoaders map[string]loader.Simple[meta.Loaded[ps2.Alerts]],
-	alertsLoadersPriority []string,
+	alertsProviders AlertsProviders,
 	trackingSettingsDataLoader TrackingSettingsDataLoader,
 	outfitsLoader OutfitsLoader,
 	trackingSettingsLoader TrackingSettingsLoader,
 	trackingSettingsUpdater TrackingSettingsUpdater,
 	statsTracker *stats_tracker.StatsTracker,
-	channelLoader ChannelLoader,
-	channelLanguageSaver ChannelLanguageSaver,
-	channelCharacterNotificationsSaver ChannelCharacterNotificationsSaver,
-	channelOutfitNotificationsSaver ChannelOutfitNotificationsSaver,
-	channelTitleUpdatesSaver ChannelTitleUpdatesSaver,
-	channelDefaultTimezoneSaver ChannelDefaultTimezoneSaver,
-	channelStatsTrackerTasksLoader ChannelStatsTrackerTasksLoader,
-	statsTrackerTaskCreator ChannelStatsTrackerTaskCreator,
-	channelStatsTrackerTaskRemover ChannelStatsTrackerTaskRemover,
-	statsTrackerTaskLoader StatsTrackerTaskLoader,
-	channelStatsTrackerTaskUpdater ChannelStatsTrackerTaskUpdater,
+	channelStore ChannelStore,
+	statsTaskStore StatsTaskStore,
 ) *Commands {
-	populationLoader := newPopulationLoader(
-		log.With(sl.Component("population_loader")),
-		populationLoaders,
-		populationLoadersPriority,
+	populationLoader := loader.NewSimpleFallbackCache(
+		log.Logger.With(sl.Component("population_loader")),
+		populationProviders.Loaders,
+		populationProviders.Priority,
+		len(populationProviders.Loaders)+1,
 	)
-	worldPopulationLoader := newWorldPopulationLoader(
-		log.With(sl.Component("world_population_loader")),
-		worldPopulationLoaders,
-		worldPopulationLoadersPriority,
+	worldPopulationLoader := loader.NewKeyedFallbackCache(
+		log.Logger.With(sl.Component("world_population_loader")),
+		worldPopulationProviders.Loaders,
+		worldPopulationProviders.Priority,
+		(len(worldPopulationProviders.Loaders)+1)*len(ps2.ZoneNames),
 	)
-	alertsLoader := newAlertsLoader(
-		log.With(sl.Component("alerts_loader")),
-		alertsLoaders,
-		alertsLoadersPriority,
+	alertsLoader := loader.NewSimpleFallbackCache(
+		log.Logger.With(sl.Component("alerts_loader")),
+		alertsProviders.Loaders,
+		alertsProviders.Priority,
+		len(alertsProviders.Loaders)+1,
 	)
-	createTaskStateContainer := containers.NewExpirableState[discord.ChannelAndUserIds, discord.StatsTrackerTaskState](10 * time.Minute)
+	taskFormStateContainer := containers.NewExpirableState[
+		discord.ChannelAndUserIds,
+		discord.FormState[stats_tracker.CreateOrUpdateTask],
+	](10 * time.Minute)
 	return &Commands{
-		populationLoader:         populationLoader,
-		worldPopulationLoader:    worldPopulationLoader,
-		alertsLoader:             alertsLoader,
-		createTaskStateContainer: createTaskStateContainer,
+		populationLoader:       populationLoader,
+		worldPopulationLoader:  worldPopulationLoader,
+		alertsLoader:           alertsLoader,
+		taskFormStateContainer: taskFormStateContainer,
 		commands: []*discord.Command{
 			NewAbout(messages),
 			NewPopulation(
 				log.With(sl.Component("population_command")),
 				messages,
-				populationLoader.load,
-				slices.Values(populationLoadersPriority),
-				worldPopulationLoader.load,
-				slices.Values(worldPopulationLoadersPriority),
+				populationLoader.Load,
+				slices.Values(populationProviders.Priority),
+				worldPopulationLoader.Load,
+				slices.Values(worldPopulationProviders.Priority),
 			),
 			NewTerritories(
 				messages,
@@ -93,10 +87,10 @@ func New(
 			NewAlerts(
 				log.With(sl.Component("alerts_command")),
 				messages,
-				slices.Values(alertsLoadersPriority),
-				alertsLoader.load,
-				func(ctx context.Context, q query[ps2.WorldId]) (meta.Loaded[ps2.Alerts], error) {
-					loaded, err := alertsLoader.load(ctx, q.Provider)
+				slices.Values(alertsProviders.Priority),
+				alertsLoader.Load,
+				func(ctx context.Context, q loader.Query[ps2.WorldId]) (meta.Loaded[ps2.Alerts], error) {
+					loaded, err := alertsLoader.Load(ctx, q.Provider)
 					if err != nil {
 						return meta.Loaded[ps2.Alerts]{}, err
 					}
@@ -122,24 +116,15 @@ func New(
 			),
 			NewChannelSettings(
 				messages,
-				channelLoader,
-				channelLanguageSaver,
-				channelCharacterNotificationsSaver,
-				channelOutfitNotificationsSaver,
-				channelTitleUpdatesSaver,
-				channelDefaultTimezoneSaver,
+				channelStore,
 			),
 			NewStatsTracker(
 				log.With(sl.Component("stats_tracker_command")),
 				messages,
 				statsTracker,
-				channelStatsTrackerTasksLoader,
-				channelLoader,
-				createTaskStateContainer,
-				statsTrackerTaskCreator,
-				channelStatsTrackerTaskRemover,
-				statsTrackerTaskLoader,
-				channelStatsTrackerTaskUpdater,
+				statsTaskStore,
+				channelStore.Loader,
+				taskFormStateContainer,
 			),
 		},
 	}
@@ -154,15 +139,15 @@ func (c *Commands) Start(ctx context.Context) error {
 	wg.Add(4)
 	go func() {
 		defer wg.Done()
-		c.createTaskStateContainer.Start(ctx)
-	}()
-	go func() {
-		defer wg.Done()
-		c.worldPopulationLoader.Start(ctx)
+		c.taskFormStateContainer.Start(ctx)
 	}()
 	go func() {
 		defer wg.Done()
 		c.populationLoader.Start(ctx)
+	}()
+	go func() {
+		defer wg.Done()
+		c.worldPopulationLoader.Start(ctx)
 	}()
 	go func() {
 		defer wg.Done()

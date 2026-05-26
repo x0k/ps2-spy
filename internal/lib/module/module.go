@@ -2,31 +2,41 @@ package module
 
 import (
 	"context"
+	"os"
+	"os/signal"
 	"sync"
-	"sync/atomic"
+	"syscall"
 
 	"log/slog"
 )
 
 type Module struct {
-	name      string
-	log       *slog.Logger
-	wg        sync.WaitGroup
-	services  []Runnable
-	preStart  []Runnable
-	postStart []Runnable
-	preStop   []Runnable
-	postStop  []Runnable
-	fatal     chan error
-	stopped   atomic.Bool
+	name     string
+	log      *slog.Logger
+	wg       sync.WaitGroup
+	services []Runnable
+	onStart  []Runnable
+	onStop   []Runnable
+	signal   bool
 }
 
-func New(log *slog.Logger, name string) *Module {
-	return &Module{
-		log:   log,
-		name:  name,
-		fatal: make(chan error, 1),
+type Option func(*Module)
+
+func WithSignalHandling() Option {
+	return func(m *Module) {
+		m.signal = true
 	}
+}
+
+func New(log *slog.Logger, name string, opts ...Option) *Module {
+	m := &Module{
+		log:  log,
+		name: name,
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
 }
 
 func (m *Module) Name() string {
@@ -34,69 +44,57 @@ func (m *Module) Name() string {
 }
 
 func (m *Module) awaiter(ctx context.Context) error {
-	select {
-	case <-ctx.Done():
-		return nil
-	case err := <-m.fatal:
-		return err
+	if m.signal {
+		m.log.LogAttrs(ctx, slog.LevelInfo, "press CTRL-C to exit")
+		stop := make(chan os.Signal, 1)
+		signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
+		defer signal.Stop(stop)
+		select {
+		case s := <-stop:
+			m.log.LogAttrs(ctx, slog.LevelInfo, "received signal", slog.String("signal", s.String()))
+			return nil
+		case <-ctx.Done():
+			return nil
+		}
 	}
+	<-ctx.Done()
+	return nil
 }
 
-func (m *Module) run(ctx context.Context, awaiter func(context.Context) error) error {
-	if len(m.services) == 0 && len(m.postStart) == 0 && len(m.preStop) == 0 {
+func (m *Module) run(ctx context.Context) error {
+	if len(m.services) == 0 {
 		return nil
-	}
-
-	if m.stopped.Load() {
-		return <-m.fatal
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	for _, hook := range m.preStart {
-		m.log.LogAttrs(ctx, slog.LevelInfo, "run pre start", slog.String("hook", hook.Name()))
+	for _, hook := range m.onStart {
+		m.log.LogAttrs(ctx, slog.LevelInfo, "run on start", slog.String("hook", hook.Name()))
 		if err := hook.Run(ctx); err != nil {
 			return err
 		}
 	}
 
 	for _, service := range m.services {
-		m.wg.Add(1)
-		go func() {
-			defer m.wg.Done()
+		m.wg.Go(func() {
 			m.log.LogAttrs(ctx, slog.LevelInfo, "starting", slog.String("service", service.Name()))
 			if err := service.Run(ctx); err != nil {
-				m.Fatal(ctx, err)
+				m.log.LogAttrs(ctx, slog.LevelError, "service failed", slog.String("service", service.Name()), slog.String("error", err.Error()))
 			}
 			m.log.LogAttrs(ctx, slog.LevelInfo, "stopped", slog.String("service", service.Name()))
-		}()
+		})
 	}
 
-	for _, hook := range m.postStart {
-		m.log.LogAttrs(ctx, slog.LevelInfo, "run post start", slog.String("hook", hook.Name()))
-		if err := hook.Run(ctx); err != nil {
-			m.Fatal(ctx, err)
-		}
-	}
-
-	err := awaiter(ctx)
-
-	for _, hook := range m.preStop {
-		m.log.LogAttrs(ctx, slog.LevelInfo, "run pre stop", slog.String("hook", hook.Name()))
-		if err := hook.Run(ctx); err != nil {
-			m.Fatal(ctx, err)
-		}
-	}
+	err := m.awaiter(ctx)
 
 	m.log.LogAttrs(ctx, slog.LevelInfo, "stopping")
-	m.stopped.Store(true)
 	cancel()
 
-	for _, hook := range m.postStop {
-		m.log.LogAttrs(ctx, slog.LevelInfo, "run post stop", slog.String("hook", hook.Name()))
+	for _, hook := range m.onStop {
+		m.log.LogAttrs(ctx, slog.LevelInfo, "run on stop", slog.String("hook", hook.Name()))
 		if err := hook.Run(ctx); err != nil {
-			m.Fatal(ctx, err)
+			m.log.LogAttrs(ctx, slog.LevelError, "on stop hook failed", slog.String("hook", hook.Name()), slog.String("error", err.Error()))
 		}
 	}
 
@@ -106,5 +104,5 @@ func (m *Module) run(ctx context.Context, awaiter func(context.Context) error) e
 }
 
 func (m *Module) Run(ctx context.Context) error {
-	return m.run(ctx, m.awaiter)
+	return m.run(ctx)
 }

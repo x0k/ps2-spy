@@ -22,16 +22,14 @@ func (h *handler[T, E]) Type() T {
 }
 
 func (h *handler[T, E]) Handle(event pubsub.Event[T]) {
-	h.m.wg.Add(1)
-	go func() {
-		defer h.m.wg.Done()
+	h.m.wg.Go(func() {
 		ctx, cancel := context.WithTimeout(context.Background(), h.m.handlersTimeout)
 		defer cancel()
 		defer h.m.addCancel(cancel)()
 		if err := h.handle(ctx, h.m.session, event.(E)); err != nil {
 			h.m.log.Error(ctx, "cannot handle event", sl.Err(err))
 		}
-	}()
+	})
 }
 
 func newHandler[T discord_events.EventType, E pubsub.Event[T]](

@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	pubsub_adapters "github.com/x0k/ps2-spy/internal/adapters/pubsub"
 	"github.com/x0k/ps2-spy/internal/characters_tracker"
-	census_data_provider "github.com/x0k/ps2-spy/internal/data_providers/census"
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
@@ -19,27 +19,13 @@ import (
 func newEventsSubscriptionService(
 	log *logger.Logger,
 	platform ps2_platforms.Platform,
-	ps module.PostStopper,
+	ps module.Stopper,
 	subs pubsub.SubscriptionsManager[events.EventType],
-	charactersTracker *characters_tracker.CharactersTracker,
+	charactersTracker *characters_tracker.Tracker,
 	worldsTracker *worlds_tracker.WorldsTracker,
 	statsTracker *stats_tracker.StatsTracker,
 ) module.Runnable {
-	playerLogin := census_data_provider.Subscribe[events.PlayerLogin](ps, subs)
-	playerLogout := census_data_provider.Subscribe[events.PlayerLogout](ps, subs)
-	achievementEarned := census_data_provider.Subscribe[events.AchievementEarned](ps, subs)
-	battleRankUp := census_data_provider.Subscribe[events.BattleRankUp](ps, subs)
-	death := census_data_provider.Subscribe[events.Death](ps, subs)
-	gainExperience := census_data_provider.Subscribe[events.GainExperience](ps, subs)
-	itemAdded := census_data_provider.Subscribe[events.ItemAdded](ps, subs)
-	playerFacilityCapture := census_data_provider.Subscribe[events.PlayerFacilityCapture](ps, subs)
-	playerFacilityDefend := census_data_provider.Subscribe[events.PlayerFacilityDefend](ps, subs)
-	skillAdded := census_data_provider.Subscribe[events.SkillAdded](ps, subs)
-	vehicleDestroy := census_data_provider.Subscribe[events.VehicleDestroy](ps, subs)
-
-	metagameEvent := census_data_provider.Subscribe[events.MetagameEvent](ps, subs)
-	facilityControl := census_data_provider.Subscribe[events.FacilityControl](ps, subs)
-	continentLock := census_data_provider.Subscribe[events.ContinentLock](ps, subs)
+	ch := pubsub_adapters.SubscribeToEvents(ps, subs)
 
 	return module.NewRun(
 		fmt.Sprintf("ps2.%s.events_subscription", platform),
@@ -48,40 +34,64 @@ func newEventsSubscriptionService(
 				select {
 				case <-ctx.Done():
 					return nil
-				case e := <-playerLogin:
-					charactersTracker.HandleLogin(ctx, e)
-				case e := <-playerLogout:
-					charactersTracker.HandleLogout(ctx, e)
-				case e := <-achievementEarned:
-					charactersTracker.HandleWorldZoneAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
-				case e := <-battleRankUp:
-					charactersTracker.HandleWorldZoneAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
-				case e := <-death:
-					charactersTracker.HandleWorldZoneAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
-					statsTracker.HandleDeathEvent(ctx, platform, e)
-				case e := <-gainExperience:
-					charactersTracker.HandleWorldZoneAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
-					statsTracker.HandleGainExperienceEvent(ctx, platform, e)
-				case e := <-itemAdded:
-					charactersTracker.HandleWorldZoneAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
-				case e := <-playerFacilityCapture:
-					charactersTracker.HandleWorldZoneAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
-				case e := <-playerFacilityDefend:
-					charactersTracker.HandleWorldZoneAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
-				case e := <-skillAdded:
-					charactersTracker.HandleWorldZoneAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
-				case e := <-vehicleDestroy:
-					charactersTracker.HandleWorldZoneAction(ctx, e.WorldID, e.ZoneID, e.CharacterID)
+				case e := <-ch.PlayerLogin:
+					if err := charactersTracker.HandleLogin(ctx, platform, e); err != nil {
+						log.Error(ctx, "failed to handle login event", sl.Err(err))
+					}
+				case e := <-ch.PlayerLogout:
+					if err := charactersTracker.HandleLogout(ctx, platform, e); err != nil {
+						log.Error(ctx, "failed to handle logout event", sl.Err(err))
+					}
+				case e := <-ch.AchievementEarned:
+					if err := charactersTracker.HandleWorldZoneAction(ctx, platform, e.WorldID, e.ZoneID, e.CharacterID); err != nil {
+						log.Error(ctx, "failed to handle world zone action (achievementEarned)", sl.Err(err))
+					}
+				case e := <-ch.BattleRankUp:
+					if err := charactersTracker.HandleWorldZoneAction(ctx, platform, e.WorldID, e.ZoneID, e.CharacterID); err != nil {
+						log.Error(ctx, "failed to handle world zone action (battleRankUp)", sl.Err(err))
+					}
+				case e := <-ch.Death:
+					if err := charactersTracker.HandleWorldZoneAction(ctx, platform, e.WorldID, e.ZoneID, e.CharacterID); err == nil {
+						statsTracker.HandleDeathEvent(ctx, platform, e)
+					} else {
+						log.Error(ctx, "failed to handle world zone action (death)", sl.Err(err))
+					}
+				case e := <-ch.GainExperience:
+					if err := charactersTracker.HandleWorldZoneAction(ctx, platform, e.WorldID, e.ZoneID, e.CharacterID); err == nil {
+						statsTracker.HandleGainExperienceEvent(ctx, platform, e)
+					} else {
+						log.Error(ctx, "failed to handle world zone action (gainExperience)", sl.Err(err))
+					}
+				case e := <-ch.ItemAdded:
+					if err := charactersTracker.HandleWorldZoneAction(ctx, platform, e.WorldID, e.ZoneID, e.CharacterID); err != nil {
+						log.Error(ctx, "failed to handle world zone action (itemAdded)", sl.Err(err))
+					}
+				case e := <-ch.PlayerFacilityCapture:
+					if err := charactersTracker.HandleWorldZoneAction(ctx, platform, e.WorldID, e.ZoneID, e.CharacterID); err != nil {
+						log.Error(ctx, "failed to handle world zone action (playerFacilityCapture)", sl.Err(err))
+					}
+				case e := <-ch.PlayerFacilityDefend:
+					if err := charactersTracker.HandleWorldZoneAction(ctx, platform, e.WorldID, e.ZoneID, e.CharacterID); err != nil {
+						log.Error(ctx, "failed to handle world zone action (playerFacilityDefend)", sl.Err(err))
+					}
+				case e := <-ch.SkillAdded:
+					if err := charactersTracker.HandleWorldZoneAction(ctx, platform, e.WorldID, e.ZoneID, e.CharacterID); err != nil {
+						log.Error(ctx, "failed to handle world zone action (skillAdded)", sl.Err(err))
+					}
+				case e := <-ch.VehicleDestroy:
+					if err := charactersTracker.HandleWorldZoneAction(ctx, platform, e.WorldID, e.ZoneID, e.CharacterID); err != nil {
+						log.Error(ctx, "failed to handle world zone action (vehicleDestroy)", sl.Err(err))
+					}
 
-				case e := <-metagameEvent:
+				case e := <-ch.MetagameEvent:
 					if err := worldsTracker.HandleMetagameEvent(ctx, e); err != nil {
 						log.Error(ctx, "failed to handle metagame event", sl.Err(err))
 					}
-				case e := <-facilityControl:
+				case e := <-ch.FacilityControl:
 					if err := worldsTracker.HandleFacilityControl(ctx, e); err != nil {
 						log.Error(ctx, "failed to handle facility control event", sl.Err(err))
 					}
-				case e := <-continentLock:
+				case e := <-ch.ContinentLock:
 					if err := worldsTracker.HandleContinentLock(ctx, e); err != nil {
 						log.Error(ctx, "failed to handle continent lock event", sl.Err(err))
 					}

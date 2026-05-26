@@ -22,20 +22,8 @@ func NewPlayerLogout(
 	channelTitleUpdater ChannelTitleUpdater,
 ) Handler {
 	return newHandler(m, func(ctx context.Context, session *discordgo.Session, e discord_events.PlayerLogout) error {
-		for _, channel := range e.Channels {
-			if !channel.TitleUpdates {
-				continue
-			}
-			updateOnlineCountInTitle(
-				ctx,
-				m.log,
-				session,
-				messages,
-				channel,
-				onlineTrackableEntitiesCountLoader,
-				channelTitleUpdater,
-			)
-		}
+		updateTitleForChannels(ctx, m.log, session, messages, e.Channels,
+			onlineTrackableEntitiesCountLoader, channelTitleUpdater)
 		return sendSimpleMessage(
 			session,
 			slicesx.Filter(e.Channels, func(i int) bool {

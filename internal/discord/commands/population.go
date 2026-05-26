@@ -20,7 +20,7 @@ func NewPopulation(
 	messages *discord_messages.Messages,
 	populationLoader loader.Keyed[string, meta.Loaded[ps2.WorldsPopulation]],
 	populationProviders iter.Seq[string],
-	worldPopulationLoader loader.Queried[query[ps2.WorldId], meta.Loaded[ps2.DetailedWorldPopulation]],
+	worldPopulationLoader loader.Queried[loader.Query[ps2.WorldId], meta.Loaded[ps2.DetailedWorldPopulation]],
 	worldPopulationProviders iter.Seq[string],
 ) *discord.Command {
 	return &discord.Command{
@@ -128,7 +128,7 @@ func handleServerPopulation(
 	log *logger.Logger,
 	messages *discord_messages.Messages,
 	opts []*discordgo.ApplicationCommandInteractionDataOption,
-	worldPopLoader loader.Queried[query[ps2.WorldId], meta.Loaded[ps2.DetailedWorldPopulation]],
+	worldPopLoader loader.Queried[loader.Query[ps2.WorldId], meta.Loaded[ps2.DetailedWorldPopulation]],
 ) discord.ResponseEdit {
 	server := opts[0].StringValue()
 	var provider string
@@ -137,7 +137,7 @@ func handleServerPopulation(
 	}
 	log.Debug(ctx, "parsed options", slog.String("server", server), slog.String("provider", provider))
 	worldId := ps2.WorldId(server)
-	population, err := worldPopLoader(ctx, newQuery(provider, worldId))
+	population, err := worldPopLoader(ctx, loader.NewQuery(provider, worldId))
 	if err != nil {
 		return messages.WorldPopulationLoadError(provider, worldId, err)
 	}

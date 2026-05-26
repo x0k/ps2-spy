@@ -30,8 +30,11 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.deleteChannelOutfitsStmt, err = db.PrepareContext(ctx, deleteChannelOutfits); err != nil {
 		return nil, fmt.Errorf("error preparing query DeleteChannelOutfits: %w", err)
 	}
-	if q.deleteOutfitMemberStmt, err = db.PrepareContext(ctx, deleteOutfitMember); err != nil {
-		return nil, fmt.Errorf("error preparing query DeleteOutfitMember: %w", err)
+	if q.deleteOutfitMembersStmt, err = db.PrepareContext(ctx, deleteOutfitMembers); err != nil {
+		return nil, fmt.Errorf("error preparing query DeleteOutfitMembers: %w", err)
+	}
+	if q.ensureChannelExistsStmt, err = db.PrepareContext(ctx, ensureChannelExists); err != nil {
+		return nil, fmt.Errorf("error preparing query EnsureChannelExists: %w", err)
 	}
 	if q.getChannelStmt, err = db.PrepareContext(ctx, getChannel); err != nil {
 		return nil, fmt.Errorf("error preparing query GetChannel: %w", err)
@@ -144,9 +147,14 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing deleteChannelOutfitsStmt: %w", cerr)
 		}
 	}
-	if q.deleteOutfitMemberStmt != nil {
-		if cerr := q.deleteOutfitMemberStmt.Close(); cerr != nil {
-			err = fmt.Errorf("error closing deleteOutfitMemberStmt: %w", cerr)
+	if q.deleteOutfitMembersStmt != nil {
+		if cerr := q.deleteOutfitMembersStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing deleteOutfitMembersStmt: %w", cerr)
+		}
+	}
+	if q.ensureChannelExistsStmt != nil {
+		if cerr := q.ensureChannelExistsStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing ensureChannelExistsStmt: %w", cerr)
 		}
 	}
 	if q.getChannelStmt != nil {
@@ -350,7 +358,8 @@ type Queries struct {
 	tx                                                      *sql.Tx
 	deleteChannelCharactersStmt                             *sql.Stmt
 	deleteChannelOutfitsStmt                                *sql.Stmt
-	deleteOutfitMemberStmt                                  *sql.Stmt
+	deleteOutfitMembersStmt                                 *sql.Stmt
+	ensureChannelExistsStmt                                 *sql.Stmt
 	getChannelStmt                                          *sql.Stmt
 	getCountChannelStatsTrackerTasksStmt                    *sql.Stmt
 	getFacilityStmt                                         *sql.Stmt
@@ -391,7 +400,8 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		tx:                                                      tx,
 		deleteChannelCharactersStmt:                             q.deleteChannelCharactersStmt,
 		deleteChannelOutfitsStmt:                                q.deleteChannelOutfitsStmt,
-		deleteOutfitMemberStmt:                                  q.deleteOutfitMemberStmt,
+		deleteOutfitMembersStmt:                                 q.deleteOutfitMembersStmt,
+		ensureChannelExistsStmt:                                 q.ensureChannelExistsStmt,
 		getChannelStmt:                                          q.getChannelStmt,
 		getCountChannelStatsTrackerTasksStmt:                    q.getCountChannelStatsTrackerTasksStmt,
 		getFacilityStmt:                                         q.getFacilityStmt,

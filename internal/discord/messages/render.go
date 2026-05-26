@@ -19,11 +19,11 @@ func renderStatPerFactions(p *message.Printer, builder *strings.Builder, st ps2.
 	nc := p.Sprintf("NC")
 	vs := p.Sprintf("VS")
 	if st.All == 0 {
-		builder.WriteString(fmt.Sprintf("%s:   0 | 0.0%%\n%s:   0 | 0.0%%\n%s:   0 | 0.0%%\n", tr, nc, vs))
+		fmt.Fprintf(builder, "%s:   0 | 0.0%%\n%s:   0 | 0.0%%\n%s:   0 | 0.0%%\n", tr, nc, vs)
 	} else {
-		builder.WriteString(fmt.Sprintf("%s: %3d | %.1f%%\n", tr, st.TR, float64(st.TR)/float64(st.All)*100))
-		builder.WriteString(fmt.Sprintf("%s: %3d | %.1f%%\n", nc, st.NC, float64(st.NC)/float64(st.All)*100))
-		builder.WriteString(fmt.Sprintf("%s: %3d | %.1f%%\n", vs, st.VS, float64(st.VS)/float64(st.All)*100))
+		fmt.Fprintf(builder, "%s: %3d | %.1f%%\n", tr, st.TR, float64(st.TR)/float64(st.All)*100)
+		fmt.Fprintf(builder, "%s: %3d | %.1f%%\n", nc, st.NC, float64(st.NC)/float64(st.All)*100)
+		fmt.Fprintf(builder, "%s: %3d | %.1f%%\n", vs, st.VS, float64(st.VS)/float64(st.All)*100)
 		// builder.WriteString(p.Sprintf("Other: %3d | %.2f%\n", worldPopulation.Total.Other, float64(worldPopulation.Total.Other)/float64(worldPopulation.Total.All)*100))
 	}
 }
@@ -58,7 +58,7 @@ func RenderWorldTotalPopulation(p *message.Printer, worldPopulation ps2.WorldPop
 	b := strings.Builder{}
 	renderStatPerFactions(p, &b, worldPopulation.StatPerFactions)
 	return &discordgo.MessageEmbedField{
-		Name:   p.Sprintf("%s - %d", worldPopulation.Name, worldPopulation.StatPerFactions.All),
+		Name:   p.Sprintf("%s - %d", worldPopulation.Name, worldPopulation.All),
 		Value:  b.String(),
 		Inline: true,
 	}
@@ -165,9 +165,7 @@ func renderAlerts(p *message.Printer, loaded meta.Loaded[ps2.Alerts]) []*discord
 		}
 		groups[alert.WorldId] = append(group, alert)
 	}
-	sort.Slice(sortedGroups, func(i, j int) bool {
-		return sortedGroups[i] < sortedGroups[j]
-	})
+	slices.Sort(sortedGroups)
 	embeds := make([]*discordgo.MessageEmbed, 0, len(sortedGroups))
 	for _, v := range sortedGroups {
 		alerts := groups[v]

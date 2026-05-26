@@ -3,6 +3,7 @@ package events_module
 import (
 	"fmt"
 
+	"github.com/x0k/ps2-spy/internal/adapters/websocket"
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming"
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
@@ -21,9 +22,7 @@ func New(
 	censusServiceId string,
 	eventsPublisher pubsub.Publisher[events.Event],
 	mt *metrics.Metrics,
-) (*module.Module, error) {
-	m := module.New(log.Logger, "ps2.events")
-
+) ([]module.Runnable, error) {
 	instrumentedEventsPublisher := metrics.InstrumentPlatformPublisher(
 		mt,
 		metrics.Ps2EventsPlatformPublisher,
@@ -40,7 +39,6 @@ func New(
 			log.Logger.Error("failed to publish relogin event", sl.Err(err))
 		},
 	)
-	m.AppendR(fmt.Sprintf("%s.relogin_omitter", platform), reLoginOmitter.Start)
 
 	rawEventsPublisher := events.NewPublisher(
 		reLoginOmitter,
@@ -64,12 +62,17 @@ func New(
 	)
 
 	streamingClient := streaming.NewClient(
+		log,
 		streamingEndpoint,
 		ps2_platforms.PlatformEnvironment(platform),
 		censusServiceId,
 		streamingPublisher,
+		websocket_adapters.NewCoderDialer(),
 	)
-	m.Append(newStreamingClientService(log, platform, streamingClient))
+	srv := newStreamingClientService(log, platform, streamingClient)
 
-	return m, nil
+	return []module.Runnable{
+		module.NewRun(fmt.Sprintf("%s.relogin_omitter", platform), reLoginOmitter.Start),
+		module.NewRun(srv.Name(), srv.Run),
+	}, nil
 }

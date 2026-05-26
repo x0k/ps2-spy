@@ -15,7 +15,7 @@ func Map[T any, R any](slice []T, f func(T) R) []R {
 func Filter[A any](arr []A, filter func(index int) bool) []A {
 	shift := 0
 	clone := slices.Clone(arr)
-	for i := 0; i < len(clone); i++ {
+	for i := range clone {
 		if filter(i) {
 			clone[i-shift] = clone[i]
 		} else {

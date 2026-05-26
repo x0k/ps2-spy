@@ -7,8 +7,8 @@ import (
 	ps2_factions "github.com/x0k/ps2-spy/internal/ps2/factions"
 )
 
-var FactionNotFound = errors.New("faction not found")
-var TypeNotFound = errors.New("type not found")
+var ErrFactionNotFound = errors.New("faction not found")
+var ErrTypeNotFound = errors.New("type not found")
 
 type Loadout string
 
@@ -54,7 +54,7 @@ var toFaction = map[Loadout]ps2_factions.Id{
 func GetFaction(loadout Loadout) (ps2_factions.Id, error) {
 	faction, ok := toFaction[loadout]
 	if !ok {
-		return ps2_factions.None, fmt.Errorf("%w for loadout %q", FactionNotFound, loadout)
+		return ps2_factions.None, fmt.Errorf("%w for loadout %q", ErrFactionNotFound, loadout)
 	}
 	return faction, nil
 }
@@ -89,7 +89,7 @@ var toType = map[Loadout]LoadoutType{
 func GetType(loadout Loadout) (LoadoutType, error) {
 	t, ok := toType[loadout]
 	if !ok {
-		return MAX, fmt.Errorf("%w for loadout %q", TypeNotFound, loadout)
+		return MAX, fmt.Errorf("%w for loadout %q", ErrTypeNotFound, loadout)
 	}
 	return t, nil
 }

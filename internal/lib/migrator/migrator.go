@@ -56,7 +56,15 @@ func (m *Migrator) Migrate(ctx context.Context) error {
 	}
 
 	err = mg.Up()
-	defer mg.Close()
+	defer func() {
+		sourceErr, dbErr := mg.Close()
+		if sourceErr != nil {
+			m.log.LogAttrs(ctx, slog.LevelError, "failed to close source connection", slog.String("error", sourceErr.Error()))
+		}
+		if dbErr != nil {
+			m.log.LogAttrs(ctx, slog.LevelError, "failed to close DB connection", slog.String("error", dbErr.Error()))
+		}
+	}()
 	if errors.Is(err, migrate.ErrNoChange) {
 		m.log.LogAttrs(ctx, slog.LevelInfo, "no change")
 		return nil

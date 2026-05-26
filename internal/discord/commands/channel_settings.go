@@ -33,7 +33,7 @@ func settingsFormFieldHandler[V any](
 		if err != nil {
 			return messages.FieldValueExtractError(err)
 		}
-		channelId := discord.ChannelId(i.Interaction.ChannelID)
+		channelId := discord.ChannelId(i.ChannelID)
 		if err := saver(ctx, channelId, value); err != nil {
 			return messages.FieldValueSaveError(
 				channelId,
@@ -57,12 +57,7 @@ func extractBool(ic *discordgo.InteractionCreate) (bool, error) {
 
 func NewChannelSettings(
 	messages *discord_messages.Messages,
-	channelLoader ChannelLoader,
-	channelLanguageSaver ChannelLanguageSaver,
-	channelCharacterNotificationsSaver ChannelCharacterNotificationsSaver,
-	channelOutfitNotificationsSaver ChannelOutfitNotificationsSaver,
-	channelTitleUpdatesSaver ChannelTitleUpdatesSaver,
-	channelDefaultTimezoneSaver ChannelDefaultTimezoneSaver,
+	channelStore ChannelStore,
 ) *discord.Command {
 	return &discord.Command{
 		Cmd: &discordgo.ApplicationCommand{
@@ -80,8 +75,8 @@ func NewChannelSettings(
 			if !discord.IsChannelsManagerOrDM(i) {
 				return discord_messages.MissingPermissionError[discordgo.WebhookEdit]()
 			}
-			channelId := discord.ChannelId(i.Interaction.ChannelID)
-			channel, err := channelLoader(ctx, channelId)
+			channelId := discord.ChannelId(i.ChannelID)
+			channel, err := channelStore.Loader(ctx, channelId)
 			if err != nil {
 				return discord_messages.ChannelLoadError[discordgo.WebhookEdit](
 					channelId,
@@ -96,34 +91,34 @@ func NewChannelSettings(
 				func(ic *discordgo.InteractionCreate) (language.Tag, error) {
 					return language.Parse(string(ic.MessageComponentData().Values[0]))
 				},
-				channelLanguageSaver,
-				channelLoader,
+				channelStore.LanguageSaver,
+				channelStore.Loader,
 			),
 			discord.CHANNEL_CHARACTER_NOTIFICATIONS_COMPONENT_CUSTOM_ID: settingsFormFieldHandler(
 				messages,
 				extractBool,
-				channelCharacterNotificationsSaver,
-				channelLoader,
+				channelStore.CharacterNotificationsSaver,
+				channelStore.Loader,
 			),
 			discord.CHANNEL_OUTFIT_NOTIFICATIONS_COMPONENT_CUSTOM_ID: settingsFormFieldHandler(
 				messages,
 				extractBool,
-				channelOutfitNotificationsSaver,
-				channelLoader,
+				channelStore.OutfitNotificationsSaver,
+				channelStore.Loader,
 			),
 			discord.CHANNEL_TITLE_UPDATES_COMPONENT_CUSTOM_ID: settingsFormFieldHandler(
 				messages,
 				extractBool,
-				channelTitleUpdatesSaver,
-				channelLoader,
+				channelStore.TitleUpdatesSaver,
+				channelStore.Loader,
 			),
 			discord.CHANNEL_DEFAULT_TIMEZONE_COMPONENT_CUSTOM_ID: settingsFormFieldHandler(
 				messages,
 				func(ic *discordgo.InteractionCreate) (*time.Location, error) {
 					return time.LoadLocation(string(ic.MessageComponentData().Values[0]))
 				},
-				channelDefaultTimezoneSaver,
-				channelLoader,
+				channelStore.DefaultTimezoneSaver,
+				channelStore.Loader,
 			),
 		},
 	}

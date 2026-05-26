@@ -3,6 +3,7 @@ package loader
 import (
 	"context"
 	"log/slog"
+	"maps"
 
 	"github.com/x0k/ps2-spy/internal/lib/cache"
 )
@@ -98,9 +99,7 @@ func WithMultiCache[K comparable, T any](
 				slog.String("error", err.Error()),
 			)
 		}
-		for k, v := range cached {
-			loaded[k] = v
-		}
+		maps.Copy(loaded, cached)
 		return loaded, nil
 	}
 }

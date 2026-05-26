@@ -30,7 +30,7 @@ func (c *Client) Endpoint() string {
 	return c.censusEndpoint
 }
 
-func (c *Client) ToURL(q *Query) string {
+func (c *Client) ToURL(q *Query) (string, error) {
 	builder := strings.Builder{}
 	builder.WriteString(c.censusEndpoint)
 	if c.serviceId != "" {
@@ -39,8 +39,10 @@ func (c *Client) ToURL(q *Query) string {
 	}
 	// builder.WriteString("/json/")
 	builder.WriteByte('/')
-	q.print(&builder)
-	return builder.String()
+	if err := q.print(&builder); err != nil {
+		return "", err
+	}
+	return builder.String(), nil
 }
 
 func (c *Client) ExecutePrepared(ctx context.Context, collection, url string) (json.RawMessage, error) {
@@ -57,7 +59,11 @@ func (c *Client) ExecutePrepared(ctx context.Context, collection, url string) (j
 }
 
 func (c *Client) Execute(ctx context.Context, q *Query) (json.RawMessage, error) {
-	return c.ExecutePrepared(ctx, q.Collection(), c.ToURL(q))
+	url, err := c.ToURL(q)
+	if err != nil {
+		return nil, err
+	}
+	return c.ExecutePrepared(ctx, q.Collection(), url)
 }
 
 func DecodeCollection[T any](items json.RawMessage) ([]T, error) {

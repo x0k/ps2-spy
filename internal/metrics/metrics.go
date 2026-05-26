@@ -43,6 +43,9 @@ type PlatformLoaderName string
 const (
 	CharactersPlatformLoaderName PlatformLoaderName = "characters"
 	CharacterPlatformLoaderName  PlatformLoaderName = "character"
+	OutfitsPlatformLoaderName    PlatformLoaderName = "outfits"
+	OutfitPlatformLoaderName     PlatformLoaderName = "outfit"
+	FacilitiesPlatformLoaderName PlatformLoaderName = "facilities"
 )
 
 type TransportName string
