@@ -66,13 +66,11 @@ func (p *DataProvider) WorldPopulation(ctx context.Context, worldId ps2.WorldId)
 				Name: ps2.ZoneNameById(zoneId),
 				// TODO: fix this by loading additional data
 				IsOpen: z.Population.Total != 0,
-				StatPerFactions: ps2.StatPerFactions{
-					All: z.Population.Total,
-					VS:  z.Population.VS,
-					NC:  z.Population.NC,
-					TR:  z.Population.TR,
-					NS:  z.Population.NS,
-				},
+				All:    z.Population.Total,
+				VS:     z.Population.VS,
+				NC:     z.Population.NC,
+				TR:     z.Population.TR,
+				NS:     z.Population.NS,
 			}
 			world.Total += z.Population.Total
 		}

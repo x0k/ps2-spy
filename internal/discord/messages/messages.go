@@ -379,17 +379,14 @@ func (m *Messages) MembersOnline(
 func (m *Messages) TrackingSettingsUpdateFailure(platform ps2_platforms.Platform, err error) discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
 		msg := p.Sprintf("Something went wrong")
-		var tooManyChars tracking.ErrTooManyCharacters
-		var tooManyOutfits tracking.ErrTooManyOutfits
-		var missingEntities tracking.ErrFailedToIdentifyEntities
 		var components []discordgo.MessageComponent
-		if errors.As(err, &tooManyChars) {
+		if tooManyChars, ok := errors.AsType[tracking.ErrTooManyCharacters](err); ok {
 			msg = p.Sprintf("Too many characters, maximum is %d", m.maxTrackingCharacters)
 			components = newTrackingEditButton(p, platform, tooManyChars.Outfits, tooManyChars.Characters)
-		} else if errors.As(err, &tooManyOutfits) {
+		} else if tooManyOutfits, ok := errors.AsType[tracking.ErrTooManyOutfits](err); ok {
 			msg = p.Sprintf("Too many outfits, maximum is %d", m.maxTrackingOutfits)
 			components = newTrackingEditButton(p, platform, tooManyOutfits.Outfits, tooManyOutfits.Characters)
-		} else if errors.As(err, &missingEntities) {
+		} else if missingEntities, ok := errors.AsType[tracking.ErrFailedToIdentifyEntities](err); ok {
 			missingOutfits := make([]string, 0, len(missingEntities.OutfitTags)-len(missingEntities.FoundOutfitIds))
 			for _, o := range missingEntities.OutfitTags {
 				if _, ok := missingEntities.FoundOutfitIds[o]; !ok {

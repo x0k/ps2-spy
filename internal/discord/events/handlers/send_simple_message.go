@@ -13,8 +13,8 @@ import (
 )
 
 func lastIndexRune(runes []rune, target rune) int {
-	for i := len(runes) - 1; i >= 0; i-- {
-		if runes[i] == target {
+	for i, r := range slices.Backward(runes) {
+		if r == target {
 			return i
 		}
 	}

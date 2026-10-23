@@ -64,7 +64,7 @@ Key packages under `internal/`:
 
 ## Nix Dev Environment
 
-`.envrc` uses `use flake`. The flake provides: Go 1.26, golangci-lint (unstable), sqlc, go-migrate, gotext, gotests, delve, air, and mk. Enter with `direnv allow` or `nix develop`.
+`.envrc` uses `use flake`. The flake provides: Go 1.27, golangci-lint (unstable), sqlc, go-migrate, gotext, gotests, delve, air, and mk. Enter with `direnv allow` or `nix develop`.
 
 ## Docker
 

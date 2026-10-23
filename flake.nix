@@ -1,6 +1,6 @@
 {
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-25.11";
+    nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-26.05";
     nixpkgs-unstable.url = "github:nixos/nixpkgs?ref=nixos-unstable";
     mk.url = "github:x0k/mk";
   };
@@ -15,7 +15,7 @@
       system = "x86_64-linux";
       pkgs = import nixpkgs { inherit system; };
       unstablePkgs = import nixpkgs-unstable { inherit system; };
-      gotext = pkgs.buildGoModule.override { go = pkgs.go_1_26; } rec {
+      gotext = pkgs.buildGoModule.override { go = pkgs.go_1_27; } rec {
         pname = "gotext";
         version = "0.37.0";
         src = pkgs.fetchFromGitHub {
@@ -33,7 +33,7 @@
         default = pkgs.mkShell {
           buildInputs = [
             mk.packages.${system}.default
-            pkgs.go_1_26
+            pkgs.go_1_27
             pkgs.air
             pkgs.go-migrate
             pkgs.go-mockery

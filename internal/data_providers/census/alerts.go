@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"slices"
 	"strconv"
 	"time"
 
@@ -23,8 +24,7 @@ func (p *DataProvider) alerts(ctx context.Context, url string) (ps2.Alerts, erro
 		return ps2.Alerts{}, err
 	}
 	actualEvents := make(map[string]ps2_collections.MetagameWorldEventItem, len(events))
-	for i := len(events) - 1; i >= 0; i-- {
-		e := events[i]
+	for _, e := range slices.Backward(events) {
 		if e.MetagameEventStateName == ps2.StartedMetagameEventStateName {
 			actualEvents[e.InstanceId] = e
 		} else {

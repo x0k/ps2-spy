@@ -53,13 +53,11 @@ func (p *DataProvider) WorldPopulation(ctx context.Context, worldId ps2.WorldId)
 				Id:     zoneId,
 				Name:   ps2.ZoneNameById(zoneId),
 				IsOpen: z.IsOpened,
-				StatPerFactions: ps2.StatPerFactions{
-					All:   z.Players.All,
-					VS:    z.Players.VS,
-					NC:    z.Players.NC,
-					TR:    z.Players.TR,
-					Other: z.Players.Unknown,
-				},
+				All:    z.Players.All,
+				VS:     z.Players.VS,
+				NC:     z.Players.NC,
+				TR:     z.Players.TR,
+				Other:  z.Players.Unknown,
 			}
 			world.Total += z.Players.All
 		}

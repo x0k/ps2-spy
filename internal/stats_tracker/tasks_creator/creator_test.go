@@ -93,8 +93,7 @@ func TestCreateRejectsTooManyTasks(t *testing.T) {
 		LocalStartHour: 12,
 		Duration:       time.Hour,
 	})
-	var tooMany stats_tracker.ErrTooManyTasksPerChannel
-	if !errors.As(err, &tooMany) {
+	if _, ok := errors.AsType[stats_tracker.ErrTooManyTasksPerChannel](err); !ok {
 		t.Fatalf("Create() error = %v, want ErrTooManyTasksPerChannel", err)
 	}
 	if len(repo.tasks) != 0 {
@@ -138,8 +137,7 @@ func TestCreateRejectsOverlappingTasks(t *testing.T) {
 		LocalStartHour: 12,
 		Duration:       time.Hour,
 	})
-	var overlapping stats_tracker.ErrOverlappingTasks
-	if !errors.As(err, &overlapping) {
+	if _, ok := errors.AsType[stats_tracker.ErrOverlappingTasks](err); !ok {
 		t.Fatalf("Create() error = %v, want ErrOverlappingTasks", err)
 	}
 	if len(repo.tasks) != 0 {

@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/core"
 	"github.com/x0k/ps2-spy/internal/lib/census2/streaming/events"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
@@ -41,12 +40,12 @@ func TestPlatformTrackerPublishesPlatformLoginAndLogout(t *testing.T) {
 	)
 
 	tracker.HandleLogin(context.Background(), events.PlayerLogin{
-		EventBase:   core.EventBase{Timestamp: "10"},
+		Timestamp:   "10",
 		CharacterID: "char-1",
 	})
 	tracker.tasks.Wait()
 	tracker.HandleLogout(context.Background(), events.PlayerLogout{
-		EventBase:   core.EventBase{Timestamp: "20"},
+		Timestamp:   "20",
 		CharacterID: "char-1",
 		WorldID:     "17",
 	})

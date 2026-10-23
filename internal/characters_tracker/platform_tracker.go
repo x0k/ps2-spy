@@ -193,16 +193,14 @@ func (p *platformTracker) WorldsPopulation() ps2.WorldsPopulation {
 		all := vs + nc + tr + ns + other
 		total += all
 		worlds = append(worlds, ps2.WorldPopulation{
-			Id:   worldId,
-			Name: ps2.WorldNames[worldId],
-			StatPerFactions: ps2.StatPerFactions{
-				All:   all,
-				VS:    vs,
-				NC:    nc,
-				TR:    tr,
-				NS:    ns,
-				Other: other,
-			},
+			Id:    worldId,
+			Name:  ps2.WorldNames[worldId],
+			All:   all,
+			VS:    vs,
+			NC:    nc,
+			TR:    tr,
+			NS:    ns,
+			Other: other,
 		})
 	}
 	return ps2.WorldsPopulation{
@@ -234,14 +232,12 @@ func (p *platformTracker) DetailedWorldPopulation(worldId ps2.WorldId) (ps2.Deta
 			Name: ps2.ZoneNames[zoneId],
 			// TODO: Track this
 			IsOpen: all > 0,
-			StatPerFactions: ps2.StatPerFactions{
-				All:   all,
-				VS:    vs,
-				NC:    nc,
-				TR:    tr,
-				NS:    ns,
-				Other: other,
-			},
+			All:    all,
+			VS:     vs,
+			NC:     nc,
+			TR:     tr,
+			NS:     ns,
+			Other:  other,
 		})
 	}
 	return ps2.DetailedWorldPopulation{
