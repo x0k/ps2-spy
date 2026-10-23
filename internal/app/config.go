@@ -40,12 +40,17 @@ type CensusConfig struct {
 }
 
 type StatsTrackerConfig struct {
-	MaxTrackingDuration time.Duration `yaml:"max_tracking_duration" env:"STATS_TRACKER_MAX_TRACKING_DURATION" env-default:"4h"`
+	MaxTrackingDuration        time.Duration `yaml:"max_tracking_duration" env:"STATS_TRACKER_MAX_TRACKING_DURATION" env-default:"4h"`
+	MaxNumberOfTasksPerChannel int           `yaml:"max_number_of_tasks_per_channel" env:"STATS_TRACKER_MAX_NUMBER_OF_TASKS_PER_CHANNEL" env-default:"7"`
 }
 
 type TrackingConfig struct {
 	MaxNumberTrackedOutfits    int `yaml:"max_number_tracked_outfits" env:"TRACKING_MAX_NUMBER_TRACKED_OUTFITS" env-default:"3"`
 	MaxNumberTrackedCharacters int `yaml:"max_number_tracked_characters" env:"TRACKING_MAX_NUMBER_TRACKED_CHARACTERS" env-default:"12"`
+}
+
+type Ps2Config struct {
+	OutfitsSynchronizeInterval time.Duration `yaml:"outfits_synchronize_interval" env:"PS2_OUTFITS_SYNCHRONIZE_INTERVAL" env-default:"12h"`
 }
 
 type Config struct {
@@ -60,6 +65,7 @@ type Config struct {
 	Census       CensusConfig       `yaml:"census"`
 	StatsTracker StatsTrackerConfig `yaml:"stats_tracker"`
 	Tracking     TrackingConfig     `yaml:"tracking"`
+	Ps2          Ps2Config          `yaml:"ps2"`
 }
 
 func MustLoadConfig(configPath string) *Config {

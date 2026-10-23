@@ -5,6 +5,7 @@ import (
 
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
 	"github.com/x0k/ps2-spy/internal/ps2"
+	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
 
 type EventType string
@@ -19,6 +20,7 @@ const (
 
 type PlayerLogin struct {
 	Time      time.Time
+	Platform  ps2_platforms.Platform
 	Character ps2.Character
 }
 
@@ -28,6 +30,7 @@ func (e PlayerLogin) Type() EventType {
 
 type PlayerFakeLogin struct {
 	Time      time.Time
+	Platform  ps2_platforms.Platform
 	Character ps2.Character
 }
 
@@ -37,6 +40,7 @@ func (e PlayerFakeLogin) Type() EventType {
 
 type PlayerLogout struct {
 	Time        time.Time
+	Platform    ps2_platforms.Platform
 	CharacterId ps2.CharacterId
 	WorldId     ps2.WorldId
 }

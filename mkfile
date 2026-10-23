@@ -16,19 +16,36 @@ env:
 d: env
   go run cmd/ps2-spy/main.go --config config/dev.yml
 
+t:
+  go test ./...
+
+f:
+  go fix ./...
+
+l:
+  golangci-lint run ./...
+
+
 # Build bin
 b:
   go build -o bin/app cmd/ps2-spy/main.go
 
-t:
-  go test ./...
+p: env
+  .bin/app --config config/dev.yml
+
+text:
+  go generate ./internal/translations/translations.go
+
+prof: env
+  # heap, goroutine, block, threadcreate, mutex
+  go tool pprof -http :8081 "${PPROF_ADDRESS}/debug/pprof/$1"
 
 ## DATABASE
 
 db:
   sqlc generate
 
-qlint:
+dbl:
   sqlc vet
 
 migration: env
@@ -36,22 +53,6 @@ migration: env
 
 migrate-down:
   migrate -source file://db/migrations -database sqlite3://storage/storage.db down 1
-
-text:
-  go generate ./internal/translations/translations.go
-
-p: env
-  .bin/app --config config/dev.yml
-
-prof: env
-  # heap, goroutine, block, threadcreate, mutex
-  go tool pprof -http :8081 "${PPROF_ADDRESS}/debug/pprof/$1"
-
-test:
-  go test ./...
-
-lint:
-  golangci-lint run ./...
 
 up:
   USER_ID="$(id -u)" docker-compose -f monitoring/docker-compose.yml up -d

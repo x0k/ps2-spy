@@ -5,8 +5,6 @@ import (
 
 	"github.com/x0k/ps2-spy/internal/discord"
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
-	"github.com/x0k/ps2-spy/internal/ps2"
-	ps2_loadout "github.com/x0k/ps2-spy/internal/ps2/loadout"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
 
@@ -26,24 +24,6 @@ type ChannelTrackerStarted struct {
 
 func (e ChannelTrackerStarted) Type() EventType {
 	return ChannelTrackerStartedType
-}
-
-type CharacterStats struct {
-	Character ps2.Character
-	// Kills
-	BodyKills      uint
-	HeadShotsKills uint
-	TeamKills      uint
-	// Deaths
-	Deaths                 uint
-	DeathsByRestrictedArea uint
-	Suicides               uint
-
-	LoadoutsDistribution [ps2_loadout.LoadoutTypeCount]time.Duration
-}
-
-type PlatformStats struct {
-	Characters []CharacterStats
 }
 
 type ChannelTrackerStopped struct {

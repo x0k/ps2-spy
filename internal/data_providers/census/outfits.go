@@ -10,7 +10,7 @@ import (
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
 
-func (l *DataProvider) outfitsUrl(ns string, values []census2.Str) string {
+func (l *DataProvider) outfitsUrl(ns string, values []census2.Str) (string, error) {
 	l.outfitsMu.Lock()
 	defer l.outfitsMu.Unlock()
 	l.outfitsQuery.SetLimit(len(values))
@@ -27,7 +27,10 @@ func (l *DataProvider) Outfits(ctx context.Context, platform ps2_platforms.Platf
 	for i, outfitId := range outfitIds {
 		values[i] = census2.Str(outfitId)
 	}
-	url := l.outfitsUrl(ps2_platforms.PlatformNamespace(platform), values)
+	url, err := l.outfitsUrl(ps2_platforms.PlatformNamespace(platform), values)
+	if err != nil {
+		return nil, err
+	}
 	outfits, err := census2_adapters.RetryableExecutePreparedAndDecode[ps2_collections.OutfitItem](
 		ctx,
 		l.log,

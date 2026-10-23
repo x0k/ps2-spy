@@ -1,13 +1,18 @@
 package module
 
-func (m *Module) Append(services ...Runnable) {
-	m.services = append(m.services, services...)
+// Go registers a critical service. An error returned by a critical service
+// cancels the module and is returned from Run.
+func (m *Module) Go(runnable Runnable) {
+	m.services = append(m.services, service{
+		Runnable: runnable,
+		critical: true,
+	})
 }
 
-func (m *Module) AppendR(name string, run Run) {
-	m.Append(NewRun(name, run))
-}
-
-func (m *Module) AppendVR(name string, run voidRun) {
-	m.Append(newVoidRun(name, run))
+// GoFeature registers a feature service. An error returned by a feature service
+// is logged but does not stop the module.
+func (m *Module) GoFeature(runnable Runnable) {
+	m.services = append(m.services, service{
+		Runnable: runnable,
+	})
 }

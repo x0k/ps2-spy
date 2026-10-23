@@ -19,20 +19,8 @@ func NewPlayerFakeLogin(
 		session *discordgo.Session,
 		e discord_events.PlayerFakeLogin,
 	) error {
-		for _, channel := range e.Channels {
-			if !channel.TitleUpdates {
-				continue
-			}
-			updateOnlineCountInTitle(
-				ctx,
-				m.log,
-				session,
-				messages,
-				channel,
-				onlineTrackableEntitiesCountLoader,
-				channelTitleUpdater,
-			)
-		}
+		updateTitleForChannels(ctx, m.log, session, messages, e.Channels,
+			onlineTrackableEntitiesCountLoader, channelTitleUpdater)
 		return nil
 	})
 }

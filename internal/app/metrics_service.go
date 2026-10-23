@@ -1,6 +1,7 @@
 package app
 
 import (
+	"log/slog"
 	"net/http"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -14,7 +15,7 @@ import (
 func newMetricsService(
 	m *metrics.Metrics,
 	address string,
-	fataler module.Fataler,
+	log *slog.Logger,
 ) module.Runnable {
 	mux := http.NewServeMux()
 	reg := prometheus.NewRegistry()
@@ -30,5 +31,5 @@ func newMetricsService(
 		Addr:    address,
 		Handler: mux,
 	}
-	return http_adapters.NewService("metrics", srv, fataler)
+	return http_adapters.NewService("metrics", srv, log)
 }

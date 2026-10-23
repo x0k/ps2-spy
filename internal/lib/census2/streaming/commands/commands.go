@@ -17,10 +17,8 @@ type EchoCommand[T any] struct {
 
 func Echo[T any](payload T) EchoCommand[T] {
 	return EchoCommand[T]{
-		CommandBase: core.CommandBase{
-			Service: core.EventService,
-			Action:  EchoAction,
-		},
+		Service: core.EventService,
+		Action:  EchoAction,
 		Payload: payload,
 	}
 }
@@ -39,20 +37,16 @@ type ChangeSubscriptionCommand struct {
 
 func Subscribe(payload SubscriptionSettings) ChangeSubscriptionCommand {
 	return ChangeSubscriptionCommand{
-		CommandBase: core.CommandBase{
-			Service: core.EventService,
-			Action:  SubscribeAction,
-		},
+		Service:              core.EventService,
+		Action:               SubscribeAction,
 		SubscriptionSettings: payload,
 	}
 }
 
 func ClearSubscribe(payload SubscriptionSettings) ChangeSubscriptionCommand {
 	return ChangeSubscriptionCommand{
-		CommandBase: core.CommandBase{
-			Service: core.EventService,
-			Action:  ClearSubscribeAction,
-		},
+		Service:              core.EventService,
+		Action:               ClearSubscribeAction,
 		SubscriptionSettings: payload,
 	}
 }
@@ -64,11 +58,9 @@ type ClearAllSubscribeCommand struct {
 
 func ClearAllSubscribe(all core.StrBool) ClearAllSubscribeCommand {
 	return ClearAllSubscribeCommand{
-		CommandBase: core.CommandBase{
-			Service: core.EventService,
-			Action:  ClearSubscribeAction,
-		},
-		All: all,
+		Service: core.EventService,
+		Action:  ClearSubscribeAction,
+		All:     all,
 	}
 }
 

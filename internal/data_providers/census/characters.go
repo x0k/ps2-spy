@@ -11,7 +11,7 @@ import (
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
 
-func (l *DataProvider) charactersUrl(ns string, charIds []census2.Str) string {
+func (l *DataProvider) charactersUrl(ns string, charIds []census2.Str) (string, error) {
 	l.charactersMu.Lock()
 	defer l.charactersMu.Unlock()
 	l.charactersOperand.Set(census2.NewList(charIds, ","))
@@ -24,7 +24,10 @@ func (l *DataProvider) characters(ctx context.Context, ns string, charIds []ps2.
 	for i, charId := range charIds {
 		strCharIds[i] = census2.Str(charId)
 	}
-	url := l.charactersUrl(ns, strCharIds)
+	url, err := l.charactersUrl(ns, strCharIds)
+	if err != nil {
+		return nil, err
+	}
 	return census2_adapters.RetryableExecutePreparedAndDecode[ps2_collections.CharacterItem](
 		ctx, l.log, l.client, ps2_collections.Character, url,
 	)

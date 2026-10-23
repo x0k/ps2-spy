@@ -108,7 +108,9 @@ func TestNewQuery(t *testing.T) {
 			if err := tc.query.Validate(); err != nil {
 				t.Errorf("query validation failed: %v", err)
 			}
-			if got := tc.query.String(); got != tc.want {
+			if got, err := tc.query.String(); err != nil {
+				t.Errorf("query materialization failed: %v", err)
+			} else if got != tc.want {
 				t.Errorf("expected %q, got %q", tc.want, got)
 			}
 		})

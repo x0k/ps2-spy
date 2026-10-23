@@ -1,6 +1,7 @@
 package app
 
 import (
+	"log/slog"
 	"net/http"
 	"net/http/pprof"
 
@@ -10,7 +11,7 @@ import (
 
 func newProfilerService(
 	address string,
-	fataler module.Fataler,
+	log *slog.Logger,
 ) module.Runnable {
 	mux := http.NewServeMux()
 	mux.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
@@ -22,5 +23,5 @@ func newProfilerService(
 		Addr:    address,
 		Handler: mux,
 	}
-	return http_adapters.NewService("profiler", srv, fataler)
+	return http_adapters.NewService("profiler", srv, log)
 }

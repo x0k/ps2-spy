@@ -7,13 +7,14 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
+	"github.com/x0k/ps2-spy/internal/lib/taskx"
 )
 
 type HandlersManager struct {
 	log     *logger.Logger
 	session *discordgo.Session
 
-	wg              sync.WaitGroup
+	tasks           *taskx.Group
 	handlersTimeout time.Duration
 
 	mu       sync.Mutex
@@ -29,6 +30,7 @@ func NewHandlersManager(
 	return &HandlersManager{
 		log:             log,
 		session:         session,
+		tasks:           taskx.NewGroup(),
 		handlersTimeout: handlersTimeout,
 		cancels:         make(map[int64]func()),
 	}
@@ -42,7 +44,7 @@ func (h *HandlersManager) Start(ctx context.Context) {
 	}
 	clear(h.cancels)
 	h.mu.Unlock()
-	h.wg.Wait()
+	h.tasks.Close()
 }
 
 func (h *HandlersManager) addCancel(action func()) func() {

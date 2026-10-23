@@ -11,7 +11,7 @@ import (
 	ps2_factions "github.com/x0k/ps2-spy/internal/ps2/factions"
 )
 
-func (l *DataProvider) worldMapUrl(ns string, worldId ps2.WorldId) string {
+func (l *DataProvider) worldMapUrl(ns string, worldId ps2.WorldId) (string, error) {
 	l.worldMapMu.Lock()
 	defer l.worldMapMu.Unlock()
 	l.worldMapOperand.Set(census2.Str(worldId))
@@ -20,7 +20,10 @@ func (l *DataProvider) worldMapUrl(ns string, worldId ps2.WorldId) string {
 }
 
 func (l *DataProvider) WorldMap(ctx context.Context, ns string, worldId ps2.WorldId) (ps2.WorldMap, error) {
-	url := l.worldMapUrl(ns, worldId)
+	url, err := l.worldMapUrl(ns, worldId)
+	if err != nil {
+		return ps2.WorldMap{}, err
+	}
 	zonesData, err := census2_adapters.RetryableExecutePreparedAndDecode[ps2_collections.MapItem](
 		ctx,
 		l.log,

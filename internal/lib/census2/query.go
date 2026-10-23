@@ -320,8 +320,10 @@ func (q *Query) print(writer io.StringWriter) error {
 	return printList(writer, queryFirstFieldsSeparator, queryFieldsSeparator, q.fields())
 }
 
-func (q *Query) String() string {
+func (q *Query) String() (string, error) {
 	builder := strings.Builder{}
-	q.print(&builder)
-	return builder.String()
+	if err := q.print(&builder); err != nil {
+		return "", err
+	}
+	return builder.String(), nil
 }

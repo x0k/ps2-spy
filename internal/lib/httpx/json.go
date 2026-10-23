@@ -21,7 +21,9 @@ func GetJson[T any](ctx context.Context, client *http.Client, url string) (T, er
 	if err != nil {
 		return v, fmt.Errorf("failed to make request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	// Check the HTTP status code
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {

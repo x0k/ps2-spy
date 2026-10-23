@@ -162,8 +162,8 @@ func (q *Query) validateEventThing() error {
 			if err != nil {
 				return err
 			}
-			types := strings.Split(condStr, ",")
-			for _, tp := range types {
+			types := strings.SplitSeq(condStr, ",")
+			for tp := range types {
 				if _, ok := eventTypes[strings.ToLower(tp)]; !ok {
 					return fmt.Errorf("invalid field %q for collection %q", t.field, q.collection)
 				}
@@ -266,8 +266,8 @@ func (q *Query) Validate() error {
 				if err != nil {
 					return err
 				}
-				types := strings.Split(condStr, ",")
-				for _, tp := range types {
+				types := strings.SplitSeq(condStr, ",")
+				for tp := range types {
 					if _, ok := groupedEventTypes[strings.ToLower(tp)]; !ok {
 						return fmt.Errorf("invalid field %q for collection %q", t.field, q.collection)
 					}

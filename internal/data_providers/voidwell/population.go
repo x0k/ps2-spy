@@ -56,15 +56,13 @@ func (p *DataProvider) WorldPopulation(ctx context.Context, worldId ps2.WorldId)
 				Id:     zoneId,
 				Name:   zoneState.Name,
 				IsOpen: zoneState.LockState.State == "UNLOCKED",
-				StatPerFactions: ps2.StatPerFactions{
-					All: zoneState.Population.NC + zoneState.Population.TR + zoneState.Population.VS + zoneState.Population.NS,
-					VS:  zoneState.Population.VS,
-					NC:  zoneState.Population.NC,
-					TR:  zoneState.Population.TR,
-					NS:  zoneState.Population.NS,
-				},
+				All:    zoneState.Population.NC + zoneState.Population.TR + zoneState.Population.VS + zoneState.Population.NS,
+				VS:     zoneState.Population.VS,
+				NC:     zoneState.Population.NC,
+				TR:     zoneState.Population.TR,
+				NS:     zoneState.Population.NS,
 			}
-			world.Total += world.Zones[i].StatPerFactions.All
+			world.Total += world.Zones[i].All
 		}
 		return meta.LoadedNow(p.client.Endpoint(), world), nil
 	}

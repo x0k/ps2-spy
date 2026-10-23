@@ -1,4 +1,4 @@
-package census_outfits_repo
+package ps2_census_outfits_repo
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
 
-func (l *Repository) outfitTagsUrl(ns string, values []census2.Str) string {
+func (l *Repository) outfitTagsUrl(ns string, values []census2.Str) (string, error) {
 	l.outfitTagsMu.Lock()
 	defer l.outfitTagsMu.Unlock()
 	l.outfitTagsQuery.SetLimit(len(values))
@@ -29,7 +29,10 @@ func (l *Repository) OutfitTagsByIds(
 	for i, outfitId := range outfitIds {
 		values[i] = census2.Str(outfitId)
 	}
-	url := l.outfitTagsUrl(ps2_platforms.PlatformEnvironment(platform), values)
+	url, err := l.outfitTagsUrl(ps2_platforms.PlatformEnvironment(platform), values)
+	if err != nil {
+		return nil, err
+	}
 	outfits, err := census2_adapters.RetryableExecutePreparedAndDecode[ps2_collections.OutfitItem](
 		ctx,
 		l.log,

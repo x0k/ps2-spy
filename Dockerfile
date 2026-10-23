@@ -1,5 +1,5 @@
 # Start from a small base image
-FROM golang:1.26.2-alpine3.23 as builder
+FROM golang:1.27.3-alpine3.24 AS builder
 
 # Install build dependencies
 RUN apk add --no-cache build-base
@@ -20,7 +20,7 @@ COPY . .
 RUN go build -tags "migrate" -o app ./cmd/ps2-spy/main.go
 
 # Create a minimal runtime image
-FROM alpine:3.23.3
+FROM alpine:3.24.3
 
 # Set the working directory
 WORKDIR /app

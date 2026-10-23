@@ -23,6 +23,7 @@ type Messages struct {
 	maxTrackingDuration   time.Duration
 	maxTrackingCharacters int
 	maxTrackingOutfits    int
+	maxTrackingTasks      int
 }
 
 func New(
@@ -30,12 +31,14 @@ func New(
 	maxTrackingDuration time.Duration,
 	maxTrackingCharacters int,
 	maxTrackingOutfits int,
+	maxTrackingTasks int,
 ) *Messages {
 	return &Messages{
 		timezones:             timezones,
 		maxTrackingDuration:   maxTrackingDuration,
 		maxTrackingCharacters: maxTrackingCharacters,
 		maxTrackingOutfits:    maxTrackingOutfits,
+		maxTrackingTasks:      maxTrackingTasks,
 	}
 }
 
@@ -148,10 +151,9 @@ func (m *Messages) ChannelTrackerStarted() discord.Message {
 }
 
 func (m *Messages) ChannelTrackerStopped(
-	platform ps2_platforms.Platform,
+	stats stats_tracker.PlatformStats,
 	startedAt time.Time,
 	stoppedAt time.Time,
-	stats stats_tracker.PlatformStats,
 ) discord.ChunkableMessage {
 	sb := strings.Builder{}
 	return discord.NewChunkableMessage(
@@ -161,7 +163,7 @@ func (m *Messages) ChannelTrackerStopped(
 			if start == 0 {
 				sb.WriteString(p.Sprintf(
 					"Platform: %s, started at: %s, stopped: %s, duration: %s\n```",
-					strings.ToUpper(string(platform)),
+					strings.ToUpper(string(stats.Platform)),
 					renderTime(startedAt),
 					renderRelativeTime(stoppedAt),
 					renderDuration(p, stoppedAt.Sub(startedAt)),
@@ -173,7 +175,12 @@ func (m *Messages) ChannelTrackerStopped(
 			if len(chars) == 0 {
 				sb.WriteString(p.Sprintf("No data collected"))
 			} else {
-				renderCharactersStatsTable(p, &sb, chars, start)
+				if err := renderCharactersStatsTable(p, &sb, chars, start); err != nil {
+					return "", &discord.Error{
+						Msg: p.Sprintf("Failed to render characters stats table"),
+						Err: err,
+					}
+				}
 			}
 			sb.WriteString("```")
 			return sb.String(), nil
@@ -372,17 +379,14 @@ func (m *Messages) MembersOnline(
 func (m *Messages) TrackingSettingsUpdateFailure(platform ps2_platforms.Platform, err error) discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
 		msg := p.Sprintf("Something went wrong")
-		var tooManyChars tracking.ErrTooManyCharacters
-		var tooManyOutfits tracking.ErrTooManyOutfits
-		var missingEntities tracking.ErrFailedToIdentifyEntities
 		var components []discordgo.MessageComponent
-		if errors.As(err, &tooManyChars) {
+		if tooManyChars, ok := errors.AsType[tracking.ErrTooManyCharacters](err); ok {
 			msg = p.Sprintf("Too many characters, maximum is %d", m.maxTrackingCharacters)
 			components = newTrackingEditButton(p, platform, tooManyChars.Outfits, tooManyChars.Characters)
-		} else if errors.As(err, &tooManyOutfits) {
+		} else if tooManyOutfits, ok := errors.AsType[tracking.ErrTooManyOutfits](err); ok {
 			msg = p.Sprintf("Too many outfits, maximum is %d", m.maxTrackingOutfits)
 			components = newTrackingEditButton(p, platform, tooManyOutfits.Outfits, tooManyOutfits.Characters)
-		} else if errors.As(err, &missingEntities) {
+		} else if missingEntities, ok := errors.AsType[tracking.ErrFailedToIdentifyEntities](err); ok {
 			missingOutfits := make([]string, 0, len(missingEntities.OutfitTags)-len(missingEntities.FoundOutfitIds))
 			for _, o := range missingEntities.OutfitTags {
 				if _, ok := missingEntities.FoundOutfitIds[o]; !ok {
@@ -497,10 +501,10 @@ func ChannelStatsTrackerTasksLoadError[R any](err error) func(*message.Printer) 
 
 func (m *Messages) StatsTrackerScheduleEditForm(
 	channel discord.Channel,
-	tasks []discord.StatsTrackerTask,
+	tasks []stats_tracker.Task,
 ) discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
-		content := scheduleNotes(p, channel.DefaultTimezone)
+		content := m.scheduleNotes(p, channel.DefaultTimezone)
 		localTasks := newLocalTasks(tasks, channel.DefaultTimezone)
 		components := statsTrackerScheduleEditForm(p, localTasks, 0)
 		return &discordgo.WebhookEdit{
@@ -512,7 +516,7 @@ func (m *Messages) StatsTrackerScheduleEditForm(
 
 func (m *Messages) StatsTrackerSchedule(
 	channel discord.Channel,
-	tasks []discord.StatsTrackerTask,
+	tasks []stats_tracker.Task,
 ) discord.ResponseEdit {
 	return func(p *message.Printer) (*discordgo.WebhookEdit, *discord.Error) {
 		localTasks := newLocalTasks(tasks, channel.DefaultTimezone)
@@ -525,11 +529,11 @@ func (m *Messages) StatsTrackerSchedule(
 
 func (m *Messages) StatsTrackerScheduleUpdated(
 	channel discord.Channel,
-	tasks []discord.StatsTrackerTask,
+	tasks []stats_tracker.Task,
 	zeroIndexedPage int,
 ) discord.Response {
 	return func(p *message.Printer) (*discordgo.InteractionResponseData, *discord.Error) {
-		content := scheduleNotes(p, channel.DefaultTimezone)
+		content := m.scheduleNotes(p, channel.DefaultTimezone)
 		localTasks := newLocalTasks(tasks, channel.DefaultTimezone)
 		components := statsTrackerScheduleEditForm(p, localTasks, zeroIndexedPage)
 		return &discordgo.InteractionResponseData{
@@ -549,12 +553,12 @@ func (m *Messages) StatsTrackerTaskLoadError(err error) discord.Response {
 }
 
 func (m *Messages) StatsTrackerTaskForm(
-	state discord.StatsTrackerTaskState,
+	state discord.FormState[stats_tracker.CreateOrUpdateTask],
 	err error,
 ) discord.Response {
 	return func(p *message.Printer) (*discordgo.InteractionResponseData, *discord.Error) {
 		components := m.statsTrackerCreateTaskForm(p, state)
-		content := scheduleNotes(p, state.Timezone)
+		content := m.scheduleNotes(p, state.Data.Timezone)
 		if err != nil {
 			content = renderTaskFormError(p, err)
 		}
