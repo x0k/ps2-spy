@@ -3,7 +3,6 @@ package discord_events
 import (
 	"context"
 	"log/slog"
-	"sync"
 
 	"github.com/x0k/ps2-spy/internal/characters_tracker"
 	"github.com/x0k/ps2-spy/internal/discord"
@@ -11,6 +10,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
+	"github.com/x0k/ps2-spy/internal/lib/taskx"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	"github.com/x0k/ps2-spy/internal/worlds_tracker"
 )
@@ -21,7 +21,7 @@ type ChannelsForOutfitLoader = loader.Keyed[ps2.OutfitId, []discord.Channel]
 type PlatformEventsPublisher struct {
 	publisher                  pubsub.Publisher[Event]
 	log                        *logger.Logger
-	wg                         sync.WaitGroup
+	tasks                      *taskx.Group
 	channelsForCharacterLoader ChannelsForCharacterLoader
 	channelsForOutfitLoader    ChannelsForOutfitLoader
 }
@@ -34,6 +34,7 @@ func NewPlatformEventsPublisher(
 ) *PlatformEventsPublisher {
 	return &PlatformEventsPublisher{
 		log:                        log,
+		tasks:                      taskx.NewGroup(),
 		publisher:                  publisher,
 		channelsForCharacterLoader: channelsForCharacterLoader,
 		channelsForOutfitLoader:    channelsForOutfitLoader,
@@ -42,37 +43,43 @@ func NewPlatformEventsPublisher(
 
 func (p *PlatformEventsPublisher) Start(ctx context.Context) {
 	<-ctx.Done()
-	p.wg.Wait()
+	p.tasks.Close()
 }
 
 func (p *PlatformEventsPublisher) PublishPlayerLogin(ctx context.Context, e characters_tracker.PlayerLogin) {
-	p.wg.Add(1)
-	go publishCharacterEventTask(ctx, p, e.Character.Id, e)
+	p.tasks.Go(func() {
+		publishCharacterEventTask(ctx, p, e.Character.Id, e)
+	})
 }
 
 func (p *PlatformEventsPublisher) PublishPlayerFakeLogin(ctx context.Context, e characters_tracker.PlayerFakeLogin) {
-	p.wg.Add(1)
-	go publishCharacterEventTask(ctx, p, e.Character.Id, e)
+	p.tasks.Go(func() {
+		publishCharacterEventTask(ctx, p, e.Character.Id, e)
+	})
 }
 
 func (p *PlatformEventsPublisher) PublishPlayerLogout(ctx context.Context, e characters_tracker.PlayerLogout) {
-	p.wg.Add(1)
-	go publishCharacterEventTask(ctx, p, e.CharacterId, e)
+	p.tasks.Go(func() {
+		publishCharacterEventTask(ctx, p, e.CharacterId, e)
+	})
 }
 
 func (p *PlatformEventsPublisher) PublishFacilityControl(ctx context.Context, e worlds_tracker.FacilityControl) {
-	p.wg.Add(1)
-	go publishOutfitEventTask(ctx, p, ps2.OutfitId(e.OutfitID), e)
+	p.tasks.Go(func() {
+		publishOutfitEventTask(ctx, p, ps2.OutfitId(e.OutfitID), e)
+	})
 }
 
 func (p *PlatformEventsPublisher) PublishFacilityLoss(ctx context.Context, e worlds_tracker.FacilityLoss) {
-	p.wg.Add(1)
-	go publishOutfitEventTask(ctx, p, e.OldOutfitId, e)
+	p.tasks.Go(func() {
+		publishOutfitEventTask(ctx, p, e.OldOutfitId, e)
+	})
 }
 
 func (p *PlatformEventsPublisher) PublishOutfitMembersUpdate(ctx context.Context, e ps2.OutfitMembersUpdate) {
-	p.wg.Add(1)
-	go publishOutfitEventTask(ctx, p, e.OutfitId, e)
+	p.tasks.Go(func() {
+		publishOutfitEventTask(ctx, p, e.OutfitId, e)
+	})
 }
 
 func publishCharacterEventTask[T pubsub.EventType, E pubsub.Event[T]](
@@ -81,7 +88,6 @@ func publishCharacterEventTask[T pubsub.EventType, E pubsub.Event[T]](
 	characterId ps2.CharacterId,
 	event E,
 ) {
-	defer p.wg.Done()
 	channels, err := p.channelsForCharacterLoader(ctx, characterId)
 	if err != nil {
 		p.log.Error(ctx, "cannot get channels for character", slog.String("character_id", string(characterId)), sl.Err(err))
@@ -102,7 +108,6 @@ func publishOutfitEventTask[T pubsub.EventType, E pubsub.Event[T]](
 	outfitId ps2.OutfitId,
 	event E,
 ) {
-	defer p.wg.Done()
 	channels, err := p.channelsForOutfitLoader(ctx, outfitId)
 	if err != nil {
 		p.log.Error(ctx, "cannot get channels for outfit", slog.String("outfit_id", string(outfitId)), sl.Err(err))

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"sync"
 	"time"
 
 	"github.com/x0k/ps2-spy/internal/lib/diff"
@@ -15,6 +14,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/retryable"
 	"github.com/x0k/ps2-spy/internal/lib/retryable/perform"
 	"github.com/x0k/ps2-spy/internal/lib/retryable/while"
+	"github.com/x0k/ps2-spy/internal/lib/taskx"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 	"github.com/x0k/ps2-spy/internal/shared"
@@ -40,8 +40,8 @@ type OutfitsRepo[R OutfitsRepoApi] interface {
 }
 
 type OutfitMembersSynchronizer[R OutfitsRepoApi] struct {
-	log *logger.Logger
-	wg  sync.WaitGroup
+	log   *logger.Logger
+	tasks *taskx.Group
 
 	externalRepo ExternalOutfitsRepo
 	repo         OutfitsRepo[R]
@@ -59,6 +59,7 @@ func New[R OutfitsRepoApi](
 ) *OutfitMembersSynchronizer[R] {
 	return &OutfitMembersSynchronizer[R]{
 		log:             log,
+		tasks:           taskx.NewGroup(),
 		repo:            repo,
 		externalRepo:    externalRepo,
 		refreshInterval: refreshInterval,
@@ -73,7 +74,7 @@ func (s *OutfitMembersSynchronizer[R]) Start(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			s.wg.Wait()
+			s.tasks.Close()
 			return
 		case now := <-ticker.C:
 			s.syncOutfits(ctx, now)
@@ -82,7 +83,7 @@ func (s *OutfitMembersSynchronizer[R]) Start(ctx context.Context) {
 }
 
 func (s *OutfitMembersSynchronizer[R]) SyncOutfit(ctx context.Context, platform ps2_platforms.Platform, outfitId ps2.OutfitId) {
-	s.wg.Go(func() {
+	s.tasks.Go(func() {
 		s.syncOutfit(ctx, platform, outfitId, time.Now())
 	})
 }

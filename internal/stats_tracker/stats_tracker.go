@@ -16,6 +16,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
+	"github.com/x0k/ps2-spy/internal/lib/taskx"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	ps2_loadout "github.com/x0k/ps2-spy/internal/ps2/loadout"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
@@ -33,7 +34,7 @@ type CharacterTrackingChannelsLoader = func(
 
 type StatsTracker struct {
 	trackersMu          sync.RWMutex
-	wg                  sync.WaitGroup
+	tasks               *taskx.Group
 	log                 *logger.Logger
 	trackers            map[discord.ChannelId]channelTracker
 	publisher           pubsub.Publisher[Event]
@@ -60,6 +61,7 @@ func New(
 	maxTrackingDuration time.Duration,
 ) *StatsTracker {
 	return &StatsTracker{
+		tasks:                           taskx.NewGroup(),
 		log:                             log,
 		trackers:                        make(map[discord.ChannelId]channelTracker),
 		publisher:                       publisher,
@@ -79,7 +81,7 @@ func (s *StatsTracker) Start(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			s.wg.Wait()
+			s.tasks.Close()
 			return
 		case now := <-ticker.C:
 			if err := s.handleTrackersOvertime(ctx); err != nil {
@@ -100,7 +102,7 @@ func (s *StatsTracker) StopChannelTracker(ctx context.Context, channelId discord
 }
 
 func (s *StatsTracker) HandleDeathEvent(ctx context.Context, platform ps2_platforms.Platform, event events.Death) {
-	s.wg.Go(func() {
+	s.tasks.Go(func() {
 		if err := s.handleDeathEvent(ctx, platform, event); err != nil {
 			s.log.Error(ctx, "error during handleDeathEvent", sl.Err(err))
 		}
@@ -108,7 +110,7 @@ func (s *StatsTracker) HandleDeathEvent(ctx context.Context, platform ps2_platfo
 }
 
 func (s *StatsTracker) HandleGainExperienceEvent(ctx context.Context, platform ps2_platforms.Platform, event events.GainExperience) {
-	s.wg.Go(func() {
+	s.tasks.Go(func() {
 		if err := s.handleGainExperienceEvent(ctx, platform, event); err != nil {
 			s.log.Error(ctx, "error during handleGainExperienceEvent", sl.Err(err))
 		}

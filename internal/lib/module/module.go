@@ -2,6 +2,7 @@ package module
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"sync"
@@ -10,11 +11,16 @@ import (
 	"log/slog"
 )
 
+type service struct {
+	Runnable
+	critical bool
+}
+
 type Module struct {
 	name     string
 	log      *slog.Logger
 	wg       sync.WaitGroup
-	services []Runnable
+	services []service
 	onStart  []Runnable
 	onStop   []Runnable
 	signal   bool
@@ -76,11 +82,24 @@ func (m *Module) run(ctx context.Context) error {
 		}
 	}
 
+	var (
+		serviceErr   error
+		serviceErrMu sync.Mutex
+	)
 	for _, service := range m.services {
 		m.wg.Go(func() {
 			m.log.LogAttrs(ctx, slog.LevelInfo, "starting", slog.String("service", service.Name()))
 			if err := service.Run(ctx); err != nil {
 				m.log.LogAttrs(ctx, slog.LevelError, "service failed", slog.String("service", service.Name()), slog.String("error", err.Error()))
+				// Errors caused by shutdown are not failures.
+				if ctx.Err() == nil && service.critical {
+					serviceErrMu.Lock()
+					if serviceErr == nil {
+						serviceErr = fmt.Errorf("service %s: %w", service.Name(), err)
+					}
+					serviceErrMu.Unlock()
+					cancel()
+				}
 			}
 			m.log.LogAttrs(ctx, slog.LevelInfo, "stopped", slog.String("service", service.Name()))
 		})
@@ -100,6 +119,9 @@ func (m *Module) run(ctx context.Context) error {
 
 	m.wg.Wait()
 
+	if serviceErr != nil {
+		return serviceErr
+	}
 	return err
 }
 

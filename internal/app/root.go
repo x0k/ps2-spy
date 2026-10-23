@@ -23,14 +23,14 @@ func NewRoot(cfg *Config, log *logger.Logger) (*module.Module, error) {
 
 	if cfg.Profiler.Enabled {
 		srv := newProfilerService(cfg.Profiler.Address, log.Logger)
-		m.Go(module.NewRun(srv.Name(), srv.Run))
+		m.GoFeature(module.NewRun(srv.Name(), srv.Run))
 	}
 
 	var mt *metrics.Metrics
 	if cfg.Metrics.Enabled {
 		mt = metrics.New("ps2spy")
 		srv := newMetricsService(mt, cfg.Metrics.Address, log.Logger)
-		m.Go(module.NewRun(srv.Name(), srv.Run))
+		m.GoFeature(module.NewRun(srv.Name(), srv.Run))
 	}
 
 	httpClient := &http.Client{

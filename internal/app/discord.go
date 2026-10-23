@@ -109,7 +109,7 @@ func newDiscordModule(
 			Updater: statsTrackerTasksCreator.Update,
 		},
 	)
-	m.Go(module.NewRun("discord.commands", discordCommands.Start))
+	m.GoFeature(module.NewRun("discord.commands", discordCommands.Start))
 
 	discordRunnables, err := discord_module.New(
 		m,
@@ -160,7 +160,7 @@ func newDiscordModule(
 		return err
 	}
 	for _, r := range discordRunnables {
-		m.Go(r)
+		m.GoFeature(r)
 	}
 	return nil
 }

@@ -13,6 +13,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
+	"github.com/x0k/ps2-spy/internal/lib/taskx"
 	"github.com/x0k/ps2-spy/internal/metrics"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	ps2_factions "github.com/x0k/ps2-spy/internal/ps2/factions"
@@ -31,7 +32,7 @@ type CharacterLoader = func(
 ) (ps2.Character, error)
 
 type platformTracker struct {
-	wg                      sync.WaitGroup
+	tasks                   *taskx.Group
 	log                     *logger.Logger
 	platform                ps2_platforms.Platform
 	mutex                   sync.RWMutex
@@ -58,6 +59,7 @@ func newCharactersTracker(
 		trackers[worldId] = newWorldPopulationTracker()
 	}
 	return &platformTracker{
+		tasks:                   taskx.NewGroup(),
 		log:                     log,
 		platform:                platform,
 		worldPopulationTrackers: trackers,
@@ -108,7 +110,7 @@ func (p *platformTracker) Start(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			p.wg.Wait()
+			p.tasks.Close()
 			return
 		case t := <-ticker.C:
 			removedPlayers := p.handleInactive(ctx, t)
@@ -120,7 +122,7 @@ func (p *platformTracker) Start(ctx context.Context) {
 }
 
 func (p *platformTracker) HandleLogin(ctx context.Context, event events.PlayerLogin) {
-	p.wg.Go(func() {
+	p.tasks.Go(func() {
 		charId := ps2.CharacterId(event.CharacterID)
 		if char, ok := p.handleLogin(ctx, charId); ok {
 			p.publishPlayerLogin(event, char)
@@ -147,7 +149,7 @@ func (p *platformTracker) HandleWorldZoneAction(ctx context.Context, worldId, zo
 	if p.onlineCharactersTracker.isOnline(cId) {
 		p.activePlayers.Push(player{cId, wId})
 	} else {
-		p.wg.Go(func() {
+		p.tasks.Go(func() {
 			if char, ok := p.handleLogin(ctx, cId); ok {
 				p.publishPlayerFakeLogin(char)
 			}

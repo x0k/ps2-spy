@@ -10,6 +10,7 @@ import (
 	"github.com/x0k/ps2-spy/internal/discord"
 	"github.com/x0k/ps2-spy/internal/lib/logger"
 	"github.com/x0k/ps2-spy/internal/lib/logger/sl"
+	"github.com/x0k/ps2-spy/internal/lib/taskx"
 	"github.com/x0k/ps2-spy/internal/ps2"
 	ps2_platforms "github.com/x0k/ps2-spy/internal/ps2/platforms"
 )
@@ -38,7 +39,7 @@ type TrackableOutfitsLoader = func(
 type platformManager struct {
 	log                             *logger.Logger
 	platform                        ps2_platforms.Platform
-	wg                              sync.WaitGroup
+	tasks                           *taskx.Group
 	charactersFilterMu              sync.RWMutex
 	charactersFilter                map[ps2.CharacterId]int
 	outfitsFilterMu                 sync.RWMutex
@@ -65,6 +66,7 @@ func newPlatformManager(
 	return &platformManager{
 		log:                             log,
 		platform:                        platform,
+		tasks:                           taskx.NewGroup(),
 		charactersFilter:                make(map[ps2.CharacterId]int),
 		outfitsFilter:                   make(map[ps2.OutfitId]int),
 		characterLoader:                 charLoader,
@@ -84,7 +86,7 @@ func (tm *platformManager) Start(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			tm.wg.Wait()
+			tm.tasks.Close()
 			return
 		case <-ticker.C:
 			tm.rebuildFilters(ctx)
@@ -134,12 +136,12 @@ func (tm *platformManager) UntrackOutfitMembers(outfitId ps2.OutfitId, charIds [
 }
 
 func (tm *platformManager) HandleTrackingSettingsUpdate(ctx context.Context, update TrackingSettingsUpdated) {
-	tm.wg.Add(1)
-	go tm.handleTrackingSettingsUpdateTask(ctx, update)
+	tm.tasks.Go(func() {
+		tm.handleTrackingSettingsUpdateTask(ctx, update)
+	})
 }
 
 func (m *platformManager) handleTrackingSettingsUpdateTask(ctx context.Context, upd TrackingSettingsUpdated) {
-	defer m.wg.Done()
 	for _, charId := range upd.Diff.Characters.ToAdd {
 		m.considerCharacter(charId, 1)
 	}
@@ -199,7 +201,6 @@ func (tm *platformManager) characterTrackersCount(charId ps2.CharacterId) int {
 }
 
 func (tm *platformManager) rebuildCharactersFilterTask(ctx context.Context) {
-	defer tm.wg.Done()
 	chars, err := tm.trackableCharactersLoader(ctx, tm.platform)
 	if err != nil {
 		tm.log.Error(ctx, "failed to load trackable characters", sl.Err(err))
@@ -224,7 +225,6 @@ func (tm *platformManager) rebuildCharactersFilterTask(ctx context.Context) {
 }
 
 func (tm *platformManager) rebuildOutfitsFilterTask(ctx context.Context) {
-	defer tm.wg.Done()
 	outfits, err := tm.trackableOutfitsLoader(ctx, tm.platform)
 	if err != nil {
 		tm.log.Error(ctx, "failed to load trackable outfits", sl.Err(err))
@@ -250,7 +250,10 @@ func (tm *platformManager) rebuildOutfitsFilterTask(ctx context.Context) {
 
 func (tm *platformManager) rebuildFilters(ctx context.Context) {
 	tm.log.Debug(ctx, "rebuilding filters")
-	tm.wg.Add(2)
-	go tm.rebuildCharactersFilterTask(ctx)
-	go tm.rebuildOutfitsFilterTask(ctx)
+	tm.tasks.Go(func() {
+		tm.rebuildCharactersFilterTask(ctx)
+	})
+	tm.tasks.Go(func() {
+		tm.rebuildOutfitsFilterTask(ctx)
+	})
 }

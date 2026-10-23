@@ -22,7 +22,7 @@ func (h *handler[T, E]) Type() T {
 }
 
 func (h *handler[T, E]) Handle(event pubsub.Event[T]) {
-	h.m.wg.Go(func() {
+	h.m.tasks.Go(func() {
 		ctx, cancel := context.WithTimeout(context.Background(), h.m.handlersTimeout)
 		defer cancel()
 		defer h.m.addCancel(cancel)()

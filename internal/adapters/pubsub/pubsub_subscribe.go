@@ -8,33 +8,43 @@ import (
 	"github.com/x0k/ps2-spy/internal/lib/pubsub"
 )
 
-type handler[T pubsub.EventType, E pubsub.Event[T]] chan<- E
+type handler[T pubsub.EventType, E pubsub.Event[T]] struct {
+	events chan<- E
+	done   <-chan struct{}
+}
 
-func (h handler[T, E]) Type() T {
+func (h *handler[T, E]) Type() T {
 	var e E
 	return e.Type()
 }
 
-func (h handler[T, E]) Handle(event pubsub.Event[T]) {
-	h <- event.(E)
+func (h *handler[T, E]) Handle(event pubsub.Event[T]) {
+	select {
+	case h.events <- event.(E):
+	case <-h.done:
+	}
 }
 
 func SubscribeTo[T pubsub.EventType, E pubsub.Event[T]](
-	postStopper module.Stopper,
+	stopper module.Stopper,
 	subs pubsub.SubscriptionsManager[T],
 ) <-chan E {
-	channel := make(chan E)
-	h := handler[T, E](channel)
+	events := make(chan E)
+	done := make(chan struct{})
+	h := &handler[T, E]{
+		events: events,
+		done:   done,
+	}
 	unSubscribe := subs.AddHandler(h)
-	postStopper.OnStop(module.NewRun(
+	stopper.OnStop(module.NewRun(
 		fmt.Sprintf("event_handler_%v", h.Type()),
 		func(_ context.Context) error {
+			close(done)
 			unSubscribe()
-			close(channel)
 			return nil
 		},
 	))
-	return channel
+	return events
 }
 
 func Listen[T pubsub.EventType, E pubsub.Event[T]](

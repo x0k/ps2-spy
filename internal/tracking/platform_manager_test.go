@@ -49,7 +49,7 @@ func TestPlatformManagerTracksDuplicatedCharactersAndOutfitMembers(t *testing.T)
 	)
 
 	pm.rebuildFilters(ctx)
-	pm.wg.Wait()
+	pm.tasks.Wait()
 
 	channels, err := pm.ChannelsForCharacter(ctx, characterId)
 	if err != nil {
@@ -114,7 +114,7 @@ func TestPlatformManagerHandlesTrackingSettingsUpdate(t *testing.T) {
 			Outfits:    diff.Diff[ps2.OutfitId]{ToAdd: []ps2.OutfitId{outfitId}},
 		},
 	})
-	pm.wg.Wait()
+	pm.tasks.Wait()
 
 	for _, id := range []ps2.CharacterId{characterId, outfitMemberId} {
 		channels, err := pm.ChannelsForCharacter(ctx, id)

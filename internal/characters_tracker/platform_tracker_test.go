@@ -44,7 +44,7 @@ func TestPlatformTrackerPublishesPlatformLoginAndLogout(t *testing.T) {
 		EventBase:   core.EventBase{Timestamp: "10"},
 		CharacterID: "char-1",
 	})
-	tracker.wg.Wait()
+	tracker.tasks.Wait()
 	tracker.HandleLogout(context.Background(), events.PlayerLogout{
 		EventBase:   core.EventBase{Timestamp: "20"},
 		CharacterID: "char-1",

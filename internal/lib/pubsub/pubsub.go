@@ -2,6 +2,7 @@ package pubsub
 
 import (
 	"errors"
+	"slices"
 	"sync"
 )
 
@@ -62,8 +63,9 @@ func (p *pubSub[T]) AddHandler(h Handler[T]) func() {
 
 func (p *pubSub[T]) Publish(event Event[T]) {
 	p.handlersMu.RLock()
-	defer p.handlersMu.RUnlock()
-	for _, h := range p.handlers[event.Type()] {
+	handlers := slices.Clone(p.handlers[event.Type()])
+	p.handlersMu.RUnlock()
+	for _, h := range handlers {
 		h.Handle(event)
 	}
 }

@@ -166,8 +166,14 @@ func (s *Service) Update(
 		return tracking.ErrTooManyCharacters(settings)
 	}
 
-	outfitIds, _ := s.outfitsRepo.OutfitIdsByTags(ctx, platform, settings.Outfits)
-	charIds, _ := s.charactersRepo.CharacterIdsByNames(ctx, platform, settings.Characters)
+	outfitIds, err := s.outfitsRepo.OutfitIdsByTags(ctx, platform, settings.Outfits)
+	if err != nil {
+		return fmt.Errorf("failed to resolve outfit ids: %w", err)
+	}
+	charIds, err := s.charactersRepo.CharacterIdsByNames(ctx, platform, settings.Characters)
+	if err != nil {
+		return fmt.Errorf("failed to resolve character ids: %w", err)
+	}
 
 	if len(settings.Outfits) > len(outfitIds) || len(settings.Characters) > len(charIds) {
 		return tracking.ErrFailedToIdentifyEntities{

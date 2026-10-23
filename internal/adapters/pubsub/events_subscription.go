@@ -26,18 +26,22 @@ type EventsSubscriptionChannels struct {
 }
 
 type eventSubscription struct {
-	unsub func()
-	close func()
+	unsubscribe func()
+	stop        func()
 }
 
 func subscribeEvent[E events.Event](
 	subs pubsub.SubscriptionsManager[events.EventType],
 	ch chan E,
 ) eventSubscription {
-	h := handler[events.EventType, E](ch)
+	done := make(chan struct{})
+	h := &handler[events.EventType, E]{
+		events: ch,
+		done:   done,
+	}
 	return eventSubscription{
-		unsub: subs.AddHandler(h),
-		close: func() { close(ch) },
+		unsubscribe: subs.AddHandler(h),
+		stop:        func() { close(done) },
 	}
 }
 
@@ -81,8 +85,8 @@ func SubscribeToEvents(
 		"events_subscription",
 		func(_ context.Context) error {
 			for _, s := range subsList {
-				s.unsub()
-				s.close()
+				s.stop()
+				s.unsubscribe()
 			}
 			return nil
 		},
